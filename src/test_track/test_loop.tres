@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="TrackData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/test_track/track_data.gd" id="1_track"]
+
+[resource]
+script = ExtResource("1_track")
+control_points = PackedVector2Array(-40, 0, 60, 0, 130, 15, 160, 70, 130, 125, 70, 130, 40, 95, 0, 110, -50, 150, -110, 130, -120, 70, -90, 25)
+samples_per_segment = 20
+road_half_width = 7.0
+curb_width = 1.2
+lap_count = 3
+start_distance_behind_line = 6.0
+query_window = 14

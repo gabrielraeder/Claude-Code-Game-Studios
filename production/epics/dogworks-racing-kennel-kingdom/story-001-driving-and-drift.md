@@ -1,13 +1,13 @@
 # Story 001: Driving and 3-tier drift boost
 
 > **Epic**: Dogworks Racing: Kennel Kingdom
-> **Status**: Ready
+> **Status**: In Progress
 > **Layer**: Core
 > **Type**: Visual/Feel
 > **Estimate**: M
 > **Build step**: core
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: —
+> **Last Updated**: 2026-11-19
 
 ## Context
 
@@ -61,12 +61,29 @@
 
 ## Files
 
-- `src/vehicle/` (kart controller and vehicle data resource)
-- `src/input/` (action map)
-- `assets/data/vehicles/` (armored cart data)
-- `production/qa/evidence/story-001-driving-evidence.md`
-
----
+- `src/debug/autopilot_driver.gd`
+- `src/debug/debug_harness.gd`
+- `src/debug/debug_options.gd`
+- `src/input/input_actions.gd`
+- `src/input/player_input_driver.gd`
+- `src/main.gd`
+- `src/main.tscn`
+- `src/test_track/chase_camera.gd`
+- `src/test_track/lap_counter.gd`
+- `src/test_track/test_loop.tres`
+- `src/test_track/track_data.gd`
+- `src/test_track/track_mesh.gd`
+- `src/test_track/track_model.gd`
+- `src/ui/pause_menu.gd`
+- `src/ui/race_hud.gd`
+- `src/vehicle/kart_driver.gd`
+- `src/vehicle/kart_input.gd`
+- `src/vehicle/kart_sim.gd`
+- `src/vehicle/kart_visual.gd`
+- `src/vehicle/vehicle_stats.gd`
+- `assets/data/vehicles/armored_cart.tres`
+- `project.godot` (name + main scene; approved deviation)
+- `production/qa/evidence/story-001-driving-and-drift/` (screenshots, run CSVs, stamp.txt)
 
 ## QA Test Cases
 

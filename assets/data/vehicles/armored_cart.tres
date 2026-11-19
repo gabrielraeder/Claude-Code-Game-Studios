@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="VehicleStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/vehicle/vehicle_stats.gd" id="1_stats"]
+
+[resource]
+script = ExtResource("1_stats")
+display_name = "Armored Cart"
+max_speed = 26.0
+accel = 14.0
+brake = 32.0
+reverse_max = 8.0
+coast_drag = 5.0
+reverse_accel_frac = 0.6
+overspeed_decel = 18.0
+turn_rate = 2.3
+full_steer_speed = 6.0
+high_speed_steer_damp = 0.3
+grip = 9.0
+drift_grip = 2.2
+drift_min_speed = 12.0
+drift_start_steer = 0.3
+drift_end_speed_frac = 0.7
+drift_yaw_base = 1.25
+drift_yaw_range = 0.85
+drift_charge_steer_bonus = 0.6
+drift_tier_times = PackedFloat32Array(0.9, 1.9, 3.0)
+drift_boost_times = PackedFloat32Array(0.0, 0.7, 1.1, 1.6)
+boost_speed_mult = 1.35
+boost_accel_mult = 3.0
+spin_time = 1.1
+spin_drag = 2.5
+radius = 1.0
+bump_knockback = 1.4
+wall_hard_hit_speed = 5.0
+wall_hard_hit_speed_keep = 0.7
+wall_hit_cooldown = 0.5
+wall_scrape_drag = 0.8
+paint_color = Color(0.95, 0.2, 0.2, 1)
+spark_colors = PackedColorArray(1, 1, 1, 0.6, 0.3, 0.7, 1, 1, 1, 0.6, 0.1, 1, 0.8, 0.3, 1, 1)
