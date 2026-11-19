@@ -41,8 +41,23 @@
 *Added at `/story-done` 2026-11-19 (user's decisions on the AI's own calls):*
 
 - [ ] R no longer restarts the race. Restart stays in the pause menu and on the finish screen (Start / A).
-- [ ] The race starts with a 3-2-1 countdown (visual numbers; the war-horn sound is story 007). While it counts down the kart is held, and pressing accelerate at the right moment gives a start boost (3 levels by timing, higher for a better start; pressing too early gives a short penalty). Timing windows and boost levels live in the vehicle data file.
-- [ ] The wall and bump response is parameterised in `VehicleStats`, as a light scrape versus a hard impact by angle, plus a hit-slowdown profile (deceleration, duration, minimum speed), with values tuned by feel. The user's notes at `C:\rea\reverse-engineer\docs\design\01-veiculos-e-fisica.md` (sections 6.1, 7.1, 7.3) are a structural reference only; no values or assets are copied.
+- [ ] The race starts with a 3-2-1 countdown (visual numbers; the war-horn sound is story 007). While it counts down the kart is held, and pressing accelerate at the right moment gives a start boost (3 levels by timing, higher for a better start; pressing too early gives a short penalty). Timing windows and boost levels live in the vehicle data file. Start-boost durations follow the user's notes: levels 1 / 2 / 3 last 1.4 / 1.7 / 2.0 s.
+- [ ] The wall and bump response is parameterised in `VehicleStats`, as a light scrape versus a hard impact by angle, plus a hit-slowdown profile (deceleration, duration, minimum speed), using the numbers in the user's notes at `C:\rea\reverse-engineer\docs\design\01-veiculos-e-fisica.md`:
+  - **Wall scrape:** at 10–40°, grip ×0.45.
+  - **Wall impact:** at 15–85°, loses up to 60% speed and slides 0.25 s.
+  - **Turn-back:** the wall turns the car back toward the track at 30–90 °/s.
+  - **Hit-slowdown profiles:** light / medium / heavy last 0.3 / 0.3 / 0.6 s, with minimum speeds 60 / 44 / 32 mph.
+  - **Scaling:** times, angles and percentages are used directly. Speeds and decelerations are scaled as a share of top speed (their car tops at 115 mph, ours at `max_speed`).
+  - **Hit immunity:** 0.6 s after a hit.
+  - Only the profile data is needed here; story 004 applies the hit profiles to items.
+- [ ] Every visual constant in `kart_visual.gd` (and the chase camera's numbers) moves to data, in a visual section of the vehicle data file (or a sibling resource), using the user's notes where a number exists:
+  - **Drift hop:** lasts 0.4 s (the notes' drift entry time).
+  - **Drift body angle:** 25° / 45° / 55° (min / default / max).
+  - **Body lean:** limits from the notes' weight transfer (20 forward / 30 sideways).
+  - **Wheel visual radius:** 0.35.
+  - **No-number values:** the flame size, the spark pulse and the camera keep their current values, now as data.
+  - **Drift tiers are unchanged:** 0.9 / 1.9 / 3.0 s, as signed off. The notes' 1.8 / 4.4 / 7.0 s are not used unless the user asks.
+  - The user re-checks the look after this change.
 
 ---
 
