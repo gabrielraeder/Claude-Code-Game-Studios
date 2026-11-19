@@ -1,8 +1,40 @@
 # Godot — Breaking Changes
 
-Last verified: 2026-10-17 (4.6 → 4.7 and the section dates); 2026-02-12 (older sections)
+Last verified: 2026-11-19 (4.7 → 4.8 beta); 2026-10-17 (4.6 → 4.7 and the section dates); 2026-02-12 (older sections)
 
 Changes between Godot versions, focused on post-LLM-cutoff changes (4.4+).
+
+## 4.7 → 4.8 (beta 3, Nov 2026 — POST-CUTOFF, HIGH RISK, PRE-RELEASE)
+
+No official migration guide yet (https://docs.godotengine.org/en/latest/tutorials/migrating/upgrading_to_godot_4.8.html → 404, 2026-11-19). Rows come from the
+4.8 snapshot release notes; the source is beta 1 (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/) unless the row names
+another. Re-verify against the migration guide when it is published.
+
+| Subsystem | Change | Details |
+|-----------|--------|---------|
+| GDScript | Scripts can no longer inherit their own inner classes | **GDScript breaks** |
+| GDScript | Strings can no longer be used as comments | Replace stray `"""..."""` blocks used as comments with `#` comments. **GDScript breaks** |
+| Physics | Jolt Physics updated to 5.6.0 | No behaviour change stated; re-test collisions (inference) |
+| Physics | `NOTIFICATION_DEBUG_COLLISIONS_HINT_CHANGED` replaced with a signal | Signal name: NOT SOURCEABLE — not stated at https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/ or https://godotengine.org/article/dev-snapshot-godot-4-8-dev-7/ |
+| Animation | `LookAtModifier3D.is_interpolating()` | Inverted return value fixed; code compensating for the old value breaks |
+| Animation | Bone Follower classes | FTI (fixed timestep interpolation) off by default, with a warning |
+| Animation | `BoneSpreader3D` renamed `BoneSpaceAdjuster3D` | https://godotengine.org/article/dev-snapshot-godot-4-8-dev-5/. **GDScript breaks** |
+| 3D | Script-only `enter_world` callbacks removed | Were undocumented |
+| Particles | Particle angle default curve range | Now [-1, 1] (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-2/) |
+| Core | `ScriptServer` fallbacks removed from `ClassDB` | — |
+| Export | Export options without the storage flag | No longer serialized |
+| Export | Local debugger in release exports | Now fails |
+| Networking | mbedTLS 4.1.0 (PSA Crypto) | Affects TLS/DTLS users only; no API change stated. ENet (plain UDP) unaffected — inference |
+| Input | New projects ignore joypads on unfocused windows | Default for new projects |
+| Input/GUI | Mouse motion no longer overrides controller input in menus | GH-124735 (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-3/) |
+| GUI | Default dialog titles reworked | — |
+| .NET | .NET build requires .NET 10+ (was 8) | Standard GDScript build unaffected (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-2/, https://godotengine.org/article/dev-snapshot-godot-4-8-beta-3/, https://godotengine.org/article/dev-snapshot-godot-4-8-dev-7/) |
+
+NOT SOURCEABLE for 4.8 (not mentioned at https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/, https://godotengine.org/article/dev-snapshot-godot-4-8-beta-2/, https://godotengine.org/article/dev-snapshot-godot-4-8-beta-3/, https://godotengine.org/article/dev-snapshot-godot-4-8-dev-3/, https://godotengine.org/article/dev-snapshot-godot-4-8-dev-5/, https://godotengine.org/article/dev-snapshot-godot-4-8-dev-7/):
+any change to MultiplayerAPI, ENetMultiplayerPeer, WebRTC, MultiplayerSpawner,
+MultiplayerSynchronizer, NavigationServer3D, NavigationAgent3D or navmesh baking.
+Absence from release notes is not proof of no change; the interactive changelog
+(https://godotengine.github.io/godot-interactive-changelog/#4.8-beta3) is the next source to check.
 
 ## 4.6 → 4.7 (Jun 2026 — POST-CUTOFF, HIGH RISK)
 
@@ -109,6 +141,7 @@ change behaviour or defaults. The guide lists no deprecations.
 
 ## Sources
 
+- 4.8 snapshots: https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/ · https://godotengine.org/article/dev-snapshot-godot-4-8-beta-2/ · https://godotengine.org/article/dev-snapshot-godot-4-8-beta-3/ · https://godotengine.org/article/dev-snapshot-godot-4-8-dev-3/ · https://godotengine.org/article/dev-snapshot-godot-4-8-dev-5/ · https://godotengine.org/article/dev-snapshot-godot-4-8-dev-7/
 - Official docs: https://docs.godotengine.org/en/stable/
 - 4.6→4.7 migration: https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html
 - 4.5→4.6 migration: https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.6.html

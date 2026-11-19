@@ -1,6 +1,6 @@
 # Godot — Current Best Practices
 
-Last verified: 2026-10-17 (4.7 sections); 2026-02-12 (rest) | Engine: Godot 4.7
+Last verified: 2026-11-19 (4.8 sections); 2026-10-17 (4.7 sections); 2026-02-12 (rest) | Engine: Godot 4.8-beta3
 
 Practices that are **new or changed** since the model's training data (~4.3).
 This supplements (not replaces) the agent's built-in knowledge.
@@ -41,6 +41,13 @@ This supplements (not replaces) the agent's built-in knowledge.
 
 - **Script backtracing**: Detailed call stacks available even in Release builds
 
+## GDScript (4.8)
+
+- Comments are `#` only: string literals no longer work as comments (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/).
+- An inner class can no longer inherit from its own script's inner classes (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/).
+- Editor: warnings and errors underline only the relevant part of the line;
+  experimental project-wide symbol renaming (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/, https://godotengine.org/article/dev-snapshot-godot-4-8-dev-7/).
+
 ## GDScript (4.7)
 
 - **An override of a typed method inherits its return type**, so it needs an
@@ -48,6 +55,16 @@ This supplements (not replaces) the agent's built-in knowledge.
 - **Writing one element of a packed array no longer calls the property's
   setter.** A setter on a `PackedInt32Array` (etc.) property no longer runs on
   `arr[i] = v`; assign the whole array where the setter has to run
+
+## Physics (4.8)
+
+- **Non-allocating queries:** `PhysicsDirectSpaceState3D` (and 2D) gain
+  `intersect_ray_into` and `cast_motion_into`, which fill a reusable typed result
+  object instead of allocating a Dictionary/Array each call. Prefer them for
+  per-frame queries (tower targeting, line of sight). Exact signatures: NOT
+  SOURCEABLE at https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/ — check the class reference in the editor (F1) before use.
+- Jolt updated to 5.6.0 (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/).
+- `RigidBody3D.get_velocity_at_local_position()` / `get_velocity_at_position()` added (https://godotengine.org/article/dev-snapshot-godot-4-8-dev-3/).
 
 ## Physics (4.7)
 
@@ -66,6 +83,16 @@ This supplements (not replaces) the agent's built-in knowledge.
   - Some HingeJoint3D properties (`damp`) only work with GodotPhysics
   - Switch: Project Settings → Physics → 3D → Physics Engine
   - 2D physics unchanged (still Godot Physics 2D)
+
+## Rendering (4.8)
+
+From https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/ unless noted: screen-space contact shadows (environment and directional
+lights), multi-bounce ambient occlusion, mip-level texture streaming,
+alpha-preserving mipmaps, directional `LightmapGI` specular, animatable decals,
+fixed directional shadow culling for orthogonal cameras (relevant to a fixed
+top-down/angled camera), `Trail3D` and abstract `LineBase3D` (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/, https://godotengine.org/article/dev-snapshot-godot-4-8-beta-3/),
+`GridMap` octant visualization, Visual Shader node groups, GDShader `bool`
+constants implicitly convert to `float`/`int`/`uint`.
 
 ## Rendering (4.7)
 
@@ -133,6 +160,13 @@ This supplements (not replaces) the agent's built-in knowledge.
   - Visual feedback differs depending on input method
   - Consider this when designing custom focus behavior
 
+## UI and Input (4.8)
+
+- `Label` and `RichTextLabel` gain auto-sizing font properties; `Tree` gains sticky items (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/).
+- `SpinBox.format` replaces `prefix`/`suffix` (https://godotengine.org/article/dev-snapshot-godot-4-8-dev-5/).
+- New projects ignore joypads while the window is unfocused; mouse motion no
+  longer overrides controller input in menus (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/, https://godotengine.org/article/dev-snapshot-godot-4-8-beta-3/).
+
 ## UI and Input (4.7)
 
 - **`Control.offset_transform_*`** (`offset_transform_enabled`,
@@ -151,6 +185,15 @@ This supplements (not replaces) the agent's built-in knowledge.
 - **New projects stretch by default**: `display/window/stretch/mode` is
   `canvas_items` and `aspect` is `expand`. Projects created before 4.7 keep
   their settings
+
+## Editor Workflow (4.8)
+
+From https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/: the game view is docked/embedded by default; main screens are
+floatable `EditorDock`s (except Game); runtime CanvasItem editing in the running
+game with undo; FileSystem glob search and play-scene from the context menu;
+Find in Files replace preview; Clear Project Cache; an option to run the project
+upgrade tool on version updates (use it when moving beta → stable). Text scenes
+serialize with smaller diffs and support metadata.
 
 ## Editor Workflow (4.7)
 

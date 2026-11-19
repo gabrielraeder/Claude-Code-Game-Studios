@@ -4,6 +4,11 @@ Last verified: 2026-10-17 (4.7 changes); 2026-02-12 (rest) | Engine: Godot 4.7
 
 ## What Changed Since ~4.3 (LLM Cutoff)
 
+### 4.8 Changes (beta 3)
+
+- mbedTLS 4.1.0 with PSA Crypto (TLS/DTLS only; no API change stated) (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/).
+- MultiplayerAPI / ENet / WebRTC / Spawner / Synchronizer changes: NOT SOURCEABLE — none mentioned at https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/, https://godotengine.org/article/dev-snapshot-godot-4-8-beta-2/, https://godotengine.org/article/dev-snapshot-godot-4-8-beta-3/. Not proof of no change.
+
 ### 4.7 Changes
 - **No networking-specific changes** are listed in the 4.7 migration guide (4.7 migration guide: https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html)
 

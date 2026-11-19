@@ -1,6 +1,6 @@
 # Godot — Deprecated APIs
 
-Last verified: 2026-10-17 (4.7 rows); 2026-02-12 (rest)
+Last verified: 2026-11-19 (4.8 rows, from the 4.8 snapshot release notes — no 4.8 migration guide yet); 2026-10-17 (4.7 rows); 2026-02-12 (rest)
 
 The 4.7 migration guide lists no formal deprecations; the 4.7 rows below are
 renames and removals from it
@@ -19,6 +19,7 @@ with the "Use Instead" column.
 | `YSort` | `Node2D.y_sort_enabled` | 4.0 | Property on Node2D, not a separate node |
 | `Navigation2D` / `Navigation3D` | `NavigationServer2D` / `NavigationServer3D` | 4.0 | Server-based API |
 | `EditorSceneFormatImporterFBX` | `EditorSceneFormatImporterFBX2GLTF` | 4.3 | Renamed |
+| `BoneSpreader3D` | `BoneSpaceAdjuster3D` | 4.8 | Renamed, GH-122888 (https://godotengine.org/article/dev-snapshot-godot-4-8-dev-5/) |
 
 ## Methods & Properties
 
@@ -39,6 +40,9 @@ with the "Use Instead" column.
 | `DisplayServer.AccessibilityLiveMode` for `Control.accessibility_live` | `AccessibilityServer.AccessibilityLiveMode` | 4.7 | Enum moved to `AccessibilityServer` |
 | `AudioEffectSpectrumAnalyzer.tap_back_pos` | — | 4.7 | Removed |
 | `EditorSceneFormatImporter.IMPORT_*` constants | `EditorSceneFormatImporter.ImportFlags` enum | 4.7 | Same names, now in an enum |
+| `SpinBox.prefix` / `SpinBox.suffix` | `SpinBox.format` | 4.8 | Deprecated, GH-103998 (https://godotengine.org/article/dev-snapshot-godot-4-8-dev-5/) |
+| `NOTIFICATION_DEBUG_COLLISIONS_HINT_CHANGED` | a signal (name NOT SOURCEABLE) | 4.8 | https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/ |
+| String literal used as a comment | `#` comment | 4.8 | No longer allowed (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/) |
 
 ## Patterns (Not Just APIs)
 

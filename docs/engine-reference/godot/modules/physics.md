@@ -4,6 +4,13 @@ Last verified: 2026-10-17 (4.7 changes); 2026-02-12 (rest) | Engine: Godot 4.7
 
 ## What Changed Since ~4.3 (LLM Cutoff)
 
+### 4.8 Changes (beta 3)
+
+- Jolt 5.6.0 (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/).
+- Non-allocating `intersect_ray_into` / `cast_motion_into` on `PhysicsDirectSpaceState2D/3D` (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/); signatures NOT SOURCEABLE.
+- `NOTIFICATION_DEBUG_COLLISIONS_HINT_CHANGED` replaced with a signal (name NOT SOURCEABLE) (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/, https://godotengine.org/article/dev-snapshot-godot-4-8-dev-7/).
+- `RigidBody` `get_velocity_at_(local_)position()` (https://godotengine.org/article/dev-snapshot-godot-4-8-dev-3/).
+
 ### 4.7 Changes
 - **Jolt `WorldBoundaryShape3D`**: `plane.d` sign now matches Godot Physics,
   flipped from 4.6; negate it to keep 4.6 behavior

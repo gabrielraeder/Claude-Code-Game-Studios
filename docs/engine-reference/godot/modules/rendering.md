@@ -4,6 +4,10 @@ Last verified: 2026-10-21 (Windows driver default, Compositor); 2026-10-17 (4.7 
 
 ## What Changed Since ~4.3 (LLM Cutoff)
 
+### 4.8 Changes (beta 3)
+
+- Contact shadows, multi-bounce AO, texture streaming, alpha-preserving mipmaps, LightmapGI directional specular, animatable decals, `Trail3D`, ortho-camera directional shadow culling fix (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/). See `current-best-practices.md` § Rendering (4.8).
+
 ### 4.7 Changes
 - **`AreaLight3D`**: real-time rectangular area lights
 - **HDR output** on Windows, macOS, iOS, visionOS and Linux (Wayland)

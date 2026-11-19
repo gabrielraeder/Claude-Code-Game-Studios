@@ -4,6 +4,12 @@ Last verified: 2026-10-17 (4.7 changes); 2026-02-12 (rest) | Engine: Godot 4.7
 
 ## What Changed Since ~4.3 (LLM Cutoff)
 
+### 4.8 Changes (beta 3)
+
+- New projects ignore joypads on unfocused windows (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/).
+- Mouse motion no longer overrides controller input in menus, GH-124735 (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-3/).
+- Touch support in `TextEdit`, `CodeEdit`, `TabBar`, `PopupMenu` (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/).
+
 ### 4.7 Changes
 - **Mouse and keyboard device IDs**: `InputEvent.device` is
   `InputEvent.DEVICE_ID_MOUSE` / `DEVICE_ID_KEYBOARD` (was `0`, which some

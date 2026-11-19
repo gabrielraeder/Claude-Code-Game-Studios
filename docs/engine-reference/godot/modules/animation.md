@@ -4,6 +4,12 @@ Last verified: 2026-10-17 (4.7 changes); 2026-02-12 (rest) | Engine: Godot 4.7
 
 ## What Changed Since ~4.3 (LLM Cutoff)
 
+### 4.8 Changes (beta 3)
+
+- `BoneSpreader3D` → `BoneSpaceAdjuster3D` (https://godotengine.org/article/dev-snapshot-godot-4-8-dev-5/).
+- `LookAtModifier3D.is_interpolating()` inverted return fixed (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/).
+- Bone Follower FTI off by default (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/).
+
 ### 4.7 Changes
 - **`Tween.tween_await()`**: pauses a tween until a signal is emitted (4.7 release notes: https://godotengine.org/releases/4.7/)
 - **`LookAtModifier3D.relative`** defaults to `false` (was `true`)
