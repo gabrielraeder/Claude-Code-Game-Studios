@@ -18,6 +18,7 @@ var _spin_angle: float = 0.0
 var _clock: float = 0.0
 var _pitch: float = 0.0
 var _roll: float = 0.0
+var _paint: StandardMaterial3D
 
 
 ## Binds this visual to [param sim] and builds the meshes using its stats.
@@ -26,6 +27,12 @@ func bind(sim: KartSim) -> void:
 	_vs = sim.stats.visual
 	_sim.drift_started.connect(_on_drift_started)
 	_build()
+
+
+## Repaints the kart body (online, every kart takes its slot's color on every PC).
+func set_paint(color: Color) -> void:
+	if _paint != null:
+		_paint.albedo_color = color
 
 
 func _on_drift_started(_direction: int) -> void:
@@ -87,6 +94,7 @@ func _build() -> void:
 	_spin_root.add_child(_body)
 	var paint := StandardMaterial3D.new()
 	paint.albedo_color = _sim.stats.paint_color
+	_paint = paint
 	var dark := StandardMaterial3D.new()
 	dark.albedo_color = _vs.dark_color
 	var skin := StandardMaterial3D.new()

@@ -448,6 +448,8 @@ func _apply_race_start(info: Dictionary) -> void:
 			_local.owner_peer = peer
 			_local.display_name = slot[2]
 			_local.dropped = false
+			# Same color for this kart on every PC: its slot's palette color.
+			_local.visual.set_paint(_stats_for(kart_id).paint_color)
 			_sim.reset_to(_track, dist, lateral)
 			_laps.reset(_sim.track_s)
 			_input.clear()
@@ -505,6 +507,7 @@ func _clear_others() -> void:
 		if r != _local and r.visual != null:
 			r.visual.queue_free()
 	_racers = [_local]
+	_local.visual.set_paint(vehicle_stats.paint_color)
 	_by_id.clear()
 	_by_id[_local.kart_id] = _local
 
