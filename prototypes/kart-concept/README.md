@@ -4,7 +4,7 @@
 
 # Kart racer: concept prototype 1 (driving + chaos)
 
-**Status:** in progress. Built and self-tested with the AI driving. Not yet played by a person.
+**Status:** concluded. Verdict: **PROCEED** on 2026-11-19. The online part goes to prototype 2.
 
 ## Hypothesis
 
@@ -94,4 +94,16 @@ The prototype leaves out:
 
 ## Findings
 
-_To be filled after play._
+- **Player verdict (2026-11-19):** "it's a great prototype"; "the drift feels good enough" for
+  an initial version.
+- **Race log (1 race):**
+  - **Won** (1st/4) in 1:25.7. Laps went from 29.87 to 27.18 to 27.23 s; the bots lap at about 29–30 s.
+  - **Drift boosts:** 8 blue, 6 orange, 1 purple. The player used the drift, and it won the race.
+  - **Lead changes:** 5. Items used: 2, with 2 hits given and 1 taken. Hard wall hits: 5.
+- **Read:** the hypothesis signals are present: drift boosts carry the race and the lead changes
+  hands. Improvement *across* races is not shown, since there was only one race.
+- **Watch:**
+  - The player won comfortably on the first race, so bots may need more speed or smarter items
+    once players learn the drift.
+  - Purple boosts are rare (1 per race). That's fine as a mastery goal, but check that it stays
+    reachable.
