@@ -41,7 +41,7 @@
 
 *Added after the user's first play (2026-11-19):*
 
-- [ ] Karts bump each other online: each PC pushes only the karts it owns out of every kart it sees, using weight-class data from the user's notes (`C:eaeverse-engineer\docs\design-veiculos-e-fisica.md` section 2.2): push strength light 0.5 / medium 1.0 / heavy 1.5, speed lost in a full bump 0.9 / 0.5 / 0.1. The armored cart is heavy. Bots push humans at ×0.35 (the notes' AI weight). All values in data.
+- [ ] Karts bump each other online: each PC pushes only the karts it owns out of every kart it sees, using weight-class data from the user's notes (`C:\rea\reverse-engineer\docs\design\01-veiculos-e-fisica.md` section 2.2): push strength light 0.5 / medium 1.0 / heavy 1.5, speed lost in a full bump 0.9 / 0.5 / 0.1. The armored cart is heavy. Bots push humans at ×0.35 (the notes' AI weight). All values in data.
 - [ ] Every kart has its slot's color on every PC (the client saw both karts red).
 - [ ] A "Back to menu" button leaves an online race or lobby (or abandons a solo race) for the start screen.
 
