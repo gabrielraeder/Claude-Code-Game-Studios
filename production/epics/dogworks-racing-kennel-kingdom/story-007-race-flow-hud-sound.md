@@ -31,7 +31,7 @@
 
 - [ ] Main menu with Host and Join (IP entry), working with keyboard and controller.
 - [ ] Lobby: racers see who has joined, and each picks a racer and vehicle; the host picks the track and bot count, then starts the race.
-- [ ] Start: a war-horn countdown, then 3 laps. The goal "finish first after 3 laps" works with 1st–12th placing, and there is no fail state.
+- [ ] Start: a war-horn countdown (the 3-2-1 countdown and start boost are built in story 001; this adds the horn and the lobby sync), then 3 laps. The goal "finish first after 3 laps" works with 1st–12th placing, and there is no fail state.
 - [ ] Results screen after the race shows everyone's place and time. The host can start a rematch with one press, back into the lobby or the same setup.
 - [ ] HUD: a stream-readable place display (large "1st/12"), lap and lap time, current item, speed, and a minimap showing every racer in their color.
 - [ ] UI uses the logo's parchment-banner style, with readable text at 1280×720 and above.

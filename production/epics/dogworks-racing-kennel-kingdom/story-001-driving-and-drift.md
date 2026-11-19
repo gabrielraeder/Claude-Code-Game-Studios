@@ -36,7 +36,13 @@
 - [ ] Keyboard (WASD/arrows, Space drift, E item) and controller (triggers, left stick, RB drift, LB item) both drive the cart.
 - [ ] Menus are reachable and usable from the controller too.
 - [ ] Reversing over the start line does not count a lap, and 3 laps with a lap timer work on the test loop.
-- [ ] Drift feel is at least as good as prototype 1 (the user judged it "good enough" there): the user plays it and signs off.
+- [ ] Drift feel is at least as good as prototype 1 (the user judged it "good enough" there): the user plays it and signs off. *(signed off 2026-11-19)*
+
+*Added at `/story-done` 2026-11-19 (user's decisions on the AI's own calls):*
+
+- [ ] R no longer restarts the race. Restart stays in the pause menu and on the finish screen (Start / A).
+- [ ] The race starts with a 3-2-1 countdown (visual numbers; the war-horn sound is story 007). While it counts down the kart is held, and pressing accelerate at the right moment gives a start boost (3 levels by timing, higher for a better start; pressing too early gives a short penalty). Timing windows and boost levels live in the vehicle data file.
+- [ ] The wall and bump response is parameterised in `VehicleStats`, as a light scrape versus a hard impact by angle, plus a hit-slowdown profile (deceleration, duration, minimum speed), with values tuned by feel. The user's notes at `C:\rea\reverse-engineer\docs\design\01-veiculos-e-fisica.md` (sections 6.1, 7.1, 7.3) are a structural reference only; no values or assets are copied.
 
 ---
 
