@@ -107,6 +107,17 @@ It prints a `[net-summary]` line at the end of a race.
 | Network | RTT avg / max (client) | View delay host / client | Extrapolated frames host / client | Prediction error avg / max | Lead changes host / client |
 |---|---|---|---|---|---|
 | Tailscale, relayed, phone hotspot | 57 / 181 ms | 72 / 85 ms | 4.2% / 3.1% | 0.01 m / 0.19 m | 10 / 10 |
+| Same + fake 60 ms, 20 ms jitter, 2% loss **both ways** | 206 / 305 ms | 152 / 152 ms | 6.4% / 4.4% | 0.01 m / 0.33 m | 12 / 12 |
+
+**3 players over Tailscale, same day:**
+
+- **Players:** the host plus a second copy on this PC (joined via the Tailscale IP), plus the laptop
+  on the hotspot through the relay, plus 1 bot. The kart cap is 4.
+- **Result:** the host relays every peer's updates to the others. All three PCs logged 7 lead
+  changes.
+- **Numbers:** extrapolated frames were 5.7% host / 7.8% second copy / 7.1% laptop. The laptop's
+  RTT averaged 64 ms, and prediction error was at most 0.45 m. There were no errors.
+- **Logs:** `logs/*_ts2.csv` and `logs/*_ts3.csv`.
 
 - No firewall changes or port forwarding were needed on either PC.
 - Items hit in both directions (host 7 given, client 3 taken), and no errors were logged.
