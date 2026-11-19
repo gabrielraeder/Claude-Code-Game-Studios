@@ -1,0 +1,28 @@
+== [net-summary] lines ==
+role=client peer=1472363615 place=5 finish=26.39 karts=6 | rtt_avg=200ms rtt_max=221ms view_delay=155ms | snaps/s=145.8 | extrap=9.1% | pred_err avg=0.012m max=0.453m | lag=80 jitter=30 loss=5% | lead_changes=3 lead_seq=0>1>0>1 | kb_out/s=15.7 kb_in/s=15.8
+role=client peer=425892882 place=1 finish=26.26 karts=6 | rtt_avg=201ms rtt_max=228ms view_delay=148ms | snaps/s=145.6 | extrap=7.7% | pred_err avg=0.012m max=0.453m | lag=80 jitter=30 loss=5% | lead_changes=9 lead_seq=0>1>0>1>0>1>0>1>0>1 | kb_out/s=15.8 kb_in/s=15.8
+role=client peer=839364055 place=2 finish=26.31 karts=6 | rtt_avg=204ms rtt_max=228ms view_delay=146ms | snaps/s=145.6 | extrap=7.2% | pred_err avg=0.012m max=0.453m | lag=80 jitter=30 loss=5% | lead_changes=3 lead_seq=0>1>0>1 | kb_out/s=15.8 kb_in/s=15.8
+role=client peer=1346237818 place=3 finish=26.34 karts=6 | rtt_avg=202ms rtt_max=228ms view_delay=157ms | snaps/s=145.5 | extrap=6.6% | pred_err avg=0.012m max=0.453m | lag=80 jitter=30 loss=5% | lead_changes=3 lead_seq=0>1>0>1 | kb_out/s=15.8 kb_in/s=15.8
+role=client peer=1525763530 place=4 finish=26.37 karts=6 | rtt_avg=200ms rtt_max=228ms view_delay=150ms | snaps/s=145.8 | extrap=8.1% | pred_err avg=0.012m max=0.453m | lag=80 jitter=30 loss=5% | lead_changes=3 lead_seq=0>1>0>1 | kb_out/s=15.7 kb_in/s=15.8
+role=host peer=1 place=2 finish=26.27 karts=6 | rtt_avg=0ms rtt_max=0ms view_delay=142ms | snaps/s=145.6 | extrap=8.5% | pred_err avg=0.012m max=0.452m | lag=80 jitter=30 loss=5% | lead_changes=9 lead_seq=0>1>0>1>0>1>0>1>0>1 | kb_out/s=78.7 kb_in/s=78.5
+
+processes with a summary: 6
+extrap %      avg 7.867   max 9.100
+pred_err avg  avg 0.012 m   max-of-avgs 0.012 m
+pred_err max  worst 0.453 m
+rtt avg (ms)  avg 167.833   rtt max worst 228.000
+view delay ms avg 149.667   max 157.000
+snaps/s       avg 145.650
+kb_out/s      host 78.7   client avg 15.760
+kb_in/s       host 78.5   client avg 15.800
+
+== lead-change agreement ==
+      4 3 0>1>0>1
+      2 9 0>1>0>1>0>1>0>1>0>1
+(distinct 'lead_changes lead_seq' values above; one line = all processes agree)
+
+== finished places ==
+1 26.26;2 26.27;2 26.31;3 26.34;4 26.37;5 26.39;
+
+== errors / warnings in logs ==
+(count: 0)

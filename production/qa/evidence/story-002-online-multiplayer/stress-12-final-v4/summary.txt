@@ -1,0 +1,34 @@
+== [net-summary] lines ==
+role=client peer=62520591 place=2 finish=53.67 karts=12 | rtt_avg=6ms rtt_max=8ms view_delay=50ms | snaps/s=333.6 | extrap=0.0% | pred_err avg=0.011m max=0.508m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=36.7 kb_in/s=36.7
+role=client peer=827336549 place=5 finish=54.29 karts=12 | rtt_avg=6ms rtt_max=10ms view_delay=50ms | snaps/s=333.7 | extrap=0.0% | pred_err avg=0.011m max=0.508m | lag=0 jitter=0 loss=0% | lead_changes=0 lead_seq=0 | kb_out/s=36.7 kb_in/s=36.7
+role=client peer=1726133883 place=9 finish=54.88 karts=12 | rtt_avg=6ms rtt_max=11ms view_delay=50ms | snaps/s=333.7 | extrap=0.1% | pred_err avg=0.010m max=0.508m | lag=0 jitter=0 loss=0% | lead_changes=0 lead_seq=0 | kb_out/s=36.7 kb_in/s=36.7
+role=client peer=160207883 place=2 finish=53.96 karts=12 | rtt_avg=6ms rtt_max=8ms view_delay=50ms | snaps/s=333.7 | extrap=0.0% | pred_err avg=0.010m max=0.508m | lag=0 jitter=0 loss=0% | lead_changes=0 lead_seq=0 | kb_out/s=36.7 kb_in/s=36.7
+role=client peer=1817358075 place=10 finish=55.19 karts=12 | rtt_avg=6ms rtt_max=8ms view_delay=50ms | snaps/s=333.7 | extrap=0.0% | pred_err avg=0.011m max=0.508m | lag=0 jitter=0 loss=0% | lead_changes=0 lead_seq=0 | kb_out/s=36.7 kb_in/s=36.7
+role=client peer=977791686 place=8 finish=54.85 karts=12 | rtt_avg=6ms rtt_max=8ms view_delay=52ms | snaps/s=333.6 | extrap=3.8% | pred_err avg=0.011m max=0.508m | lag=0 jitter=0 loss=0% | lead_changes=0 lead_seq=0 | kb_out/s=36.7 kb_in/s=36.7
+role=client peer=220071841 place=3 finish=54.07 karts=12 | rtt_avg=6ms rtt_max=14ms view_delay=50ms | snaps/s=333.7 | extrap=1.2% | pred_err avg=0.011m max=0.508m | lag=0 jitter=0 loss=0% | lead_changes=0 lead_seq=0 | kb_out/s=36.7 kb_in/s=36.7
+role=client peer=505354997 place=4 finish=54.29 karts=12 | rtt_avg=6ms rtt_max=8ms view_delay=54ms | snaps/s=333.7 | extrap=4.4% | pred_err avg=0.010m max=0.470m | lag=0 jitter=0 loss=0% | lead_changes=0 lead_seq=0 | kb_out/s=36.7 kb_in/s=36.7
+role=client peer=969766504 place=7 finish=54.65 karts=12 | rtt_avg=6ms rtt_max=9ms view_delay=50ms | snaps/s=333.7 | extrap=0.0% | pred_err avg=0.011m max=0.508m | lag=0 jitter=0 loss=0% | lead_changes=0 lead_seq=0 | kb_out/s=36.7 kb_in/s=36.7
+role=client peer=2009187105 place=11 finish=55.20 karts=12 | rtt_avg=6ms rtt_max=9ms view_delay=50ms | snaps/s=333.7 | extrap=4.3% | pred_err avg=0.011m max=0.508m | lag=0 jitter=0 loss=0% | lead_changes=0 lead_seq=0 | kb_out/s=36.7 kb_in/s=36.7
+role=client peer=861632733 place=6 finish=54.55 karts=12 | rtt_avg=6ms rtt_max=9ms view_delay=52ms | snaps/s=333.7 | extrap=0.1% | pred_err avg=0.011m max=0.508m | lag=0 jitter=0 loss=0% | lead_changes=0 lead_seq=0 | kb_out/s=36.7 kb_in/s=36.7
+role=host peer=1 place=1 finish=53.67 karts=12 | rtt_avg=0ms rtt_max=0ms view_delay=50ms | snaps/s=333.6 | extrap=0.0% | pred_err avg=0.011m max=0.508m | lag=0 jitter=0 loss=0% | lead_changes=0 lead_seq=0 | kb_out/s=403.5 kb_in/s=403.1
+
+processes with a summary: 12
+extrap %      avg 1.158   max 4.400
+pred_err avg  avg 0.011 m   max-of-avgs 0.011 m
+pred_err max  worst 0.508 m
+rtt avg (ms)  avg 5.500   rtt max worst 14.000
+view delay ms avg 50.667   max 54.000
+snaps/s       avg 333.675
+kb_out/s      host 403.5   client avg 36.700
+kb_in/s       host 403.1   client avg 36.700
+
+== lead-change agreement ==
+     11 0 0
+      1 2 0>1>0
+(distinct 'lead_changes lead_seq' values above; one line = all processes agree)
+
+== finished places ==
+1 53.67;2 53.67;2 53.96;3 54.07;4 54.29;5 54.29;6 54.55;7 54.65;8 54.85;9 54.88;10 55.19;11 55.20;
+
+== errors / warnings in logs ==
+(count: 0)

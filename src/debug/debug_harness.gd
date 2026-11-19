@@ -94,7 +94,8 @@ func _on_race_finished(_total: float) -> void:
 	print("[debug] finished: laps %s boosts %s start_boost %d max_speed %.2f cap %.2f" % [
 		str(_laps.lap_times), str(_boosts), _start_level, _max_speed,
 		_sim.stats.max_speed * _sim.stats.boost_speed_mult])
-	if _options.quit_after_race:
+	# Online, Main quits once every human has finished, so no one is left racing alone.
+	if _options.quit_after_race and not _main.net_active:
 		get_tree().quit()
 
 

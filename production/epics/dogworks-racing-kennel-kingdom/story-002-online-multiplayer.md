@@ -1,13 +1,13 @@
 # Story 002: Online host/join for up to 12 racers
 
 > **Epic**: Dogworks Racing: Kennel Kingdom
-> **Status**: Ready
+> **Status**: In Progress
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: L
 > **Build step**: core
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: —
+> **Last Updated**: 2026-11-19
 
 ## Context
 
@@ -61,12 +61,25 @@
 
 ## Files
 
-- `src/net/` (host/join, state sync, clock sync, fake-network layer)
-- `src/race/` (ranking, race state)
-- `tools/` (headless multi-player stress-test script)
-- `production/qa/evidence/story-002-net-evidence.md`
-
----
+- `assets/data/net/net_config.tres`
+- `src/ai/bot_driver.gd`
+- `src/debug/debug_harness.gd`
+- `src/main.gd`
+- `src/main.tscn`
+- `src/net/kart_wire.gd`
+- `src/net/net_config.gd`
+- `src/net/net_options.gd`
+- `src/net/net_session.gd`
+- `src/net/net_stats.gd`
+- `src/net/remote_kart.gd`
+- `src/race/race_ranking.gd`
+- `src/race/racer.gd`
+- `src/test_track/lap_counter.gd`
+- `src/ui/pause_menu.gd`
+- `src/ui/race_hud.gd`
+- `tools/net_stress_summary.sh`
+- `tools/net_stress_test.sh`
+- `production/qa/evidence/story-002-online-multiplayer/` (two-human/ shots and logs; stress-12-final-v6/ = final 12-racer run; stress-6-lag80-final-v3/ = final fake-lag run; earlier stress-* dirs are superseded runs kept for the record)
 
 ## QA Test Cases
 

@@ -1,0 +1,27 @@
+== [net-summary] lines ==
+role=client peer=2036654610 place=5 finish=26.37 karts=6 | rtt_avg=200ms rtt_max=228ms view_delay=145ms | snaps/s=145.2 | extrap=7.2% | pred_err avg=0.012m max=0.526m | lag=80 jitter=30 loss=5% | lead_changes=0 lead_seq=0 | kb_out/s=15.6 kb_in/s=15.7
+role=client peer=767045357 place=3 finish=26.34 karts=6 | rtt_avg=203ms rtt_max=228ms view_delay=146ms | snaps/s=145.1 | extrap=6.4% | pred_err avg=0.012m max=0.526m | lag=80 jitter=30 loss=5% | lead_changes=0 lead_seq=0 | kb_out/s=15.6 kb_in/s=15.7
+role=client peer=97196488 place=1 finish=26.27 karts=6 | rtt_avg=202ms rtt_max=228ms view_delay=145ms | snaps/s=145.1 | extrap=7.2% | pred_err avg=0.012m max=0.508m | lag=80 jitter=30 loss=5% | lead_changes=0 lead_seq=0 | kb_out/s=15.7 kb_in/s=15.7
+role=client peer=1189252103 place=4 finish=26.39 karts=6 | rtt_avg=200ms rtt_max=221ms view_delay=154ms | snaps/s=144.9 | extrap=6.0% | pred_err avg=0.012m max=0.526m | lag=80 jitter=30 loss=5% | lead_changes=0 lead_seq=0 | kb_out/s=15.8 kb_in/s=15.7
+role=client peer=271992462 place=2 finish=26.31 karts=6 | rtt_avg=201ms rtt_max=227ms view_delay=154ms | snaps/s=145.1 | extrap=6.5% | pred_err avg=0.012m max=0.526m | lag=80 jitter=30 loss=5% | lead_changes=0 lead_seq=0 | kb_out/s=15.6 kb_in/s=15.7
+role=host peer=1 place=1 finish=26.27 karts=6 | rtt_avg=0ms rtt_max=0ms view_delay=145ms | snaps/s=144.6 | extrap=8.1% | pred_err avg=0.012m max=0.526m | lag=80 jitter=30 loss=5% | lead_changes=0 lead_seq=0 | kb_out/s=78.4 kb_in/s=78.0
+
+processes with a summary: 6
+extrap %      avg 6.900   max 8.100
+pred_err avg  avg 0.012 m   max-of-avgs 0.012 m
+pred_err max  worst 0.526 m
+rtt avg (ms)  avg 167.667   rtt max worst 228.000
+view delay ms avg 148.167   max 154.000
+snaps/s       avg 145.000
+kb_out/s      host 78.4   client avg 15.660
+kb_in/s       host 78.0   client avg 15.700
+
+== lead-change agreement ==
+      6 0 0
+(distinct 'lead_changes lead_seq' values above; one line = all processes agree)
+
+== finished places ==
+1 26.27;1 26.27;2 26.31;3 26.34;4 26.39;5 26.37;
+
+== errors / warnings in logs ==
+(count: 0)

@@ -1,9 +1,9 @@
 class_name PauseMenu
 extends CanvasLayer
-## Plain start / pause menu: Resume (or Start), Restart, Quit. Navigable with the keyboard,
-## the mouse and the controller through Godot's built-in ui_up, ui_down and ui_accept.
-## Implements story 001 "Menus are reachable and usable from the controller too".
-## Emits signals only; the owner decides what they do (no reference to game code).
+## Plain start / pause menu: Resume (or Start), Host, Join (with an IP field), Restart, Quit.
+## Navigable with the keyboard, the mouse and the controller through Godot's built-in
+## ui_up, ui_down and ui_accept. Host and Join show only on the start screen (story 002;
+## the real lobby screen is story 007). Emits signals only; the owner decides what they do.
 
 ## The player chose Resume / Start, or pressed the pause action while the menu was open.
 signal resume_requested
@@ -11,14 +11,24 @@ signal resume_requested
 signal restart_requested
 ## The player chose Quit.
 signal quit_requested
+## The player chose Host.
+signal host_requested
+## The player chose Join; [param address] is the text in the IP field.
+signal join_requested(address: String)
 
 const DIM_COLOR: Color = Color(0, 0, 0, 0.6)
 const TITLE_SIZE: int = 48
+const STATUS_SIZE: int = 22
 const BUTTON_MIN_SIZE: Vector2 = Vector2(260, 48)
 const MENU_LAYER: int = 10
+const DEFAULT_ADDRESS: String = "127.0.0.1"
 
 var _title: Label
+var _status: Label
 var _resume_button: Button
+var _host_button: Button
+var _ip_edit: LineEdit
+var _join_button: Button
 var _restart_button: Button
 var _quit_button: Button
 var _is_start_screen: bool = false
@@ -42,7 +52,23 @@ func _ready() -> void:
 	_title.add_theme_font_size_override("font_size", TITLE_SIZE)
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(_title)
+	_status = Label.new()
+	_status.add_theme_font_size_override("font_size", STATUS_SIZE)
+	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_status.visible = false
+	box.add_child(_status)
 	_resume_button = _make_button(box, "Resume", resume_requested)
+	_host_button = _make_button(box, "Host", host_requested)
+	_ip_edit = LineEdit.new()
+	_ip_edit.text = DEFAULT_ADDRESS
+	_ip_edit.placeholder_text = "Host IP (Tailscale 100.x or LAN)"
+	_ip_edit.custom_minimum_size = BUTTON_MIN_SIZE
+	box.add_child(_ip_edit)
+	_join_button = Button.new()
+	_join_button.text = "Join"
+	_join_button.custom_minimum_size = BUTTON_MIN_SIZE
+	_join_button.pressed.connect(func() -> void: join_requested.emit(_ip_edit.text.strip_edges()))
+	box.add_child(_join_button)
 	_restart_button = _make_button(box, "Restart", restart_requested)
 	_quit_button = _make_button(box, "Quit", quit_requested)
 	visible = false
@@ -54,11 +80,15 @@ func is_open() -> bool:
 
 
 ## Shows the menu. [param title] is the heading; [param start_screen] makes the first
-## button read "Start" and stops the pause action from closing it.
+## button read "Start", shows Host / Join and stops the pause action from closing it.
 func open(title: String, start_screen: bool) -> void:
 	_is_start_screen = start_screen
 	_title.text = title
 	_resume_button.text = "Start" if start_screen else "Resume"
+	_resume_button.visible = true
+	set_net_buttons_visible(start_screen)
+	_restart_button.visible = true
+	set_status("")
 	visible = true
 	_resume_button.grab_focus()
 
@@ -66,6 +96,34 @@ func open(title: String, start_screen: bool) -> void:
 ## Hides the menu.
 func close() -> void:
 	visible = false
+
+
+## Shows or hides Host, the IP field and Join.
+func set_net_buttons_visible(shown: bool) -> void:
+	_host_button.visible = shown
+	_ip_edit.visible = shown
+	_join_button.visible = shown
+
+
+## Sets the line under the title (hidden when empty).
+func set_status(text: String) -> void:
+	_status.text = text
+	_status.visible = text != ""
+
+
+## Relabels the first button and shows or hides it (the host's "Start race", hidden while joining).
+func set_primary_button(text: String, shown: bool) -> void:
+	_resume_button.text = text
+	_resume_button.visible = shown
+	if shown:
+		_resume_button.grab_focus()
+	else:
+		_quit_button.grab_focus()
+
+
+## Shows or hides the Restart button (restart is offline only).
+func set_restart_visible(shown: bool) -> void:
+	_restart_button.visible = shown
 
 
 func _unhandled_input(event: InputEvent) -> void:

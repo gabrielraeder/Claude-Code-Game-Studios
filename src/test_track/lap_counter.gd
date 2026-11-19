@@ -23,6 +23,8 @@ var max_lap: int = 0
 var lap_times: Array[float] = []
 var lap_start_time: float = 0.0
 var is_finished: bool = false
+## Race clock time (from GO) when the last lap was completed; the finish order uses this.
+var finish_race_time: float = 0.0
 
 var _last_s: float = 0.0
 
@@ -39,6 +41,7 @@ func reset(start_s: float) -> void:
 	lap_times.clear()
 	lap_start_time = 0.0
 	is_finished = false
+	finish_race_time = 0.0
 	_last_s = start_s
 
 
@@ -80,6 +83,7 @@ func _reached_new_lap(race_time: float) -> void:
 	lap_start_time = race_time
 	if lap > lap_target:
 		is_finished = true
+		finish_race_time = race_time
 		finished.emit(total_time())
 	else:
 		lap_started.emit(lap)

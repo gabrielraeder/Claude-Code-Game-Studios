@@ -22,9 +22,64 @@ var _big: Label
 var _help: Label
 var _bar_bg: ColorRect
 var _bar: ColorRect
+var _place: Label
+var _net_info: Label
+var _banner: String = ""
+var _lobby: bool = false
+
+
+## Text shown in the middle of the screen instead of the usual one (empty = none), for
+## lobby and connection messages.
+func set_banner(text: String) -> void:
+	_banner = text
+
+
+## While true only the banner is shown (no countdown number); used while waiting in a lobby.
+func set_lobby(lobby: bool) -> void:
+	_lobby = lobby
+
+
+## Shows the place display ("1st/12") at the top right; [param total] 0 hides it.
+func show_place(place: int, total: int) -> void:
+	_place.text = format_place(place, total) if total > 0 else ""
+
+
+## Small network status line at the bottom right (empty hides it).
+func set_net_info(text: String) -> void:
+	_net_info.text = text
+
+
+## "1st/12" style text for [param place] of [param total].
+static func format_place(place: int, total: int) -> String:
+	var suffix: String = "th"
+	if place % 100 < 11 or place % 100 > 13:
+		match place % 10:
+			1:
+				suffix = "st"
+			2:
+				suffix = "nd"
+			3:
+				suffix = "rd"
+	return "%d%s/%d" % [place, suffix, total]
 
 
 func _ready() -> void:
+	_place = _label(0.0, 0.0, CENTER_SIZE)
+	_place.anchor_left = 1.0
+	_place.anchor_right = 1.0
+	_place.offset_left = -300
+	_place.offset_right = -MARGIN
+	_place.offset_top = 16
+	_place.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_net_info = _label(0.0, 0.0, HELP_SIZE)
+	_net_info.anchor_left = 1.0
+	_net_info.anchor_right = 1.0
+	_net_info.anchor_top = 1.0
+	_net_info.anchor_bottom = 1.0
+	_net_info.offset_left = -400
+	_net_info.offset_right = -MARGIN
+	_net_info.offset_top = -40
+	_net_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_info = _label(MARGIN, 16.0, TEXT_SIZE)
 	_center = _label(0.0, 0.0, CENTER_SIZE)
 	_center.anchor_left = 0.5
@@ -60,7 +115,9 @@ func _ready() -> void:
 
 
 ## Refreshes every element for this frame.
-func refresh(sim: KartSim, laps: LapCounter, race_time: float, start: StartSequence) -> void:
+## [param allow_restart] is false online, where the finish panel has no restart prompt.
+func refresh(sim: KartSim, laps: LapCounter, race_time: float, start: StartSequence,
+		allow_restart: bool = true) -> void:
 	var lap_shown: int = clampi(laps.lap, 1, laps.lap_target)
 	var current: float = race_time - laps.lap_start_time if laps.lap >= 1 and not laps.is_finished else -1.0
 	var lines: Array[String] = []
@@ -83,7 +140,8 @@ func refresh(sim: KartSim, laps: LapCounter, race_time: float, start: StartSeque
 		var out: Array[String] = ["FINISHED", "Total %s" % format_time(laps.total_time())]
 		for i in laps.lap_times.size():
 			out.append("Lap %d  %s" % [i + 1, format_time(laps.lap_times[i])])
-		out.append("Press Start / A / Enter to restart")
+		if allow_restart:
+			out.append("Press Start / A / Enter to restart")
 		_center.text = "\n".join(out)
 	elif sim.spin_time > 0.0:
 		_center.text = "SPUN OUT!"
@@ -91,11 +149,15 @@ func refresh(sim: KartSim, laps: LapCounter, race_time: float, start: StartSeque
 		_center.text = _start_message(sim, start)
 	_big.text = ""
 	_big.add_theme_color_override("font_color", Color.WHITE)
-	if start.is_counting():
+	if _lobby:
+		pass
+	elif start.is_counting():
 		_big.text = str(start.display_number())
 	elif start.since_go < sim.stats.start_message_time:
 		_big.text = "GO!"
 		_big.add_theme_color_override("font_color", GO_COLOR)
+	if _banner != "":
+		_center.text = _banner
 
 
 func _start_message(sim: KartSim, start: StartSequence) -> String:
