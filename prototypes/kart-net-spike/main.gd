@@ -223,13 +223,19 @@ func _send(fn: Callable, reliable: bool) -> void:
 		return
 	var delay := lag_ms + (randf() * jitter_ms if jitter_ms > 0.0 else 0.0)
 	if delay <= 0.0:
-		fn.call()
+		_call_if_connected(fn)
 		return
 	var at := Time.get_ticks_msec() + int(delay)
 	if reliable:
 		at = maxi(at, last_reliable_at)   # reliable stays in order even with jitter
 		last_reliable_at = at
 	send_queue.append({"at": at, "fn": fn})
+
+
+func _call_if_connected(fn: Callable) -> void:
+	var mp := multiplayer.multiplayer_peer
+	if mp != null and mp.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
+		fn.call()
 
 
 func _flush_send_queue() -> void:
@@ -239,9 +245,7 @@ func _flush_send_queue() -> void:
 		if send_queue[i].at <= now:
 			var fn: Callable = send_queue[i].fn
 			send_queue.remove_at(i)
-			var mp := multiplayer.multiplayer_peer
-			if mp != null and mp.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
-				fn.call()
+			_call_if_connected(fn)
 		else:
 			i += 1
 

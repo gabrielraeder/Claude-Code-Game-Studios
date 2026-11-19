@@ -4,7 +4,7 @@
 
 # Kart racer: prototype 2 (online test)
 
-**Status:** in progress. Works with two copies of the game on one PC. The test on two real PCs is next.
+**Status:** concluded for the technical question. Verdict: **PROCEED** on 2026-11-19. The feel test with two humans is still open.
 
 ## Question
 
@@ -78,9 +78,39 @@ It prints a `[net-summary]` line at the end of a race.
     the shown position flickered.
 - **The test harness waits for every human to finish** before closing.
 
-**Not measured yet:** two real PCs on a real network, and how it *feels* with a human driving each
-kart.
+**Two real PCs, 2026-11-19:**
+
+- **Machines:** this PC hosts, with a window. The laptop (`Work_laptop`) joins over home Wi-Fi/LAN,
+  headless with the autopilot, started over SSH.
+- **Race:** 2 players + 2 bots.
+- **Logs:** `logs/host_lan*.csv` and `logs/client_lan*.csv`.
+
+| Network | RTT avg (client) | View delay host / client | Extrapolated frames host / client | Prediction error avg / max | Lead changes host / client |
+|---|---|---|---|---|---|
+| Real LAN, no fake lag | 14 ms | 50 / 63 ms | 1.6% / 1.5% | 0.01 m / 0.29 m | 7 / 7 |
+| Real LAN + fake internet **both ways** (80 ms, 30 ms jitter, 3% loss each side) | 216 ms | 146 / 166 ms | 6.4% / 7.1% | 0.01 m / 0.40 m | 9 / 9 |
+
+- Items hit in both directions in both runs, and no errors were logged.
+- The host's RTT column shows ENet's real round trip (about 20 ms). It does not include the fake
+  delay, which is added inside the game.
 
 ## Findings
 
-_To be filled after the two-PC test._
+- **Verdict: PROCEED.** Peer-hosted, owner-authoritative online play holds up technically:
+  - Two real PCs agree on the race.
+  - Remote karts are drawn from real data at least 93% of the time, even at about 216 ms round trip.
+  - Corrections average about 1 cm, at most 40 cm.
+- **Carry into the production design:**
+  - Each PC owns and simulates its own karts. Remote karts are interpolated.
+  - The **view delay adapts** to the measured lateness plus jitter.
+  - **The victim decides item hits.**
+  - **Remote progress is projected to "now" before ranking.** Without this, the shown positions
+    flicker. This was found in testing.
+  - The race clock syncs to the host's clock through ping/pong.
+- **Still open:**
+  - **Feel:** two humans driving. Does a 150 ms view delay make bumping and item aim feel unfair?
+  - **The real internet**, through Tailscale/ZeroTier or Steam relay. NAT traversal is unproven.
+    Only LAN plus fake lag was tested.
+  - **Cheating:** owner-authoritative trusts each client. That's fine for friends, but not for
+    strangers.
+  - **Host migration** when the host leaves.
