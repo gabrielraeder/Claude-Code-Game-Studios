@@ -7,6 +7,8 @@ extends CanvasLayer
 const TEXT_SIZE: int = 24
 const CENTER_SIZE: int = 40
 const HELP_SIZE: int = 17
+const COUNTDOWN_SIZE: int = 110
+const GO_COLOR: Color = Color(0.4, 1.0, 0.4)
 const MARGIN: float = 20.0
 const BAR_SIZE: Vector2 = Vector2(300, 18)
 const BAR_POSITION: Vector2 = Vector2(20, 100)
@@ -16,6 +18,7 @@ const MS_TO_KMH: float = 3.6
 
 var _info: Label
 var _center: Label
+var _big: Label
 var _help: Label
 var _bar_bg: ColorRect
 var _bar: ColorRect
@@ -30,6 +33,13 @@ func _ready() -> void:
 	_center.offset_left = -500
 	_center.offset_right = 500
 	_center.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_big = _label(0.0, 0.0, COUNTDOWN_SIZE)
+	_big.anchor_left = 0.5
+	_big.anchor_right = 0.5
+	_big.anchor_top = 0.08
+	_big.offset_left = -500
+	_big.offset_right = 500
+	_big.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_help = _label(0.0, 0.0, HELP_SIZE)
 	_help.anchor_top = 1.0
 	_help.anchor_bottom = 1.0
@@ -37,7 +47,7 @@ func _ready() -> void:
 	_help.offset_top = -100
 	_help.text = "W/S or RT/LT  drive / brake      A/D or left stick  steer\n"
 	_help.text += "Space/Shift or RB  hold to drift (steer into the turn)\n"
-	_help.text += "R  restart      Esc or Start  pause"
+	_help.text += "Esc or Start  pause (Restart is in the pause menu)"
 	_bar_bg = ColorRect.new()
 	_bar_bg.color = BAR_BG_COLOR
 	_bar_bg.position = BAR_POSITION
@@ -50,7 +60,7 @@ func _ready() -> void:
 
 
 ## Refreshes every element for this frame.
-func refresh(sim: KartSim, laps: LapCounter, race_time: float) -> void:
+func refresh(sim: KartSim, laps: LapCounter, race_time: float, start: StartSequence) -> void:
 	var lap_shown: int = clampi(laps.lap, 1, laps.lap_target)
 	var current: float = race_time - laps.lap_start_time if laps.lap >= 1 and not laps.is_finished else -1.0
 	var lines: Array[String] = []
@@ -73,12 +83,34 @@ func refresh(sim: KartSim, laps: LapCounter, race_time: float) -> void:
 		var out: Array[String] = ["FINISHED", "Total %s" % format_time(laps.total_time())]
 		for i in laps.lap_times.size():
 			out.append("Lap %d  %s" % [i + 1, format_time(laps.lap_times[i])])
-		out.append("Press R or Start to restart")
+		out.append("Press Start / A / Enter to restart")
 		_center.text = "\n".join(out)
 	elif sim.spin_time > 0.0:
 		_center.text = "SPUN OUT!"
 	else:
-		_center.text = ""
+		_center.text = _start_message(sim, start)
+	_big.text = ""
+	_big.add_theme_color_override("font_color", Color.WHITE)
+	if start.is_counting():
+		_big.text = str(start.display_number())
+	elif start.since_go < sim.stats.start_message_time:
+		_big.text = "GO!"
+		_big.add_theme_color_override("font_color", GO_COLOR)
+
+
+func _start_message(sim: KartSim, start: StartSequence) -> String:
+	if start.is_counting() or start.since_go >= sim.stats.start_message_time:
+		return ""
+	if start.stalled:
+		return "TOO EARLY!"
+	match start.level:
+		3:
+			return "PERFECT START!"
+		2:
+			return "GOOD START!"
+		1:
+			return "OK START"
+	return ""
 
 
 ## Formats seconds as m:ss.cc, or --:--.-- for a negative (unknown) time.

@@ -24,6 +24,13 @@ var _laps: LapCounter
 var _camera: ChaseCamera
 var _hud: RaceHud
 var _menu: PauseMenu
+var _start: StartSequence = StartSequence.new()
+
+
+## The 3-2-1 countdown and start result (read by the HUD and the debug harness).
+var start_sequence: StartSequence:
+	get:
+		return _start
 
 
 func _ready() -> void:
@@ -71,27 +78,36 @@ func menu_is_open() -> bool:
 
 
 func _physics_process(dt: float) -> void:
+	_driver.time_to_go = _start.time_to_go if _start.is_counting() else 0.0
 	_driver.drive(_input, _sim, _track, dt)
 	if _laps.is_finished:
 		_input.clear()
+	if _start.is_counting():
+		# The kart is held during the countdown; only whether accelerate is down matters.
+		var held: bool = _input.throttle > 0.0
+		_input.clear()
+		if not _start.update(dt, held):
+			_sim.tick(dt, _input, _track)
+			return
+		_sim.apply_start(_start.level, _start.stalled)
+	else:
+		_start.update(dt, false)
 	_sim.tick(dt, _input, _track)
 	race_time += dt
 	_laps.update(_sim.track_s, race_time)
 
 
 func _process(_delta: float) -> void:
-	_hud.refresh(_sim, _laps, race_time)
+	_hud.refresh(_sim, _laps, race_time, _start)
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed(InputActions.RESTART):
+	if _laps.is_finished and (event.is_action_pressed(InputActions.RESTART) \
+			or event.is_action_pressed(&"ui_accept")):
+		# Finish screen: Start / A / Enter restarts. No restart key during a race.
 		_restart()
 	elif event.is_action_pressed(InputActions.PAUSE):
-		# Start / Esc: on the finish screen it restarts, otherwise it opens the pause menu.
-		if _laps.is_finished:
-			_restart()
-		else:
-			_open_menu("Paused", false)
+		_open_menu("Paused", false)
 
 
 func _open_menu(title: String, start_screen: bool) -> void:
@@ -116,6 +132,7 @@ func _reset_race() -> void:
 	_laps.reset(_sim.track_s)
 	_input.clear()
 	race_time = 0.0
+	_start.begin(vehicle_stats)
 
 
 func _build_environment() -> void:

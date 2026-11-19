@@ -24,6 +24,9 @@ var _menu_shot_done: bool = false
 var _logged: bool = false
 var _ticks: int = 0
 var _tier_shots: Array[bool] = [false, false, false]
+var _countdown_shot_done: bool = false
+var _go_shot_done: bool = false
+var _start_level: int = 0
 
 
 ## Attaches to the running game. [param main] must expose the properties and the
@@ -49,6 +52,7 @@ func _on_drift_ended(tier: int, _boost_seconds: float) -> void:
 
 func _physics_process(_dt: float) -> void:
 	_max_speed = maxf(_max_speed, absf(_sim.speed))
+	_start_level = maxi(_start_level, _sim.start_boost_level)
 	_ticks += 1
 	if _options.verbose and _ticks % VERBOSE_EVERY_TICKS == 0:
 		print("[debug] t=%.1f lap=%d s=%.0f lat=%.1f speed=%.1f drift=%s tier=%d boosts=%s" % [
@@ -66,6 +70,13 @@ func _process(delta: float) -> void:
 	if not _menu_shot_done and _main.menu_is_open() and _real_time >= MENU_SHOT_DELAY:
 		_menu_shot_done = true
 		_save_shot("menu")
+	var start: StartSequence = _main.start_sequence
+	if not _countdown_shot_done and start.is_counting() and start.time_to_go <= 1.9 and not _main.menu_is_open():
+		_countdown_shot_done = true
+		_save_shot("countdown")
+	if not _go_shot_done and not start.is_counting() and start.since_go >= 0.3:
+		_go_shot_done = true
+		_save_shot("start_go")
 	if _sim.drifting and _sim.drift_tier > 0 and not _tier_shots[_sim.drift_tier - 1]:
 		_tier_shots[_sim.drift_tier - 1] = true
 		_save_shot("spark_tier%d" % _sim.drift_tier)
@@ -80,8 +91,8 @@ func _on_race_finished(_total: float) -> void:
 		await get_tree().create_timer(0.5).timeout
 		_save_shot("finish")
 	_write_log()
-	print("[debug] finished: laps %s boosts %s max_speed %.2f cap %.2f" % [
-		str(_laps.lap_times), str(_boosts), _max_speed,
+	print("[debug] finished: laps %s boosts %s start_boost %d max_speed %.2f cap %.2f" % [
+		str(_laps.lap_times), str(_boosts), _start_level, _max_speed,
 		_sim.stats.max_speed * _sim.stats.boost_speed_mult])
 	if _options.quit_after_race:
 		get_tree().quit()
@@ -101,11 +112,11 @@ func _write_log() -> void:
 	if f == null:
 		printerr("[debug] cannot open log ", _options.log_path)
 		return
-	f.store_line("lap1,lap2,lap3,total,boost_blue,boost_orange,boost_purple,max_speed,speed_cap_with_boost")
+	f.store_line("lap1,lap2,lap3,total,boost_blue,boost_orange,boost_purple,start_boost_level,max_speed,speed_cap_with_boost")
 	var laps: Array[String] = []
 	for i in _laps.lap_target:
 		laps.append("%.2f" % (_laps.lap_times[i] if i < _laps.lap_times.size() else -1.0))
-	f.store_line("%s,%.2f,%d,%d,%d,%.2f,%.2f" % [",".join(laps), _laps.total_time(),
-		_boosts[0], _boosts[1], _boosts[2], _max_speed,
+	f.store_line("%s,%.2f,%d,%d,%d,%d,%.2f,%.2f" % [",".join(laps), _laps.total_time(),
+		_boosts[0], _boosts[1], _boosts[2], _start_level, _max_speed,
 		_sim.stats.max_speed * _sim.stats.boost_speed_mult])
 	f.close()

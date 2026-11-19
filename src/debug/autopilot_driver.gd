@@ -36,7 +36,8 @@ func drive(input: KartInput, sim: KartSim, track: TrackModel, _dt: float) -> voi
 	# Positive = the track bends left ahead.
 	var turn: float = -near_t.angle_to(far_t)
 
-	input.throttle = 1.0
+	# During the countdown press accelerate inside the perfect start window only.
+	input.throttle = 1.0 if time_to_go <= sim.stats.start_perfect_window * 0.5 else 0.0
 	input.brake = 0.0
 	input.steer = clampf(diff * STEER_GAIN, -1.0, 1.0)
 

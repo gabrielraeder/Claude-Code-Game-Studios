@@ -26,7 +26,8 @@ static func register() -> void:
 	_action(STEER_RIGHT, [KEY_D, KEY_RIGHT], [], [[JOY_AXIS_LEFT_X, 1.0]])
 	_action(DRIFT, [KEY_SPACE, KEY_SHIFT], [JOY_BUTTON_RIGHT_SHOULDER], [])
 	_action(ITEM, [KEY_E, KEY_CTRL], [JOY_BUTTON_LEFT_SHOULDER], [])
-	_action(RESTART, [KEY_R], [], [])
+	# Restart on the finish screen only (main checks); no keyboard key. Enter/A use ui_accept.
+	_action(RESTART, [], [JOY_BUTTON_START], [])
 	_action(PAUSE, [KEY_ESCAPE], [JOY_BUTTON_START], [])
 	_add_button(&"ui_accept", JOY_BUTTON_A)
 	_add_button(&"ui_cancel", JOY_BUTTON_B)

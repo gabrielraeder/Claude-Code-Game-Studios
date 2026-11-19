@@ -33,6 +33,18 @@ var drift_time: float = 0.0
 var drift_tier: int = 0
 var boost_time: float = 0.0
 var spin_time: float = 0.0
+## Seconds left in which the throttle is dead (too-early start). Brake still works.
+var stall_time: float = 0.0
+## Start boost level applied at GO, 0..3 (for logs and the HUD).
+var start_boost_level: int = 0
+## Seconds of hit immunity left (exposed for story 004; nothing sets it yet).
+var hit_immunity_time: float = 0.0
+## Last steering input, -1..1 (left positive); read by the visual for the drift pose.
+var last_steer: float = 0.0
+## Longitudinal acceleration in m/s^2 over the last tick (visual lean).
+var accel_long: float = 0.0
+## Lateral (centripetal) acceleration in m/s^2, positive when turning left (visual lean).
+var accel_lat: float = 0.0
 
 ## Distance along the centerline, from the last track query.
 var track_s: float = 0.0
@@ -43,6 +55,10 @@ var _prev_position: Vector2 = Vector2.ZERO
 var _prev_yaw: float = 0.0
 var _segment_hint: int = -1
 var _wall_cooldown: float = 0.0
+var _wall_slide_time: float = 0.0
+var _turnback_rate: float = 0.0
+var _slow_time: float = 0.0
+var _slow_profile: HitSlowdownProfile
 
 
 func _init(vehicle_stats: VehicleStats) -> void:
@@ -64,6 +80,16 @@ func reset_to(track: TrackModel, distance: float, lateral_offset: float) -> void
 	boost_time = 0.0
 	spin_time = 0.0
 	_wall_cooldown = 0.0
+	_wall_slide_time = 0.0
+	_turnback_rate = 0.0
+	_slow_time = 0.0
+	_slow_profile = null
+	stall_time = 0.0
+	start_boost_level = 0
+	hit_immunity_time = 0.0
+	last_steer = 0.0
+	accel_long = 0.0
+	accel_lat = 0.0
 	var q: TrackModel.Query = track.query(position, -1)
 	_segment_hint = q.segment
 	track_s = q.s
@@ -107,13 +133,45 @@ func hit() -> bool:
 	return true
 
 
+## Applies the start result decided at GO: a start boost of [param level] (1..3, 0 = none)
+## using stats.start_boost_times, or a throttle stall when [param stalled].
+func apply_start(level: int, stalled: bool) -> void:
+	start_boost_level = level
+	if level > 0 and level < stats.start_boost_times.size():
+		boost_time = maxf(boost_time, stats.start_boost_times[level])
+	if stalled:
+		stall_time = stats.start_stall_time
+
+
+## Starts a hit slowdown with profile [param profile_index] (0 light, 1 medium, 2 heavy):
+## decelerates at the profile's rate for its duration, never below its minimum speed.
+## Unused until story 004 (items). Out-of-range indices are ignored.
+func apply_hit_slowdown(profile_index: int) -> void:
+	if profile_index < 0 or profile_index >= stats.hit_slowdown_profiles.size():
+		return
+	_slow_profile = stats.hit_slowdown_profiles[profile_index]
+	_slow_time = _slow_profile.duration
+
+
+## Starts the post-hit immunity timer (stats.hit_immunity_time). Nothing calls it yet.
+func start_hit_immunity() -> void:
+	hit_immunity_time = stats.hit_immunity_time
+
+
+## True while hit immunity is running.
+func is_hit_immune() -> bool:
+	return hit_immunity_time > 0.0
+
+
 ## Advances the simulation by [param dt] seconds using [param input] on [param track].
 func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 	_prev_position = position
 	_prev_yaw = yaw
 	var control: bool = can_drive()
 	var steer: float = input.steer if control else 0.0
-	var throttle: float = input.throttle if control else 0.0
+	var throttle: float = input.throttle if control and stall_time <= 0.0 else 0.0
+	last_steer = steer
+	var speed_before: float = speed
 	var brake: float = input.brake if control else 0.0
 
 	# Drift: hold the button while steering at speed. The direction locks in.
@@ -139,8 +197,12 @@ func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 		var damp: float = 1.0 - stats.high_speed_steer_damp * clampf(speed / stats.max_speed, 0.0, 1.0)
 		yaw_rate = steer * stats.turn_rate * low_speed * damp * (1.0 if speed >= 0.0 else -1.0)
 	yaw += yaw_rate * dt
+	accel_long = (speed - speed_before) / dt if dt > 0.0 else 0.0
+	accel_lat = yaw_rate * speed
 
 	var grip: float = stats.drift_grip if drifting else stats.grip
+	if _wall_slide_time > 0.0:
+		grip = minf(grip, stats.wall_slide_grip)
 	velocity = velocity.lerp(forward() * speed, clampf(grip * dt, 0.0, 1.0))
 	position += velocity * dt
 
@@ -155,6 +217,9 @@ func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 	boost_time = maxf(0.0, boost_time - dt)
 	spin_time = maxf(0.0, spin_time - dt)
 	_wall_cooldown = maxf(0.0, _wall_cooldown - dt)
+	_wall_slide_time = maxf(0.0, _wall_slide_time - dt)
+	stall_time = maxf(0.0, stall_time - dt)
+	hit_immunity_time = maxf(0.0, hit_immunity_time - dt)
 	_constrain_to_track(dt, track)
 
 
@@ -178,6 +243,11 @@ func _update_speed(dt: float, throttle: float, brake: float) -> void:
 	speed = maxf(speed, -stats.reverse_max)
 	if spin_time > 0.0:
 		speed *= exp(-stats.spin_drag * dt)
+	if _slow_time > 0.0 and _slow_profile != null:
+		var floor_speed: float = _slow_profile.min_speed_frac * stats.max_speed
+		if speed > floor_speed:
+			speed = maxf(speed - _slow_profile.decel_frac * stats.max_speed * dt, floor_speed)
+		_slow_time = maxf(0.0, _slow_time - dt)
 
 
 func _end_drift(pay_boost: bool) -> void:
@@ -201,16 +271,44 @@ func _constrain_to_track(dt: float, track: TrackModel) -> void:
 	lateral = q.lateral
 	track_s = q.s
 	var limit: float = track.wall_offset - stats.radius
+	var touching: bool = false
 	if absf(lateral) > limit:
 		var outward: Vector2 = q.normal * signf(lateral)
 		position -= outward * (absf(lateral) - limit)
 		var into_wall: float = velocity.dot(outward)
 		if into_wall > 0.0:
+			touching = true
+			var angle: float = rad_to_deg(asin(clampf(into_wall / maxf(velocity.length(), 0.001), 0.0, 1.0)))
 			velocity -= outward * into_wall * stats.bump_knockback
-			if into_wall > stats.wall_hard_hit_speed and _wall_cooldown <= 0.0:
-				speed *= stats.wall_hard_hit_speed_keep
-				_wall_cooldown = stats.wall_hit_cooldown
-				wall_bumped.emit(true)
-			else:
-				speed *= 1.0 - stats.wall_scrape_drag * dt
-				wall_bumped.emit(false)
+			_wall_contact(angle, dt)
+	if (touching or _wall_slide_time > 0.0) and _turnback_rate > 0.0 and speed > 0.0:
+		# The wall turns the kart back toward the track direction.
+		var t: Vector2 = track.tangent_at(q.s)
+		var want: float = atan2(-t.x, -t.y)
+		var step: float = _turnback_rate * dt
+		yaw += clampf(wrapf(want - yaw, -PI, PI), -step, step)
+	elif not touching:
+		_turnback_rate = 0.0
+
+
+## Wall response by angle of incidence: scrape (friction x multiplier), or impact (speed
+## loss scaled by angle, slide, cooldown). See VehicleStats wall_* fields.
+func _wall_contact(angle: float, dt: float) -> void:
+	var impact: bool = angle >= stats.wall_impact_threshold_angle and _wall_cooldown <= 0.0
+	_turnback_rate = deg_to_rad(lerpf(stats.wall_turnback_min_rate, stats.wall_turnback_max_rate,
+			clampf(angle / stats.wall_impact_max_angle, 0.0, 1.0)))
+	if impact:
+		var t: float = clampf(inverse_lerp(stats.wall_impact_min_angle, stats.wall_impact_max_angle, angle), 0.0, 1.0)
+		speed *= 1.0 - stats.wall_impact_max_speed_loss * t
+		_wall_slide_time = stats.wall_impact_slide_time
+		_wall_cooldown = stats.wall_hit_cooldown
+		wall_bumped.emit(true)
+		return
+	var mult: float = 1.0
+	if angle >= stats.wall_scrape_min_angle and angle <= stats.wall_scrape_max_angle:
+		var fade: float = 0.0
+		if angle > stats.wall_impact_threshold_angle:
+			fade = inverse_lerp(stats.wall_impact_threshold_angle, stats.wall_scrape_max_angle, angle)
+		mult = lerpf(stats.wall_scrape_friction_mult, 1.0, clampf(fade, 0.0, 1.0))
+	speed *= 1.0 - stats.wall_friction_drag * mult * dt
+	wall_bumped.emit(false)

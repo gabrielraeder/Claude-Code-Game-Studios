@@ -97,14 +97,17 @@
 - `src/test_track/track_model.gd`
 - `src/ui/pause_menu.gd`
 - `src/ui/race_hud.gd`
+- `src/vehicle/hit_slowdown_profile.gd`
 - `src/vehicle/kart_driver.gd`
 - `src/vehicle/kart_input.gd`
 - `src/vehicle/kart_sim.gd`
 - `src/vehicle/kart_visual.gd`
+- `src/vehicle/start_sequence.gd`
 - `src/vehicle/vehicle_stats.gd`
+- `src/vehicle/vehicle_visual_stats.gd`
 - `assets/data/vehicles/armored_cart.tres`
 - `project.godot` (name + main scene; approved deviation)
-- `production/qa/evidence/story-001-driving-and-drift/` (screenshots, run CSVs, stamp.txt)
+- `production/qa/evidence/story-001-driving-and-drift/` (round 1 and round2/ screenshots, run CSVs, stamp.txt)
 
 ## QA Test Cases
 

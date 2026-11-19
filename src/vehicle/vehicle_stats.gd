@@ -61,6 +61,22 @@ extends Resource
 ## While boosting, acceleration is accel times this.
 @export var boost_accel_mult: float = 3.0
 
+@export_group("Start")
+## Seconds of the 3-2-1 countdown before GO.
+@export var start_countdown_time: float = 3.0
+## Accelerate last pressed this many seconds or less before GO = perfect start (level 3).
+@export var start_perfect_window: float = 0.15
+## ... good start (level 2).
+@export var start_good_window: float = 0.35
+## ... ok start (level 1). Pressed (and held) earlier than this = stall.
+@export var start_ok_window: float = 0.6
+## Seconds the throttle is dead after a too-early start.
+@export var start_stall_time: float = 1.0
+## Start boost seconds by level; index 0 is "no boost", then levels 1, 2, 3.
+@export var start_boost_times: PackedFloat32Array = PackedFloat32Array([0.0, 1.4, 1.7, 2.0])
+## Seconds the GO! and start result messages stay on screen.
+@export var start_message_time: float = 1.5
+
 @export_group("Collision")
 ## Seconds the vehicle spins out and cannot be driven after a hit.
 @export var spin_time: float = 1.1
@@ -68,16 +84,36 @@ extends Resource
 @export var spin_drag: float = 2.5
 ## Collision radius in meters.
 @export var radius: float = 1.0
-## Wall bump: the velocity component into the wall is reversed times this (1 = dead stop, 2 = perfect bounce).
+## Wall knock-back: the velocity component into the wall is reversed times this (1 = dead stop, 2 = perfect bounce).
 @export var bump_knockback: float = 1.4
-## Wall impacts faster than this (m/s into the wall) cost speed.
-@export var wall_hard_hit_speed: float = 5.0
-## Speed multiplier kept after a hard wall impact.
-@export var wall_hard_hit_speed_keep: float = 0.7
-## Seconds before another hard wall impact can cost speed.
+## Seconds before another wall impact can cost speed.
 @export var wall_hit_cooldown: float = 0.5
-## Speed lost per second (fraction) while scraping a wall.
-@export var wall_scrape_drag: float = 0.8
+## Speed lost per second (fraction) while touching a wall, before the scrape multiplier.
+@export var wall_friction_drag: float = 0.8
+## Angle of incidence (degrees, 0 = parallel to the wall) range of a scrape.
+@export var wall_scrape_min_angle: float = 10.0
+@export var wall_scrape_max_angle: float = 40.0
+## Wall friction multiplier while scraping.
+@export var wall_scrape_friction_mult: float = 0.45
+## From this angle up a contact is an impact; below it (and above the scrape minimum) a scrape.
+## The scrape multiplier fades back to 1 between this angle and wall_scrape_max_angle.
+@export var wall_impact_threshold_angle: float = 25.0
+## Impact angle range (degrees); the speed loss scales from 0 at the min to the max loss at the max.
+@export var wall_impact_min_angle: float = 15.0
+@export var wall_impact_max_angle: float = 85.0
+## Largest share of speed an impact removes (at wall_impact_max_angle).
+@export var wall_impact_max_speed_loss: float = 0.6
+## Seconds the kart slides (low grip) after an impact.
+@export var wall_impact_slide_time: float = 0.25
+## Grip (1/s) during that slide.
+@export var wall_slide_grip: float = 2.2
+## The wall turns the kart back toward the track at this rate range (degrees/s), by angle.
+@export var wall_turnback_min_rate: float = 30.0
+@export var wall_turnback_max_rate: float = 90.0
+## Light / medium / heavy hit-slowdown profiles (index 0, 1, 2).
+@export var hit_slowdown_profiles: Array[HitSlowdownProfile] = []
+## Seconds of immunity after a hit (applied by the item system in story 004).
+@export var hit_immunity_time: float = 0.6
 
 @export_group("Look")
 ## Body paint color.
@@ -85,3 +121,7 @@ extends Resource
 ## Spark colors while drifting: index 0 before tier 1, then tiers 1, 2, 3.
 @export var spark_colors: PackedColorArray = PackedColorArray([
 	Color(1, 1, 1, 0.6), Color(0.3, 0.7, 1.0), Color(1.0, 0.6, 0.1), Color(0.8, 0.3, 1.0)])
+
+@export_group("Visual")
+## Presentation numbers (model, drift pose, lean, flame, sparks, chase camera).
+@export var visual: VehicleVisualStats = VehicleVisualStats.new()
