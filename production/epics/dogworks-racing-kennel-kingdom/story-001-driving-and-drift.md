@@ -1,7 +1,7 @@
 # Story 001: Driving and 3-tier drift boost
 
 > **Epic**: Dogworks Racing: Kennel Kingdom
-> **Status**: In Progress
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Visual/Feel
 > **Estimate**: M
@@ -127,3 +127,18 @@
 
 - Depends on: None
 - Unlocks: `story-002-online-multiplayer.md`, `story-003-tracks-and-shortcuts.md`, `story-006-racers-and-vehicles.md`
+
+## Completion Notes
+**Completed**: 2026-11-19
+**Criteria**: 12/12 passing (no deferred items)
+**Deviations**: ADVISORY — the placeholder cart's block sizes are literals in `src/vehicle/kart_visual.gd` (logged as TD-001; story 006 replaces the model). OUT OF SCOPE — `project.godot` name and main scene (approved).
+**Test Evidence**: waived at qa.level minimal; retained screenshots and sign-off in `production/qa/evidence/story-001-driving-and-drift/` and `production/qa/evidence/story-001-driving-evidence.md`
+**Reviewed by**: self, no independent review
+
+## Calls beyond the design
+- Start button opens the pause menu; the start menu shows at launch (`src/main.gd`, `src/ui/pause_menu.gd`) · kept 2026-11-19
+- Kart visuals and camera are smoothed between physics steps (`src/vehicle/kart_visual.gd`, `src/test_track/chase_camera.gd`) · kept 2026-11-19
+- Start boost windows 0.15 / 0.35 / 0.6 s before GO, stall 1.0 s, start messages and green "GO!" (`assets/data/vehicles/armored_cart.tres`, `src/ui/race_hud.gd`) · kept 2026-11-19
+- Wall scrape below 25° and impact from 25°, slide grip 2.2, turn-back rate by angle, 1.4 bounce on every wall contact (`src/vehicle/kart_sim.gd`, `armored_cart.tres`) · kept 2026-11-19
+- Hit slowdown read as a share of top speed lost per second (`src/vehicle/hit_slowdown_profile.gd`) · kept 2026-11-19
+- Body lean 4° pitch / 6° roll; drift body twist 15° / 23° / 30° easing in over about 0.4 s (`armored_cart.tres`) · kept 2026-11-19
