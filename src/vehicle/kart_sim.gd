@@ -58,6 +58,14 @@ var _prev_yaw: float = 0.0
 var _segment_hint: int = -1
 var _wall_cooldown: float = 0.0
 var _bump_cooldown: float = 0.0
+## Knock from kart bumps (m/s): moves the kart on top of its driving velocity and fades
+## out (stats.bump_knock_decay), so grip cannot cancel a shove at once.
+var knock: Vector2 = Vector2.ZERO
+## Strength (0..1) of the last kart bump this kart detected.
+var last_bump_strength: float = 0.0
+# Recent bump knock per other kart id, so the same contact is not felt twice.
+var _pair_bumps: Dictionary = {}
+var _pair_timers: Dictionary = {}
 var _wall_slide_time: float = 0.0
 var _turnback_rate: float = 0.0
 var _slow_time: float = 0.0
@@ -84,6 +92,9 @@ func reset_to(track: TrackModel, distance: float, lateral_offset: float) -> void
 	spin_time = 0.0
 	_wall_cooldown = 0.0
 	_bump_cooldown = 0.0
+	knock = Vector2.ZERO
+	_pair_bumps.clear()
+	_pair_timers.clear()
 	_wall_slide_time = 0.0
 	_turnback_rate = 0.0
 	_slow_time = 0.0
@@ -127,15 +138,43 @@ func interpolated_yaw(fraction: float) -> float:
 	return lerp_angle(_prev_yaw, yaw, fraction)
 
 
+## Distance between the two karts' body capsules (negative = overlapping, in meters).
+static func body_gap(a: KartSim, b: KartSim) -> float:
+	var af: Vector2 = a.forward() * a.stats.bump_half_length
+	var bf: Vector2 = b.forward() * b.stats.bump_half_length
+	var pts: PackedVector2Array = Geometry2D.get_closest_points_between_segments(
+			a.position + af, a.position - af, b.position + bf, b.position - bf)
+	return pts[0].distance_to(pts[1]) - a.stats.bump_radius - b.stats.bump_radius
+
+
+## Display only: moves two remote karts apart (half each) when they are drawn overlapping.
+## Their owners keep them apart; the overlap comes from showing them slightly in the past.
+## Remote positions are rebuilt from network updates every tick, so nothing accumulates.
+static func separate_for_display(a: KartSim, b: KartSim) -> void:
+	var af: Vector2 = a.forward() * a.stats.bump_half_length
+	var bf: Vector2 = b.forward() * b.stats.bump_half_length
+	var pts: PackedVector2Array = Geometry2D.get_closest_points_between_segments(
+			a.position + af, a.position - af, b.position + bf, b.position - bf)
+	var d: Vector2 = pts[0] - pts[1]
+	var overlap: float = a.stats.bump_radius + b.stats.bump_radius - d.length()
+	if overlap <= 0.0:
+		return
+	var n: Vector2 = d.normalized() if d.length() > 0.0001 else (a.position - b.position).normalized()
+	a.position += n * overlap * 0.5
+	b.position -= n * overlap * 0.5
+
+
 ## Pushes this kart out of [param other] when their bodies overlap, and applies the bump.
 ## Each kart's body is a capsule along its heading (stats.bump_half_length, bump_radius).
 ## Only owned karts call this: each PC moves its own karts, and remote karts move through
 ## their owner's updates. [param full_separation] (against a kart another PC owns) removes
 ## the whole overlap here, since the other PC sees this kart slightly in the past and may not
 ## see the contact; otherwise (both karts on this PC) each takes its weight share.
-## [param other_push] is the other kart's push strength (already scaled for bots); the
-## weights decide how hard this kart is shoved. Returns true when the karts touched.
-func resolve_kart_contact(other: KartSim, other_push: float, full_separation: bool) -> bool:
+## [param other_push] is the other kart's push on this one and [param my_push] this kart's
+## push on the other (both already scaled for bots). Returns the knock the OTHER kart should
+## get (its owner applies it through apply_received_bump), or Vector2.ZERO.
+func resolve_kart_contact(other: KartSim, other_id: int, other_push: float, my_push: float,
+		full_separation: bool) -> Vector2:
 	var a0: Vector2 = position + forward() * stats.bump_half_length
 	var a1: Vector2 = position - forward() * stats.bump_half_length
 	var of: Vector2 = other.forward()
@@ -146,21 +185,39 @@ func resolve_kart_contact(other: KartSim, other_push: float, full_separation: bo
 	var min_dist: float = stats.bump_radius + other.stats.bump_radius
 	var dist: float = d.length()
 	if dist >= min_dist:
-		return false
+		return Vector2.ZERO
 	var n: Vector2 = d / dist if dist > 0.0001 else (position - other.position).normalized()
 	if n == Vector2.ZERO:
 		n = forward().orthogonal()
-	var share: float = other_push / maxf(stats.bump_push_mult + other_push, 0.0001)
+	var share: float = other_push / maxf(my_push + other_push, 0.0001)
 	position += n * (min_dist - dist) * (1.0 if full_separation else share)
-	var closing: float = (velocity - other.velocity).dot(n)
-	if closing < 0.0:
-		velocity -= n * closing * share * (1.0 + stats.bump_restitution)
-		var strength: float = clampf(-closing / maxf(stats.bump_full_impact_speed, 0.0001), 0.0, 1.0)
-		if _bump_cooldown <= 0.0:
-			speed *= 1.0 - stats.bump_speed_loss * strength
-			_bump_cooldown = stats.bump_cooldown
-			kart_bumped.emit(strength)
-	return true
+	var closing: float = (velocity + knock - other.velocity - other.knock).dot(n)
+	if closing >= 0.0:
+		return Vector2.ZERO
+	var strength: float = clampf(-closing / maxf(stats.bump_full_impact_speed, 0.0001), 0.0, 1.0)
+	last_bump_strength = strength
+	_take_bump(other_id, -n * closing * share * (1.0 + stats.bump_restitution), strength)
+	return n * closing * (1.0 - share) * (1.0 + stats.bump_restitution)
+
+
+## Applies a bump another PC detected between [param from_id]'s kart and this one (it
+## sees the contact before this PC does). A bump this kart already took from the same kart
+## in the last bump_cooldown seconds counts against it, so a contact is never felt twice.
+func apply_received_bump(from_id: int, impulse: Vector2, strength: float) -> void:
+	_take_bump(from_id, impulse, strength)
+
+
+func _take_bump(from_id: int, impulse: Vector2, strength: float) -> void:
+	var already: float = float(_pair_bumps.get(from_id, 0.0))
+	var mag: float = impulse.length()
+	if mag > already:
+		knock += impulse * ((mag - already) / mag)
+		_pair_bumps[from_id] = mag
+		_pair_timers[from_id] = stats.bump_cooldown
+	if _bump_cooldown <= 0.0:
+		speed *= 1.0 - stats.bump_speed_loss * strength
+		_bump_cooldown = stats.bump_cooldown
+		kart_bumped.emit(strength)
 
 
 ## Spins the kart out (used by items in story 004). Returns false if already spinning.
@@ -244,7 +301,8 @@ func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 	if _wall_slide_time > 0.0:
 		grip = minf(grip, stats.wall_slide_grip)
 	velocity = velocity.lerp(forward() * speed, clampf(grip * dt, 0.0, 1.0))
-	position += velocity * dt
+	position += (velocity + knock) * dt
+	knock *= exp(-stats.bump_knock_decay * dt)
 
 	# Tighter drifts charge faster.
 	if drifting:
@@ -258,6 +316,11 @@ func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 	spin_time = maxf(0.0, spin_time - dt)
 	_wall_cooldown = maxf(0.0, _wall_cooldown - dt)
 	_bump_cooldown = maxf(0.0, _bump_cooldown - dt)
+	for k in _pair_timers.keys():
+		_pair_timers[k] = float(_pair_timers[k]) - dt
+		if float(_pair_timers[k]) <= 0.0:
+			_pair_timers.erase(k)
+			_pair_bumps.erase(k)
 	_wall_slide_time = maxf(0.0, _wall_slide_time - dt)
 	stall_time = maxf(0.0, stall_time - dt)
 	hit_immunity_time = maxf(0.0, hit_immunity_time - dt)
@@ -316,6 +379,8 @@ func _constrain_to_track(dt: float, track: TrackModel) -> void:
 	if absf(lateral) > limit:
 		var outward: Vector2 = q.normal * signf(lateral)
 		position -= outward * (absf(lateral) - limit)
+		# A wall stops the part of a bump knock that drives into it.
+		knock -= outward * maxf(knock.dot(outward), 0.0)
 		var into_wall: float = velocity.dot(outward)
 		if into_wall > 0.0:
 			touching = true

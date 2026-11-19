@@ -1,0 +1,21 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+Vulkan 1.4.341 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 5070
+
+[net] race start: 8 karts, 1 laps, role=client peer=505490655 kart=1
+[debug] screenshot production/qa/evidence/story-002-online-multiplayer/bump-rig/C2-race-1lap-client-view/shots/countdown.png (err 0)
+[debug] screenshot production/qa/evidence/story-002-online-multiplayer/bump-rig/C2-race-1lap-client-view/shots/start_go.png (err 0)
+[debug] screenshot production/qa/evidence/story-002-online-multiplayer/bump-rig/C2-race-1lap-client-view/shots/bump_1.png (err 0)
+[debug] screenshot production/qa/evidence/story-002-online-multiplayer/bump-rig/C2-race-1lap-client-view/shots/bump_2.png (err 0)
+[debug] screenshot production/qa/evidence/story-002-online-multiplayer/bump-rig/C2-race-1lap-client-view/shots/bump_3.png (err 0)
+[debug] screenshot production/qa/evidence/story-002-online-multiplayer/bump-rig/C2-race-1lap-client-view/shots/drive_t03.png (err 0)
+[debug] screenshot production/qa/evidence/story-002-online-multiplayer/bump-rig/C2-race-1lap-client-view/shots/spark_tier1.png (err 0)
+[debug] screenshot production/qa/evidence/story-002-online-multiplayer/bump-rig/C2-race-1lap-client-view/shots/spark_tier2.png (err 0)
+[debug] screenshot production/qa/evidence/story-002-online-multiplayer/bump-rig/C2-race-1lap-client-view/shots/spark_tier3.png (err 0)
+[debug] screenshot production/qa/evidence/story-002-online-multiplayer/bump-rig/C2-race-1lap-client-view/shots/drive_t10.png (err 0)
+[debug] screenshot production/qa/evidence/story-002-online-multiplayer/bump-rig/C2-race-1lap-client-view/shots/drive_t20.png (err 0)
+[debug] screenshot production/qa/evidence/story-002-online-multiplayer/bump-rig/C2-race-1lap-client-view/shots/finish.png (err 0)
+[debug] finished: laps [26.6987396774997] boosts [4, 0, 1] start_boost 3 max_speed 35.10 cap 35.10
+[net] peer 1 left after finishing; kart 0 keeps its place
+[net] leaving network: Lost the connection to the host.
+[net-summary] role=client peer=505490655 place=2 finish=27.32 karts=8 | rtt_avg=17ms rtt_max=94ms view_delay=57ms | snaps/s=201.2 | extrap=5.3% | pred_err avg=0.024m max=2.115m | lag=0 jitter=0 loss=0% | lead_changes=0 lead_seq=0 | kb_out/s=4.0 kb_in/s=22.5
+[bump-summary] role=client frames=1980 contact_frames=1636 deep_frames=43 pen_max=1.684m bumps=51 knock_max=6.03m/s moved=57.05m

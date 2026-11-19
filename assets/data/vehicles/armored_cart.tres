@@ -100,6 +100,7 @@ bump_speed_loss = 0.1
 bump_full_impact_speed = 10.0
 bump_restitution = 0.4
 bump_cooldown = 0.3
+bump_knock_decay = 6.0
 wall_hit_cooldown = 0.5
 wall_friction_drag = 0.8
 wall_scrape_min_angle = 10.0

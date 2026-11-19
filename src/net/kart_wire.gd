@@ -28,7 +28,7 @@ const FIELD_COUNT: int = 18
 
 ## Packs the state of an owned kart. [param laps] supplies lap and finish data.
 static func pack(sim: KartSim, laps: LapCounter) -> PackedFloat32Array:
-	return PackedFloat32Array([sim.position.x, sim.position.y, sim.velocity.x, sim.velocity.y,
+	return PackedFloat32Array([sim.position.x, sim.position.y, sim.velocity.x + sim.knock.x, sim.velocity.y + sim.knock.y,
 		sim.yaw, sim.speed, 1.0 if sim.drifting else 0.0, float(sim.drift_dir),
 		float(sim.drift_tier), sim.boost_time, sim.spin_time, float(laps.lap), sim.track_s,
 		1.0 if laps.is_finished else 0.0, laps.finish_race_time if laps.is_finished else 0.0,

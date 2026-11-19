@@ -100,6 +100,8 @@ extends Resource
 @export var bump_full_impact_speed: float = 10.0
 ## Bounciness of kart bumps: 0 = karts just stop closing, 1 = they bounce apart fully.
 @export var bump_restitution: float = 0.4
+## How fast a bump knock fades (1/s). Knock distance is about impulse / decay.
+@export var bump_knock_decay: float = 6.0
 ## Seconds before another kart bump can cost speed again.
 @export var bump_cooldown: float = 0.3
 ## Seconds before another wall impact can cost speed.

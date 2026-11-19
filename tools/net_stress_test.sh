@@ -23,12 +23,12 @@ cd "$ROOT" || exit 2
 
 COMMON=(--autopilot --quit-after-race --laps="$LAPS" "${EXTRA[@]}")
 echo "host + $((RACERS - 1)) clients, $LAPS laps, out=$OUT"
-"$GODOT" --headless --path . -- --host --players="$RACERS" --bots=0 "${COMMON[@]}" \
+"$GODOT" --headless --path . -- --host --port=${PORT:-24690} --players="$RACERS" --bots=0 "${COMMON[@]}" \
 	--netlog="$OUT/host.csv" > "$OUT/host.log" 2>&1 &
 PIDS=($!)
 sleep 3
 for i in $(seq 1 $((RACERS - 1))); do
-	"$GODOT" --headless --path . -- --join=127.0.0.1 "${COMMON[@]}" \
+	"$GODOT" --headless --path . -- --join=127.0.0.1:${PORT:-24690} "${COMMON[@]}" \
 		--netlog="$OUT/client$i.csv" > "$OUT/client$i.log" 2>&1 &
 	PIDS+=($!)
 	sleep 0.3

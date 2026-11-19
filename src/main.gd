@@ -22,6 +22,21 @@ enum Mode { SOLO, HOST_LOBBY, CLIENT_LOBBY, NET_RACE }
 ## Race clock in seconds. Offline it is the driving time since GO. Online it is the host's
 ## clock as best this PC knows it: negative during the countdown, 0 at GO.
 var race_time: float = 0.0
+## Bumps the local kart has taken or given this race (read by the debug harness).
+var bump_count: int = 0
+
+# Contact measurements for the bump test (debug: printed as [bump-summary] on exit).
+var _pen_max: float = 0.0
+var _pen_max_owned: float = 0.0
+var _pen_max_remote: float = 0.0
+var _deep_remote_frames: int = 0
+var _contact_frames: int = 0
+var _deep_frames: int = 0
+var _race_frames: int = 0
+var _knock_max: float = 0.0
+var _bump_start: Vector2 = Vector2.ZERO
+var _had_net_race: bool = false
+var _bump_summary_done: bool = false
 
 var _options: DebugOptions
 var _net_opts: NetOptions
@@ -70,12 +85,23 @@ func _ready() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	_options = DebugOptions.parse(args)
 	_net_opts = NetOptions.parse(args)
+	if _net_opts.port > 0:
+		net_config = net_config.duplicate()
+		net_config.port = _net_opts.port
 	_track = TrackModel.new(track_data)
 	_local = Racer.new()
 	_local.sim = KartSim.new(vehicle_stats)
 	_local.laps = LapCounter.new(_laps_for_race(), _track.length)
-	_local.driver = AutopilotDriver.new() if _options.autopilot else PlayerInputDriver.new()
+	if _options.ram:
+		var ram := RamDriver.new()
+		ram.target_fn = _nearest_other_position
+		_local.driver = ram
+	elif _options.park:
+		_local.driver = KartDriver.new()
+	else:
+		_local.driver = AutopilotDriver.new() if _options.autopilot else PlayerInputDriver.new()
 	_sim = _local.sim
+	_sim.kart_bumped.connect(func(_strength: float) -> void: bump_count += 1)
 	_laps = _local.laps
 	_start = _local.start
 	_input = _local.input
@@ -114,6 +140,7 @@ func _ready() -> void:
 	_net.race_start_received.connect(_on_race_start_received)
 	_net.state_received.connect(_on_state_received)
 	_net.pong_received.connect(_on_pong)
+	_net.bump_received.connect(_on_bump_received)
 	_laps.finished.connect(func(total: float) -> void: race_finished.emit(total))
 	_reset_race()
 	_camera.follow(_sim)
@@ -219,6 +246,8 @@ func _net_tick(dt: float) -> void:
 		keys[r.kart_id] = _rank_key(r)
 	_ranking.update(dt, keys)
 	_resolve_kart_contacts()
+	_separate_remote_karts()
+	_measure_contacts()
 	_send_accum += dt
 	var interval: float = 1.0 / net_config.send_hz
 	if _send_accum >= interval:
@@ -232,6 +261,76 @@ func _net_tick(dt: float) -> void:
 
 # Kart-to-kart bumping: each PC pushes only the karts it owns (its player, and the host's
 # bots) out of every other kart it can see; remote karts move through their owner's updates.
+# Debug measurement of what this PC shows: the deepest overlap between any two karts,
+# frames with karts touching, frames with a deep overlap (> 0.25 m), and the local knock.
+func _measure_contacts() -> void:
+	_had_net_race = true
+	if _race_frames == 0:
+		_bump_start = _sim.position
+	_race_frames += 1
+	_knock_max = maxf(_knock_max, _sim.knock.length())
+	var touching: bool = false
+	var deep: bool = false
+	var remote_deep: bool = false
+	for i in _racers.size():
+		var a: Racer = _racers[i]
+		if a.dropped:
+			continue
+		for j in range(i + 1, _racers.size()):
+			var b: Racer = _racers[j]
+			if b.dropped:
+				continue
+			var gap: float = KartSim.body_gap(a.sim, b.sim)
+			if gap < 0.02:
+				touching = true
+			if gap < 0.0:
+				_pen_max = maxf(_pen_max, -gap)
+				if a.owned or b.owned:
+					_pen_max_owned = maxf(_pen_max_owned, -gap)
+				else:
+					_pen_max_remote = maxf(_pen_max_remote, -gap)
+					if -gap > 0.25:
+						remote_deep = true
+				if -gap > 0.25:
+					deep = true
+	if touching:
+		_contact_frames += 1
+	if deep:
+		_deep_frames += 1
+	if remote_deep:
+		_deep_remote_frames += 1
+
+
+# Debug (--ram): the nearest other kart's position, humans before bots; null if none.
+func _nearest_other_position() -> Variant:
+	var best: Variant = null
+	var best_d: float = INF
+	for pass_bots in [false, true]:
+		for r in _racers:
+			if r == _local or r.dropped or r.is_bot != pass_bots:
+				continue
+			var d: float = r.sim.position.distance_to(_sim.position)
+			if d < best_d:
+				best_d = d
+				best = r.sim.position
+		if best != null:
+			return best
+	return best
+
+
+func _exit_tree() -> void:
+	_print_bump_summary()
+
+
+# Debug: prints the [bump-summary] line once per run (before a reset can hide the numbers).
+func _print_bump_summary() -> void:
+	if _had_net_race and not _bump_summary_done:
+		_bump_summary_done = true
+		print("[bump-summary] role=%s frames=%d contact_frames=%d deep_frames=%d pen_max=%.3fm (own-vs-any %.3fm, remote-vs-remote %.3fm, deep remote frames %d) bumps=%d knock_max=%.2fm/s moved=%.2fm" % [
+				_role(), _race_frames, _contact_frames, _deep_frames, _pen_max, _pen_max_owned, _pen_max_remote, _deep_remote_frames, bump_count,
+				_knock_max, _sim.position.distance_to(_bump_start)])
+
+
 func _resolve_kart_contacts() -> void:
 	for r in _racers:
 		if not r.owned or r.dropped:
@@ -239,10 +338,37 @@ func _resolve_kart_contacts() -> void:
 		for o in _racers:
 			if o == r or o.dropped:
 				continue
-			var push: float = o.sim.stats.bump_push_mult
+			var other_push: float = o.sim.stats.bump_push_mult
 			if o.is_bot and not r.is_bot:
-				push *= net_config.bot_push_mult
-			r.sim.resolve_kart_contact(o.sim, push, not o.owned)
+				other_push *= net_config.bot_push_mult
+			var my_push: float = r.sim.stats.bump_push_mult
+			if r.is_bot and not o.is_bot:
+				my_push *= net_config.bot_push_mult
+			var to_other: Vector2 = r.sim.resolve_kart_contact(o.sim, o.kart_id, other_push, my_push, not o.owned)
+			if to_other != Vector2.ZERO and not o.owned:
+				# The other kart's PC sees this contact late (or not at all): tell it.
+				_net.send_bump(o.owner_peer, o.kart_id, r.kart_id, to_other, r.sim.last_bump_strength)
+
+
+# Display only: two remote karts drawn inside each other are moved apart (see
+# KartSim.separate_for_display). Runs after their views are updated for this tick.
+func _separate_remote_karts() -> void:
+	for i in _racers.size():
+		var a: Racer = _racers[i]
+		if a.owned or a.dropped:
+			continue
+		for j in range(i + 1, _racers.size()):
+			var b: Racer = _racers[j]
+			if b.owned or b.dropped:
+				continue
+			KartSim.separate_for_display(a.sim, b.sim)
+
+
+# Another PC detected a bump on a kart this PC owns.
+func _on_bump_received(kart_id: int, from_kart: int, impulse: Vector2, strength: float) -> void:
+	var r: Racer = _by_id.get(kart_id)
+	if r != null and r.owned and not r.dropped and _mode == Mode.NET_RACE:
+		r.sim.apply_received_bump(from_kart, impulse, strength)
 
 
 func _rank_key(r: Racer) -> float:
@@ -391,6 +517,7 @@ func _leave_network(message: String) -> void:
 	print("[net] leaving network: %s" % message)
 	if _mode == Mode.NET_RACE and not _summary_printed:
 		_print_summary()
+	_print_bump_summary()
 	var was_cli: bool = _cli_net
 	_net.close()
 	_clear_others()

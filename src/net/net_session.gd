@@ -26,6 +26,9 @@ signal race_start_received(info: Dictionary)
 ## A kart state update arrived.
 signal state_received(kart_id: int, t: float, d: PackedFloat32Array)
 ## A pong arrived: host race clock, whether the host is racing, and the round trip in seconds.
+## Another PC bumped [param kart_id] (owned here) with [param from_kart]'s kart.
+signal bump_received(kart_id: int, from_kart: int, impulse: Vector2, strength: float)
+## (pong)
 signal pong_received(host_race_time: float, host_active: bool, rtt_sample: float)
 
 ## Returns the host's race clock (float). Set by Main.
@@ -142,6 +145,14 @@ func send_state(kart_id: int, t: float, d: PackedFloat32Array) -> void:
 	_send(func() -> void: rpc_state.rpc(kart_id, t, d), false, true)
 
 
+## Tells [param to_peer], the owner of [param kart_id], that [param from_kart] bumped it.
+func send_bump(to_peer: int, kart_id: int, from_kart: int, impulse: Vector2, strength: float) -> void:
+	if not _active:
+		return
+	_send(func() -> void: rpc_bump.rpc_id(to_peer, kart_id, from_kart, impulse.x, impulse.y, strength),
+			true, false, to_peer)
+
+
 ## Bytes (sent, received) since the last call.
 func pop_bandwidth() -> Vector2:
 	var p: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
@@ -238,6 +249,11 @@ func rpc_race_start(info: Dictionary) -> void:
 @rpc("any_peer", "call_remote", "unreliable_ordered", 1)
 func rpc_state(kart_id: int, t: float, d: PackedFloat32Array) -> void:
 	state_received.emit(kart_id, t, d)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_bump(kart_id: int, from_kart: int, ix: float, iz: float, strength: float) -> void:
+	bump_received.emit(kart_id, from_kart, Vector2(ix, iz), strength)
 
 
 @rpc("any_peer", "call_remote", "unreliable")

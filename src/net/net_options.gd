@@ -8,6 +8,7 @@ extends RefCounted
 ##   --laps=N            laps for the race (also used offline)
 ##   --lag=MS --jitter=MS --loss=PCT   fake network (loss hits position updates only)
 ##   --netlog=PATH       per-second net log CSV
+##   --port=N            host on this UDP port instead of the configured one (tests)
 
 var host: bool = false
 var join: String = ""
@@ -18,6 +19,7 @@ var lag_ms: float = 0.0
 var jitter_ms: float = 0.0
 var loss_pct: float = 0.0
 var netlog_path: String = ""
+var port: int = 0
 
 
 ## Parses [param args] (normally OS.get_cmdline_user_args()).
@@ -40,6 +42,8 @@ static func parse(args: PackedStringArray) -> NetOptions:
 			o.jitter_ms = a.substr("--jitter=".length()).to_float()
 		elif a.begins_with("--loss="):
 			o.loss_pct = a.substr("--loss=".length()).to_float()
+		elif a.begins_with("--port="):
+			o.port = a.substr("--port=".length()).to_int()
 		elif a.begins_with("--netlog="):
 			o.netlog_path = a.substr("--netlog=".length())
 	return o

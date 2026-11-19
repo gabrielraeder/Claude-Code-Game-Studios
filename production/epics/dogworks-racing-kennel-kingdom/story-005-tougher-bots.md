@@ -37,6 +37,11 @@
 - [ ] The host runs all bots and syncs them like remote karts.
 - [ ] The user plays against the bots and judges them tougher than prototype 1's.
 
+*Added from the user's play of story 002 (2026-11-19):*
+
+- [ ] Bots have several AI personalities, not one way around the track: each bot mixes different racing lines (inside, outside, wide), different shortcut and drift choices, and different item decisions, so a field of bots drives as a varied mix. Personalities live in data and are assigned per bot.
+- [ ] Bots steer around karts ahead instead of driving into them (story 002 tests showed the autopilot-style bots running nose-to-tail on one line and pinning a stopped kart).
+
 ---
 
 ## Implementation Notes

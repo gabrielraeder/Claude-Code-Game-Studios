@@ -27,6 +27,9 @@ var _tier_shots: Array[bool] = [false, false, false]
 var _countdown_shot_done: bool = false
 var _go_shot_done: bool = false
 var _start_level: int = 0
+var _bump_shots: int = 0
+## Most bump screenshots taken in one run.
+const MAX_BUMP_SHOTS: int = 3
 
 
 ## Attaches to the running game. [param main] must expose the properties and the
@@ -80,6 +83,9 @@ func _process(delta: float) -> void:
 	if _sim.drifting and _sim.drift_tier > 0 and not _tier_shots[_sim.drift_tier - 1]:
 		_tier_shots[_sim.drift_tier - 1] = true
 		_save_shot("spark_tier%d" % _sim.drift_tier)
+	if _bump_shots < MAX_BUMP_SHOTS and int(_main.get("bump_count")) > _bump_shots:
+		_bump_shots += 1
+		_save_shot("bump_%d" % _bump_shots)
 	if not _shots_left.is_empty() and _main.race_time >= _shots_left[0]:
 		var t: float = _shots_left.pop_front()
 		_save_shot("drive_t%02d" % int(t))
