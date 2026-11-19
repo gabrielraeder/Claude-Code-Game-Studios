@@ -94,6 +94,23 @@ It prints a `[net-summary]` line at the end of a race.
 - The host's RTT column shows ENet's real round trip (about 20 ms). It does not include the fake
   delay, which is added inside the game.
 
+**Real internet through Tailscale, 2026-11-19:**
+
+- **Machines:** this PC (home broadband) hosts with a window, at Tailscale IP 100.99.126.6. The
+  laptop joins from a **phone hotspot on mobile data**, behind the carrier's NAT (10.104.x).
+- **Route:** Tailscale could not open a direct path through the carrier NAT, so the whole race went
+  through its **relay server in São Paulo**. This is the worst case: friends at home on normal
+  broadband usually get a direct path.
+- **Race:** 2 players + 2 bots, no fake lag. Logs: `logs/host_ts1.csv` and `logs/client_ts1.csv`.
+  Screenshot: `shots/ts1-host-t30.png`.
+
+| Network | RTT avg / max (client) | View delay host / client | Extrapolated frames host / client | Prediction error avg / max | Lead changes host / client |
+|---|---|---|---|---|---|
+| Tailscale, relayed, phone hotspot | 57 / 181 ms | 72 / 85 ms | 4.2% / 3.1% | 0.01 m / 0.19 m | 10 / 10 |
+
+- No firewall changes or port forwarding were needed on either PC.
+- Items hit in both directions (host 7 given, client 3 taken), and no errors were logged.
+
 ## Findings
 
 - **Verdict: PROCEED.** Peer-hosted, owner-authoritative online play holds up technically:
@@ -109,8 +126,10 @@ It prints a `[net-summary]` line at the end of a race.
   - The race clock syncs to the host's clock through ping/pong.
 - **Still open:**
   - **Feel:** two humans driving. Does a 150 ms view delay make bumping and item aim feel unfair?
-  - **The real internet**, through Tailscale/ZeroTier or Steam relay. NAT traversal is unproven.
-    Only LAN plus fake lag was tested.
+  - ~~The real internet~~ **Done:** Tailscale works with no setup beyond installing it and
+    logging in, even through a carrier NAT on its relay. A friend group would each need Tailscale
+    on the same tailnet, or a shared device. For strangers or a public release, use Steam relay
+    instead.
   - **Cheating:** owner-authoritative trusts each client. That's fine for friends, but not for
     strangers.
   - **Host migration** when the host leaves.
