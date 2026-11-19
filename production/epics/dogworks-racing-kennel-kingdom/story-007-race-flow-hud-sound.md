@@ -37,6 +37,7 @@
 - [ ] UI uses the logo's parchment-banner style, with readable text at 1280×720 and above.
 - [ ] Basic sound: engines, drift sparks, boost, item hits, the war-horn countdown, and one music loop. Sound can be muted.
 - [ ] A full start-to-rematch loop works for 2+ PCs, with a retained screenshot of each screen (menu, lobby, HUD in a race, results).
+- [ ] **Spectators:** a player who joins while a race is running is not kicked. They connect, watch the race (a camera following the leader, with the place list), and are put in the next round when the host starts it. The host's lobby shows who is waiting. (Story 002 currently kicks late joiners; this replaces that.)
 
 ---
 
