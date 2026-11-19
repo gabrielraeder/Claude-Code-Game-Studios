@@ -1,6 +1,7 @@
 class_name PauseMenu
 extends CanvasLayer
-## Plain start / pause menu: Resume (or Start), Host, Join (with an IP field), Restart, Quit.
+## Plain start / pause menu: Resume (or Start), Host, Join (with an IP field), Restart,
+## Back to menu, Quit.
 ## Navigable with the keyboard, the mouse and the controller through Godot's built-in
 ## ui_up, ui_down and ui_accept. Host and Join show only on the start screen (story 002;
 ## the real lobby screen is story 007). Emits signals only; the owner decides what they do.
@@ -9,6 +10,8 @@ extends CanvasLayer
 signal resume_requested
 ## The player chose Restart.
 signal restart_requested
+## The player chose Back to menu (leave the race or lobby for the start screen).
+signal menu_requested
 ## The player chose Quit.
 signal quit_requested
 ## The player chose Host.
@@ -30,6 +33,7 @@ var _host_button: Button
 var _ip_edit: LineEdit
 var _join_button: Button
 var _restart_button: Button
+var _menu_button: Button
 var _quit_button: Button
 var _is_start_screen: bool = false
 
@@ -70,6 +74,7 @@ func _ready() -> void:
 	_join_button.pressed.connect(func() -> void: join_requested.emit(_ip_edit.text.strip_edges()))
 	box.add_child(_join_button)
 	_restart_button = _make_button(box, "Restart", restart_requested)
+	_menu_button = _make_button(box, "Back to menu", menu_requested)
 	_quit_button = _make_button(box, "Quit", quit_requested)
 	visible = false
 
@@ -88,6 +93,7 @@ func open(title: String, start_screen: bool) -> void:
 	_resume_button.visible = true
 	set_net_buttons_visible(start_screen)
 	_restart_button.visible = true
+	_menu_button.visible = not start_screen
 	set_status("")
 	visible = true
 	_resume_button.grab_focus()
@@ -103,6 +109,9 @@ func set_net_buttons_visible(shown: bool) -> void:
 	_host_button.visible = shown
 	_ip_edit.visible = shown
 	_join_button.visible = shown
+	# In a lobby (start screen without Host / Join) Back to menu cancels hosting or joining.
+	if _is_start_screen:
+		_menu_button.visible = not shown
 
 
 ## Sets the line under the title (hidden when empty).
@@ -117,6 +126,8 @@ func set_primary_button(text: String, shown: bool) -> void:
 	_resume_button.visible = shown
 	if shown:
 		_resume_button.grab_focus()
+	elif _menu_button.visible:
+		_menu_button.grab_focus()
 	else:
 		_quit_button.grab_focus()
 

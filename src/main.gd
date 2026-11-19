@@ -97,6 +97,7 @@ func _ready() -> void:
 	_menu.resume_requested.connect(_resume)
 	_menu.restart_requested.connect(_restart)
 	_menu.quit_requested.connect(func() -> void: get_tree().quit())
+	_menu.menu_requested.connect(_back_to_menu)
 	_menu.host_requested.connect(_on_menu_host)
 	_menu.join_requested.connect(_on_menu_join)
 	_net = NetSession.new()
@@ -277,6 +278,17 @@ func _restart() -> void:
 	get_tree().paused = false
 	_reset_race()
 	_camera.snap()
+
+
+# Back to the start screen: leaves an online race or lobby, or abandons a solo race.
+func _back_to_menu() -> void:
+	if _mode == Mode.SOLO:
+		get_tree().paused = false
+		_reset_race()
+		_camera.snap()
+		_open_menu("Dogworks Racing: Kennel Kingdom", true)
+	else:
+		_leave_network("")
 
 
 func _on_menu_host() -> void:

@@ -141,7 +141,9 @@ func refresh(sim: KartSim, laps: LapCounter, race_time: float, start: StartSeque
 		for i in laps.lap_times.size():
 			out.append("Lap %d  %s" % [i + 1, format_time(laps.lap_times[i])])
 		if allow_restart:
-			out.append("Press Start / A / Enter to restart")
+			out.append("Press Start / A / Enter to restart, Esc for the menu")
+		else:
+			out.append("Press Esc / Start for the menu")
 		_center.text = "\n".join(out)
 	elif sim.spin_time > 0.0:
 		_center.text = "SPUN OUT!"
