@@ -1,10 +1,11 @@
-Reviewed-Content-Hash: assets/data/net/net_config.tres ce8e4a09108801482edaaab790ae84b6e3bf7ca7
+Reviewed-Content-Hash: assets/data/net/net_config.tres 74c67abf28dc8214549228449b22851dcdc86c15
+Reviewed-Content-Hash: assets/data/vehicles/armored_cart.tres f2b266ff937e652e41ffd334f6fec906be791fbd
 Reviewed-Content-Hash: src/ai/bot_driver.gd 146a178ea60a834438dfc070a3464f33d8c03012
 Reviewed-Content-Hash: src/debug/debug_harness.gd bbb8469dd3ff299c0d2c8286db400277163b6e77
-Reviewed-Content-Hash: src/main.gd 7ca113bc9e03f14b6d01fdb9417b73dc1d8d241d
+Reviewed-Content-Hash: src/main.gd 95554ffe2d267ec3168dd2b69ea1a32a45fb20c9
 Reviewed-Content-Hash: src/main.tscn 569995abbea7d0c810f99d9bbfe5aafdb38b4778
 Reviewed-Content-Hash: src/net/kart_wire.gd 49be0a6fd03ca250f1e3f31afc4f776e79296e5e
-Reviewed-Content-Hash: src/net/net_config.gd 0054ec799003d5593a50810752bf8d03522c12c9
+Reviewed-Content-Hash: src/net/net_config.gd c0bc05d22421b6c7e1217eb6312fdcd331e33c41
 Reviewed-Content-Hash: src/net/net_options.gd 9014b27f42c3f844d201ecec3dbae484b6f907e1
 Reviewed-Content-Hash: src/net/net_session.gd 8f02a84b10d45826c88fed3236caa575a9e7fd8a
 Reviewed-Content-Hash: src/net/net_stats.gd b4b082f95eb2ce496184528f61746da4185b180d
@@ -12,7 +13,10 @@ Reviewed-Content-Hash: src/net/remote_kart.gd d59cbb62207176dd088697fe7e7d89cf07
 Reviewed-Content-Hash: src/race/race_ranking.gd fc6e25ee3e4488ee7edee4cc218a8c929e1508a2
 Reviewed-Content-Hash: src/race/racer.gd 424f2c28ee22c956da33167510ad85c6afc98393
 Reviewed-Content-Hash: src/test_track/lap_counter.gd 4d5041dd24d80834c92b4c85de0d1bab5fc8155c
-Reviewed-Content-Hash: src/ui/pause_menu.gd b568389f33e0326827cf50e547b7f918329c6814
-Reviewed-Content-Hash: src/ui/race_hud.gd a87cab88c37a791d7ae40e23ac71a4652f24466f
+Reviewed-Content-Hash: src/ui/pause_menu.gd f79dcf3739b4dda968ef5bd24f5055986537036a
+Reviewed-Content-Hash: src/ui/race_hud.gd b5705b283969e45666868b8b446ba6f2920c319c
+Reviewed-Content-Hash: src/vehicle/kart_sim.gd 10bab6f7805a36f25975b52842968c7cf70eee44
+Reviewed-Content-Hash: src/vehicle/kart_visual.gd 1fa74bb6fb2869a8bcf5dab0813e667340661135
+Reviewed-Content-Hash: src/vehicle/vehicle_stats.gd 9a2946bba46df6ab09dd1a37e11cfd18276c2434
 Reviewed-Content-Hash: tools/net_stress_summary.sh 1c2d5a4deffc9df362371055e5090dcb0ed4d658
 Reviewed-Content-Hash: tools/net_stress_test.sh d63d30d37e2b46a746fab4d52319660799e5a728
