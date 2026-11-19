@@ -26,6 +26,9 @@ framework:
 # edits this file. See `.claude/docs/config-resolution.md` for the full
 # precedence order.
 
+modes:
+  automation: guided
+
 engine:
   name: "Godot"
   version: "4.8-beta3"
