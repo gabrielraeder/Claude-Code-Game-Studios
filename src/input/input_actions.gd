@@ -1,8 +1,9 @@
 class_name InputActions
 extends RefCounted
 ## Registers the game's input actions in code (keyboard and controller) and names them.
-## Implements design/game-brief.md, Controls. Menus use Godot's built-in ui_up, ui_down,
-## ui_accept actions, which already map to the d-pad, stick and A button.
+## Implements design/game-brief.md, Controls. Menus use Godot's built-in ui_* actions.
+## Godot's defaults map ui_up/ui_down to the d-pad and left stick, but give ui_accept and
+## ui_cancel no controller button, so register() adds A (accept) and B (cancel).
 
 const ACCEL: StringName = &"accel"
 const BRAKE: StringName = &"brake"
@@ -27,6 +28,16 @@ static func register() -> void:
 	_action(ITEM, [KEY_E, KEY_CTRL], [JOY_BUTTON_LEFT_SHOULDER], [])
 	_action(RESTART, [KEY_R], [], [])
 	_action(PAUSE, [KEY_ESCAPE], [JOY_BUTTON_START], [])
+	_add_button(&"ui_accept", JOY_BUTTON_A)
+	_add_button(&"ui_cancel", JOY_BUTTON_B)
+
+
+## Adds a controller button to an existing action unless it is already there.
+static func _add_button(action: StringName, button: JoyButton) -> void:
+	var e := InputEventJoypadButton.new()
+	e.button_index = button
+	if InputMap.has_action(action) and not InputMap.action_has_event(action, e):
+		InputMap.action_add_event(action, e)
 
 
 static func _action(action: StringName, keys: Array, buttons: Array, axes: Array) -> void:

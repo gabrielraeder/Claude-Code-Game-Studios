@@ -69,7 +69,7 @@ func close() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if visible and not _is_start_screen and event.is_action_pressed(InputActions.PAUSE):
+	if visible and not _is_start_screen and (event.is_action_pressed(InputActions.PAUSE) or event.is_action_pressed(&"ui_cancel")):
 		get_viewport().set_input_as_handled()
 		resume_requested.emit()
 

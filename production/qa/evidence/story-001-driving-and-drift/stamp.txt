@@ -1,7 +1,7 @@
 Reviewed-Content-Hash: src/debug/autopilot_driver.gd 44a93290f44c354ed5c2dda3a069ab6c61d6ac1a
 Reviewed-Content-Hash: src/debug/debug_harness.gd 865f04c79b2040378c5513310808b389006ff80f
 Reviewed-Content-Hash: src/debug/debug_options.gd 43d99afee9cc81c663b09786d908bbb0d8eb5467
-Reviewed-Content-Hash: src/input/input_actions.gd 76ee969af10a97b7b4c21bc1b6d94c8cbfe6c0e1
+Reviewed-Content-Hash: src/input/input_actions.gd 26c5d211dc0ee9f0e4ada06acd265989ac9d05f2
 Reviewed-Content-Hash: src/input/player_input_driver.gd 91f5b048cb8019b06f6e25a7b83ca199f3d87ce2
 Reviewed-Content-Hash: src/main.gd d5836ac9eab7f0fc97477eadf718a6e0e7e97a5d
 Reviewed-Content-Hash: src/main.tscn 6a74039ac8905adaf65cbdbb3a0d8197506a5606
@@ -11,7 +11,7 @@ Reviewed-Content-Hash: src/test_track/test_loop.tres 916f4ff22b04f4e2163a863243c
 Reviewed-Content-Hash: src/test_track/track_data.gd d7b8eed9a87fe2be018618aa2cc13e96da96a9ef
 Reviewed-Content-Hash: src/test_track/track_mesh.gd 7a405bc055fb2af5bc4c83e2d39dac86f884c806
 Reviewed-Content-Hash: src/test_track/track_model.gd 170156107765e0fceef51a543b87f72830fe7870
-Reviewed-Content-Hash: src/ui/pause_menu.gd 27d0e67620fd7e95479f90046437e18365d76fe9
+Reviewed-Content-Hash: src/ui/pause_menu.gd 4038415276727edb434438f205a59e87501813ca
 Reviewed-Content-Hash: src/ui/race_hud.gd 5f3f636b603a47ac402a27ab256d46f57dac5171
 Reviewed-Content-Hash: src/vehicle/kart_driver.gd b5a3eff5df4e72e7df95c385479290ea7e9fc67a
 Reviewed-Content-Hash: src/vehicle/kart_input.gd 2649d5547dcb1d06e8c695c2452c1ae8e71df9cc
