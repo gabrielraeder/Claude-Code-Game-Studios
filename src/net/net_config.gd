@@ -49,3 +49,6 @@ extends Resource
 @export var log_interval: float = 1.0
 ## Paint colors for karts other than the local one, indexed by kart id.
 @export var kart_colors: PackedColorArray = PackedColorArray()
+## Bots push human karts with this fraction of their push strength (the user's notes:
+## AIWeightMul 0.35), so a bot cannot shove a player around.
+@export var bot_push_mult: float = 0.35

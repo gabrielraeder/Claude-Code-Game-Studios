@@ -218,6 +218,7 @@ func _net_tick(dt: float) -> void:
 			r.remote.update_view(race_time)
 		keys[r.kart_id] = _rank_key(r)
 	_ranking.update(dt, keys)
+	_resolve_kart_contacts()
 	_send_accum += dt
 	var interval: float = 1.0 / net_config.send_hz
 	if _send_accum >= interval:
@@ -227,6 +228,21 @@ func _net_tick(dt: float) -> void:
 				_net.send_state(r.kart_id, race_time, KartWire.pack(r.sim, r.laps))
 	_net_log_tick(dt)
 	_finish_check(dt)
+
+
+# Kart-to-kart bumping: each PC pushes only the karts it owns (its player, and the host's
+# bots) out of every other kart it can see; remote karts move through their owner's updates.
+func _resolve_kart_contacts() -> void:
+	for r in _racers:
+		if not r.owned or r.dropped:
+			continue
+		for o in _racers:
+			if o == r or o.dropped:
+				continue
+			var push: float = o.sim.stats.bump_push_mult
+			if o.is_bot and not r.is_bot:
+				push *= net_config.bot_push_mult
+			r.sim.resolve_kart_contact(o.sim.position, o.sim.velocity, o.sim.stats.radius, push)
 
 
 func _rank_key(r: Racer) -> float:

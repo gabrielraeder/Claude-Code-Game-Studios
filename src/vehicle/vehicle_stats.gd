@@ -86,6 +86,17 @@ extends Resource
 @export var radius: float = 1.0
 ## Wall knock-back: the velocity component into the wall is reversed times this (1 = dead stop, 2 = perfect bounce).
 @export var bump_knockback: float = 1.4
+## Kart-to-kart push strength (the user's notes, weight classes: light 0.5, medium 1.0,
+## heavy 1.5). When two karts overlap, each is pushed out in proportion to the OTHER's push.
+@export var bump_push_mult: float = 1.5
+## Fraction of speed lost in a full-strength kart bump (notes: light 0.9, medium 0.5, heavy 0.1).
+@export var bump_speed_loss: float = 0.1
+## Closing speed (m/s) at which a kart bump costs the full bump_speed_loss; slower bumps cost less.
+@export var bump_full_impact_speed: float = 10.0
+## Bounciness of kart bumps: 0 = karts just stop closing, 1 = they bounce apart fully.
+@export var bump_restitution: float = 0.4
+## Seconds before another kart bump can cost speed again.
+@export var bump_cooldown: float = 0.3
 ## Seconds before another wall impact can cost speed.
 @export var wall_hit_cooldown: float = 0.5
 ## Speed lost per second (fraction) while touching a wall, before the scrape multiplier.

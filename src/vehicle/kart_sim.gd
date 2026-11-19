@@ -15,6 +15,8 @@ signal drift_started(direction: int)
 signal drift_ended(tier: int, boost_seconds: float)
 ## Emitted when the kart touches a wall; [param hard] is true if it cost speed.
 signal wall_bumped(hard: bool)
+## Bumped another kart; [param strength] is 0..1 (closing speed over bump_full_impact_speed).
+signal kart_bumped(strength: float)
 
 ## Handling data for this kart.
 var stats: VehicleStats
@@ -55,6 +57,7 @@ var _prev_position: Vector2 = Vector2.ZERO
 var _prev_yaw: float = 0.0
 var _segment_hint: int = -1
 var _wall_cooldown: float = 0.0
+var _bump_cooldown: float = 0.0
 var _wall_slide_time: float = 0.0
 var _turnback_rate: float = 0.0
 var _slow_time: float = 0.0
@@ -80,6 +83,7 @@ func reset_to(track: TrackModel, distance: float, lateral_offset: float) -> void
 	boost_time = 0.0
 	spin_time = 0.0
 	_wall_cooldown = 0.0
+	_bump_cooldown = 0.0
 	_wall_slide_time = 0.0
 	_turnback_rate = 0.0
 	_slow_time = 0.0
@@ -121,6 +125,33 @@ func interpolated_position(fraction: float) -> Vector2:
 ## Yaw blended between the last two ticks, for smooth rendering.
 func interpolated_yaw(fraction: float) -> float:
 	return lerp_angle(_prev_yaw, yaw, fraction)
+
+
+## Pushes this kart out of another kart it overlaps and applies the bump to its motion.
+## Only owned karts call this: each PC moves its own karts, and remote karts move through
+## their owner's updates. Each side takes the share of the separation set by the OTHER
+## kart's push, so two karts on two PCs together resolve the whole overlap.
+## [param other_push] is the other kart's push strength (already scaled for bots).
+## Returns true when the karts touched.
+func resolve_kart_contact(other_pos: Vector2, other_vel: Vector2, other_radius: float,
+		other_push: float) -> bool:
+	var d: Vector2 = position - other_pos
+	var min_dist: float = stats.radius + other_radius
+	var dist: float = d.length()
+	if dist >= min_dist:
+		return false
+	var n: Vector2 = d / dist if dist > 0.0001 else forward().orthogonal()
+	var share: float = other_push / maxf(stats.bump_push_mult + other_push, 0.0001)
+	position += n * (min_dist - dist) * share
+	var closing: float = (velocity - other_vel).dot(n)
+	if closing < 0.0:
+		velocity -= n * closing * share * (1.0 + stats.bump_restitution)
+		var strength: float = clampf(-closing / maxf(stats.bump_full_impact_speed, 0.0001), 0.0, 1.0)
+		if _bump_cooldown <= 0.0:
+			speed *= 1.0 - stats.bump_speed_loss * strength
+			_bump_cooldown = stats.bump_cooldown
+			kart_bumped.emit(strength)
+	return true
 
 
 ## Spins the kart out (used by items in story 004). Returns false if already spinning.
@@ -217,6 +248,7 @@ func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 	boost_time = maxf(0.0, boost_time - dt)
 	spin_time = maxf(0.0, spin_time - dt)
 	_wall_cooldown = maxf(0.0, _wall_cooldown - dt)
+	_bump_cooldown = maxf(0.0, _bump_cooldown - dt)
 	_wall_slide_time = maxf(0.0, _wall_slide_time - dt)
 	stall_time = maxf(0.0, stall_time - dt)
 	hit_immunity_time = maxf(0.0, hit_immunity_time - dt)
