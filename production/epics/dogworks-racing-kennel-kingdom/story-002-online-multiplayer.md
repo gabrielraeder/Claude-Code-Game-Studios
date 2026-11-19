@@ -1,7 +1,7 @@
 # Story 002: Online host/join for up to 12 racers
 
 > **Epic**: Dogworks Racing: Kennel Kingdom
-> **Status**: In Progress
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: L
@@ -105,3 +105,18 @@
 
 - Depends on: `story-001-driving-and-drift.md`
 - Unlocks: `story-004-items.md`, `story-007-race-flow-hud-sound.md`
+
+## Completion Notes
+**Completed**: 2026-11-19
+**Criteria**: 12/12 passing (no deferred items)
+**Deviations**: ADVISORY — late joiners are connected and then kicked (spectating moved to story 007); IPv6 addresses are not supported; debug options and drivers (`--ram`, `--park`, `--port`, `--autopilot`, stress and bump scripts) live in `src/debug/` and `tools/`. The last two are logged as TD-002 and TD-003.
+**Test Evidence**: waived at qa.level minimal; stress-run logs, bump-rig runs and screenshots in `production/qa/evidence/story-002-online-multiplayer/`
+**Reviewed by**: self, no independent review
+
+## Calls beyond the design
+- Menu words: Host, IP field defaulting to 127.0.0.1, Join, "Start race", "Back to menu"; Restart hidden online (`src/ui/pause_menu.gd`) · kept 2026-11-19
+- Start grid in 2 columns, 8 m between rows, 2.5 m sideways; default 2 players and 2 bots; bots also get start boosts (`assets/data/net/net_config.tres`) · kept 2026-11-19
+- Kart color palette by slot, the same on every PC (`net_config.tres`, `src/main.gd`) · kept 2026-11-19
+- Finish wait 3 s (30 s cap); late joiners kicked (`src/main.gd`, `net_config.tres`) · kept 2026-11-19
+- Ranking: a kart must lead by 1 m for 0.5 s to pass; finish order by race clock at the line; finished karts keep their place if their player leaves (`src/race/race_ranking.gd`, `src/main.gd`) · kept 2026-11-19
+- Bumping: capsule bodies 1.7 m x 2.7 m, knock fades over about 0.3 s, remote karts drawn overlapping are nudged apart on screen, values from the user's notes (`armored_cart.tres`, `src/vehicle/kart_sim.gd`) · kept 2026-11-19
