@@ -127,23 +127,32 @@ func interpolated_yaw(fraction: float) -> float:
 	return lerp_angle(_prev_yaw, yaw, fraction)
 
 
-## Pushes this kart out of another kart it overlaps and applies the bump to its motion.
+## Pushes this kart out of [param other] when their bodies overlap, and applies the bump.
+## Each kart's body is a capsule along its heading (stats.bump_half_length, bump_radius).
 ## Only owned karts call this: each PC moves its own karts, and remote karts move through
-## their owner's updates. Each side takes the share of the separation set by the OTHER
-## kart's push, so two karts on two PCs together resolve the whole overlap.
-## [param other_push] is the other kart's push strength (already scaled for bots).
-## Returns true when the karts touched.
-func resolve_kart_contact(other_pos: Vector2, other_vel: Vector2, other_radius: float,
-		other_push: float) -> bool:
-	var d: Vector2 = position - other_pos
-	var min_dist: float = stats.radius + other_radius
+## their owner's updates. [param full_separation] (against a kart another PC owns) removes
+## the whole overlap here, since the other PC sees this kart slightly in the past and may not
+## see the contact; otherwise (both karts on this PC) each takes its weight share.
+## [param other_push] is the other kart's push strength (already scaled for bots); the
+## weights decide how hard this kart is shoved. Returns true when the karts touched.
+func resolve_kart_contact(other: KartSim, other_push: float, full_separation: bool) -> bool:
+	var a0: Vector2 = position + forward() * stats.bump_half_length
+	var a1: Vector2 = position - forward() * stats.bump_half_length
+	var of: Vector2 = other.forward()
+	var b0: Vector2 = other.position + of * other.stats.bump_half_length
+	var b1: Vector2 = other.position - of * other.stats.bump_half_length
+	var pts: PackedVector2Array = Geometry2D.get_closest_points_between_segments(a0, a1, b0, b1)
+	var d: Vector2 = pts[0] - pts[1]
+	var min_dist: float = stats.bump_radius + other.stats.bump_radius
 	var dist: float = d.length()
 	if dist >= min_dist:
 		return false
-	var n: Vector2 = d / dist if dist > 0.0001 else forward().orthogonal()
+	var n: Vector2 = d / dist if dist > 0.0001 else (position - other.position).normalized()
+	if n == Vector2.ZERO:
+		n = forward().orthogonal()
 	var share: float = other_push / maxf(stats.bump_push_mult + other_push, 0.0001)
-	position += n * (min_dist - dist) * share
-	var closing: float = (velocity - other_vel).dot(n)
+	position += n * (min_dist - dist) * (1.0 if full_separation else share)
+	var closing: float = (velocity - other.velocity).dot(n)
 	if closing < 0.0:
 		velocity -= n * closing * share * (1.0 + stats.bump_restitution)
 		var strength: float = clampf(-closing / maxf(stats.bump_full_impact_speed, 0.0001), 0.0, 1.0)

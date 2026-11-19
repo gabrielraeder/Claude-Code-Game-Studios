@@ -242,7 +242,7 @@ func _resolve_kart_contacts() -> void:
 			var push: float = o.sim.stats.bump_push_mult
 			if o.is_bot and not r.is_bot:
 				push *= net_config.bot_push_mult
-			r.sim.resolve_kart_contact(o.sim.position, o.sim.velocity, o.sim.stats.radius, push)
+			r.sim.resolve_kart_contact(o.sim, push, not o.owned)
 
 
 func _rank_key(r: Racer) -> float:

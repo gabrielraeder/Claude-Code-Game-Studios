@@ -86,6 +86,11 @@ extends Resource
 @export var radius: float = 1.0
 ## Wall knock-back: the velocity component into the wall is reversed times this (1 = dead stop, 2 = perfect bounce).
 @export var bump_knockback: float = 1.4
+## Kart body for kart-to-kart contact: a capsule along the heading. Half the distance
+## between its two end-circle centers, in meters (body length = 2 * (half_length + radius)).
+@export var bump_half_length: float = 0.5
+## Radius of the body capsule, in meters (body width = 2 * radius).
+@export var bump_radius: float = 0.85
 ## Kart-to-kart push strength (the user's notes, weight classes: light 0.5, medium 1.0,
 ## heavy 1.5). When two karts overlap, each is pushed out in proportion to the OTHER's push.
 @export var bump_push_mult: float = 1.5
