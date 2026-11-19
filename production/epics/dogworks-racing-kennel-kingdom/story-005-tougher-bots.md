@@ -1,0 +1,83 @@
+# Story 005: Tougher bots
+
+> **Epic**: Dogworks Racing: Kennel Kingdom
+> **Status**: Ready
+> **Layer**: Core
+> **Type**: Logic
+> **Estimate**: M
+> **Build step**: core
+> **Manifest Version**: N/A (minimal — no control manifest)
+> **Last Updated**: —
+
+## Context
+
+**GDD**: `design/game-brief.md`
+**Requirement**: Brief MVP feature 5
+
+**ADR Governing Implementation**: N/A (minimal — no ADRs)
+**ADR Decision Summary**: N/A (minimal — no ADRs)
+**ADR Version**: N/A (minimal — no ADRs)
+
+**Engine**: Godot 4.8-beta3 | **Risk**: HIGH
+**Engine Notes**: none (no ADR engine-compatibility analysis at minimal)
+
+**Control Manifest Rules (this layer)**: N/A (minimal — no control manifest)
+
+---
+
+## Acceptance Criteria
+
+*From the brief's Goal & fail state and Features item 5, plus the playtest findings:*
+
+- [ ] Bots follow better racing lines (cutting apexes, using the full road width) and drift through corners where it pays off.
+- [ ] Bots use items: the 3 original items at sensible moments, plus Falcon and Shield. Items work for bots on every PC.
+- [ ] Bots take at least one shortcut per track where it is safe, and sometimes miss it.
+- [ ] Rubber-banding is tuned: the field stays close, but a skilled human can win clearly. All values live in data.
+- [ ] In a race with 11 bots on autopilot-free play, a human player is not trivially in first by lap 2, and bots do not get stuck on walls.
+- [ ] The host runs all bots and syncs them like remote karts.
+- [ ] The user plays against the bots and judges them tougher than prototype 1's.
+
+---
+
+## Implementation Notes
+
+- Reference only: `prototypes/kart-concept/` bots (rubber-banding, brief-drift rule: drifting whole corners made bots about 2.4× slower, so only drift where it helps).
+- Playtest carry-over: bots were too easy.
+- Keep the bot AI separate from the kart controller so a bot is just another input source.
+
+---
+
+## Out of Scope
+
+*Handled by neighbouring stories — do not implement here:*
+
+- Difficulty menu or per-bot personalities.
+- Story 006: bot racer models.
+
+---
+
+## Files
+
+- `src/ai/` (bot driver, line following, item use)
+- `assets/data/ai/` (bot tuning data)
+
+---
+
+## QA Test Cases
+
+*N/A — no qa-lead specs at this tier; implement against the Acceptance Criteria above*
+
+---
+
+## Test Evidence
+
+**Story Type**: Logic
+**Required evidence**: `tests/unit/ai/` — must exist and pass
+**Status**: [ ] Not yet created — Test: waived at qa.level minimal
+
+---
+
+## Dependencies
+
+- Depends on: `story-003-tracks-and-shortcuts.md`, `story-004-items.md`
+- Unlocks: `story-007-race-flow-hud-sound.md`
