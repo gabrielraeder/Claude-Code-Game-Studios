@@ -21,5 +21,5 @@ Reviewed-Content-Hash: src/vehicle/kart_visual.gd 249539b9ad3ce8bc81c021b0fe767b
 Reviewed-Content-Hash: src/vehicle/start_sequence.gd 1b8af38c16c67a5c3b52042b204110f0266019f5
 Reviewed-Content-Hash: src/vehicle/vehicle_stats.gd cbd02a5af84260057486ef392a1ff53410ab4800
 Reviewed-Content-Hash: src/vehicle/vehicle_visual_stats.gd 2f187d68b1ac105a9223ad018c20b9847dda18d8
-Reviewed-Content-Hash: assets/data/vehicles/armored_cart.tres fe6c952ed83520a0dd3313995f4c3255a99915b7
+Reviewed-Content-Hash: assets/data/vehicles/armored_cart.tres 564e5dbce762a497047ef1ddfe2bdf627ec40ab2
 Reviewed-Content-Hash: project.godot 4039f39d86e8ec2dca47c280bc38afb8028dec46

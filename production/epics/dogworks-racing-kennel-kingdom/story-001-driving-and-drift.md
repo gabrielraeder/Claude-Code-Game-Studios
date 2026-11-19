@@ -52,7 +52,7 @@
   - Only the profile data is needed here; story 004 applies the hit profiles to items.
 - [ ] Every visual constant in `kart_visual.gd` (and the chase camera's numbers) moves to data, in a visual section of the vehicle data file (or a sibling resource), using the user's notes where a number exists:
   - **Drift hop:** lasts 0.4 s (the notes' drift entry time).
-  - **Drift body angle:** 25° / 45° / 55° (min / default / max).
+  - **Drift body angle:** 25° / 45° / 55° (min / default / max). *Changed after play (2026-11-19): the user found 45° turned too far at once; it is now 15° / 23° / 30° and eases in over about 0.4 s. The notes' angles describe the car against its path, which the physics already produces, so they are not added again as a body twist.*
   - **Body lean:** limits from the notes' weight transfer (20 forward / 30 sideways).
   - **Wheel visual radius:** 0.35.
   - **No-number values:** the flame size, the spark pulse and the camera keep their current values, now as data.
