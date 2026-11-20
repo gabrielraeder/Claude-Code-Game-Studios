@@ -1,0 +1,8 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+[net] race start: 8 karts, 1 laps, role=client peer=1778889164 kart=1
+[debug] finished: laps [38.946875999999] boosts [7, 0, 0] start_boost 3 max_speed 35.10 cap 35.10
+[net] peer 1 left after finishing; kart 0 keeps its place
+[net] leaving network: Lost the connection to the host.
+[net-summary] role=client peer=1778889164 place=2 finish=39.60 karts=8 | rtt_avg=6ms rtt_max=13ms view_delay=50ms | snaps/s=211.6 | extrap=1.2% | pred_err avg=0.023m max=0.756m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=3.5 kb_in/s=23.3
+[bump-summary] role=client frames=2722 contact_frames=1014 deep_frames=0 pen_max=0.004m (own-vs-any 0.000m, remote-vs-remote 0.004m, deep remote frames 0) bumps=24 knock_max=6.15m/s moved=61.53m

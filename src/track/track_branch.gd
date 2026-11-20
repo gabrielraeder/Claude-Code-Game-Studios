@@ -12,8 +12,15 @@ extends Resource
 ## Open centerline control points as (x, z). The first and last are snapped onto the main
 ## centerline at s_in and s_out by TrackModel, whatever is written here.
 @export var control_points: PackedVector2Array = PackedVector2Array()
-## Half the branch road width in meters.
+## Half the branch road width in meters (used where [member half_widths] is empty).
 @export var half_width: float = 2.5
+## Half width per control point, interpolated; empty = the constant [member half_width].
+@export var half_widths: PackedFloat32Array = PackedFloat32Array()
+## Greater than 0 makes both edges open (no rails, a plank bridge over water): the corridor
+## reaches this far beyond the deck and the off-deck part must lie in a TrackHazard.
+@export var open_edge_reach: float = 0.0
+## True for a covered corridor (the secret passage): TrackScenery puts a dark roof over it.
+@export var roofed: bool = false
 ## Rail or wall thickness in meters; the wall stands at half_width + curb_width.
 @export var curb_width: float = 0.3
 ## Multiplies wall drag on this road (rough stone that grinds a kart sliding along it > 1).

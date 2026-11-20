@@ -13,6 +13,8 @@ extends RefCounted
 ##   --overview-shot      one top-down picture of the whole track into --shots=, then quit
 ##   --grid-shot          fixed camera above the start grid (picture during the countdown)
 ##   --shot-s=A,B,C       pictures when the kart first passes these main-loop distances
+##   --dunk-at=S          the autopilot steers off the open moat edge once from distance S
+##                        (pictures of the sinking kart and of its respawn)
 
 var autopilot: bool = false
 var shots_dir: String = ""
@@ -33,6 +35,8 @@ var overview_shot: bool = false
 var grid_shot: bool = false
 ## Main-loop distances where a picture is saved on the first lap (--shot-s=a,b,c).
 var shot_s: PackedFloat32Array = PackedFloat32Array()
+## Main-loop distance where the autopilot drives into the moat once (--dunk-at=), -1 = off.
+var dunk_s: float = -1.0
 
 
 ## Parses [param args] (normally OS.get_cmdline_user_args()).
@@ -58,6 +62,8 @@ static func parse(args: PackedStringArray) -> DebugOptions:
 		elif a.begins_with("--shot-s="):
 			for part in a.substr("--shot-s=".length()).split(","):
 				o.shot_s.append(part.to_float())
+		elif a.begins_with("--dunk-at="):
+			o.dunk_s = a.substr("--dunk-at=".length()).to_float()
 		elif a == "--park":
 			o.park = true
 		elif a == "--ram":

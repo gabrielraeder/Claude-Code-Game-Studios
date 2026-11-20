@@ -64,3 +64,41 @@ extends Resource
 @export var start_arch_color: Color = Color(0.95, 0.9, 0.74)
 @export var item_box_color: Color = Color(0.9, 0.38, 0.15)
 @export var item_box_size: float = 1.6
+
+@export_group("Round 2: hazards, pads, zones")
+## Moat water color (hazard kind water).
+@export var water_color: Color = Color(0.22, 0.48, 0.72)
+## Boost pad base and chevron colors.
+@export var pad_color_a: Color = Color(0.15, 0.75, 0.85)
+@export var pad_color_b: Color = Color(1.0, 0.9, 0.35)
+## Scenery anchors written by tools/gen_castle_circuit.py (x, z).
+@export var statue_position: Vector2 = Vector2.ZERO
+@export var well_position: Vector2 = Vector2.ZERO
+@export var lists_center: Vector2 = Vector2.ZERO
+@export var orchard_center: Vector2 = Vector2.ZERO
+@export var windmill_position: Vector2 = Vector2.ZERO
+@export var gate_position: Vector2 = Vector2.ZERO
+## Main-loop distance range (from, to) of each castle zone.
+@export var zone_tourney: Vector2 = Vector2.ZERO
+@export var zone_moat: Vector2 = Vector2.ZERO
+@export var zone_village: Vector2 = Vector2.ZERO
+@export var zone_keep: Vector2 = Vector2.ZERO
+@export var zone_gardens: Vector2 = Vector2.ZERO
+
+@export_group("Round 2: zone props (warm storybook palette)")
+## Spacing in meters between prop slots along each road edge (one slot per side).
+@export var prop_spacing: float = 9.0
+@export var stone_light: Color = Color(0.72, 0.7, 0.68)
+@export var stone_dark: Color = Color(0.5, 0.49, 0.5)
+@export var crowd_colors: PackedColorArray = PackedColorArray([Color(0.9, 0.38, 0.15), Color(0.95, 0.9, 0.74), Color(0.55, 0.36, 0.2), Color(0.85, 0.75, 0.55), Color(0.35, 0.5, 0.75), Color(0.75, 0.25, 0.2)])
+@export var tent_color_a: Color = Color(0.9, 0.38, 0.15)
+@export var tent_color_b: Color = Color(0.95, 0.9, 0.74)
+@export var wood_color: Color = Color(0.55, 0.36, 0.2)
+@export var dark_wood_color: Color = Color(0.32, 0.2, 0.12)
+@export var foliage_color: Color = Color(0.3, 0.55, 0.22)
+@export var foliage_alt_color: Color = Color(0.42, 0.62, 0.25)
+@export var fruit_color: Color = Color(0.9, 0.3, 0.15)
+@export var hedge_color: Color = Color(0.22, 0.45, 0.2)
+@export var torch_color: Color = Color(1.0, 0.62, 0.2)
+@export var tapestry_color: Color = Color(0.62, 0.12, 0.12)
+@export var statue_color: Color = Color(0.78, 0.76, 0.7)

@@ -39,13 +39,18 @@ func _on_drift_started(_direction: int) -> void:
 	_hop_t = 0.0
 
 
+## How far (meters) a kart sinking in a hazard drops below the surface (story 003).
+const SINK_DEPTH: float = 1.6
+
+
 func _process(delta: float) -> void:
 	if _sim == null:
 		return
 	_clock += delta
 	var fraction: float = Engine.get_physics_interpolation_fraction()
 	var p: Vector2 = _sim.interpolated_position(fraction)
-	position = Vector3(p.x, 0.0, p.y)
+	# Sinking in a hazard (story 003): the kart drops below the water surface.
+	position = Vector3(p.x, -_sim.sink_progress * SINK_DEPTH, p.y)
 	rotation.y = _sim.interpolated_yaw(fraction)
 
 	var follow: float = 1.0 - exp(-_vs.tilt_smoothing * delta)

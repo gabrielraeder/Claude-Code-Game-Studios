@@ -1,0 +1,23 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+== track_check: Test Loop (test_loop) ==
+PASS (1) loop closure and length (600-950 m): length 759.0 m, closure gap 0.010 m, 240 samples, 7 checkpoints
+PASS (1) no wall fold (bend radius minus inner wall offset > 0 everywhere): smallest margin 2.0 m at s 409
+     (9) skipped: test_loop has a constant width (14.0 m)
+FAIL (2) start straight (grid run-up >= last row + 10 m, >= 15 m ahead): 4 m straight behind the line, 4 m ahead, half width at the line 7.0 m
+PASS (2) 12 grid slots fit with margin and no overlap: 12 slots, min wall margin 4.85 m, min body gap 3.30 m, last row 46 m behind the line
+     (3) main line: finished=true lap times [27.20, 26.85, 26.82], wall hits 30 (hard 0), max_speed 35.1, max jump ratio 2.02, pads 0, sinks 0
+PASS (3) main line completes 3 laps within the walls: laps [27.20, 26.85, 26.82], max excess over a wall -1.000 m, sinks 0
+PASS (6) track_s never jumps more than 2x the distance moved (incl. branch entry/exit): 1 runs (main + each branch), largest ds/moved 2.02, violations 0
+PASS (7) 200 infield starts, straight at random headings for 10 s: no lap, never outside the corridors: laps gained 0, escapes 0, worst excess over wall -1.000 m, refused line crossings 43
+PASS (8) reversing over the line gives no extra lap: lap after crossing 1, after reversing 0, after crossing again 1, lap_started events [1], completed laps 0
+PASS (8) crossing the line without the checkpoints is not a lap: lap 1, refused crossings 1, checkpoints passed 0 of 7
+PASS (8) a full lap counts exactly once: lap 2, completed laps 1, refused crossings 0
+     (11) skipped: no hazards on test_loop
+     (12) skipped: no boost pads on test_loop
+     (13) 4 corners: 90 R 234 deg R16 @131, 90 L 92 deg R11 @392, kink L 14 deg R45 @453, 90 R 220 deg R23 @488; flying lap 26.83 s
+== 1 FAILED ==
+WARNING: 5 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2609)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

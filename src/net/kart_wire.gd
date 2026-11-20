@@ -4,7 +4,7 @@ extends RefCounted
 ## Receivers accept arrays at least FIELD_COUNT long, so later versions may append fields.
 
 ## Bumped when the meaning of an existing field or of a message changes.
-const VERSION: int = 2
+const VERSION: int = 3
 const X: int = 0
 const Z: int = 1
 const VX: int = 2
@@ -23,7 +23,9 @@ const FINISH_TIME: int = 14
 const LAST_STEER: int = 15
 const ACCEL_LONG: int = 16
 const ACCEL_LAT: int = 17
-const FIELD_COUNT: int = 18
+## 0..1 while the kart sinks in a hazard (story 003), 0 otherwise. Added in VERSION 3.
+const SINK: int = 18
+const FIELD_COUNT: int = 19
 
 
 ## Packs the state of an owned kart. [param laps] supplies lap and finish data.
@@ -32,4 +34,4 @@ static func pack(sim: KartSim, laps: LapCounter) -> PackedFloat32Array:
 		sim.yaw, sim.speed, 1.0 if sim.drifting else 0.0, float(sim.drift_dir),
 		float(sim.drift_tier), sim.boost_time, sim.spin_time, float(laps.lap), sim.track_s,
 		1.0 if laps.is_finished else 0.0, laps.finish_race_time if laps.is_finished else 0.0,
-		sim.last_steer, sim.accel_long, sim.accel_lat])
+		sim.last_steer, sim.accel_long, sim.accel_lat, sim.sink_progress])

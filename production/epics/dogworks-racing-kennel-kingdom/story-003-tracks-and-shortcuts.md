@@ -65,11 +65,36 @@
 
 ## Files
 
-- `src/track/` (centerline, checkpoints, track resource)
-- `assets/tracks/castle_circuit/`, `assets/tracks/dungeon_depths/`
-- `production/qa/evidence/story-003-tracks-evidence.md`
-
----
+- `assets/data/net/net_config.tres`
+- `assets/data/vehicles/armored_cart.tres`
+- `assets/tracks/castle_circuit/castle_circuit.tres`
+- `assets/tracks/castle_circuit/castle_theme.tres`
+- `src/debug/autopilot_driver.gd`
+- `src/debug/debug_harness.gd`
+- `src/debug/debug_options.gd`
+- `src/main.gd`
+- `src/main.tscn`
+- `src/net/kart_wire.gd`
+- `src/net/net_config.gd`
+- `src/net/remote_kart.gd`
+- `src/test_track/chase_camera.gd`
+- `src/test_track/lap_counter.gd`
+- `src/test_track/track_data.gd`
+- `src/test_track/track_mesh.gd`
+- `src/test_track/track_model.gd`
+- `src/track/track_branch.gd`
+- `src/track/track_hazard.gd`
+- `src/track/track_library.gd`
+- `src/track/track_pad.gd`
+- `src/track/track_scenery.gd`
+- `src/track/track_theme.gd`
+- `src/vehicle/kart_sim.gd`
+- `src/vehicle/kart_visual.gd`
+- `src/vehicle/vehicle_stats.gd`
+- `tools/gen_castle_circuit.py`
+- `tools/track_check.gd`
+- `production/qa/evidence/story-003-tracks-and-shortcuts/` (round 1 castle/, round2/ with track_check_castle.txt, stress12-final/, bump6-final/, shots/verified/)
+- `design/references/track-design-reference.md`
 
 ## QA Test Cases
 

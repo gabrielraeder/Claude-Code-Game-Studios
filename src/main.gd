@@ -100,6 +100,8 @@ func _ready() -> void:
 	if chosen != null:
 		track_data = chosen
 	_track = TrackModel.new(track_data)
+	if _camera != null:
+		_camera.track = _track
 	_local = Racer.new()
 	_local.sim = KartSim.new(vehicle_stats)
 	_local.laps = LapCounter.new(_laps_for_race(), _track.length, _track.checkpoint_s)
@@ -113,6 +115,7 @@ func _ready() -> void:
 		if _options.autopilot:
 			var ap := AutopilotDriver.new()
 			ap.shortcut_id = StringName(_options.shortcut)
+			ap.dunk_s = _options.dunk_s
 			_local.driver = ap
 		else:
 			_local.driver = PlayerInputDriver.new()
@@ -156,6 +159,7 @@ func _ready() -> void:
 	_net.bump_received.connect(_on_bump_received)
 	_laps.finished.connect(func(total: float) -> void: race_finished.emit(total))
 	_reset_race()
+	_camera.track = _track
 	_camera.follow(_sim)
 	if _options.needs_harness():
 		var harness := DebugHarness.new()
@@ -354,10 +358,10 @@ func _print_bump_summary() -> void:
 
 func _resolve_kart_contacts() -> void:
 	for r in _racers:
-		if not r.owned or r.dropped:
+		if not r.owned or r.dropped or r.sim.is_sinking():
 			continue
 		for o in _racers:
-			if o == r or o.dropped:
+			if o == r or o.dropped or o.sim.is_sinking():
 				continue
 			var other_push: float = o.sim.stats.bump_push_mult
 			if o.is_bot and not r.is_bot:
@@ -832,6 +836,8 @@ func _ensure_track(id: String) -> bool:
 		return false
 	track_data = data
 	_track = TrackModel.new(data)
+	if _camera != null:
+		_camera.track = _track
 	_laps.configure_track(_track.length, _track.checkpoint_s)
 	_build_world()
 	_reset_race()

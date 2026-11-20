@@ -17,6 +17,12 @@ signal drift_ended(tier: int, boost_seconds: float)
 signal wall_bumped(hard: bool)
 ## Bumped another kart; [param strength] is 0..1 (closing speed over bump_full_impact_speed).
 signal kart_bumped(strength: float)
+## Entered a hazard (moat water) and started sinking (story 003).
+signal sank()
+## Put back on the road after sinking (story 003).
+signal respawned()
+## Drove onto a boost pad (story 003).
+signal pad_boosted()
 
 ## Handling data for this kart.
 var stats: VehicleStats
@@ -54,6 +60,14 @@ var track_s: float = 0.0
 var lateral: float = 0.0
 ## Road the kart is on: TrackModel.MAIN_PATH (-1) or a branch index (story 003).
 var track_path: int = -1
+## Half the road surface width where the kart is (from the last track query).
+var road_half_width: float = 0.0
+## Seconds left sinking in a hazard (0 = not sinking). The kart is frozen meanwhile.
+var sink_time: float = 0.0
+## 0 while not sinking, rising to 1 as the kart sinks (visual; sent to other PCs).
+var sink_progress: float = 0.0
+## Number of respawns since the last reset (logs and track_check).
+var respawn_count: int = 0
 
 var _prev_position: Vector2 = Vector2.ZERO
 var _prev_yaw: float = 0.0
@@ -74,6 +88,15 @@ var _wall_slide_time: float = 0.0
 var _turnback_rate: float = 0.0
 var _slow_time: float = 0.0
 var _slow_profile: HitSlowdownProfile
+# Last point the kart drove on a road surface: road index and meters along it.
+var _safe_path: int = -1
+var _safe_along: float = 0.0
+# Last point driven on the main road itself (fallback when respawning on a branch repeats).
+var _main_safe_along: float = 0.0
+# True when this sink started while still immune from the previous respawn.
+var _repeat_sink: bool = false
+var _on_pad: bool = false
+var _sink_total: float = 1.0
 
 
 func _init(vehicle_stats: VehicleStats) -> void:
@@ -109,11 +132,19 @@ func reset_to(track: TrackModel, distance: float, lateral_offset: float) -> void
 	last_steer = 0.0
 	accel_long = 0.0
 	accel_lat = 0.0
+	sink_time = 0.0
+	sink_progress = 0.0
+	respawn_count = 0
+	_on_pad = false
 	var q: TrackModel.Query = track.query(position, -1)
 	_segment_hint = q.segment
 	track_s = q.s
 	track_path = q.path
 	lateral = q.lateral
+	road_half_width = q.half_width
+	_safe_path = q.path
+	_safe_along = q.along
+	_main_safe_along = q.s
 	_prev_position = position
 	_prev_yaw = yaw
 
@@ -297,10 +328,26 @@ func is_hit_immune() -> bool:
 	return hit_immunity_time > 0.0
 
 
+## True while the kart is sinking in a hazard (frozen, waiting for its respawn).
+func is_sinking() -> bool:
+	return sink_time > 0.0 or sink_progress > 0.0
+
+
 ## Advances the simulation by [param dt] seconds using [param input] on [param track].
 func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 	_prev_position = position
 	_prev_yaw = yaw
+	if sink_time > 0.0:
+		sink_time = maxf(0.0, sink_time - dt)
+		sink_progress = 1.0 - sink_time / maxf(_sink_total, 0.001)
+		speed = 0.0
+		velocity = Vector2.ZERO
+		knock = Vector2.ZERO
+		accel_long = 0.0
+		accel_lat = 0.0
+		if sink_time <= 0.0:
+			_respawn(track)
+		return
 	var control: bool = can_drive()
 	var steer: float = input.steer if control else 0.0
 	var throttle: float = input.throttle if control and stall_time <= 0.0 else 0.0
@@ -435,6 +482,65 @@ func _constrain_to_track(dt: float, track: TrackModel) -> void:
 		_turnback_rate = 0.0
 	# Progress follows the road, but never faster than the rate cap allows (smooth at junctions).
 	track_s = track.limit_progress(track_s, q.s, position.distance_to(_prev_position))
+	road_half_width = q.half_width
+	if track.has_hazards() and track.in_hazard(position, q):
+		_start_sinking(track)
+		return
+	if absf(lateral) <= q.half_width:
+		_safe_path = q.path
+		_safe_along = q.along
+		if q.path == TrackModel.MAIN_PATH:
+			_main_safe_along = q.along
+	var pad: int = track.pad_at(position)
+	if pad >= 0:
+		boost_time = maxf(boost_time, track.data.boost_pad_time)
+		if not _on_pad:
+			pad_boosted.emit()
+	_on_pad = pad >= 0
+
+
+# Entered a hazard: the kart stops, loses its drift and boost, and sinks for
+# track.data.respawn_sink_time seconds (see tick), then _respawn puts it back.
+func _start_sinking(track: TrackModel) -> void:
+	_end_drift(false)
+	boost_time = 0.0
+	speed = 0.0
+	velocity = Vector2.ZERO
+	knock = Vector2.ZERO
+	# Sinking again before the last respawn's immunity ran out means the branch respawn point
+	# did not work for this kart: the next respawn uses the main road instead (no loop).
+	_repeat_sink = hit_immunity_time > 0.0 and respawn_count > 0
+	_sink_total = maxf(track.data.respawn_sink_time, 0.001)
+	sink_time = _sink_total
+	sink_progress = 0.0
+	sank.emit()
+
+
+# Back on the centerline of the road last driven safely, respawn_back_off meters behind that
+# point, facing along the road, at respawn_speed_frac of max speed with respawn immunity.
+func _respawn(track: TrackModel) -> void:
+	if _repeat_sink and _safe_path != TrackModel.MAIN_PATH:
+		_safe_path = TrackModel.MAIN_PATH
+		_safe_along = _main_safe_along
+	var pose: Array = track.respawn_pose(_safe_path, _safe_along)
+	position = pose[0]
+	var t: Vector2 = pose[1]
+	yaw = atan2(-t.x, -t.y)
+	speed = track.data.respawn_speed_frac * stats.max_speed
+	velocity = forward() * speed
+	hit_immunity_time = track.data.respawn_immunity_time
+	spin_time = 0.0
+	sink_progress = 0.0
+	var q: TrackModel.Query = track.query(position, track.hint_for(_safe_path, _safe_along))
+	_segment_hint = q.segment
+	track_s = q.s
+	track_path = q.path
+	lateral = q.lateral
+	road_half_width = q.half_width
+	_prev_position = position
+	_prev_yaw = yaw
+	respawn_count += 1
+	respawned.emit()
 
 
 ## Wall response by angle of incidence: scrape (friction x multiplier), or impact (speed

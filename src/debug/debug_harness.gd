@@ -30,6 +30,7 @@ var _start_level: int = 0
 var _bump_shots: int = 0
 var _shot_s_done: Array[bool] = []
 var _last_shot_s: float = 0.0
+var _pad_shot_done: bool = false
 ## Most bump screenshots taken in one run.
 const MAX_BUMP_SHOTS: int = 3
 
@@ -52,6 +53,12 @@ func setup(options: DebugOptions, main: Node, sim: KartSim, laps: LapCounter) ->
 		DirAccess.make_dir_recursive_absolute(_options.shots_dir)
 	_sim.drift_ended.connect(_on_drift_ended)
 	_main.race_finished.connect(_on_race_finished)
+	_sim.sank.connect(func() -> void: _delayed_shot("moat_sink", 0.5))
+	_sim.respawned.connect(func() -> void: _delayed_shot("moat_respawn", 0.4))
+	_sim.pad_boosted.connect(func() -> void:
+		if not _pad_shot_done:
+			_pad_shot_done = true
+			_delayed_shot("boost_pad", 0.05))
 
 
 func _on_drift_ended(tier: int, _boost_seconds: float) -> void:
@@ -116,6 +123,13 @@ func _on_race_finished(_total: float) -> void:
 	# Online, Main quits once every human has finished, so no one is left racing alone.
 	if _options.quit_after_race and not _main.net_active:
 		get_tree().quit()
+
+
+func _delayed_shot(shot_name: String, delay: float) -> void:
+	if _options.shots_dir == "" or _headless:
+		return
+	await get_tree().create_timer(delay).timeout
+	_save_shot(shot_name)
 
 
 func _save_shot(shot_name: String) -> void:

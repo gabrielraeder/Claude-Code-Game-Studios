@@ -6,6 +6,9 @@ extends KartSim
 ## older than that, the kart is extrapolated along its velocity, capped by NetConfig.
 
 ## Lap the owner reported (0 before the first line crossing).
+## Meters added to the drivable distance before a snapshot jump counts as a teleport.
+const TELEPORT_SLACK: float = 2.0
+
 var lap: int = 0
 ## True once the owner reported the race finished.
 var finished: bool = false
@@ -95,7 +98,14 @@ func update_view(now: float) -> void:
 			var f: float = (rt - float(a.t)) / maxf(float(b.t) - float(a.t), 0.0001)
 			var da: PackedFloat32Array = a.d
 			var db: PackedFloat32Array = b.d
-			position = Vector2(da[KartWire.X], da[KartWire.Z]).lerp(Vector2(db[KartWire.X], db[KartWire.Z]), f)
+			var pa: Vector2 = Vector2(da[KartWire.X], da[KartWire.Z])
+			var pb: Vector2 = Vector2(db[KartWire.X], db[KartWire.Z])
+			# A jump farther than the kart could drive between the two snapshots is a teleport
+			# (a moat respawn): show it as a jump at b's time, never a streak across the screen.
+			var reach: float = stats.max_speed * stats.boost_speed_mult * (float(b.t) - float(a.t)) * 2.0 + TELEPORT_SLACK
+			if pa.distance_to(pb) > reach:
+				f = 0.0
+			position = pa.lerp(pb, f)
 			velocity = Vector2(da[KartWire.VX], da[KartWire.VZ]).lerp(Vector2(db[KartWire.VX], db[KartWire.VZ]), f)
 			yaw = lerp_angle(da[KartWire.YAW], db[KartWire.YAW], f)
 			_apply_fields(da)
@@ -121,3 +131,4 @@ func _apply_fields(d: PackedFloat32Array) -> void:
 	accel_long = d[KartWire.ACCEL_LONG]
 	accel_lat = d[KartWire.ACCEL_LAT]
 	track_s = d[KartWire.TRACK_S]
+	sink_progress = d[KartWire.SINK]

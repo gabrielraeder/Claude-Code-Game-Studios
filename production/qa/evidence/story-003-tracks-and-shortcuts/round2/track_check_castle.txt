@@ -1,0 +1,47 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+== track_check: Castle Circuit (castle_circuit) ==
+PASS (1) loop closure and length (1000-1150 m): length 1088.2 m, closure gap 0.010 m, 868 samples, 9 checkpoints
+PASS (1) no wall fold (bend radius minus inner wall offset > 0 everywhere): smallest margin 1.6 m at s 1027
+PASS (1) branch village_lane sane: s 432..534 (102 m of main), branch 102 m, progress ratio 1.00, half width 3.40..5.50 m
+PASS (1) branch drawbridge sane: s 155..317 (162 m of main), branch 117 m, progress ratio 1.38, half width 2.50..2.50 m
+PASS (1) branch secret_passage sane: s 613..708 (95 m of main), branch 52 m, progress ratio 1.83, half width 2.25..2.25 m
+PASS (9) grid zone >= 18 m wide: narrowest grid width 19.0 m over the last 52 m and the line
+PASS (9) pinches present (<= 10 m) and plazas wide: narrowest main road 6.8 m at s 461, widest 23.0 m at s 587
+PASS (9) no width jump (half width changes <= 0.35 m per m): steepest 0.302 m/m at s 677 (wall fold covered by (1))
+PASS (2) start straight (grid run-up >= last row + 10 m, >= 15 m ahead): 58 m straight behind the line, 23 m ahead, half width at the line 9.5 m
+PASS (2) 12 grid slots fit with margin and no overlap: 12 slots, min wall margin 7.15 m, min body gap 3.30 m, last row 46 m behind the line
+     (3) main line: finished=true lap times [39.28, 38.82, 38.82], wall hits 96 (hard 12), max_speed 35.1, max jump ratio 2.03, pads 3, sinks 0
+PASS (3) main line completes 3 laps within the walls: laps [39.28, 38.82, 38.82], max excess over a wall -1.000 m, sinks 0
+     (4) village_lane: finished=true lap times [38.80, 38.35, 38.37], wall hits 76 (hard 9), max_speed 35.1, max jump ratio 2.03, pads 3, sinks 0
+PASS (10) lane split village_lane: autopilot completes 3 laps in the other lane, one lap each: ticks in the lane 657, refused line crossings 0, laps started 3
+PASS (10) lane split village_lane: progress monotonic (no jump), no shortcut (lap within 0.5 s of main): largest ds/moved 2.03, violations 0, lane flying lap 38.36 s vs main lane 38.82 s
+     (4) drawbridge: finished=true lap times [38.27, 37.93, 37.93], wall hits 116 (hard 15), max_speed 35.1, max jump ratio 2.03, pads 6, sinks 0
+     (info) careful no-drift line via drawbridge: finished=true flying lap 37.72 s, wall hits 33, hard 0, sinks 0
+PASS (4) drawbridge: 3 laps, exactly one lap each, branch driven, never in the water: ticks on branch 726, rejected line crossings 0, sinks 0
+PASS (4) drawbridge faster than main line when driven well: best line careful: flying lap 37.72 s vs main 38.82 s, saving 1.10 s
+PASS (5) sloppy driver (full throttle, no drift, straight at the entrance) via drawbridge does not beat the main line: sloppy flying lap 39.35 s vs main 38.82 s (good run 37.72 s), wall hits 3, hard hits 0, sinks 0
+     (4) secret_passage: finished=true lap times [38.03, 37.32, 37.48], wall hits 67 (hard 16), max_speed 35.1, max jump ratio 2.05, pads 6, sinks 0
+     (info) careful no-drift line via secret_passage: finished=true flying lap 38.03 s, wall hits 61, hard 3, sinks 0
+PASS (4) secret_passage: 3 laps, exactly one lap each, branch driven, never in the water: ticks on branch 237, rejected line crossings 0, sinks 0
+PASS (4) secret_passage faster than main line when driven well: best line drift: flying lap 37.40 s vs main 38.82 s, saving 1.42 s
+PASS (5) sloppy driver (full throttle, no drift, straight at the entrance) via secret_passage does not beat the main line: sloppy flying lap 39.97 s vs main 38.82 s (good run 37.40 s), wall hits 109, hard hits 0, sinks 0
+PASS (6) track_s never jumps more than 2x the distance moved (incl. branch entry/exit): 4 runs (main + each branch), largest ds/moved 2.05, violations 0
+PASS (7) 200 infield starts, straight at random headings for 10 s: no lap, never outside the corridors: laps gained 0, escapes 0, worst excess over wall -0.998 m, refused line crossings 20
+PASS (8) reversing over the line gives no extra lap: lap after crossing 1, after reversing 0, after crossing again 1, lap_started events [1], completed laps 0
+PASS (8) crossing the line without the checkpoints is not a lap: lap 1, refused crossings 1, checkpoints passed 0 of 9
+PASS (8) a full lap counts exactly once: lap 2, completed laps 1, refused crossings 0
+PASS (11) open edges: every reachable off-road point there is water: 4210 sample points, 0 dry (last at (0.0, 0.0))
+PASS (11) kart steered off the moat edge sinks, respawns after 1.0 s on the road (not in a wall, not in water): sinks 1, respawns 1, sink durations [1.00], bad respawn points 0, first respawn at s 224.2
+PASS (11) no respawn loop, no lap gained, race still finishes: re-sinks within 3 s of a respawn 0, laps [41.35, 38.85, 38.85], total 119.05 s vs clean 116.92 s, refused crossings 0
+PASS (11) main-line autopilot and BotDriver never fall in over 3 laps: autopilot sinks 0, BotDriver sinks 0 (laps [39.28, 38.82, 38.82])
+PASS (12) boost pads trigger on the main line and the lap is faster with them: pads hit 3 over 3 laps (4 pads, 1.1 s boost each), flying lap 38.82 s with pads vs 39.37 s without (0.56 s gained)
+PASS (13) corner count 12-15 (doc ~13): 13 corners (15 arcs): sweeper R 130 deg R37 @18; kink R 9 deg R139 @133; sweeper L 156 deg R30 @166; 90 R 100 deg R15 @286; 90 R 80 deg R19 @338; S/chicane LR @376; 90 R 77 deg R19 @540; hairpin R 168 deg R14 @641; S/chicane LR @693; 90 L 157 deg R15 @734; kink R 19 deg R156 @864; 90 L 86 deg R18 @940; hairpin R 170 deg R13 @988
+INFO-OUTSIDE-TARGET (13) autopilot flying lap vs doc target 45-50 s: 38.82 s over 1088 m (average 28.0 m/s; doc assumed 20-23 m/s)
+PASS (14) drawbridge driven well saves roughly the doc's time (1.0-3.0 s): saving 1.10 s per lap; sloppy run loses 0.53 s (sinks 0)
+PASS (14) secret_passage driven well saves roughly the doc's time (1.0-3.0 s): saving 1.42 s per lap; sloppy run loses 1.16 s (sinks 0)
+== ALL PASS ==
+WARNING: 19 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2609)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

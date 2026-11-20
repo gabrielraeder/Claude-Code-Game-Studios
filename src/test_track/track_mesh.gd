@@ -1,18 +1,21 @@
 class_name TrackMesh
 extends Node3D
-## Builds the visible track (road, curbs, start line, walls, shortcut branches, moat) from a
-## TrackModel and its TrackTheme. Presentation only: collision is done by lateral clamping
-## in KartSim. Walls are blocks with alternating colors and heights (crenellation), with a
-## gap wherever a branch corridor meets the main road.
-## Implements design/game-brief.md, "Look and references".
+## Builds the visible track (road, curbs, start line, walls, branches, hazard water, boost pads)
+## from a TrackModel and its TrackTheme. Presentation only: collision is done by lateral
+## clamping in KartSim. Widths follow the road's per-point profile; open edges (over water)
+## and rail-less branches get no wall. Walls are blocks with alternating colors and heights
+## (crenellation), with a gap wherever another road's corridor meets them.
+## Implements design/game-brief.md, "Look and references", and story 003 round 2.
 
 const START_LINE_CELLS: int = 10
 const START_LINE_ROWS: int = 2
 ## Height of the branch deck above the main road, so overlapping roads do not flicker.
 const DECK_Y: float = 0.04
-## Height of the moat surface (below the road).
+## Height of hazard water (below the road).
 const WATER_Y: float = -0.03
-## Extra clearance (meters) between a branch corridor and the main wall opening.
+## Height of boost pads above the road.
+const PAD_Y: float = 0.05
+## Extra clearance (meters) between another corridor and a wall that is left out.
 const GAP_MARGIN: float = 0.6
 
 
@@ -25,6 +28,7 @@ func build(track: TrackModel) -> void:
 	_start_line(road, track, th)
 	for i in track.branches.size():
 		_branch_road(road, track, i)
+	_pads(road, track, th)
 	add_child(_instance(road.commit()))
 
 	var walls := SurfaceTool.new()
@@ -37,6 +41,8 @@ func build(track: TrackModel) -> void:
 	var water := SurfaceTool.new()
 	water.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var any_water: bool = false
+	for i in track.hazard_polygons.size():
+		any_water = _fill_polygon(water, track.hazard_polygons[i], th.water_color, WATER_Y) or any_water
 	for i in track.branches.size():
 		any_water = _branch_fill(water, track, i) or any_water
 	if any_water:
@@ -55,9 +61,8 @@ func _normals_of(pts: PackedVector2Array, closed: bool) -> Array[Vector2]:
 
 
 func _main_road(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
-	var half: float = track.data.road_half_width
-	var wall: float = track.wall_offset
-	var pts: PackedVector2Array = track.points
+	var path: TrackModel.Path = track.main
+	var pts: PackedVector2Array = path.points
 	var n: int = pts.size()
 	var normals: Array[Vector2] = _normals_of(pts, true)
 	for i in n:
@@ -66,14 +71,18 @@ func _main_road(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
 		var b: Vector2 = pts[j]
 		var na: Vector2 = normals[i]
 		var nb: Vector2 = normals[j]
-		_quad(st, a + na * half, a - na * half, b - nb * half, b + nb * half, 0.0, th.road_color)
+		var ha: float = path.half[i]
+		var hb: float = path.half[j]
+		var ca: float = ha + path.curb
+		var cb: float = hb + path.curb
+		_quad(st, a + na * ha, a - na * ha, b - nb * hb, b + nb * hb, 0.0, th.road_color)
 		var curb: Color = th.curb_color_a if ((i / maxi(th.curb_stripe_segments, 1)) % 2) == 0 else th.curb_color_b
-		_quad(st, a + na * wall, a + na * half, b + nb * half, b + nb * wall, 0.01, curb)
-		_quad(st, a - na * half, a - na * wall, b - nb * wall, b - nb * half, 0.01, curb)
+		_quad(st, a + na * ca, a + na * ha, b + nb * hb, b + nb * cb, 0.01, curb)
+		_quad(st, a - na * ha, a - na * ca, b - nb * cb, b - nb * hb, 0.01, curb)
 
 
 func _start_line(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
-	var half: float = track.data.road_half_width
+	var half: float = track.half_width_at(0.0)
 	var p0: Vector2 = track.point_at(0.0)
 	var t0: Vector2 = track.tangent_at(0.0)
 	var n0: Vector2 = track.normal_at(0.0)
@@ -94,23 +103,51 @@ func _branch_road(st: SurfaceTool, track: TrackModel, bi: int) -> void:
 	var path: TrackModel.Path = track.branches[bi]
 	var pts: PackedVector2Array = path.points
 	var normals: Array[Vector2] = _normals_of(pts, false)
-	var half: float = b.half_width + b.curb_width
 	for i in pts.size() - 1:
 		var col: Color = b.deck_color if i % 2 == 0 else b.deck_alt_color
-		_quad(st, pts[i] + normals[i] * half, pts[i] - normals[i] * half,
-				pts[i + 1] - normals[i + 1] * half, pts[i + 1] + normals[i + 1] * half, DECK_Y, col)
+		var ha: float = path.half[i] + b.curb_width
+		var hb: float = path.half[i + 1] + b.curb_width
+		_quad(st, pts[i] + normals[i] * ha, pts[i] - normals[i] * ha,
+				pts[i + 1] - normals[i + 1] * hb, pts[i + 1] + normals[i + 1] * hb, DECK_Y, col)
+
+
+# Boost pads: a base plate with a chevron pointing along the road.
+func _pads(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
+	for i in track.pad_centers.size():
+		var c: Vector2 = track.pad_centers[i]
+		var t: Vector2 = track.pad_dirs[i]
+		var n: Vector2 = Vector2(-t.y, t.x)
+		var h: Vector2 = track.pad_halves[i]
+		_quad(st, c - t * h.x + n * h.y, c - t * h.x - n * h.y, c + t * h.x - n * h.y, c + t * h.x + n * h.y, PAD_Y, th.pad_color_a)
+		for k in 2:
+			var base: Vector2 = c + t * (h.x * (-0.55 + 0.6 * k))
+			var tip: Vector2 = base + t * h.x * 0.45
+			var w: float = h.y * 0.75
+			st.set_color(th.pad_color_b)
+			st.set_normal(Vector3.UP)
+			st.add_vertex(_v3(base + n * w, PAD_Y + 0.01))
+			st.add_vertex(_v3(tip, PAD_Y + 0.01))
+			st.add_vertex(_v3(base + n * w * 0.4 + t * 0.6, PAD_Y + 0.01))
+			st.add_vertex(_v3(base - n * w, PAD_Y + 0.01))
+			st.add_vertex(_v3(base - n * w * 0.4 + t * 0.6, PAD_Y + 0.01))
+			st.add_vertex(_v3(tip, PAD_Y + 0.01))
 
 
 func _main_walls(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
-	var pts: PackedVector2Array = track.points
+	var path: TrackModel.Path = track.main
+	var pts: PackedVector2Array = path.points
 	var n: int = pts.size()
 	var normals: Array[Vector2] = _normals_of(pts, true)
 	var stripe: int = maxi(th.wall_stripe_segments, 1)
 	for i in n:
 		var j: int = (i + 1) % n
-		for side in [1.0, -1.0]:
-			var a: Vector2 = pts[i] + normals[i] * track.wall_offset * side
-			var b: Vector2 = pts[j] + normals[j] * track.wall_offset * side
+		for side in [1, -1]:
+			var wi: float = path.wall_pos[i] if side > 0 else path.wall_neg[i]
+			var wj: float = path.wall_pos[j] if side > 0 else path.wall_neg[j]
+			if wi > path.half[i] + path.curb + 0.05 or wj > path.half[j] + path.curb + 0.05:
+				continue  # open edge over water
+			var a: Vector2 = pts[i] + normals[i] * wi * side
+			var b: Vector2 = pts[j] + normals[j] * wj * side
 			if _in_branch_opening(track, (a + b) * 0.5):
 				continue
 			var odd: bool = (i / stripe) % 2 == 1
@@ -121,29 +158,41 @@ func _main_walls(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
 
 func _branch_walls(st: SurfaceTool, track: TrackModel, bi: int) -> void:
 	var b: TrackBranch = track.data.branches[bi]
+	if b.open_edge_reach > 0.0 or b.wall_height <= 0.0:
+		return
 	var path: TrackModel.Path = track.branches[bi]
 	var pts: PackedVector2Array = path.points
 	var normals: Array[Vector2] = _normals_of(pts, false)
 	for i in pts.size() - 1:
 		for side in [1.0, -1.0]:
-			var a: Vector2 = pts[i] + normals[i] * path.wall_offset * side
-			var c: Vector2 = pts[i + 1] + normals[i + 1] * path.wall_offset * side
+			var a: Vector2 = pts[i] + normals[i] * path.wall_pos[i] * side
+			var c: Vector2 = pts[i + 1] + normals[i + 1] * path.wall_pos[i + 1] * side
 			var mid: Vector2 = (a + c) * 0.5
-			if track.distance_to_path(mid, TrackModel.MAIN_PATH) < track.wall_offset + GAP_MARGIN:
+			if track.main.nearest(mid, -1, 0).excess < GAP_MARGIN:
 				continue
-			_block(st, a, c, -normals[i] * side, b.curb_width, b.wall_height,
+			if _in_other_branch(track, mid, bi):
+				continue
+			_block(st, a, c, -normals[i] * side, maxf(b.curb_width, 0.3), b.wall_height,
 					b.wall_alt_color if i % 2 == 1 else b.wall_color)
 
 
 # True when [param p] (a wall point of the main road) lies in the opening of a branch.
 func _in_branch_opening(track: TrackModel, p: Vector2) -> bool:
 	for bp in track.branches:
-		if bp.bounds.has_point(p) and track.distance_to_path(p, bp.index) < bp.wall_offset + GAP_MARGIN:
+		if bp.bounds.has_point(p) and bp.nearest(p, -1, 0).excess < GAP_MARGIN:
 			return true
 	return false
 
 
-# Fills the area between a branch and the main road it bypasses (the moat). True if drawn.
+func _in_other_branch(track: TrackModel, p: Vector2, skip: int) -> bool:
+	for bp in track.branches:
+		if bp.index != skip and bp.bounds.has_point(p) and bp.nearest(p, -1, 0).excess < GAP_MARGIN:
+			return true
+	return false
+
+
+# Fills the area between a branch and the main road it bypasses when the branch asks for it
+# (fill_color alpha > 0). True if drawn.
 func _branch_fill(st: SurfaceTool, track: TrackModel, bi: int) -> bool:
 	var b: TrackBranch = track.data.branches[bi]
 	if b.fill_color.a <= 0.0:
@@ -158,14 +207,18 @@ func _branch_fill(st: SurfaceTool, track: TrackModel, bi: int) -> bool:
 	poly.append(track.point_at(b.s_out))
 	for k in range(path.points.size() - 2, 0, -1):
 		poly.append(path.points[k])
+	return _fill_polygon(st, poly, b.fill_color, WATER_Y)
+
+
+func _fill_polygon(st: SurfaceTool, poly: PackedVector2Array, col: Color, y: float) -> bool:
 	var tris: PackedInt32Array = Geometry2D.triangulate_polygon(poly)
 	if tris.is_empty():
-		push_warning("TrackMesh: moat polygon of branch %s could not be triangulated" % b.id)
+		push_warning("TrackMesh: a hazard/fill polygon could not be triangulated")
 		return false
-	st.set_color(b.fill_color)
+	st.set_color(col)
 	st.set_normal(Vector3.UP)
 	for idx in tris:
-		st.add_vertex(_v3(poly[idx], WATER_Y))
+		st.add_vertex(_v3(poly[idx], y))
 	return true
 
 
