@@ -26,6 +26,12 @@ Sequential races, 11 bots, 3 laps, host on autopilot (the "skilled player" refer
 - `win-final`: windowed host, 11 bots, Castle Circuit: fps min 60, median 60 (vsync cap). The earlier 50 fps runs (`win-bots`, `win-nobots`) overlapped other Godot runs on the same machine; quiet runs (`win-quiet-castle`, `win-quiet-final`, `win-final`) hold 60.
 - Parse check: 46/46 scripts load.
 
+## Literals moved to data (/dev-story, 2026-11-20, after /story-done)
+
+- Six driving thresholds moved from `src/ai/bot_driver.gd` into `assets/data/ai/bot_set.tres` via new `BotSet` knobs: `corner_end_turn` 0.15, `corner_start_share` 0.7, `avoid_commit_side` 0.8, `follow_corridor_share` 0.8, `stone_cone_slack` 1.2. The sixth literal (`1.5` on the open-edge side) was a code, not a tuning value: now the constant `OPEN_BOTH` (2.0).
+- The defaults equal the old literals, so driving is unchanged. Parse check: 6 scripts ok, exit 0.
+- Regression runs (`literals-batch/`): Castle seed 4099330464: 11/11 finished, spread 9.6%, 1 sink (a bump at the drawbridge, 0 self-caused), 0 stuck. Dungeon seed 2611259781: 11/11 finished, spread 7.4%, 0 sinks, 1 stuck event: Wide Wanderer pinned at the wall at the mine-rail entrance at t=23 s, reversed and freed in 2.7 s. That is a natural stuck recovered by the recovery code (earlier runs had none). 0 ERROR lines.
+
 ## The moat sink fix (history)
 
 - Before (`sink-castle-2`): 21 sinks in one Castle race, 14 self-caused, at the drawbridge mouth and deck.
@@ -52,4 +58,4 @@ Sequential races, 11 bots, 3 laps, host on autopilot (the "skilled player" refer
 ## Not verified
 
 - A human playing against the bots ("tougher than prototype 1", "a skilled human can win clearly"): the autopilot reference won the races by 1-2 s; the owner judges by playing.
-- Stuck recovery from a natural wall trap: only the forced pin.
+- Stuck recovery from a natural wall trap: forced pin in the main runs; one natural case (Wide Wanderer, Dungeon, `literals-batch`) recovered in 2.7 s. One case is not a sample.

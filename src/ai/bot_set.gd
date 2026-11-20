@@ -36,6 +36,10 @@ extends Resource
 @export var drift_release_turn: float = 0.45
 ## A drift is released this close (meters) to the wall.
 @export var drift_wall_margin: float = 3.0
+## A corner is over (the drift choice resets) when the heading change falls under this.
+@export var corner_end_turn: float = 0.15
+## A corner starts when the heading change reaches this share of the personality's drift_start_turn.
+@export var corner_start_share: float = 0.7
 
 @export_group("Open edges")
 ## On a main-road stretch with an unwalled edge (over water or lava) the line stays at most this
@@ -104,8 +108,12 @@ extends Resource
 ## A kart alongside closer than this sideways is given room (meters of push).
 @export var avoid_side_gap: float = 3.2
 @export var avoid_side_push: float = 1.2
+## A kart at least this far to one side (meters) is passed on the other side.
+@export var avoid_commit_side: float = 0.8
 ## Lift the throttle when a slower kart is this close ahead (meters) and in the way.
 @export var follow_gap: float = 13.0
+## A slower kart ahead only makes the bot lift when it is within this share of avoid_corridor sideways.
+@export var follow_corridor_share: float = 0.8
 ## Brake when a kart is this close ahead and closing fast.
 @export var brake_gap: float = 6.0
 ## Closing speed (m/s) needed to brake.
@@ -125,6 +133,8 @@ extends Resource
 @export var stone_min_range: float = 6.0
 @export var stone_max_range: float = 50.0
 @export var stone_cone_deg: float = 9.0
+## The stone cone is this many meters wider than its angle (sideways).
+@export var stone_cone_slack: float = 1.2
 ## Spill: dropped when a kart is this close behind (meters) and this near my lane.
 @export var spill_range: float = 16.0
 @export var spill_lane: float = 3.5

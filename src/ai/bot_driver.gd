@@ -18,6 +18,9 @@ var stuck_events: int = 0
 ## Longest time (seconds) the bot was barely moving in one go.
 var stuck_longest: float = 0.0
 
+## What _open_edge_side returns when both edges of the road are open.
+const OPEN_BOTH: float = 2.0
+
 var _set: BotSet
 var _seed: int = 0
 var _ctx: BotContext
@@ -181,7 +184,7 @@ func _drive(input: KartInput, sim: KartSim, track: TrackModel, dt: float) -> voi
 	var open_side: float = _open_edge_side(track, sim) if sim.track_path == TrackModel.MAIN_PATH else 0.0
 	var lim_neg: float = usable
 	var lim_pos: float = usable
-	if open_side < 0.0 or open_side > 1.5:
+	if open_side < 0.0 or open_side >= OPEN_BOTH:
 		lim_neg = minf(usable, _set.open_edge_keep)
 	if open_side > 0.0:
 		lim_pos = minf(usable, _set.open_edge_keep)
@@ -443,13 +446,13 @@ func _drive_drift(input: KartInput, sim: KartSim, track: TrackModel, diff: float
 		open_side: float) -> void:
 	var p: BotPersonality = personality
 	var aturn: float = absf(turn)
-	if aturn < 0.15:
+	if aturn < _set.corner_end_turn:
 		_corner_state = 0
-	elif _corner_state == 0 and aturn >= p.drift_start_turn * 0.7:
+	elif _corner_state == 0 and aturn >= p.drift_start_turn * _set.corner_start_share:
 		_corner_state = 1 if _rng.randf() < p.drift_chance else 2
 	var abort_lat: float = maxf(sim.road_half_width - _set.drift_wall_margin, 1.0)
 	var open_abort: bool = false
-	if open_side > 1.5:
+	if open_side >= OPEN_BOTH:
 		open_abort = absf(sim.lateral) > _set.open_edge_drift_abort
 	elif open_side != 0.0:
 		open_abort = sim.lateral * open_side > _set.open_edge_drift_abort
@@ -513,7 +516,7 @@ func _scan_traffic(sim: KartSim, usable: float) -> void:
 	if best.kart_id != _av_id:
 		_av_id = best.kart_id
 		_av_dir = 0.0
-	if absf(best_side) >= 0.8:
+	if absf(best_side) >= _set.avoid_commit_side:
 		_av_dir = -signf(best_side)
 	elif _av_dir == 0.0:
 		var room_pos: float = usable - sim.lateral
@@ -528,7 +531,7 @@ func _scan_traffic(sim: KartSim, usable: float) -> void:
 	var closing: float = sim.speed - best.sim.speed * best.sim.forward().dot(fwd)
 	if best_ahead < _set.brake_gap and closing > _set.brake_closing:
 		_av_brake = true
-	elif best_ahead < _set.follow_gap and closing > 0.0 and absf(best_side) < _set.avoid_corridor * 0.8:
+	elif best_ahead < _set.follow_gap and closing > 0.0 and absf(best_side) < _set.avoid_corridor * _set.follow_corridor_share:
 		_av_lift = true
 
 
@@ -655,7 +658,7 @@ func _kart_in_cone(sim: KartSim, min_range: float, max_range: float) -> bool:
 			continue
 		var rel: Vector2 = r.sim.position - sim.position
 		var ahead: float = rel.dot(fwd)
-		if ahead >= min_range and ahead <= max_range and absf(rel.dot(nrm)) <= ahead * slope + 1.2:
+		if ahead >= min_range and ahead <= max_range and absf(rel.dot(nrm)) <= ahead * slope + _set.stone_cone_slack:
 			return true
 	return false
 

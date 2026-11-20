@@ -1,6 +1,6 @@
-Reviewed-Content-Hash: src/ai/bot_driver.gd 2f5a662297c27fda36a795bad026883e04e22ea3
+Reviewed-Content-Hash: src/ai/bot_driver.gd 539ba31a8780355219e2dddb6ba71fd37591bfbc
 Reviewed-Content-Hash: src/ai/bot_personality.gd 82923744c1dd1fa620beed618a002301abd92928
-Reviewed-Content-Hash: src/ai/bot_set.gd 502bf3894c96f0c404d4e74214a50d97b52bd822
+Reviewed-Content-Hash: src/ai/bot_set.gd b460f23c6b2f141912eb405fa0da08613b8f8fd4
 Reviewed-Content-Hash: src/ai/bot_context.gd 8d5e6f54e27804919342d8e24c2fec0cc3d9ce75
 Reviewed-Content-Hash: src/ai/bot_debug.gd c4aeae9cc6f5b729268957944a781e2a2f77e8c8
 Reviewed-Content-Hash: assets/data/ai/bot_set.tres 480b96c5027b48f50ce2650b20842da6bcdb0051
