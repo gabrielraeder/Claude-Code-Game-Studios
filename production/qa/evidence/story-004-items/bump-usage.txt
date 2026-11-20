@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Kart-bump test (story 002): a host and one client race on this PC with chosen debug
+# drivers, then each prints a [bump-summary] line (what its own screen showed).
+# Usage: tools/bump_test.sh OUTDIR "HOST ARGS" "CLIENT ARGS" [SECONDS=30] [WINDOWED=host|client|none]
+# Example: tools/bump_test.sh out/a "--park" "--ram" 30 host

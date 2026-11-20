@@ -1,0 +1,6 @@
+HIT seq=100002 item=falcon victim=0 blocked=1 t=6.03
+HIT seq=100003 item=falcon victim=0 blocked=0 t=9.05
+HIT seq=100006 item=spill victim=0 blocked=1 t=24.37
+HIT seq=100016 item=spill victim=0 blocked=1 t=67.15
+HIT seq=200003 item=stone victim=0 blocked=0 t=11.33
+HIT seq=3 item=spill victim=2 blocked=0 t=15.10

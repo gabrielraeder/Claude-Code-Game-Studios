@@ -1,13 +1,13 @@
 # Story 004: Five medieval items
 
 > **Epic**: Dogworks Racing: Kennel Kingdom
-> **Status**: Ready
+> **Status**: In Progress
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: L
 > **Build step**: core
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: —
+> **Last Updated**: 2026-11-20
 
 ## Context
 
@@ -59,9 +59,18 @@
 
 ## Files
 
-- `src/items/` (item definitions, odds table, item box)
-- `assets/data/items/` (odds and tuning data)
-- `production/qa/evidence/story-004-items-evidence.md` (the 3-PC race log)
+- `src/items/item_def.gd` (new: one item's tuning)
+- `src/items/item_set.gd` (new: the five items and the odds table by place)
+- `src/items/item_manager.gd` (new: boxes, roulette, firing, item sim, victim-decided hits, shield, effects)
+- `assets/data/items/item_set.tres` (new: item tuning and odds data)
+- `src/main.gd` (item manager wiring; race seed in the start info)
+- `src/net/net_session.gd` (reliable RPCs: box taken, item granted, item spawn, item hit)
+- `src/ui/race_hud.gd` (item slot)
+- `src/race/race_ranking.gd` (`id_at_place`)
+- `src/track/track_scenery.gd` (item boxes moved to the item manager)
+- `src/debug/debug_options.gd`, `src/debug/debug_harness.gd` (--give-item, --item-interval, item screenshots)
+- `tools/item_net_test.sh`, `tools/item_log_check.py`, `tools/item_odds_check.gd`, `tools/net_stress_test.sh` (test rigs)
+- `production/qa/evidence/story-004-items-evidence.md` (3-PC race logs, odds, 12-racer and lag runs)
 
 ---
 

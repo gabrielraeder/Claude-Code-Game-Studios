@@ -70,12 +70,28 @@ var _log_accum: float = 0.0
 var _log_file: FileAccess
 var _bw_out: float = 0.0
 var _bw_in: float = 0.0
+var _items: ItemManager
+
+## Item data (story 004): five items, odds table, box timings.
+const ITEM_SET_PATH: String = "res://assets/data/items/item_set.tres"
 
 
 ## The 3-2-1 countdown and start result (read by the HUD and the debug harness).
 var start_sequence: StartSequence:
 	get:
 		return _start
+
+
+## The item system (read by the debug harness).
+var items: ItemManager:
+	get:
+		return _items
+
+
+## Kart id of this PC's kart (debug shots).
+var local_kart_id: int:
+	get:
+		return _local.kart_id
 
 
 ## True while an online race is running (the debug harness leaves quitting to Main then).
@@ -158,6 +174,16 @@ func _ready() -> void:
 	_net.pong_received.connect(_on_pong)
 	_net.bump_received.connect(_on_bump_received)
 	_laps.finished.connect(func(total: float) -> void: race_finished.emit(total))
+	_items = ItemManager.new()
+	_items.name = &"ItemManager"
+	add_child(_items)
+	var item_set: ItemSet = load(ITEM_SET_PATH) as ItemSet
+	_items.setup(item_set, func() -> Array: return _racers, func() -> Racer: return _local,
+			func(id: int) -> int: return _ranking.place_of(id),
+			func(place: int) -> int: return _ranking.id_at_place(place),
+			func() -> bool: return _mode == Mode.NET_RACE, _net)
+	_items.debug_give = -2 if _options.give_item == "all" else (item_set.index_of(StringName(_options.give_item)) if _options.give_item != "" else -1)
+	_items.auto_interval = _options.item_interval if _options.autopilot else 0.0
 	_reset_race()
 	_camera.track = _track
 	_camera.follow(_sim)
@@ -194,6 +220,7 @@ func _physics_process(dt: float) -> void:
 			if _tick_owned(_local, dt, false):
 				race_time += dt
 				_laps.update(_sim.track_s, race_time)
+			_items.update(dt, race_time)
 		Mode.NET_RACE:
 			_net_tick(dt)
 
@@ -207,6 +234,7 @@ func _process(delta: float) -> void:
 	else:
 		_lobby_timer = 0.0
 	_hud.refresh(_sim, _laps, race_time, _start, _mode == Mode.SOLO)
+	_hud.set_item(_items.hud_icon())
 	if _debug_cam != null and not _grid_shot_done and _start.is_counting():
 		_grid_shot_timer += delta
 		if _grid_shot_timer > 1.5:
@@ -273,6 +301,7 @@ func _net_tick(dt: float) -> void:
 	_resolve_kart_contacts()
 	_separate_karts()
 	_measure_contacts()
+	_items.update(dt, race_time)
 	_send_accum += dt
 	var interval: float = 1.0 / net_config.send_hz
 	if _send_accum >= interval:
@@ -615,6 +644,7 @@ func _host_begin_race() -> void:
 		"laps": _laps_for_race(),
 		"track": String(track_data.track_id),
 		"host_time": -vehicle_stats.start_countdown_time,
+		"seed": randi(),
 	}
 	_net.broadcast_race_start(info)
 	_apply_race_start(info)
@@ -686,6 +716,7 @@ func _apply_race_start(info: Dictionary) -> void:
 		_racers.append(r)
 		_by_id[kart_id] = r
 	_ranking.reset(ids)
+	_items.reset(_track, int(info.get("seed", 0)))
 	_lead_seq = [_ranking.leader()]
 	_net_stats.reset_race()
 	_send_accum = 0.0
@@ -824,6 +855,8 @@ func _reset_race() -> void:
 	_input.clear()
 	race_time = 0.0
 	_start.begin(vehicle_stats)
+	if _items != null:
+		_items.reset(_track, 0)
 
 
 # Loads [param id] when it is not the current track (a client follows the host's choice).

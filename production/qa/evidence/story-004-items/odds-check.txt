@@ -1,0 +1,18 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+odds table (weights, rows = place, columns = horn, stone, spill, falcon, shield)
+  place  1: [25.0, 5.0, 40.0, 0.0, 30.0]
+  place  2: [25.0, 10.0, 35.0, 0.0, 30.0]
+  place  3: [30.0, 20.0, 25.0, 10.0, 15.0]
+  place  4: [30.0, 22.0, 20.0, 13.0, 15.0]
+  place  5: [30.0, 25.0, 15.0, 18.0, 12.0]
+  place  6: [30.0, 25.0, 10.0, 22.0, 8.0]
+  place  7: [30.0, 25.0, 8.0, 27.0, 5.0]
+  place  8: [32.0, 25.0, 5.0, 32.0, 5.0]
+  place  9: [35.0, 25.0, 3.0, 35.0, 2.0]
+  place 10: [38.0, 25.0, 2.0, 33.0, 2.0]
+  place 11: [40.0, 25.0, 1.0, 33.0, 1.0]
+  place 12: [40.0, 25.0, 0.0, 35.0, 0.0]
+leaders 1-2 (2000 rolls): horn 24.9%, stone 7.1%, spill 36.0%, falcon 0.0%, shield 32.0%
+middle 5-8 (2000 rolls): horn 30.3%, stone 26.8%, spill 9.0%, falcon 25.5%, shield 8.4%
+back 11-12 (2000 rolls): horn 40.0%, stone 25.5%, spill 0.7%, falcon 33.5%, shield 0.5%

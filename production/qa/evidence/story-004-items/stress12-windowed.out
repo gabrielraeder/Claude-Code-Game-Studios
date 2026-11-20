@@ -1,0 +1,23 @@
+host + 11 clients, 2 laps, out=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/story-004-items/stress12-windowed
+tools/net_stress_test.sh: line 26: HOST_EXTRA: unbound variable
+done in 31 s
+== [net-summary] lines ==
+
+processes with a summary: 0
+extrap %      avg n/a   max n/a
+pred_err avg  avg n/a m   max-of-avgs n/a m
+pred_err max  worst n/a m
+rtt avg (ms)  avg n/a   rtt max worst n/a
+view delay ms avg n/a   max n/a
+snaps/s       avg n/a
+kb_out/s      host    client avg n/a
+kb_in/s       host    client avg n/a
+
+== lead-change agreement ==
+(distinct 'lead_changes lead_seq' values above; one line = all processes agree)
+
+== finished places ==
+
+
+== errors / warnings in logs ==
+(count: 0)

@@ -1,0 +1,67 @@
+[gd_resource type="Resource" script_class="ItemSet" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/items/item_set.gd" id="1"]
+[ext_resource type="Script" path="res://src/items/item_def.gd" id="2"]
+
+[sub_resource type="Resource" id="horn"]
+script = ExtResource("2")
+id = &"horn"
+display_name = "War Horn"
+color = Color(0.9608, 0.7725, 0.2588, 1)
+accent = Color(1, 0.48, 0.2, 1)
+duration = 1.8
+
+[sub_resource type="Resource" id="stone"]
+script = ExtResource("2")
+id = &"stone"
+display_name = "Catapult Stone"
+color = Color(0.4784, 0.4980, 0.5490, 1)
+accent = Color(1, 0.4784, 0.2, 1)
+speed = 38.0
+radius = 0.9
+max_bounces = 4
+lifetime = 8.0
+spawn_offset = 3.0
+
+[sub_resource type="Resource" id="spill"]
+script = ExtResource("2")
+id = &"spill"
+display_name = "Cauldron Spill"
+color = Color(0.5451, 0.8784, 0.3059, 1)
+accent = Color(0.8, 1, 0.5, 1)
+radius = 2.0
+lifetime = 20.0
+arm_time = 0.6
+spawn_offset = 3.0
+
+[sub_resource type="Resource" id="falcon"]
+script = ExtResource("2")
+id = &"falcon"
+display_name = "Falcon"
+color = Color(0.2980, 0.3725, 0.8431, 1)
+accent = Color(1, 0.2314, 0.2314, 1)
+speed = 52.0
+radius = 1.2
+lifetime = 9.0
+spawn_offset = 3.0
+turn_rate = 14.0
+lose_range = 140.0
+
+[sub_resource type="Resource" id="shield"]
+script = ExtResource("2")
+id = &"shield"
+display_name = "Shield of the Realm"
+color = Color(0.8941, 0.9176, 0.9490, 1)
+accent = Color(1, 0.8941, 0.5412, 1)
+duration = 12.0
+
+[resource]
+script = ExtResource("1")
+items = Array[ExtResource("2")]([SubResource("horn"), SubResource("stone"), SubResource("spill"), SubResource("falcon"), SubResource("shield")])
+odds = Array[PackedFloat32Array]([PackedFloat32Array(25, 5, 40, 0, 30), PackedFloat32Array(25, 10, 35, 0, 30), PackedFloat32Array(30, 20, 25, 10, 15), PackedFloat32Array(30, 22, 20, 13, 15), PackedFloat32Array(30, 25, 15, 18, 12), PackedFloat32Array(30, 25, 10, 22, 8), PackedFloat32Array(30, 25, 8, 27, 5), PackedFloat32Array(32, 25, 5, 32, 5), PackedFloat32Array(35, 25, 3, 35, 2), PackedFloat32Array(38, 25, 2, 33, 2), PackedFloat32Array(40, 25, 1, 33, 1), PackedFloat32Array(40, 25, 0, 35, 0)])
+box_respawn = 5.0
+roulette_time = 1.0
+roulette_tick = 0.08
+box_pickup_radius = 2.2
+kart_hit_radius = 1.0
+hit_slowdown_profile = 0

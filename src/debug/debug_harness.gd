@@ -53,12 +53,53 @@ func setup(options: DebugOptions, main: Node, sim: KartSim, laps: LapCounter) ->
 		DirAccess.make_dir_recursive_absolute(_options.shots_dir)
 	_sim.drift_ended.connect(_on_drift_ended)
 	_main.race_finished.connect(_on_race_finished)
+	var items: Object = _main.get("items")
+	if items != null and _options.shots_dir != "":
+		items.item_event.connect(_on_item_event)
 	_sim.sank.connect(func() -> void: _delayed_shot("moat_sink", 0.5))
 	_sim.respawned.connect(func() -> void: _delayed_shot("moat_respawn", 0.4))
 	_sim.pad_boosted.connect(func() -> void:
 		if not _pad_shot_done:
 			_pad_shot_done = true
 			_delayed_shot("boost_pad", 0.05))
+
+
+const ITEM_SHOT_DELAY: Dictionary = {
+	&"roulette": 0.5, &"horn": 0.25, &"stone": 0.3, &"spill": 1.2, &"falcon": 0.5,
+	&"shield": 0.3, &"bounce": 0.05, &"slick_ahead": 0.05, &"hit": 0.15, &"shield_break": 0.1,
+}
+var _item_shots: Dictionary = {}
+
+
+# Pictures of item events (story 004): the first one or two of each kind.
+func _on_item_event(kind: StringName, text: String) -> void:
+	if not ITEM_SHOT_DELAY.has(kind):
+		return
+	if kind in [&"horn", &"stone", &"spill", &"falcon", &"shield", &"bounce", &"roulette"]:
+		var owner_id: int = _owner_of(text)
+		if owner_id != int(_main.get("local_kart_id")):
+			return
+	var n: int = int(_item_shots.get(kind, 0))
+	if n >= (6 if kind == &"hit" or kind == &"shield_break" else 1):
+		return
+	_item_shots[kind] = n + 1
+	var tag: String = text.replace(" ", "_").replace("=", "")
+	var delay: float = float(ITEM_SHOT_DELAY[kind])
+	if kind == &"hit" or kind == &"shield_break":
+		delay = 0.05 if n == 0 else (0.2 if n == 1 else 0.45)
+	if (kind == &"hit" or kind == &"shield_break") and n >= 2:
+		delay = 0.45  # later pictures show the spin and the star puffs without the flash
+	_delayed_shot("item_%s_%d_%s" % [kind, n, tag], delay)
+
+
+# Kart id that fired the item in an item_event text (owner=, kart=, or seq=owner*100000+n).
+func _owner_of(text: String) -> int:
+	for part in text.split(" "):
+		if part.begins_with("owner=") or part.begins_with("kart="):
+			return int(part.get_slice("=", 1))
+		if part.begins_with("seq="):
+			return int(part.get_slice("=", 1)) / 100000
+	return -1
 
 
 func _on_drift_ended(tier: int, _boost_seconds: float) -> void:

@@ -49,6 +49,11 @@ func place_of(id: int) -> int:
 	return _order.find(id) + 1
 
 
+## Kart id at 1-based shown [param place], or -1 when there is none.
+func id_at_place(place: int) -> int:
+	return _order[place - 1] if place >= 1 and place <= _order.size() else -1
+
+
 ## Number of ranked karts.
 func count() -> int:
 	return _order.size()

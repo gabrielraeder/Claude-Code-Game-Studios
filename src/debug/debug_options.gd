@@ -38,6 +38,10 @@ var grid_shot: bool = false
 var shot_s: PackedFloat32Array = PackedFloat32Array()
 ## Main-loop distance where the autopilot drives into the moat once (--dunk-at=), -1 = off.
 var dunk_s: float = -1.0
+## Item the local kart starts with and keeps getting refilled with (--give-item=horn|stone|spill|falcon|shield).
+var give_item: String = ""
+## Seconds between automatic item uses by the autopilot (--item-interval=), 0 = off.
+var item_interval: float = 0.0
 
 
 ## Parses [param args] (normally OS.get_cmdline_user_args()).
@@ -65,6 +69,10 @@ static func parse(args: PackedStringArray) -> DebugOptions:
 				o.shot_s.append(part.to_float())
 		elif a.begins_with("--dunk-at="):
 			o.dunk_s = a.substr("--dunk-at=".length()).to_float()
+		elif a.begins_with("--give-item="):
+			o.give_item = a.substr("--give-item=".length())
+		elif a.begins_with("--item-interval="):
+			o.item_interval = a.substr("--item-interval=".length()).to_float()
 		elif a == "--park":
 			o.park = true
 		elif a == "--ram":

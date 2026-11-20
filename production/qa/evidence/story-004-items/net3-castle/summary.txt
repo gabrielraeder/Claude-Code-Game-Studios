@@ -1,0 +1,24 @@
+== [net-summary] lines ==
+role=client peer=600551689 place=3 finish=82.80 karts=3 | rtt_avg=4ms rtt_max=8ms view_delay=55ms | snaps/s=60.6 | extrap=0.0% | pred_err avg=0.020m max=0.513m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=6.9 kb_in/s=6.9
+role=client peer=434268097 place=2 finish=78.45 karts=3 | rtt_avg=4ms rtt_max=11ms view_delay=50ms | snaps/s=60.6 | extrap=0.0% | pred_err avg=0.023m max=10.268m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=6.9 kb_in/s=7.0
+role=host peer=1 place=1 finish=76.50 karts=3 | rtt_avg=0ms rtt_max=0ms view_delay=50ms | snaps/s=60.6 | extrap=0.0% | pred_err avg=0.023m max=10.268m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=13.8 kb_in/s=13.8
+
+processes with a summary: 3
+extrap %      avg 0.000   max 0.000
+pred_err avg  avg 0.022 m   max-of-avgs 0.023 m
+pred_err max  worst 10.268 m
+rtt avg (ms)  avg 2.667   rtt max worst 11.000
+view delay ms avg 51.667   max 55.000
+snaps/s       avg 60.600
+kb_out/s      host 13.8   client avg 6.900
+kb_in/s       host 13.8   client avg 6.950
+
+== lead-change agreement ==
+      3 2 0>1>0
+(distinct 'lead_changes lead_seq' values above; one line = all processes agree)
+
+== finished places ==
+1 76.50;2 78.45;3 82.80;
+
+== errors / warnings in logs ==
+(count: 0)

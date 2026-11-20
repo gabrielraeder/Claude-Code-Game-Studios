@@ -32,6 +32,12 @@ signal bump_received(kart_id: int, from_kart: int, impulse: Vector2, strength: f
 signal pong_received(host_race_time: float, host_active: bool, rtt_sample: float)
 
 ## Returns the host's race clock (float). Set by Main.
+## Item messages (story 004): all reliable.
+signal box_take_received(box: int, kart_id: int)
+signal box_taken_received(box: int, kart_id: int, t: float, item: int)
+signal item_spawn_received(seq: int, item: int, owner_id: int, t: float, pos: Vector2, dir: Vector2, target: int)
+signal item_hit_received(seq: int, victim: int, blocked: bool, t: float)
+
 var race_clock: Callable
 ## Returns true while the host is racing. Set by Main.
 var race_active: Callable
@@ -153,6 +159,34 @@ func send_bump(to_peer: int, kart_id: int, from_kart: int, impulse: Vector2, str
 			true, false, to_peer)
 
 
+## Client to host: "my kart touched item box [param box]" (reliable). The host decides.
+func send_box_take(box: int, kart_id: int) -> void:
+	if not _active:
+		return
+	_send(func() -> void: rpc_box_take.rpc_id(1, box, kart_id), true, false, 1)
+
+
+## Host to everyone: kart [param kart_id] got [param item] from [param box] at race time [param t].
+func send_box_taken(box: int, kart_id: int, t: float, item: int) -> void:
+	if not _active:
+		return
+	_send(func() -> void: rpc_box_taken.rpc(box, kart_id, t, item), true, false)
+
+
+## Firer to everyone: an item was used (reliable). [param p] holds x, z, dir x, dir z.
+func send_item_spawn(seq: int, item: int, owner_id: int, t: float, p: Vector2, dir: Vector2, target: int) -> void:
+	if not _active:
+		return
+	_send(func() -> void: rpc_item_spawn.rpc(seq, item, owner_id, t, p.x, p.y, dir.x, dir.y, target), true, false)
+
+
+## Victim's PC to everyone: item [param seq] hit [param victim] (or was blocked by its shield).
+func send_item_hit(seq: int, victim: int, blocked: bool, t: float) -> void:
+	if not _active:
+		return
+	_send(func() -> void: rpc_item_hit.rpc(seq, victim, blocked, t), true, false)
+
+
 ## Bytes (sent, received) since the last call.
 func pop_bandwidth() -> Vector2:
 	var p: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
@@ -254,6 +288,28 @@ func rpc_state(kart_id: int, t: float, d: PackedFloat32Array) -> void:
 @rpc("any_peer", "call_remote", "reliable")
 func rpc_bump(kart_id: int, from_kart: int, ix: float, iz: float, strength: float) -> void:
 	bump_received.emit(kart_id, from_kart, Vector2(ix, iz), strength)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_box_take(box: int, kart_id: int) -> void:
+	if multiplayer.is_server():
+		box_take_received.emit(box, kart_id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_box_taken(box: int, kart_id: int, t: float, item: int) -> void:
+	box_taken_received.emit(box, kart_id, t, item)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_item_spawn(seq: int, item: int, owner_id: int, t: float, px: float, pz: float,
+		dx: float, dz: float, target: int) -> void:
+	item_spawn_received.emit(seq, item, owner_id, t, Vector2(px, pz), Vector2(dx, dz), target)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_item_hit(seq: int, victim: int, blocked: bool, t: float) -> void:
+	item_hit_received.emit(seq, victim, blocked, t)
 
 
 @rpc("any_peer", "call_remote", "unreliable")

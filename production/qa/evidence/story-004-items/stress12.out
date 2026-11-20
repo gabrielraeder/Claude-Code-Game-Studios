@@ -1,0 +1,35 @@
+host + 11 clients, 2 laps, out=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/story-004-items/stress12
+done in 90 s
+== [net-summary] lines ==
+role=client peer=88896918 place=6 finish=80.29 karts=12 | rtt_avg=7ms rtt_max=12ms view_delay=50ms | snaps/s=328.8 | extrap=0.7% | pred_err avg=0.043m max=16.940m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=38.8 kb_in/s=38.6
+role=client peer=416495763 place=4 finish=79.85 karts=12 | rtt_avg=5ms rtt_max=13ms view_delay=50ms | snaps/s=330.0 | extrap=4.0% | pred_err avg=0.042m max=16.940m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=37.6 kb_in/s=39.0
+role=client peer=1340894672 place=10 finish=81.27 karts=12 | rtt_avg=6ms rtt_max=14ms view_delay=57ms | snaps/s=328.8 | extrap=1.8% | pred_err avg=0.042m max=16.940m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=38.8 kb_in/s=38.6
+role=client peer=150602685 place=8 finish=80.59 karts=12 | rtt_avg=7ms rtt_max=13ms view_delay=50ms | snaps/s=328.9 | extrap=0.6% | pred_err avg=0.044m max=16.940m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=38.6 kb_in/s=38.6
+role=client peer=1673439428 place=5 finish=80.02 karts=12 | rtt_avg=7ms rtt_max=12ms view_delay=50ms | snaps/s=328.9 | extrap=1.6% | pred_err avg=0.043m max=16.940m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=39.1 kb_in/s=38.8
+role=client peer=1347444531 place=9 finish=80.63 karts=12 | rtt_avg=6ms rtt_max=12ms view_delay=50ms | snaps/s=329.5 | extrap=2.3% | pred_err avg=0.041m max=16.940m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=38.4 kb_in/s=38.8
+role=client peer=209932061 place=11 finish=82.45 karts=12 | rtt_avg=8ms rtt_max=13ms view_delay=59ms | snaps/s=328.9 | extrap=1.9% | pred_err avg=0.044m max=16.940m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=38.3 kb_in/s=38.0
+role=client peer=715757689 place=2 finish=78.82 karts=12 | rtt_avg=8ms rtt_max=13ms view_delay=58ms | snaps/s=328.7 | extrap=3.8% | pred_err avg=0.043m max=16.940m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=38.7 kb_in/s=38.8
+role=client peer=2005871473 place=7 finish=80.49 karts=12 | rtt_avg=7ms rtt_max=13ms view_delay=50ms | snaps/s=328.8 | extrap=3.8% | pred_err avg=0.043m max=16.940m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=38.9 kb_in/s=38.9
+role=client peer=1118051260 place=3 finish=79.12 karts=12 | rtt_avg=7ms rtt_max=28ms view_delay=50ms | snaps/s=328.9 | extrap=1.8% | pred_err avg=0.043m max=16.940m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=39.1 kb_in/s=38.9
+role=client peer=583097910 place=12 finish=84.22 karts=12 | rtt_avg=7ms rtt_max=14ms view_delay=51ms | snaps/s=328.7 | extrap=2.0% | pred_err avg=0.043m max=18.629m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=38.4 kb_in/s=38.3
+role=host peer=1 place=1 finish=77.57 karts=12 | rtt_avg=0ms rtt_max=0ms view_delay=50ms | snaps/s=328.8 | extrap=0.6% | pred_err avg=0.045m max=16.940m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=425.2 kb_in/s=424.6
+
+processes with a summary: 12
+extrap %      avg 2.075   max 4.000
+pred_err avg  avg 0.043 m   max-of-avgs 0.045 m
+pred_err max  worst 18.629 m
+rtt avg (ms)  avg 6.250   rtt max worst 28.000
+view delay ms avg 52.083   max 59.000
+snaps/s       avg 328.975
+kb_out/s      host 425.2   client avg 38.609
+kb_in/s       host 424.6   client avg 38.664
+
+== lead-change agreement ==
+     12 2 0>1>0
+(distinct 'lead_changes lead_seq' values above; one line = all processes agree)
+
+== finished places ==
+1 77.57;2 78.82;3 79.12;4 79.85;5 80.02;6 80.29;7 80.49;8 80.59;9 80.63;10 81.27;11 82.45;12 84.22;
+
+== errors / warnings in logs ==
+(count: 0)

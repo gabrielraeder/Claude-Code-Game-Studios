@@ -717,6 +717,8 @@ func _arch_distance(path: TrackModel.Path, from_end: bool) -> float:
 
 
 func _build_item_boxes() -> void:
+	# Story 004: the ItemManager draws the boxes (they rotate, bob, hide and respawn).
+	return
 	for i in _track.data.item_box_spots.size():
 		var p: Vector2 = _track.item_box_position(i)
 		var sz: float = _th.item_box_size

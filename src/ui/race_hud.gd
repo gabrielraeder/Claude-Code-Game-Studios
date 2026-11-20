@@ -24,6 +24,7 @@ var _bar_bg: ColorRect
 var _bar: ColorRect
 var _place: Label
 var _net_info: Label
+var _slot: ItemSlot
 var _banner: String = ""
 var _lobby: bool = false
 
@@ -42,6 +43,39 @@ func set_lobby(lobby: bool) -> void:
 ## Shows the place display ("1st/12") at the top right; [param total] 0 hides it.
 func show_place(place: int, total: int) -> void:
 	_place.text = format_place(place, total) if total > 0 else ""
+
+
+## Item slot (top center circle): [param icon] is {visible, color, glyph, spinning}.
+## Flat placeholder icon; the real art is story 007.
+func set_item(icon: Dictionary) -> void:
+	if _slot == null:
+		_slot = ItemSlot.new()
+		_slot.position = Vector2(0, 0)
+		add_child(_slot)
+	_slot.icon = icon
+	_slot.queue_redraw()
+
+
+## Circle that draws the held item.
+class ItemSlot extends Control:
+	var icon: Dictionary = {}
+
+	func _ready() -> void:
+		anchor_left = 0.5
+		anchor_right = 0.5
+		offset_left = -48.0
+		offset_right = 48.0
+		offset_top = 10.0
+		offset_bottom = 106.0
+
+	func _draw() -> void:
+		var c := Vector2(48, 48)
+		draw_circle(c, 44.0, Color(0, 0, 0, 0.45))
+		if not bool(icon.get("visible", false)):
+			return
+		draw_circle(c, 36.0, icon.get("color", Color.WHITE))
+		var font: Font = ThemeDB.fallback_font
+		draw_string(font, c + Vector2(-10, 12), str(icon.get("glyph", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, 34, Color.BLACK)
 
 
 ## Small network status line at the bottom right (empty hides it).

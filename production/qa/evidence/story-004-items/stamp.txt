@@ -1,0 +1,11 @@
+Reviewed-Content-Hash: src/items/item_def.gd 816eb76959a7923d68a955832f783ecff48d2b56
+Reviewed-Content-Hash: src/items/item_set.gd 900a74a21cf9b937243a61e5a9d3b4d98fb9c4c7
+Reviewed-Content-Hash: src/items/item_manager.gd 73abf65910a1ac5f1f9fc9b801c65ca1225cd301
+Reviewed-Content-Hash: assets/data/items/item_set.tres c40ed0b27b017ff2647e9f483fcd7bbbd098bd01
+Reviewed-Content-Hash: src/main.gd 87015c259a8665e8f35161f805f8e3c12d7b6971
+Reviewed-Content-Hash: src/net/net_session.gd 6862004dda4385458139132bea60068753bcb692
+Reviewed-Content-Hash: src/ui/race_hud.gd 2630d1d6f93f6eaac126029d453ab4bece8764f2
+Reviewed-Content-Hash: src/race/race_ranking.gd 97be11d4b52bafa3f184038835d78197d1eaf883
+Reviewed-Content-Hash: src/track/track_scenery.gd f5bf0892975439ef968235d4354803bd3cb7f770
+Reviewed-Content-Hash: src/debug/debug_options.gd 16376d36630dd739e93da2f756df712921e4fa89
+Reviewed-Content-Hash: src/debug/debug_harness.gd dcb26cff6a11cfabd99b0604375a7c638c4b36e6

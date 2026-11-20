@@ -1,0 +1,4 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+[net] race start: 8 karts, 3 laps, role=host peer=1 kart=0
+[bump-summary] role=host frames=1579 contact_frames=534 deep_frames=0 pen_max=0.038m (own-vs-any 0.038m, remote-vs-remote 0.000m, deep remote frames 0) bumps=22 knock_max=14.48m/s moved=6.60m
