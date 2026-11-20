@@ -1,7 +1,7 @@
 # Story 004: Five medieval items
 
 > **Epic**: Dogworks Racing: Kennel Kingdom
-> **Status**: In Progress
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: L
@@ -92,3 +92,17 @@
 
 - Depends on: `story-002-online-multiplayer.md`, `story-003-tracks-and-shortcuts.md`
 - Unlocks: `story-005-tougher-bots.md`, `story-007-race-flow-hud-sound.md`
+
+## Completion Notes
+**Completed**: 2026-11-20
+**Criteria**: 7/8 passing (deferred: E / LB item use, to be checked when played)
+**Deviations**: None
+**Test Evidence**: production/qa/evidence/story-004-items-evidence.md (3-PC race logs, odds, 12-racer and lag runs); waived test files at qa.level minimal
+**Reviewed by**: self, no independent review (engine check by godot-gdscript-specialist: one reset bug found and fixed)
+
+## Calls beyond the design
+- Odds by place (1st: horn 25, stone 5, spill 40, falcon 0, shield 30; 12th: 40/25/0/35/0) · `assets/data/items/item_set.tres` · kept 2026-11-20
+- Falcon vanishes when its target is more than 140 m ahead · `item_set.tres` · kept 2026-11-20
+- Shield expires after 12 s; box respawn 5 s; roulette 1 s; horn 1.8 s; stone 38 m/s, 4 bounces; slick 20 s · `item_set.tres` · kept 2026-11-20
+- Item messages are `any_peer`, so clients are trusted · `src/net/net_session.gd` · kept 2026-11-20
+- Placeholder shapes and colors for the items · `src/items/item_manager.gd` · kept 2026-11-20

@@ -71,7 +71,7 @@
 ## Features
 - [x] **Driving:** 3-tier drift boost, rebuilt from prototype 1's tuning, with vehicle stats kept as data. Keyboard and controller supported, and the menus work from the controller too.
 - [x] **Online:** host/join for up to 12 racers by IP (Tailscale-friendly), using the proven owner-authoritative model. Bots fill the empty slots, and the host picks how many.
-- [ ] **5 medieval items** from item boxes, with position-weighted odds tuned for 12:
+- [x] **5 medieval items** from item boxes, with position-weighted odds tuned for 12:
   - War Horn: boost.
   - Catapult Stone: wall-bouncing shot.
   - Cauldron Spill: slick dropped behind.
