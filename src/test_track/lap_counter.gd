@@ -2,8 +2,11 @@ class_name LapCounter
 extends RefCounted
 ## Counts laps from the kart's distance along the track. Crossing the start line forward
 ## counts, crossing it backward un-counts, and a lap only counts the first time it is
-## reached, so reversing over the line and back is never a lap.
-## Implements the story-001 lap rule (design/game-brief.md, Goal and fail state).
+## reached, so reversing over the line and back is never a lap. With checkpoints, a forward
+## crossing of the line counts only when every checkpoint was passed in order since the
+## last crossing (shortcut branches map onto the main s range, so s sweeps through the
+## checkpoints they cover).
+## Implements the story-001 lap rule and story 003 checkpoint integrity.
 
 ## Emitted when lap [param lap] begins (first crossing of the line gives lap 1).
 signal lap_started(lap: int)
@@ -25,13 +28,26 @@ var lap_start_time: float = 0.0
 var is_finished: bool = false
 ## Race clock time (from GO) when the last lap was completed; the finish order uses this.
 var finish_race_time: float = 0.0
+## Forward crossings of the line that were refused because a checkpoint was missing.
+var rejected_crossings: int = 0
 
 var _last_s: float = 0.0
+var _checkpoints: PackedFloat32Array = PackedFloat32Array()
+var _cp_next: int = 0
+var _invalid_wraps: int = 0
 
 
-func _init(target_laps: int, loop_length: float) -> void:
+func _init(target_laps: int, loop_length: float, checkpoint_s: PackedFloat32Array = PackedFloat32Array()) -> void:
 	lap_target = target_laps
 	track_length = loop_length
+	_checkpoints = checkpoint_s
+
+
+## Switches to another track: new loop length and checkpoint distances (all interior
+## checkpoints, ascending, not including the line itself). Call reset() afterwards.
+func configure_track(loop_length: float, checkpoint_s: PackedFloat32Array) -> void:
+	track_length = loop_length
+	_checkpoints = checkpoint_s
 
 
 ## Clears all progress; [param start_s] is the kart's distance along the track at the start.
@@ -42,7 +58,28 @@ func reset(start_s: float) -> void:
 	lap_start_time = 0.0
 	is_finished = false
 	finish_race_time = 0.0
+	rejected_crossings = 0
+	_invalid_wraps = 0
 	_last_s = start_s
+	_cp_next = 0
+	while _cp_next < _checkpoints.size() and _checkpoints[_cp_next] <= start_s:
+		_cp_next += 1
+
+
+## Sets the position without counting anything (used after a teleport). The checkpoint
+## state is kept, so a kart placed past a checkpoint it never passed still has to pass it.
+func resync(s: float) -> void:
+	_last_s = s
+
+
+## Checkpoints passed since the last line crossing.
+func checkpoints_passed() -> int:
+	return _cp_next
+
+
+## Number of interior checkpoints.
+func checkpoint_total() -> int:
+	return _checkpoints.size()
 
 
 ## Sum of completed lap times.
@@ -64,15 +101,43 @@ func best_lap() -> float:
 
 ## Call every tick with the kart's distance along the track and the race clock.
 func update(s: float, race_time: float) -> void:
-	var ds: float = s - _last_s
+	var prev: float = _last_s
+	var ds: float = s - prev
 	_last_s = s
 	if ds < -track_length * 0.5:
-		lap += 1
-		if lap > max_lap:
-			max_lap = lap
-			_reached_new_lap(race_time)
+		# Forward across the line.
+		if _cp_next >= _checkpoints.size():
+			lap += 1
+			if lap > max_lap:
+				max_lap = lap
+				_reached_new_lap(race_time)
+		else:
+			rejected_crossings += 1
+			_invalid_wraps += 1
+		_cp_next = 0
+		_pass_forward(0.0, s)
 	elif ds > track_length * 0.5:
-		lap -= 1
+		# Backward across the line.
+		if _invalid_wraps > 0:
+			_invalid_wraps -= 1
+		else:
+			lap -= 1
+		_cp_next = _checkpoints.size()
+		_pass_backward(track_length, s)
+	elif ds > 0.0:
+		_pass_forward(prev, s)
+	elif ds < 0.0:
+		_pass_backward(prev, s)
+
+
+func _pass_forward(from_s: float, to_s: float) -> void:
+	while _cp_next < _checkpoints.size() and from_s < _checkpoints[_cp_next] and to_s >= _checkpoints[_cp_next]:
+		_cp_next += 1
+
+
+func _pass_backward(from_s: float, to_s: float) -> void:
+	while _cp_next > 0 and from_s >= _checkpoints[_cp_next - 1] and to_s < _checkpoints[_cp_next - 1]:
+		_cp_next -= 1
 
 
 func _reached_new_lap(race_time: float) -> void:

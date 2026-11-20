@@ -1,0 +1,7 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+[net] race start: 8 karts, 1 laps, role=host peer=1 kart=0
+[debug] finished: laps [31.5833333333328] boosts [7, 0, 0] start_boost 3 max_speed 35.10 cap 35.10
+[net] peer 110890964 left after finishing; kart 1 keeps its place
+[net-summary] role=host peer=1 place=4 finish=32.20 karts=8 | rtt_avg=0ms rtt_max=0ms view_delay=50ms | snaps/s=29.7 | extrap=0.0% | pred_err avg=0.039m max=0.989m | lag=0 jitter=0 loss=0% | lead_changes=5 lead_seq=0>2>4>1>5>4 | kb_out/s=22.6 kb_in/s=3.8
+[bump-summary] role=host frames=2292 contact_frames=1749 deep_frames=0 pen_max=0.222m (own-vs-any 0.222m, remote-vs-remote 0.000m, deep remote frames 0) bumps=47 knock_max=16.00m/s moved=60.94m

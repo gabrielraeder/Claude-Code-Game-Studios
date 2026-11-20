@@ -52,3 +52,5 @@ extends Resource
 ## Bots push human karts with this fraction of their push strength (the user's notes:
 ## AIWeightMul 0.35), so a bot cannot shove a player around.
 @export var bot_push_mult: float = 0.35
+## Push-apart passes per tick after bumps (clusters of karts need more than one pass).
+@export var contact_passes: int = 3

@@ -1,0 +1,38 @@
+host + 11 clients, 2 laps, out=production/qa/evidence/story-003-tracks-and-shortcuts/stress-12
+done in 73 s
+== [net-summary] lines ==
+role=client peer=1509574312 place=5 finish=64.24 karts=12 | rtt_avg=6ms rtt_max=8ms view_delay=50ms | snaps/s=331.8 | extrap=0.0% | pred_err avg=0.039m max=3.460m | lag=0 jitter=0 loss=0% | lead_changes=8 lead_seq=0>2>1>0>1>2>1>2>1 | kb_out/s=37.4 kb_in/s=37.6
+role=client peer=418288887 place=11 finish=67.02 karts=12 | rtt_avg=6ms rtt_max=10ms view_delay=50ms | snaps/s=332.3 | extrap=2.4% | pred_err avg=0.036m max=2.267m | lag=0 jitter=0 loss=0% | lead_changes=8 lead_seq=0>2>1>0>1>2>1>2>1 | kb_out/s=37.6 kb_in/s=38.0
+role=client peer=333320948 place=1 finish=62.69 karts=12 | rtt_avg=6ms rtt_max=11ms view_delay=50ms | snaps/s=331.8 | extrap=0.0% | pred_err avg=0.039m max=3.460m | lag=0 jitter=0 loss=0% | lead_changes=8 lead_seq=0>2>1>0>1>2>1>2>1 | kb_out/s=37.1 kb_in/s=36.9
+role=client peer=2111658980 place=7 finish=64.27 karts=12 | rtt_avg=6ms rtt_max=8ms view_delay=50ms | snaps/s=331.9 | extrap=1.1% | pred_err avg=0.037m max=3.460m | lag=0 jitter=0 loss=0% | lead_changes=8 lead_seq=0>2>1>0>1>2>1>2>1 | kb_out/s=37.7 kb_in/s=37.5
+role=client peer=1429676312 place=2 finish=63.12 karts=12 | rtt_avg=6ms rtt_max=8ms view_delay=50ms | snaps/s=331.9 | extrap=1.0% | pred_err avg=0.038m max=3.460m | lag=0 jitter=0 loss=0% | lead_changes=8 lead_seq=0>2>1>0>1>2>1>2>1 | kb_out/s=37.4 kb_in/s=37.2
+role=client peer=941689215 place=10 finish=66.77 karts=12 | rtt_avg=6ms rtt_max=8ms view_delay=56ms | snaps/s=332.3 | extrap=0.3% | pred_err avg=0.038m max=3.460m | lag=0 jitter=0 loss=0% | lead_changes=8 lead_seq=0>2>1>0>1>2>1>2>1 | kb_out/s=37.1 kb_in/s=37.3
+role=client peer=2145994368 place=9 finish=65.04 karts=12 | rtt_avg=6ms rtt_max=8ms view_delay=50ms | snaps/s=332.3 | extrap=1.6% | pred_err avg=0.038m max=3.460m | lag=0 jitter=0 loss=0% | lead_changes=8 lead_seq=0>2>1>0>1>2>1>2>1 | kb_out/s=37.4 kb_in/s=37.4
+role=client peer=847693902 place=12 finish=67.39 karts=12 | rtt_avg=6ms rtt_max=8ms view_delay=56ms | snaps/s=332.3 | extrap=0.2% | pred_err avg=0.037m max=3.460m | lag=0 jitter=0 loss=0% | lead_changes=8 lead_seq=0>2>1>0>1>2>1>2>1 | kb_out/s=37.2 kb_in/s=37.1
+role=client peer=1651157915 place=6 finish=64.24 karts=12 | rtt_avg=6ms rtt_max=9ms view_delay=50ms | snaps/s=331.9 | extrap=6.8% | pred_err avg=0.037m max=3.460m | lag=0 jitter=0 loss=0% | lead_changes=8 lead_seq=0>2>1>0>1>2>1>2>1 | kb_out/s=37.7 kb_in/s=37.8
+role=client peer=1717930168 place=4 finish=63.82 karts=12 | rtt_avg=6ms rtt_max=9ms view_delay=58ms | snaps/s=331.8 | extrap=0.5% | pred_err avg=0.036m max=3.460m | lag=0 jitter=0 loss=0% | lead_changes=8 lead_seq=0>2>1>0>1>2>1>2>1 | kb_out/s=37.3 kb_in/s=37.4
+role=client peer=358734379 place=3 finish=63.60 karts=12 | rtt_avg=6ms rtt_max=9ms view_delay=57ms | snaps/s=331.8 | extrap=0.5% | pred_err avg=0.039m max=3.460m | lag=0 jitter=0 loss=0% | lead_changes=8 lead_seq=0>2>1>0>1>2>1>2>1 | kb_out/s=36.8 kb_in/s=37.1
+role=host peer=1 place=8 finish=64.67 karts=12 | rtt_avg=0ms rtt_max=0ms view_delay=50ms | snaps/s=332.3 | extrap=0.0% | pred_err avg=0.037m max=3.460m | lag=0 jitter=0 loss=0% | lead_changes=8 lead_seq=0>2>1>0>1>2>1>2>1 | kb_out/s=411.3 kb_in/s=410.6
+
+processes with a summary: 12
+extrap %      avg 1.200   max 6.800
+pred_err avg  avg 0.038 m   max-of-avgs 0.039 m
+pred_err max  worst 3.460 m
+rtt avg (ms)  avg 5.500   rtt max worst 11.000
+view delay ms avg 52.250   max 58.000
+snaps/s       avg 332.033
+kb_out/s      host 411.3   client avg 37.336
+kb_in/s       host 410.6   client avg 37.391
+
+== lead-change agreement ==
+     12 8 0>2>1>0>1>2>1>2>1
+(distinct 'lead_changes lead_seq' values above; one line = all processes agree)
+
+== finished places ==
+1 62.69;2 63.12;3 63.60;4 63.82;5 64.24;6 64.24;7 64.27;8 64.67;9 65.04;10 66.77;11 67.02;12 67.39;
+
+== errors / warnings in logs ==
+host.log:5:ERROR: Unable to send packet on channel 0, max channels: 0
+host.log:9:ERROR: Unable to send packet on channel 0, max channels: 0
+host.log:13:ERROR: Unable to send packet on channel 0, max channels: 0
+(count: 3)

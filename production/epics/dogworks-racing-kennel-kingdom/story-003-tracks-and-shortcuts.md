@@ -1,13 +1,13 @@
 # Story 003: Two tracks with shortcuts
 
 > **Epic**: Dogworks Racing: Kennel Kingdom
-> **Status**: Ready
+> **Status**: In Progress
 > **Layer**: Core
 > **Type**: Visual/Feel
 > **Estimate**: L
 > **Build step**: core
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: —
+> **Last Updated**: 2026-11-19
 
 ## Context
 

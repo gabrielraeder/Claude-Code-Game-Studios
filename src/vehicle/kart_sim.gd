@@ -52,12 +52,16 @@ var accel_lat: float = 0.0
 var track_s: float = 0.0
 ## Signed lateral offset from the centerline (left positive).
 var lateral: float = 0.0
+## Road the kart is on: TrackModel.MAIN_PATH (-1) or a branch index (story 003).
+var track_path: int = -1
 
 var _prev_position: Vector2 = Vector2.ZERO
 var _prev_yaw: float = 0.0
 var _segment_hint: int = -1
 var _wall_cooldown: float = 0.0
 var _bump_cooldown: float = 0.0
+# Wall drag multiplier of the road the kart is on (rough passage walls grind harder).
+var _wall_drag_mult: float = 1.0
 ## Knock from kart bumps (m/s): moves the kart on top of its driving velocity and fades
 ## out (stats.bump_knock_decay), so grip cannot cancel a shove at once.
 var knock: Vector2 = Vector2.ZERO
@@ -108,6 +112,7 @@ func reset_to(track: TrackModel, distance: float, lateral_offset: float) -> void
 	var q: TrackModel.Query = track.query(position, -1)
 	_segment_hint = q.segment
 	track_s = q.s
+	track_path = q.path
 	lateral = q.lateral
 	_prev_position = position
 	_prev_yaw = yaw
@@ -145,6 +150,36 @@ static func body_gap(a: KartSim, b: KartSim) -> float:
 	var pts: PackedVector2Array = Geometry2D.get_closest_points_between_segments(
 			a.position + af, a.position - af, b.position + bf, b.position - bf)
 	return pts[0].distance_to(pts[1]) - a.stats.bump_radius - b.stats.bump_radius
+
+
+## Moves two karts apart when their bodies overlap: [param a] takes [param a_part] of the
+## overlap and [param b] takes [param b_part] (owned karts: their weight shares; a remote
+## kart against an owned one: 0, since its owner moves it; two remote karts: half each,
+## display only). Position only, no bump effects.
+static func push_apart(a: KartSim, b: KartSim, a_part: float, b_part: float) -> void:
+	var af: Vector2 = a.forward() * a.stats.bump_half_length
+	var bf: Vector2 = b.forward() * b.stats.bump_half_length
+	var pts: PackedVector2Array = Geometry2D.get_closest_points_between_segments(
+			a.position + af, a.position - af, b.position + bf, b.position - bf)
+	var d: Vector2 = pts[0] - pts[1]
+	var overlap: float = a.stats.bump_radius + b.stats.bump_radius - d.length()
+	if overlap <= 0.0:
+		return
+	var n: Vector2 = d.normalized() if d.length() > 0.0001 else (a.position - b.position).normalized()
+	if n == Vector2.ZERO:
+		n = a.forward().orthogonal()
+	a.position += n * overlap * a_part
+	b.position -= n * overlap * b_part
+
+
+## Puts the kart back inside the walls (position only, no wall effects). Used after karts
+## are pushed apart, so a push can never leave a kart inside a wall.
+func clamp_to_walls(track: TrackModel) -> void:
+	var q: TrackModel.Query = track.query(position, _segment_hint)
+	_segment_hint = q.segment
+	var limit: float = q.wall_offset - stats.radius
+	if absf(q.lateral) > limit:
+		position -= q.normal * signf(q.lateral) * (absf(q.lateral) - limit)
 
 
 ## Display only: moves two remote karts apart (half each) when they are drawn overlapping.
@@ -212,6 +247,8 @@ func _take_bump(from_id: int, impulse: Vector2, strength: float) -> void:
 	var mag: float = impulse.length()
 	if mag > already:
 		knock += impulse * ((mag - already) / mag)
+		# Pile-ups add several bumps at once: cap the total so a kart is never launched.
+		knock = knock.limit_length(stats.bump_knock_max)
 		_pair_bumps[from_id] = mag
 		_pair_timers[from_id] = stats.bump_cooldown
 	if _bump_cooldown <= 0.0:
@@ -372,9 +409,10 @@ func _end_drift(pay_boost: bool) -> void:
 func _constrain_to_track(dt: float, track: TrackModel) -> void:
 	var q: TrackModel.Query = track.query(position, _segment_hint)
 	_segment_hint = q.segment
+	track_path = q.path
+	_wall_drag_mult = q.wall_drag_mult
 	lateral = q.lateral
-	track_s = q.s
-	var limit: float = track.wall_offset - stats.radius
+	var limit: float = q.wall_offset - stats.radius
 	var touching: bool = false
 	if absf(lateral) > limit:
 		var outward: Vector2 = q.normal * signf(lateral)
@@ -389,12 +427,14 @@ func _constrain_to_track(dt: float, track: TrackModel) -> void:
 			_wall_contact(angle, dt)
 	if (touching or _wall_slide_time > 0.0) and _turnback_rate > 0.0 and speed > 0.0:
 		# The wall turns the kart back toward the track direction.
-		var t: Vector2 = track.tangent_at(q.s)
+		var t: Vector2 = q.tangent
 		var want: float = atan2(-t.x, -t.y)
 		var step: float = _turnback_rate * dt
 		yaw += clampf(wrapf(want - yaw, -PI, PI), -step, step)
 	elif not touching:
 		_turnback_rate = 0.0
+	# Progress follows the road, but never faster than the rate cap allows (smooth at junctions).
+	track_s = track.limit_progress(track_s, q.s, position.distance_to(_prev_position))
 
 
 ## Wall response by angle of incidence: scrape (friction x multiplier), or impact (speed
@@ -416,5 +456,5 @@ func _wall_contact(angle: float, dt: float) -> void:
 		if angle > stats.wall_impact_threshold_angle:
 			fade = inverse_lerp(stats.wall_impact_threshold_angle, stats.wall_scrape_max_angle, angle)
 		mult = lerpf(stats.wall_scrape_friction_mult, 1.0, clampf(fade, 0.0, 1.0))
-	speed *= 1.0 - stats.wall_friction_drag * mult * dt
+	speed *= 1.0 - stats.wall_friction_drag * mult * _wall_drag_mult * dt
 	wall_bumped.emit(false)

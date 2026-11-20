@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://src/main.gd" id="1_main"]
 [ext_resource type="Resource" path="res://assets/data/vehicles/armored_cart.tres" id="2_stats"]
-[ext_resource type="Resource" path="res://src/test_track/test_loop.tres" id="3_track"]
+[ext_resource type="Resource" path="res://assets/tracks/castle_circuit/castle_circuit.tres" id="3_track"]
 [ext_resource type="Resource" path="res://assets/data/net/net_config.tres" id="4_net"]
 
 [node name="Main" type="Node3D"]

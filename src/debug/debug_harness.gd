@@ -28,6 +28,8 @@ var _countdown_shot_done: bool = false
 var _go_shot_done: bool = false
 var _start_level: int = 0
 var _bump_shots: int = 0
+var _shot_s_done: Array[bool] = []
+var _last_shot_s: float = 0.0
 ## Most bump screenshots taken in one run.
 const MAX_BUMP_SHOTS: int = 3
 
@@ -42,6 +44,10 @@ func setup(options: DebugOptions, main: Node, sim: KartSim, laps: LapCounter) ->
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_headless = DisplayServer.get_name() == "headless"
 	_shots_left = SHOT_TIMES.duplicate()
+	if not _options.shot_s.is_empty():
+		_shots_left.clear()
+	_shot_s_done.resize(_options.shot_s.size())
+	_shot_s_done.fill(false)
 	if _options.shots_dir != "":
 		DirAccess.make_dir_recursive_absolute(_options.shots_dir)
 	_sim.drift_ended.connect(_on_drift_ended)
@@ -86,6 +92,13 @@ func _process(delta: float) -> void:
 	if _bump_shots < MAX_BUMP_SHOTS and int(_main.get("bump_count")) > _bump_shots:
 		_bump_shots += 1
 		_save_shot("bump_%d" % _bump_shots)
+	for k in _options.shot_s.size():
+		var target_s: float = _options.shot_s[k]
+		if not _shot_s_done[k] and _laps.lap >= 1 and _last_shot_s < target_s and _sim.track_s >= target_s \
+				and _sim.track_s - target_s < 40.0:
+			_shot_s_done[k] = true
+			_save_shot("at_s%03d" % int(target_s))
+	_last_shot_s = _sim.track_s
 	if not _shots_left.is_empty() and _main.race_time >= _shots_left[0]:
 		var t: float = _shots_left.pop_front()
 		_save_shot("drive_t%02d" % int(t))

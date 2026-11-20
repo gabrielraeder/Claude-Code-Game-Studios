@@ -41,6 +41,10 @@ var _bump_summary_done: bool = false
 var _options: DebugOptions
 var _net_opts: NetOptions
 var _track: TrackModel
+var _world: Node3D
+var _debug_cam: Camera3D
+var _grid_shot_done: bool = false
+var _grid_shot_timer: float = 0.0
 var _local: Racer
 var _sim: KartSim
 var _input: KartInput
@@ -88,10 +92,17 @@ func _ready() -> void:
 	if _net_opts.port > 0:
 		net_config = net_config.duplicate()
 		net_config.port = _net_opts.port
+	var wanted_id: String = _options.track_id if _options.track_id != "" else TrackLibrary.DEFAULT_ID
+	var chosen: TrackData = TrackLibrary.load_track(wanted_id)
+	if chosen == null:
+		push_warning("Unknown track '%s'; using %s." % [wanted_id, TrackLibrary.DEFAULT_ID])
+		chosen = TrackLibrary.load_track(TrackLibrary.DEFAULT_ID)
+	if chosen != null:
+		track_data = chosen
 	_track = TrackModel.new(track_data)
 	_local = Racer.new()
 	_local.sim = KartSim.new(vehicle_stats)
-	_local.laps = LapCounter.new(_laps_for_race(), _track.length)
+	_local.laps = LapCounter.new(_laps_for_race(), _track.length, _track.checkpoint_s)
 	if _options.ram:
 		var ram := RamDriver.new()
 		ram.target_fn = _nearest_other_position
@@ -99,7 +110,12 @@ func _ready() -> void:
 	elif _options.park:
 		_local.driver = KartDriver.new()
 	else:
-		_local.driver = AutopilotDriver.new() if _options.autopilot else PlayerInputDriver.new()
+		if _options.autopilot:
+			var ap := AutopilotDriver.new()
+			ap.shortcut_id = StringName(_options.shortcut)
+			_local.driver = ap
+		else:
+			_local.driver = PlayerInputDriver.new()
 	_sim = _local.sim
 	_sim.kart_bumped.connect(func(_strength: float) -> void: bump_count += 1)
 	_laps = _local.laps
@@ -108,10 +124,7 @@ func _ready() -> void:
 	_racers.append(_local)
 	_ranking = RaceRanking.new(net_config.rank_debounce, net_config.rank_pass_margin)
 	_ranking.lead_changed.connect(func(new_leader: int, _old: int) -> void: _lead_seq.append(new_leader))
-	_build_environment()
-	var mesh := TrackMesh.new()
-	add_child(mesh)
-	mesh.build(_track)
+	_build_world()
 	_local.visual = _make_visual(_sim)
 	_camera = ChaseCamera.new()
 	_camera.far = 1500.0
@@ -151,6 +164,9 @@ func _ready() -> void:
 	if _options.time_scale > 0.0:
 		Engine.time_scale = _options.time_scale
 	_cli_net = _net_opts.host or _net_opts.join != ""
+	if _options.overview_shot:
+		_run_overview_shot()
+		return
 	if _cli_net:
 		get_tree().paused = false
 		if _net_opts.host:
@@ -187,6 +203,11 @@ func _process(delta: float) -> void:
 	else:
 		_lobby_timer = 0.0
 	_hud.refresh(_sim, _laps, race_time, _start, _mode == Mode.SOLO)
+	if _debug_cam != null and not _grid_shot_done and _start.is_counting():
+		_grid_shot_timer += delta
+		if _grid_shot_timer > 1.5:
+			_grid_shot_done = true
+			_debug_save("grid")
 	if _mode == Mode.NET_RACE:
 		_hud.show_place(_ranking.place_of(_local.kart_id), _ranking.count())
 		_hud.set_net_info("rtt %d ms   view delay %d ms   karts %d" % [
@@ -246,7 +267,7 @@ func _net_tick(dt: float) -> void:
 		keys[r.kart_id] = _rank_key(r)
 	_ranking.update(dt, keys)
 	_resolve_kart_contacts()
-	_separate_remote_karts()
+	_separate_karts()
 	_measure_contacts()
 	_send_accum += dt
 	var interval: float = 1.0 / net_config.send_hz
@@ -350,18 +371,51 @@ func _resolve_kart_contacts() -> void:
 				_net.send_bump(o.owner_peer, o.kart_id, r.kart_id, to_other, r.sim.last_bump_strength)
 
 
-# Display only: two remote karts drawn inside each other are moved apart (see
-# KartSim.separate_for_display). Runs after their views are updated for this tick.
-func _separate_remote_karts() -> void:
-	for i in _racers.size():
-		var a: Racer = _racers[i]
-		if a.owned or a.dropped:
+# Push-apart passes after the bumps of this tick: clusters (a pile-up in a hairpin) need
+# more than one pass. Own karts move by weight share (against a remote kart: all of it, its
+# owner moves the other); two remote karts are drawn apart half each, display only. Own
+# karts are then put back inside the walls so a push never leaves one in a wall.
+func _separate_karts() -> void:
+	for p in net_config.contact_passes:
+		for i in _racers.size():
+			var a: Racer = _racers[i]
+			if a.dropped:
+				continue
+			for j in range(i + 1, _racers.size()):
+				var b: Racer = _racers[j]
+				if b.dropped:
+					continue
+				if a.owned and b.owned:
+					var pa: float = _push_of(a, b)
+					var pb: float = _push_of(b, a)
+					var total: float = maxf(pa + pb, 0.0001)
+					KartSim.push_apart(a.sim, b.sim, pb / total, pa / total)
+				elif a.owned:
+					KartSim.push_apart(a.sim, b.sim, 1.0, 0.0)
+				elif b.owned:
+					KartSim.push_apart(a.sim, b.sim, 0.0, 1.0)
+				else:
+					KartSim.push_apart(a.sim, b.sim, 0.5, 0.5)
+		for r in _racers:
+			if r.owned and not r.dropped:
+				r.sim.clamp_to_walls(_track)
+	# An own kart pinned between a wall and a remote kart cannot move further: draw the
+	# remote kart aside instead (display only; its owner moves it through the bump message).
+	for a in _racers:
+		if not a.owned or a.dropped:
 			continue
-		for j in range(i + 1, _racers.size()):
-			var b: Racer = _racers[j]
+		for b in _racers:
 			if b.owned or b.dropped:
 				continue
-			KartSim.separate_for_display(a.sim, b.sim)
+			KartSim.push_apart(a.sim, b.sim, 0.0, 1.0)
+
+
+# How hard [param r]'s kart pushes [param against]'s (bots push humans less).
+func _push_of(r: Racer, against: Racer) -> float:
+	var push: float = r.sim.stats.bump_push_mult
+	if r.is_bot and not against.is_bot:
+		push *= net_config.bot_push_mult
+	return push
 
 
 # Another PC detected a bump on a kart this PC owns.
@@ -555,6 +609,7 @@ func _host_begin_race() -> void:
 		"version": KartWire.VERSION,
 		"slots": slots,
 		"laps": _laps_for_race(),
+		"track": String(track_data.track_id),
 		"host_time": -vehicle_stats.start_countdown_time,
 	}
 	_net.broadcast_race_start(info)
@@ -566,6 +621,10 @@ func _on_race_start_received(info: Dictionary) -> void:
 		return
 	if int(info.get("version", -1)) != KartWire.VERSION:
 		_leave_network("The host runs a different network version.")
+		return
+	var host_track: String = str(info.get("track", ""))
+	if not _ensure_track(host_track):
+		_leave_network("The host chose a track this game does not have ('%s')." % host_track)
 		return
 	_apply_race_start(info)
 
@@ -609,7 +668,7 @@ func _apply_race_start(info: Dictionary) -> void:
 			r.owned = true
 			r.sim = KartSim.new(stats)
 			r.driver = BotDriver.new()
-			r.laps = LapCounter.new(laps_n, _track.length)
+			r.laps = LapCounter.new(laps_n, _track.length, _track.checkpoint_s)
 			r.sim.reset_to(_track, dist, lateral)
 			r.laps.reset(r.sim.track_s)
 			r.start.begin(stats)
@@ -641,6 +700,8 @@ func _apply_race_start(info: Dictionary) -> void:
 	_menu.close()
 	get_tree().paused = false
 	_camera.snap()
+	if _options.grid_shot:
+		_place_grid_camera()
 	print("[net] race start: %d karts, %d laps, role=%s peer=%d kart=%d" % [
 			slots.size(), laps_n, _role(), my_id, _local.kart_id])
 
@@ -761,37 +822,116 @@ func _reset_race() -> void:
 	_start.begin(vehicle_stats)
 
 
-func _build_environment() -> void:
+# Loads [param id] when it is not the current track (a client follows the host's choice).
+# Returns false when the id is empty or unknown.
+func _ensure_track(id: String) -> bool:
+	if id != "" and id == String(track_data.track_id):
+		return true
+	var data: TrackData = TrackLibrary.load_track(id)
+	if data == null:
+		return false
+	track_data = data
+	_track = TrackModel.new(data)
+	_laps.configure_track(_track.length, _track.checkpoint_s)
+	_build_world()
+	_reset_race()
+	print("[net] loaded track %s from the host" % id)
+	return true
+
+
+# Builds sky, light, ground, road meshes and scenery for the current track inside _world.
+func _build_world() -> void:
+	if _world != null:
+		remove_child(_world)
+		_world.queue_free()
+	_world = Node3D.new()
+	_world.name = "World"
+	add_child(_world)
+	var th: TrackTheme = _track.theme
 	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = Color(0.25, 0.5, 0.9)
-	sky_mat.sky_horizon_color = Color(0.7, 0.82, 0.95)
-	sky_mat.ground_horizon_color = Color(0.5, 0.6, 0.45)
+	sky_mat.sky_top_color = th.sky_top_color
+	sky_mat.sky_horizon_color = th.sky_horizon_color
+	sky_mat.ground_horizon_color = th.ground_horizon_color
 	var sky := Sky.new()
 	sky.sky_material = sky_mat
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.7
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = th.ambient_color
+	env.ambient_light_energy = th.ambient_energy
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	var we := WorldEnvironment.new()
 	we.environment = env
-	add_child(we)
+	_world.add_child(we)
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-50, 40, 0)
+	sun.light_color = th.sun_color
+	sun.light_energy = th.sun_energy
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 120.0
-	add_child(sun)
-	var center: Vector2 = Vector2.ZERO
-	for c in track_data.control_points:
-		center += c
-	center /= track_data.control_points.size()
+	_world.add_child(sun)
+	var center: Vector2 = _track.main.bounds.get_center()
 	var ground := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
-	pm.size = Vector2(700, 700)
+	pm.size = Vector2(th.ground_size, th.ground_size)
 	ground.mesh = pm
 	var gmat := StandardMaterial3D.new()
-	gmat.albedo_color = Color(0.32, 0.55, 0.25)
+	gmat.albedo_color = th.ground_color
 	ground.material_override = gmat
 	ground.position = Vector3(center.x, -0.05, center.y)
-	add_child(ground)
+	_world.add_child(ground)
+	var mesh := TrackMesh.new()
+	_world.add_child(mesh)
+	mesh.build(_track)
+	var scenery := TrackScenery.new()
+	_world.add_child(scenery)
+	scenery.build(_track)
+
+
+# ---------------------------------------------------------------- debug cameras and shots
+
+func _debug_save(shot_name: String) -> void:
+	if _options.shots_dir == "":
+		return
+	DirAccess.make_dir_recursive_absolute(_options.shots_dir)
+	var path: String = "%s/%s.png" % [_options.shots_dir, shot_name]
+	var err: Error = get_viewport().get_texture().get_image().save_png(path)
+	print("[debug] screenshot %s (err %d)" % [path, err])
+
+
+# Debug (--overview-shot): a straight-down orthographic view of the whole track, saved once.
+func _run_overview_shot() -> void:
+	get_tree().paused = false
+	_menu.close()
+	_hud.hide()
+	var b: Rect2 = _track.main.bounds
+	var cam := Camera3D.new()
+	add_child(cam)
+	var vp: Vector2 = get_viewport().get_visible_rect().size
+	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+	cam.size = maxf(b.size.y, b.size.x / (vp.x / vp.y)) * 1.04
+	cam.far = 2000.0
+	cam.position = Vector3(b.get_center().x, 600.0, b.get_center().y)
+	cam.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
+	cam.current = true
+	await get_tree().create_timer(1.5).timeout
+	_debug_save("overview")
+	get_tree().quit()
+
+
+# Debug (--grid-shot): a fixed camera above and behind the start grid.
+func _place_grid_camera() -> void:
+	if _debug_cam == null:
+		_debug_cam = Camera3D.new()
+		_debug_cam.far = 1500.0
+		_debug_cam.fov = 62.0
+		add_child(_debug_cam)
+	var center_s: float = _track.length - track_data.start_distance_behind_line - 22.0
+	var target: Vector2 = _track.point_at(center_s)
+	var back: Vector2 = -_track.tangent_at(center_s) * 30.0
+	_debug_cam.look_at_from_position(Vector3(target.x + back.x, 30.0, target.y + back.y),
+			Vector3(target.x, 0.0, target.y))
+	_debug_cam.current = true
+	_grid_shot_timer = 0.0
+	_grid_shot_done = false

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="TrackTheme" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/track/track_theme.gd" id="1_theme"]
+
+[resource]
+script = ExtResource("1_theme")
+style = &"castle"
+ground_color = Color(0.3, 0.52, 0.24, 1)
+ground_size = 1100.0
+road_color = Color(0.4, 0.37, 0.33, 1)
+curb_color_a = Color(0.9, 0.38, 0.15, 1)
+curb_color_b = Color(0.95, 0.9, 0.74, 1)
+wall_color_a = Color(0.62, 0.62, 0.65, 1)
+wall_color_b = Color(0.5, 0.5, 0.54, 1)
+wall_height = 1.1
+merlon_height = 0.9
+wall_thickness = 0.7
+wall_stripe_segments = 1
+ambient_energy = 0.55
+keep_center = Vector2(-51.57, 156.58)
+tower_positions = PackedVector2Array(-27.57, 156.58, -39.57, 177.37, -63.57, 177.37, -75.57, 156.58, -63.57, 135.80, -39.57, 135.80)
+gate_tower_positions = PackedVector2Array(97.90, -1.91, 107.00, 25.29)
+house_positions = PackedVector2Array(31.92, 172.11, -16.60, 136.82, 17.81, 191.52, -30.72, 156.23, 3.69, 210.93, -44.84, 175.64)

@@ -1,0 +1,27 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+== track_check: Castle Circuit (castle_circuit) ==
+PASS (1) loop closure and length: length 856.1 m, closure gap 0.010 m, 660 samples, 7 checkpoints
+PASS (1) no wall fold (min centerline radius > wall offset): min radius 11.4 m, wall offset 10.2 m
+PASS (1) branch drawbridge sane: s 511..711 (200 m of main), branch 131 m, progress ratio 1.53, middle distance to main road 4.3 m (corridors 10.2 + 2.5)
+PASS (1) branch secret_passage sane: s 338..507 (169 m of main), branch 113 m, progress ratio 1.49, middle distance to main road 20.4 m (corridors 10.2 + 3.1)
+PASS (2) start straight: 82 m straight behind the line, 73 m ahead, road half width 9.0 m
+PASS (2) 12 grid slots fit with margin and no overlap: 12 slots, min wall margin 6.85 m, min body gap 3.30 m, last row 46 m behind the line
+     (3) main line: finished=true lap times [30.93, 30.60, 30.70], wall hits 9 (hard 7), max_speed 35.1, max jump ratio 2.03
+PASS (3) main line completes 3 laps within the walls: laps [30.93, 30.60, 30.70], max |lateral| 9.20 m of limit 10.20 m
+     (4) drawbridge: finished=true lap times [29.02, 28.78, 28.78], wall hits 96 (hard 0), max_speed 35.1, max jump ratio 2.03
+PASS (4) drawbridge: 3 laps, exactly one lap each, branch driven: ticks on branch 678, rejected line crossings 0
+PASS (4) drawbridge faster than main line when driven well: flying lap 28.78 s vs main 30.65 s, saving 1.87 s
+     (info) no-drift but well-steered via drawbridge: finished=true flying lap 29.87 s, wall hits 19, hard 0
+PASS (5) sloppy driver (full throttle, no drift, straight at the entrance) via drawbridge does not beat the main line: sloppy flying lap 31.62 s vs main 30.65 s (good run 28.78 s), wall hits 185, hard hits 9
+     (4) secret_passage: finished=true lap times [30.45, 30.33, 30.25], wall hits 314 (hard 14), max_speed 35.1, max jump ratio 2.09
+PASS (4) secret_passage: 3 laps, exactly one lap each, branch driven: ticks on branch 853, rejected line crossings 0
+PASS (4) secret_passage faster than main line when driven well: flying lap 30.29 s vs main 30.65 s, saving 0.36 s
+     (info) no-drift but well-steered via secret_passage: finished=true flying lap 29.67 s, wall hits 50, hard 3
+PASS (5) sloppy driver (full throttle, no drift, straight at the entrance) via secret_passage does not beat the main line: sloppy flying lap 33.20 s vs main 30.65 s (good run 30.29 s), wall hits 780, hard hits 3
+PASS (6) track_s never jumps more than 2x the distance moved (incl. branch entry/exit): 3 runs (main + each shortcut), largest ds/moved 2.09, violations 0
+PASS (7) 200 infield starts, straight at random headings for 10 s: no lap, never outside the corridors: laps gained 0, escapes 0, worst excess over wall -1.000 m, refused line crossings 25
+PASS (8) reversing over the line gives no extra lap: lap after crossing 1, after reversing 0, after crossing again 1, lap_started events [1], completed laps 0
+PASS (8) crossing the line without the checkpoints is not a lap: lap 1, refused crossings 1, checkpoints passed 0 of 7
+PASS (8) a full lap counts exactly once: lap 2, completed laps 1, refused crossings 0
+== ALL PASS ==

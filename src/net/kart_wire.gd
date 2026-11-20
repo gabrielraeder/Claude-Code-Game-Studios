@@ -4,7 +4,7 @@ extends RefCounted
 ## Receivers accept arrays at least FIELD_COUNT long, so later versions may append fields.
 
 ## Bumped when the meaning of an existing field or of a message changes.
-const VERSION: int = 1
+const VERSION: int = 2
 const X: int = 0
 const Z: int = 1
 const VX: int = 2

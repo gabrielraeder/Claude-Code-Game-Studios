@@ -8,6 +8,11 @@ extends RefCounted
 ##   --log=PATH           write a small CSV (lap times, boosts per tier, max speed)
 ##   --park               the local kart never moves (a bump target)
 ##   --ram                the local kart drives into the nearest other kart (bump test)
+##   --track=ID           track to race on (castle_circuit, test_loop); the host's choice online
+##   --shortcut=ID        the autopilot takes drawbridge or secret_passage
+##   --overview-shot      one top-down picture of the whole track into --shots=, then quit
+##   --grid-shot          fixed camera above the start grid (picture during the countdown)
+##   --shot-s=A,B,C       pictures when the kart first passes these main-loop distances
 
 var autopilot: bool = false
 var shots_dir: String = ""
@@ -18,6 +23,16 @@ var time_scale: float = 0.0
 var verbose: bool = false
 var park: bool = false
 var ram: bool = false
+## Track id from --track= ("" = the default, castle_circuit).
+var track_id: String = ""
+## Shortcut the autopilot takes (--shortcut=drawbridge|secret_passage), "" = main line.
+var shortcut: String = ""
+## Save one top-down picture of the whole track and quit (--overview-shot, needs --shots=).
+var overview_shot: bool = false
+## Fixed camera above the start grid, one picture during the countdown (--grid-shot).
+var grid_shot: bool = false
+## Main-loop distances where a picture is saved on the first lap (--shot-s=a,b,c).
+var shot_s: PackedFloat32Array = PackedFloat32Array()
 
 
 ## Parses [param args] (normally OS.get_cmdline_user_args()).
@@ -32,6 +47,17 @@ static func parse(args: PackedStringArray) -> DebugOptions:
 			o.shots_dir = a.substr("--shots=".length())
 		elif a.begins_with("--log="):
 			o.log_path = a.substr("--log=".length())
+		elif a.begins_with("--track="):
+			o.track_id = a.substr("--track=".length())
+		elif a.begins_with("--shortcut="):
+			o.shortcut = a.substr("--shortcut=".length())
+		elif a == "--overview-shot":
+			o.overview_shot = true
+		elif a == "--grid-shot":
+			o.grid_shot = true
+		elif a.begins_with("--shot-s="):
+			for part in a.substr("--shot-s=".length()).split(","):
+				o.shot_s.append(part.to_float())
 		elif a == "--park":
 			o.park = true
 		elif a == "--ram":
