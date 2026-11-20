@@ -1,0 +1,58 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+== track_check: Dungeon Depths (dungeon_depths) ==
+PASS (1) loop closure and length (950-1100 m): length 1095.6 m, closure gap 0.010 m, 876 samples, 9 checkpoints
+PASS (1) no wall fold (bend radius minus inner wall offset > 0 everywhere): smallest margin 2.7 m at s 414
+PASS (1) branch hall_left sane: s 214..294 (80 m of main), branch 87 m, progress ratio 0.92, half width 3.40..3.40 m
+PASS (1) branch hall_right sane: s 214..294 (80 m of main), branch 82 m, progress ratio 0.98, half width 3.40..3.40 m
+PASS (1) branch mine_rail sane: s 486..623 (137 m of main), branch 82 m, progress ratio 1.67, half width 2.25..2.25 m
+PASS (1) branch lava_gap sane: s 819..1014 (195 m of main), branch 168 m, progress ratio 1.16, half width 3.50..3.50 m
+PASS (9) grid zone >= 18 m wide: narrowest grid width 18.0 m over the last 52 m and the line
+PASS (9) pinches present (<= 10 m) and plazas wide: narrowest main road 6.8 m at s 214, widest 24.0 m at s 334
+PASS (9) no width jump (half width changes <= 0.35 m per m): steepest 0.302 m/m at s 444 (wall fold covered by (1))
+PASS (2) start straight (grid run-up >= last row + 10 m, >= 15 m ahead): 143 m straight behind the line, 16 m ahead, half width at the line 9.0 m
+PASS (2) 12 grid slots fit with margin and no overlap: 12 slots, min wall margin 6.55 m, min body gap 3.30 m, last row 46 m behind the line
+     (3) main line wall-hit hot spots (20 m buckets, >= 8 hits): s120:11 s0:10
+     (3) main line: finished=true lap times [38.82, 38.38, 38.38], wall hits 32 (hard 3), max_speed 35.1, max jump ratio 2.02, pads 9, sinks 0
+PASS (3) main line completes 3 laps within the walls: laps [38.82, 38.38, 38.38], max excess over a wall -1.000 m, sinks 0
+     (4) hall_left wall-hit hot spots (20 m buckets, >= 8 hits): s180:12 s200:21 s0:10 s560:12
+     (4) hall_left: finished=true lap times [38.98, 38.50, 38.38], wall hits 71 (hard 4), max_speed 35.1, max jump ratio 2.02, pads 9, sinks 0
+PASS (10) lane split hall_left: autopilot completes 3 laps in the other lane, one lap each: ticks in the lane 580, refused line crossings 0, laps started 3
+PASS (10) lane split hall_left: progress monotonic (no jump), no shortcut (lap within 0.5 s of main): largest ds/moved 2.02, violations 0, lane flying lap 38.44 s vs main lane 38.38 s
+     (4) hall_right wall-hit hot spots (20 m buckets, >= 8 hits): s560:9 s580:9 s0:9
+     (4) hall_right: finished=true lap times [38.82, 38.55, 38.32], wall hits 40 (hard 6), max_speed 35.1, max jump ratio 2.03, pads 9, sinks 0
+PASS (10) lane split hall_right: autopilot completes 3 laps in the other lane, one lap each: ticks in the lane 531, refused line crossings 0, laps started 3
+PASS (10) lane split hall_right: progress monotonic (no jump), no shortcut (lap within 0.5 s of main): largest ds/moved 2.03, violations 0, lane flying lap 38.43 s vs main lane 38.38 s
+     (4) mine_rail wall-hit hot spots (20 m buckets, >= 8 hits): s120:9 s180:10 s620:13 s0:8
+     (4) mine_rail: finished=true lap times [37.50, 37.03, 37.03], wall hits 46 (hard 0), max_speed 35.1, max jump ratio 2.06, pads 9, sinks 0
+     (info) careful no-drift line via mine_rail: finished=true flying lap 38.53 s, wall hits 0, hard 0, sinks 0
+PASS (4) mine_rail: 3 laps, exactly one lap each, branch driven, never in the water: ticks on branch 499, rejected line crossings 0, sinks 0
+PASS (4) mine_rail faster than main line when driven well: best line drift: flying lap 37.03 s vs main 38.38 s, saving 1.35 s
+PASS (5) sloppy driver (full throttle, no drift, straight at the entrance) via mine_rail does not beat the main line: sloppy flying lap 38.55 s vs main 38.38 s (good run 37.03 s), wall hits 0, hard hits 0, sinks 0
+     (4) lava_gap wall-hit hot spots (20 m buckets, >= 8 hits): s120:8 s180:9 s0:11 s560:17
+     (4) lava_gap: finished=true lap times [37.77, 37.32, 37.35], wall hits 51 (hard 3), max_speed 35.1, max jump ratio 2.02, pads 9, sinks 0
+     (info) careful no-drift line via lava_gap: finished=true flying lap 38.08 s, wall hits 13, hard 0, sinks 0
+PASS (4) lava_gap: 3 laps, exactly one lap each, branch driven, never in the water: ticks on branch 897, rejected line crossings 0, sinks 0
+PASS (4) lava_gap faster than main line when driven well: best line drift: flying lap 37.33 s vs main 38.38 s, saving 1.05 s
+PASS (5) sloppy driver (full throttle, no drift, straight at the entrance) via lava_gap does not beat the main line: sloppy flying lap 39.79 s vs main 38.38 s (good run 37.33 s), wall hits 31, hard hits 3, sinks 0
+PASS (6) track_s never jumps more than 2x the distance moved (incl. branch entry/exit): 5 runs (main + each branch), largest ds/moved 2.06, violations 0
+PASS (7) 200 infield starts, straight at random headings for 10 s: no lap, never outside the corridors: laps gained 0, escapes 0, worst excess over wall -0.999 m, refused line crossings 36
+PASS (8) reversing over the line gives no extra lap: lap after crossing 1, after reversing 0, after crossing again 1, lap_started events [1], completed laps 0
+PASS (8) crossing the line without the checkpoints is not a lap: lap 1, refused crossings 1, checkpoints passed 0 of 9
+PASS (8) a full lap counts exactly once: lap 2, completed laps 1, refused crossings 0
+PASS (11) open edges: every reachable off-road point there is water: 1859 sample points, 0 dry (last at (0.0, 0.0))
+PASS (11) kart steered off the moat edge sinks, respawns after 1.0 s on the road (not in a wall, not in water): sinks 1, respawns 1, sink durations [1.00], bad respawn points 0, first respawn at s 374.5
+PASS (11) no respawn loop, no lap gained, race still finishes: re-sinks within 3 s of a respawn 0, laps [41.12, 38.38, 38.37], total 117.87 s vs clean 115.58 s, refused crossings 0
+PASS (11) main-line autopilot and BotDriver never fall in over 3 laps: autopilot sinks 0, BotDriver sinks 0 (laps [38.82, 38.38, 38.38])
+PASS (15) speed gate 24.0 m/s on lava_gap: at 27.0 m/s crosses; at 23.5 and 18.0 m/s sinks: fast: sinks 0, crossed true; 23.5 m/s: sinks 1; 18.0 m/s: sinks 1
+PASS (15) after sinking in the gap the kart respawns on the main road, safe, once, with immunity: sinks 1, respawns 1, safe true, road -1 (main = -1), immune true, sink time 1.00 s
+PASS (12) boost pads trigger on the main line and the lap is faster with them: pads hit 9 over 3 laps (3 pads, 0.8 s boost each), flying lap 38.38 s with pads vs 39.51 s without (1.12 s gained)
+PASS (13) corner count 14-16 (doc ~15): 15 corners (17 arcs): 90 R 91 deg R18 @12; S/chicane LR @53; S/chicane LR @124; sweeper L 43 deg R26 @185; kink R 17 deg R106 @236; sweeper L 60 deg R62 @323; hairpin R 170 deg R16 @408; kink L 10 deg R84 @466; 90 R 91 deg R15 @491; hairpin L 169 deg R13 @533; 90 R 91 deg R15 @586; sweeper R 44 deg R33 @626; kink L 39 deg R20 @706; kink R 38 deg R21 @752; 90 R 91 deg R20 @916
+INFO (13) autopilot flying lap vs doc target 45-50 s: 38.38 s over 1096 m (average 28.5 m/s; doc assumed 20-23 m/s)
+PASS (14) mine_rail driven well saves roughly the doc's time (1.0-3.0 s): saving 1.35 s per lap; sloppy run loses 0.17 s (sinks 0)
+PASS (14) lava_gap driven well saves roughly the doc's time (1.0-3.0 s): saving 1.05 s per lap; sloppy run loses 1.41 s (sinks 0)
+== ALL PASS ==
+WARNING: 21 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2609)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

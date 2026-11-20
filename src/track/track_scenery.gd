@@ -28,6 +28,8 @@ func build(track: TrackModel) -> void:
 	_th = track.theme
 	if _th.style == &"castle":
 		_build_castle()
+	elif _th.style == &"dungeon":
+		_build_dungeon()
 	_build_item_boxes()
 	_flush()
 
@@ -64,11 +66,12 @@ func _flush() -> void:
 	var meshes: Dictionary = {
 		"box": _unit_box(), "glow": _unit_box(), "cyl": _unit_cylinder(1.0, 10),
 		"cone": _unit_cylinder(0.0, 10), "pyr": _unit_pyramid(), "sphere": _unit_sphere(),
-		"capsule": _unit_capsule(),
+		"capsule": _unit_capsule(), "glowsphere": _unit_sphere(), "glowcyl": _unit_cylinder(1.0, 10),
+		"glowcone": _unit_cylinder(0.0, 10), "glowpyr": _unit_pyramid(),
 	}
 	for kind in _batches.keys():
 		var pair: Array = _batches[kind]
-		_batch(meshes[kind], pair[0], pair[1], kind == "glow")
+		_batch(meshes[kind], pair[0], pair[1], kind.begins_with("glow"))
 	_batches.clear()
 
 
@@ -116,6 +119,287 @@ func _build_castle() -> void:
 	_keep()
 	_gardens()
 	_passage()
+
+
+# ---------------------------------------------------------------- dungeon (Dungeon Depths, round 3)
+# Placeholder low-poly props following design/art/art-bible.md sections 2-4 and 6: dark stone lit by
+# torch pools and lava, a dog-kingdom underworld (bones, barrels, mine carts, forge moulds).
+# Light budget: every flame, lava and crystal is an emissive MultiMesh; only a handful of static
+# OmniLight3D (see _dungeon_lights) add warm pools, so 12 racers stay inside the frame budget.
+
+func _hash01(a: float, b: float) -> float:
+	return fposmod(sin(a * 12.9898 + b * 78.233) * 43758.5453, 1.0)
+
+
+func _is_open_edge(s: float, side: int) -> bool:
+	return _track.wall_offset_at(s, side) > _track.half_width_at(s) + _track.data.curb_width + 0.5
+
+
+func _build_dungeon() -> void:
+	_dungeon_torches()
+	_cellar()
+	_pillar_hall()
+	_cavern()
+	_mine()
+	_forge()
+	_shortcut_marks()
+	_dungeon_lights()
+
+
+# Torches on posts along both road edges: dense in the enclosed zones, sparse in the cavern.
+func _dungeon_torches() -> void:
+	var cav: Vector2 = _th.zone_cavern
+	for side in [-1, 1]:
+		var s: float = 6.0
+		while s < _track.length:
+			var in_cavern: bool = s >= cav.x and s <= cav.y
+			var step: float = 40.0 if in_cavern else 12.0
+			var p: Vector2 = _edge(s, side, 0.5)
+			if not _is_open_edge(s, side) and _free(p, s, 0.25):
+				_box(p, 0.95, Vector3(0.22, 1.9, 0.22), _track.tangent_at(s), _th.dark_wood_color)
+				_add("glowsphere", Transform3D(Basis.from_scale(Vector3(0.3, 0.38, 0.3)), Vector3(p.x, 2.15, p.y)), _th.torch_color)
+				_add("glowsphere", Transform3D(Basis.from_scale(Vector3(0.16, 0.2, 0.16)), Vector3(p.x, 2.2, p.y)), _th.lava_bright_color)
+			s += step
+
+
+# Cellar Vaults: stone arches every 12 m, barrel racks and giant casks outside the walls, lanterns.
+func _cellar() -> void:
+	for s in _range_steps(_th.zone_cellar, 12.0):
+		var c: Vector2 = _track.point_at(s)
+		var t: Vector2 = _track.tangent_at(s)
+		var n: Vector2 = _track.normal_at(s)
+		var w: float = _track.half_width_at(s) + _track.data.curb_width + 0.9
+		for side in [-1.0, 1.0]:
+			_box(c + n * side * w, 2.1, Vector3(1.3, 4.2, 1.3), t, _th.stone_light)
+		_box(c, 4.6, Vector3(w * 2.0 + 1.6, 0.9, 1.4), t, _th.stone_dark)
+		_add("glowsphere", Transform3D(Basis.from_scale(Vector3(0.3, 0.3, 0.3)), Vector3(c.x, 3.9, c.y)), _th.torch_color)
+	for s in _range_steps(_th.zone_cellar, 26.0):
+		for side in [-1, 1]:
+			var p: Vector2 = _edge(s, side, 3.2)
+			if not _free(p, s, 2.0) or _is_open_edge(s, side):
+				continue
+			var t: Vector2 = _track.tangent_at(s)
+			_box(p, 1.1, Vector3(2.6, 2.2, 1.6), t, _th.dark_wood_color)
+			for k in 3:
+				_cyl(p + t * (float(k) - 1.0) * 0.8, 1.5, 0.45, 0.9, _th.wood_color)
+			if _hash01(s, float(side)) > 0.55:
+				_cyl(_edge(s + 9.0, side, 5.5), 1.5, 2.1, 3.0, _th.wood_color)
+
+
+# Pillar hall: two rows of carved columns between the three lanes.
+func _pillar_hall() -> void:
+	var lanes: Array[int] = []
+	for bi in _track.branch_count():
+		if _track.data.branches[bi].type == &"lane_split":
+			lanes.append(bi)
+	if lanes.is_empty():
+		return
+	var s: float = _th.hall_range.x + 4.0
+	while s < _th.hall_range.y - 2.0:
+		var pm: Vector2 = _track.point_at(s)
+		for bi in lanes:
+			var pb: Vector2 = _track.branch_point_at(bi, _track.branch_distance_for_s(bi, s))
+			if pm.distance_to(pb) < 6.5:
+				continue
+			var mid: Vector2 = (pm + pb) * 0.5
+			var t: Vector2 = _track.tangent_at(s)
+			_cyl(mid, 2.6, 0.95, 5.2, _th.stone_light)
+			_box(mid, 0.25, Vector3(2.4, 0.5, 2.4), t, _th.stone_dark)
+			_box(mid, 5.3, Vector3(2.3, 0.6, 2.3), t, _th.stone_dark)
+			_add("glowsphere", Transform3D(Basis.from_scale(Vector3(0.25, 0.25, 0.25)), Vector3(mid.x, 4.0, mid.y)), _th.torch_color)
+		s += 9.0
+
+
+# Great Cavern: the lava lake, the huge stalagmite, rock lumps, crystals, a rock arch and a lava fall.
+func _cavern() -> void:
+	var lake := MeshInstance3D.new()
+	var disc := CylinderMesh.new()
+	disc.top_radius = _th.lake_radius
+	disc.bottom_radius = _th.lake_radius
+	disc.height = 0.2
+	disc.radial_segments = 40
+	disc.rings = 1
+	lake.mesh = disc
+	lake.material_override = TrackMesh.lava_material(_th)
+	lake.position = Vector3(_th.lake_center.x, -0.11, _th.lake_center.y)  # top just above the ground plane
+	add_child(lake)
+	var sp: Vector2 = _th.stalagmite_position
+	_cone(sp, 0.0, 7.5, 26.0, _th.stone_dark)
+	for k in 5:
+		var a: float = float(k) * 1.256
+		_cone(sp + Vector2(cos(a), sin(a)) * 6.5, 0.0, 2.2, 7.0 + 3.0 * float(k % 3), _th.stone_light)
+	# rock lumps and crystals outside the walls (sparse foreground)
+	for s in _range_steps(_th.zone_cavern, 16.0):
+		for side in [-1, 1]:
+			if _is_open_edge(s, side):
+				continue
+			var h: float = _hash01(s, float(side) * 3.0)
+			var p: Vector2 = _edge(s, side, 5.0 + h * 14.0)
+			if not _free(p, s, 3.0) or p.distance_to(sp) < 12.0:
+				continue
+			if h > 0.7:
+				_add("glowpyr", Transform3D(Basis(Vector3.UP, h * 6.0).scaled(Vector3(1.4, 3.6, 1.4)), Vector3(p.x, 1.8, p.y)), _th.crystal_color)
+			else:
+				_cone(p, 0.0, 1.6 + 2.0 * h, 4.0 + 8.0 * h, _th.stone_dark)
+	# giant fossil-like rock arch (vista) on the outer side of the cavern
+	var mid_s: float = (_th.zone_cavern.x + _th.zone_cavern.y) * 0.5
+	var ac: Vector2 = _edge(mid_s, 1, 46.0)
+	var at: Vector2 = _track.tangent_at(mid_s)
+	_cyl(ac - at * 14.0, 0.0, 3.4, 24.0, _th.stone_dark)
+	_cyl(ac + at * 14.0, 0.0, 3.4, 24.0, _th.stone_dark)
+	_box(ac, 24.0, Vector3(9.0, 4.5, 36.0), at, _th.stone_dark)
+	# lava fall in the background, beyond the lake
+	var fall: Vector2 = _th.lake_center + Vector2(_th.lake_radius + 14.0, 0.0)  # east of the lake, away from every road
+	_add("glow", Transform3D(Basis.from_scale(Vector3(14.0, 34.0, 1.2)), Vector3(fall.x, 17.0, fall.y)), _th.lava_core_color)
+	_add("glow", Transform3D(Basis.from_scale(Vector3(7.0, 30.0, 1.4)), Vector3(fall.x, 16.0, fall.y)), _th.lava_bright_color)
+
+
+# Mine Works: timber supports every 8 m, the ore crusher and pulley wheel, carts of bones and ore,
+# ore piles, and sleepers and rails on the mine-cart shortcut.
+func _mine() -> void:
+	for s in _range_steps(_th.zone_mine, 8.0):
+		var c: Vector2 = _track.point_at(s)
+		var t: Vector2 = _track.tangent_at(s)
+		var n: Vector2 = _track.normal_at(s)
+		var w: float = _track.half_width_at(s) + _track.data.curb_width + 0.5
+		var lean: float = (_hash01(s, 1.0) - 0.5) * 0.14
+		for side in [-1.0, 1.0]:
+			var pp: Vector2 = c + n * side * w
+			if _clearance(pp, s) > 0.6:
+				continue
+			_box(pp, 1.8, Vector3(0.5, 3.6, 0.5), t, _th.wood_color)
+		var beam := Transform3D(Basis(Vector3(t.x, 0.0, t.y), lean) * _basis_along(t, Vector3(w * 2.0 + 0.9, 0.5, 0.6)), Vector3(c.x, 3.8, c.y))
+		_add("box", beam, _th.dark_wood_color)
+	# crusher (hairpin center) and pulley wheel
+	var cr: Vector2 = _th.crusher_position
+	_box(cr, 2.6, Vector3(8.0, 5.2, 8.0), Vector2(1, 0), _th.stone_dark)
+	_cone(cr, 5.2, 4.2, 4.0, _th.wood_color)
+	_add("glow", Transform3D(Basis.from_scale(Vector3(5.0, 1.2, 0.3)), Vector3(cr.x, 2.0, cr.y + 4.1)), _th.lava_core_color)
+	var pu: Vector2 = _th.pulley_position
+	_add("cyl", Transform3D(Basis(Vector3.RIGHT, PI * 0.5).scaled(Vector3(3.0, 0.7, 3.0)), Vector3(pu.x, 6.0, pu.y)), _th.dark_wood_color)
+	for sx in [-1.0, 1.0]:
+		_box(pu + Vector2(sx * 3.4, 0.0), 3.0, Vector3(0.6, 6.0, 0.6), Vector2(1, 0), _th.wood_color)
+	# carts of bones and ore, ore piles, lantern posts
+	for s in _range_steps(_th.zone_mine, 30.0):
+		for side in [-1, 1]:
+			var p: Vector2 = _edge(s, side, 3.0)
+			if not _free(p, s, 1.5):
+				continue
+			var t: Vector2 = _track.tangent_at(s)
+			_box(p, 0.7, Vector3(1.6, 1.0, 2.4), t, _th.dark_wood_color)
+			_sphere(p + t * 0.3, 1.35, 0.4, Color(0.92, 0.88, 0.78))
+			_sphere(p - t * 0.5, 1.3, 0.34, Color(0.92, 0.88, 0.78))
+			_cone(_edge(s + 12.0, side, 4.5), 0.0, 2.2, 2.4, Color(0.28, 0.22, 0.2))
+			var lp: Vector2 = _edge(s + 15.0, side, 1.6)
+			_box(lp, 1.2, Vector3(0.2, 2.4, 0.2), t, _th.dark_wood_color)
+			_add("glowsphere", Transform3D(Basis.from_scale(Vector3(0.3, 0.3, 0.3)), Vector3(lp.x, 2.6, lp.y)), _th.torch_color)
+	# sleepers and rails of the mine-cart branch
+	for bi in _track.branch_count():
+		if _track.data.branches[bi].type != &"mine_rail":
+			continue
+		var path: TrackModel.Path = _track.branches[bi]
+		var hw: float = _track.data.branches[bi].half_width
+		var d: float = 1.0
+		while d < path.length - 1.0:
+			var p: Vector2 = path.point_at(d)
+			var t: Vector2 = path.tangent_at(d)
+			var n: Vector2 = Vector2(-t.y, t.x)
+			_box(p, 0.12, Vector3(hw * 2.0, 0.1, 0.34), t, _th.wood_color)
+			for side in [-1.0, 1.0]:
+				_box(p + n * side * 0.9, 0.2, Vector3(0.1, 0.12, 1.7), t, Color(0.55, 0.55, 0.6))
+			d += 1.6
+
+
+# Lava Forge: furnaces with glowing mouths, anvils, chimneys, cooling racks, horseshoe and collar
+# moulds, and the landmark: a tall glowing smelter stack that stays in view across the lap.
+func _forge() -> void:
+	for s in _range_steps(_th.zone_forge, 26.0):
+		for side in [-1, 1]:
+			var p: Vector2 = _edge(s, side, 4.0)
+			if not _free(p, s, 2.5) or _is_open_edge(s, side):
+				continue
+			var t: Vector2 = _track.tangent_at(s)
+			var toward: Vector2 = -_track.normal_at(s) * float(side)
+			_box(p, 2.3, Vector3(4.6, 4.6, 4.6), t, _th.stone_dark)
+			_add("glow", Transform3D(_basis_along(t, Vector3(2.6, 1.8, 0.3)), Vector3(p.x + toward.x * 2.35, 1.6, p.y + toward.y * 2.35)), _th.lava_core_color)
+			_cyl(p, 4.6, 0.9, 8.0, _th.stone_light)
+			var q: Vector2 = _edge(s + 11.0, side, 2.4)
+			if _free(q, s, 1.0):
+				_box(q, 0.5, Vector3(1.5, 1.0, 0.9), t, Color(0.2, 0.18, 0.2))
+				_box(q, 1.05, Vector3(1.9, 0.18, 0.9), t, Color(0.26, 0.24, 0.26))
+			var r: Vector2 = _edge(s + 18.0, side, 3.0)
+			if _free(r, s, 1.5):
+				_box(r, 1.0, Vector3(3.0, 0.2, 1.6), t, _th.dark_wood_color)
+				for k in 3:  # horseshoe and collar moulds: a row of bars on a rack
+					_box(r + t * (float(k) - 1.0) * 0.9, 1.2, Vector3(0.5, 0.25, 0.2), t, _th.lava_bright_color if k == 1 else Color(0.5, 0.5, 0.55))
+	var gp: Vector2 = _th.forge_glow_position
+	_cyl(gp, 0.0, 7.0, 62.0, _th.stone_dark)
+	_add("glowcyl", Transform3D(Basis.from_scale(Vector3(6.2, 3.0, 6.2)), Vector3(gp.x, 62.0, gp.y)), _th.lava_core_color)
+	_add("glowcone", Transform3D(Basis.from_scale(Vector3(5.0, 16.0, 5.0)), Vector3(gp.x, 66.0, gp.y)), _th.lava_bright_color)
+	for k in 4:
+		var a: float = float(k) * PI * 0.5 + PI * 0.25
+		_box(gp + Vector2(cos(a), sin(a)) * 8.0, 6.0, Vector3(3.0, 12.0, 3.0), Vector2(cos(a), sin(a)), _th.stone_light)
+	# the lava channel under the bridge: lava beyond the hazard strips, on both sides
+	for e in _track.data.open_edges:
+		if e.z < 0.0 and e.x >= _th.zone_forge.x - 5.0 and e.y <= _th.zone_forge.y + 5.0:
+			var m: float = (e.x + e.y) * 0.5
+			var chan := MeshInstance3D.new()
+			var bm := BoxMesh.new()
+			bm.size = Vector3(64.0, 0.2, e.y - e.x + 2.0)
+			chan.mesh = bm
+			chan.material_override = TrackMesh.lava_material(_th)
+			var tt: Vector2 = _track.tangent_at(m)
+			var cc: Vector2 = _track.point_at(m)
+			chan.transform = Transform3D(_basis_along(tt, Vector3.ONE), Vector3(cc.x, -0.11, cc.y))
+			add_child(chan)
+
+
+# Cold blue crystals mark the shortcut entrances and exits (art bible section 4).
+func _shortcut_marks() -> void:
+	for bi in _track.branch_count():
+		var b: TrackBranch = _track.data.branches[bi]
+		if b.type == &"lane_split":
+			continue
+		var path: TrackModel.Path = _track.branches[bi]
+		for end in [0.0, path.length]:
+			var p: Vector2 = path.point_at(end)
+			var t: Vector2 = path.tangent_at(end)
+			var n: Vector2 = Vector2(-t.y, t.x)
+			for side in [-1.0, 1.0]:
+				for k in 3:
+					var q: Vector2 = p + n * side * (b.half_width + b.curb_width + 1.4 + 0.6 * float(k)) + t * (float(k) - 1.0) * 1.2
+					if _track.excess_at(q) <= 0.3 or _track.in_hazard_area(q):
+						continue
+					var sc: float = 1.0 + 0.5 * float(k)
+					_add("glowpyr", Transform3D(Basis.from_scale(Vector3(0.8, 2.2 * sc, 0.8)), Vector3(q.x, 1.1 * sc, q.y)), _th.crystal_color)
+
+
+# A handful of static OmniLight3D pools (art bible section 2): the forge glow, the lava lake, the
+# crusher, the crystals, the pillar hall, the cellar, the bridge and the lava gap. Everything else
+# is emissive geometry. No shadows.
+func _dungeon_lights() -> void:
+	var hall_mid: float = (_th.hall_range.x + _th.hall_range.y) * 0.5
+	var spots: Array = [
+		[_th.forge_glow_position, 30.0, _th.lava_core_color, 5.0, 110.0],
+		[_th.lake_center, 8.0, _th.lava_core_color, 3.5, 75.0],
+		[_th.crusher_position, 5.0, _th.torch_color, 2.5, 28.0],
+		[_th.stalagmite_position, 6.0, _th.crystal_color, 2.0, 38.0],
+		[_track.point_at(hall_mid), 4.5, _th.torch_color, 2.5, 26.0],
+		[_track.point_at(fposmod(_th.zone_cellar.x + 40.0, _track.length)), 4.5, _th.torch_color, 2.5, 30.0],
+		[_track.point_at((_th.zone_forge.x + _th.zone_forge.y) * 0.5), 5.0, _th.lava_core_color, 3.0, 40.0],
+	]
+	for i in _track.hazard_gates.size():
+		if _track.hazard_gates[i] > 0.0:
+			spots.append([_track.hazard_bounds[i].get_center(), 3.5, _th.lava_core_color, 3.0, 22.0])
+	for spot in spots:
+		var l := OmniLight3D.new()
+		var xz: Vector2 = spot[0]
+		l.position = Vector3(xz.x, float(spot[1]), xz.y)
+		l.light_color = spot[2]
+		l.light_energy = float(spot[3])
+		l.omni_range = float(spot[4])
+		l.shadow_enabled = false
+		add_child(l)
 
 
 # Banner poles every banner_spacing meters along both edges, everywhere.

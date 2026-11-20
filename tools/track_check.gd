@@ -6,6 +6,8 @@ extends SceneTree
 ## Targets for Castle Circuit come from design/references/track-design-reference.md sections 5-6.
 
 const DT: float = 1.0 / 60.0
+## A speed-gate probe counts as crossed once it is this far (m) past the strip's center.
+const GATE_PAST: float = 6.0
 const MAX_RACE_SECONDS: float = 240.0
 const INFIELD_STARTS: int = 200
 const INFIELD_SECONDS: float = 10.0
@@ -13,6 +15,9 @@ const INFIELD_SECONDS: float = 10.0
 const CASTLE_LENGTH: Vector2 = Vector2(1000.0, 1150.0)
 const CASTLE_LAP: Vector2 = Vector2(45.0, 50.0)
 const CASTLE_CORNERS: Vector2i = Vector2i(12, 15)
+## Dungeon Depths targets (reference doc section 7): 950-1,100 m, 14-16 corners.
+const DUNGEON_LENGTH: Vector2 = Vector2(950.0, 1100.0)
+const DUNGEON_CORNERS: Vector2i = Vector2i(14, 16)
 ## Expected time saving of a well-driven shortcut, seconds (doc: ~1.5-2 s drawbridge, ~2 s passage).
 const SHORTCUT_SAVING: Vector2 = Vector2(1.0, 3.0)
 ## Width rules (doc section 5): grid >= 18 m, a pinch <= 10 m, no width step steeper than this.
@@ -28,6 +33,13 @@ var _net: NetConfig
 var _track: TrackModel
 var _data: TrackData
 var _castle: bool = false
+var _dungeon: bool = false
+## --only=<branch id>: main line plus that branch only, then quit (tuning aid, not a verdict).
+var _only: String = ""
+## --quick: stop after the shortcut runs (tuning aid).
+var _quick: bool = false
+var _trace: bool = false
+var _trace_from: float = 0.0
 
 
 func _init() -> void:
@@ -35,12 +47,20 @@ func _init() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--track="):
 			track_id = a.substr("--track=".length())
+		elif a.begins_with("--only="):
+			_only = a.substr("--only=".length())
+		elif a.begins_with("--trace="):
+			_trace = true
+			_trace_from = float(a.substr("--trace=".length()))
+		elif a == "--quick":
+			_quick = true
 	_data = TrackLibrary.load_track(track_id)
 	if _data == null:
 		print("FAIL load track '%s'" % track_id)
 		quit(1)
 		return
 	_castle = track_id == "castle_circuit"
+	_dungeon = track_id == "dungeon_depths"
 	_stats = load("res://assets/data/vehicles/armored_cart.tres") as VehicleStats
 	_net = load("res://assets/data/net/net_config.tres") as NetConfig
 	_track = TrackModel.new(_data)
@@ -58,6 +78,8 @@ func _init() -> void:
 	for bi in _track.branch_count():
 		var b: TrackBranch = _data.branches[bi]
 		var id: String = String(b.id)
+		if _only != "" and id != _only:
+			continue
 		var run: Dictionary = _run_laps({"shortcut": id})
 		_report_run("(4) %s" % id, run)
 		var avg: float = _flying_avg(run)
@@ -89,10 +111,15 @@ func _init() -> void:
 						s_avg if sloppy.finished else -1.0, main_avg, avg, sloppy.wall_hits, sloppy.hard_hits, sloppy.sinks])
 		savings[id + "_sloppy"] = main_avg - s_avg
 		savings[id + "_sloppy_sinks"] = sloppy.sinks
+	if _quick or _only != "":
+		print("== quick run, %d failed ==" % _fails)
+		quit(0)
+		return
 	_check_progress_jumps()
 	_check_infield()
 	_check_lap_counter()
 	_check_hazards(main_run)
+	_check_speed_gate()
 	_check_pads(main_run, main_avg)
 	_check_corners_and_lap(main_avg)
 	_check_shortcut_savings(savings)
@@ -124,6 +151,12 @@ func _flying_avg(run: Dictionary) -> float:
 
 
 func _report_run(label: String, run: Dictionary) -> void:
+	var top: Array = []
+	for k in run.hit_buckets.keys():
+		if int(run.hit_buckets[k]) >= 8:
+			top.append("s%d:%d" % [int(k) * 20, int(run.hit_buckets[k])])
+	if not top.is_empty():
+		print("     %s wall-hit hot spots (20 m buckets, >= 8 hits): %s" % [label, " ".join(top)])
 	print("     %s: finished=%s lap times %s, wall hits %d (hard %d), max_speed %.1f, max jump ratio %.2f, pads %d, sinks %d" % [
 			label, str(run.finished), _fmt(run.times), run.wall_hits, run.hard_hits, run.max_speed, run.max_jump_ratio,
 			run.pads, run.sinks])
@@ -131,8 +164,8 @@ func _report_run(label: String, run: Dictionary) -> void:
 
 # ---------------------------------------------------------------- (1) geometry
 func _check_geometry() -> void:
-	var lo: float = CASTLE_LENGTH.x if _castle else 600.0
-	var hi: float = CASTLE_LENGTH.y if _castle else 950.0
+	var lo: float = CASTLE_LENGTH.x if _castle else (DUNGEON_LENGTH.x if _dungeon else 600.0)
+	var hi: float = CASTLE_LENGTH.y if _castle else (DUNGEON_LENGTH.y if _dungeon else 950.0)
 	var len_ok: bool = _track.length >= lo and _track.length <= hi
 	var gap: float = _track.point_at(_track.length - 0.01).distance_to(_track.point_at(0.0))
 	_check_ok("(1) loop closure and length (%.0f-%.0f m)" % [lo, hi], gap < 0.1 and len_ok,
@@ -201,7 +234,7 @@ func _check_widths() -> void:
 			if slope > steep:
 				steep = slope
 				steep_s = s
-	if not _castle:
+	if not (_castle or _dungeon):
 		print("     (9) skipped: %s has a constant width (%.1f m)" % [_data.track_id, wide])
 		return
 	_check_ok("(9) grid zone >= %.0f m wide" % GRID_MIN_WIDTH, grid_min >= GRID_MIN_WIDTH - 0.01,
@@ -261,10 +294,12 @@ func _run_laps(opt: Dictionary) -> Dictionary:
 	var run: Dictionary = {"finished": false, "times": [], "wall_hits": 0, "hard_hits": 0, "max_speed": 0.0,
 			"max_jump_ratio": 0.0, "jump_violations": 0, "max_excess": -INF, "ticks_on_branch": 0,
 			"rejected": 0, "limit": 0.0, "max_lateral_ratio_abs": 0.0, "pads": 0, "sinks": 0, "respawns": [],
-			"loops": 0, "bad_respawns": 0, "sink_durations": [], "laps_started": 0}
+			"hit_buckets": {}, "loops": 0, "bad_respawns": 0, "sink_durations": [], "laps_started": 0}
 	var state: Dictionary = {"t": 0.0, "sank_at": -1.0, "last_respawn": -INF, "dunked": false}
 	sim.wall_bumped.connect(func(hard: bool) -> void:
 		run.wall_hits += 1
+		var bucket: int = int(sim.track_s / 20.0)
+		run.hit_buckets[bucket] = int(run.hit_buckets.get(bucket, 0)) + 1
 		if hard:
 			run.hard_hits += 1)
 	sim.pad_boosted.connect(func() -> void: run.pads += 1)
@@ -318,6 +353,8 @@ func _run_laps(opt: Dictionary) -> Dictionary:
 		var q: TrackModel.Query = track.query(sim.position, -1)
 		max_lat = maxf(max_lat, absf(q.lateral))
 		run.limit = q.wall_offset
+		if _trace and laps.lap == 1 and int(state.t * 60.0) % 10 == 0 and sim.track_s > _trace_from and sim.track_s < _trace_from + 140.0:
+			print("       trace t=%.2f s=%.1f path=%d lat=%.2f half=%.2f speed=%.1f boost=%.2f drift=%s" % [state.t, sim.track_s, sim.track_path, q.lateral, q.half_width, sim.speed, sim.boost_time, str(sim.drifting)])
 	run.finished = laps.is_finished
 	run.times = laps.lap_times
 	run.rejected = laps.rejected_crossings
@@ -487,15 +524,16 @@ func _check_corners_and_lap(main_avg: float) -> void:
 		elif float(a.deg) >= 40.0:
 			kind = "sweeper"
 		corners.append("%s %s %.0f deg R%.0f @%.0f" % [kind, a.dir, a.deg, a.r, a.s])
-	if not _castle:
+	if not (_castle or _dungeon):
 		print("     (13) %d corners: %s; flying lap %.2f s" % [corners.size(), ", ".join(corners), main_avg])
 		return
-	_check_ok("(13) corner count %d-%d (doc ~13)" % [CASTLE_CORNERS.x, CASTLE_CORNERS.y],
-			corners.size() >= CASTLE_CORNERS.x and corners.size() <= CASTLE_CORNERS.y,
+	var cr: Vector2i = DUNGEON_CORNERS if _dungeon else CASTLE_CORNERS
+	_check_ok("(13) corner count %d-%d (doc ~%d)" % [cr.x, cr.y, 15 if _dungeon else 13],
+			corners.size() >= cr.x and corners.size() <= cr.y,
 			"%d corners (%d arcs): %s" % [corners.size(), arcs.size(), "; ".join(corners)])
 	# Reported, not gated: the doc's 45-50 s assumes an average of 20-23 m/s, and this kart's
 	# autopilot averages more (see the line); the length target (1) is the gate.
-	var inside: bool = main_avg >= CASTLE_LAP.x and main_avg <= CASTLE_LAP.y
+	var inside: bool = _dungeon or (main_avg >= CASTLE_LAP.x and main_avg <= CASTLE_LAP.y)
 	print("%s (13) autopilot flying lap vs doc target %.0f-%.0f s: %.2f s over %.0f m (average %.1f m/s; doc assumed 20-23 m/s)" % [
 			"INFO" if inside else "INFO-OUTSIDE-TARGET", CASTLE_LAP.x, CASTLE_LAP.y, main_avg, _track.length, _track.length / main_avg])
 
@@ -508,11 +546,14 @@ func _street_tangent(s: float) -> Vector2:
 
 func _street_point(s: float) -> Vector2:
 	var sv: float = fposmod(s, _track.length)
+	var sum: Vector2 = _track.point_at(sv)
+	var count: int = 1
 	for bi in _track.branch_count():
 		var b: TrackModel.Path = _track.branches[bi]
 		if _data.branches[bi].type == &"lane_split" and sv > b.s_in and sv < b.s_out:
-			return (_track.point_at(sv) + _track.branch_point_at(bi, _track.branch_distance_for_s(bi, sv))) * 0.5
-	return _track.point_at(sv)
+			sum += _track.branch_point_at(bi, _track.branch_distance_for_s(bi, sv))
+			count += 1
+	return sum / float(count)  # two lanes: their middle; three lanes: the middle lane
 
 
 # ---------------------------------------------------------------- (14) shortcut savings
@@ -645,3 +686,77 @@ func _check_lap_counter() -> void:
 		lc3.update(s3, float(i))
 	_check_ok("(8) a full lap counts exactly once", lc3.lap == 2 and lc3.lap_times.size() == 1,
 			"lap %d, completed laps %d, refused crossings %d" % [lc3.lap, lc3.lap_times.size(), lc3.rejected_crossings])
+
+
+# ---------------------------------------------------------------- (15) speed gate (lava gap)
+# A kart driven straight along the gated branch toward the strip: fast (boosting) crosses, slow
+# sinks and respawns on the main road, safely and without a loop.
+func _check_speed_gate() -> void:
+	var gi: int = -1
+	for i in _track.hazard_gates.size():
+		if _track.hazard_gates[i] > 0.0:
+			gi = i
+	if gi < 0:
+		return
+	var rect: Rect2 = _track.hazard_bounds[gi]
+	var center: Vector2 = rect.get_center()
+	var bi: int = -1
+	var best: float = INF
+	for i in _track.branch_count():
+		var d: float = _track.distance_to_path(center, i)
+		if d < best:
+			best = d
+			bi = i
+	var path: TrackModel.Path = _track.branches[bi]
+	var u_gap: float = _track.branch_along(bi, center)
+	var gate: float = _track.hazard_gates[gi]
+	var fast: Dictionary = _gate_probe(bi, u_gap, gate + 3.0, true)
+	var slow: Dictionary = _gate_probe(bi, u_gap, gate - 6.0, false)
+	var mid: Dictionary = _gate_probe(bi, u_gap, gate - 0.5, false)
+	_check_ok("(15) speed gate %.1f m/s on %s: at %.1f m/s crosses; at %.1f and %.1f m/s sinks" % [gate, path.id, gate + 3.0, gate - 0.5, gate - 6.0],
+			fast.sinks == 0 and fast.crossed and slow.sinks >= 1 and mid.sinks >= 1,
+			"fast: sinks %d, crossed %s; %.1f m/s: sinks %d; %.1f m/s: sinks %d" % [fast.sinks, str(fast.crossed), gate - 0.5, mid.sinks, gate - 6.0, slow.sinks])
+	_check_ok("(15) after sinking in the gap the kart respawns on the main road, safe, once, with immunity",
+			slow.sinks == 1 and slow.respawns == 1 and slow.ok and slow.road == TrackModel.MAIN_PATH and slow.immune,
+			"sinks %d, respawns %d, safe %s, road %d (main = -1), immune %s, sink time %.2f s" % [slow.sinks, slow.respawns, str(slow.ok), slow.road, str(slow.immune), slow.sink_time])
+
+
+func _gate_probe(bi: int, u_gap: float, speed: float, boosting: bool) -> Dictionary:
+	var path: TrackModel.Path = _track.branches[bi]
+	var sim := KartSim.new(_stats)
+	sim.reset_to(_track, 0.0, 0.0)
+	var d0: float = u_gap - 14.0
+	var t: Vector2 = path.tangent_at(d0)
+	sim.position = path.point_at(d0)
+	sim.yaw = atan2(-t.x, -t.y)
+	sim._segment_hint = -1
+	sim.speed = speed
+	sim.velocity = sim.forward() * speed
+	sim.track_s = _track.query(sim.position, -1).s
+	if boosting:
+		sim.boost_time = 1.2
+	var res: Dictionary = {"sinks": 0, "respawns": 0, "ok": false, "road": -2, "immune": false, "crossed": false, "sink_time": 0.0}
+	sim.sank.connect(func() -> void: res.sinks += 1)
+	sim.respawned.connect(func() -> void:
+		res.respawns += 1
+		var q: TrackModel.Query = _track.query(sim.position, -1)
+		res.ok = _track.excess_at(sim.position) <= 0.0 and not _track.in_hazard(sim.position, q)
+		res.road = q.path
+		res.immune = sim.is_hit_immune())
+	var input := KartInput.new()
+	var time: float = 0.0
+	var sink_start: float = -1.0
+	while time < 6.0:
+		input.throttle = 1.0 if boosting else 0.0  # the slow probes coast: they must not re-accelerate past the gate
+		input.steer = 0.0
+		var was: bool = sim.is_sinking()
+		sim.tick(DT, input, _track)
+		time += DT
+		if sim.is_sinking() and not was:
+			sink_start = time
+		if was and not sim.is_sinking():
+			res.sink_time = time - sink_start
+		if _track.branch_along(bi, sim.position) > u_gap + GATE_PAST and sim.track_path == bi and res.sinks == 0:
+			res.crossed = true
+			break
+	return res

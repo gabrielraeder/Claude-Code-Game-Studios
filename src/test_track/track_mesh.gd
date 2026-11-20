@@ -41,12 +41,53 @@ func build(track: TrackModel) -> void:
 	var water := SurfaceTool.new()
 	water.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var any_water: bool = false
+	var lava := SurfaceTool.new()
+	lava.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var any_lava: bool = false
 	for i in track.hazard_polygons.size():
-		any_water = _fill_polygon(water, track.hazard_polygons[i], th.water_color, WATER_Y) or any_water
+		var y: float = DECK_Y + 0.05 if track.hazard_gates[i] > 0.0 else WATER_Y  # the lava gap lies on the deck
+		if track.hazard_kinds[i] == &"lava":
+			any_lava = _fill_polygon(lava, track.hazard_polygons[i], th.lava_core_color, y) or any_lava
+			continue
+		any_water = _fill_polygon(water, track.hazard_polygons[i], th.water_color, y) or any_water
 	for i in track.branches.size():
 		any_water = _branch_fill(water, track, i) or any_water
 	if any_water:
 		add_child(_instance(water.commit()))
+	if any_lava:
+		var lm := MeshInstance3D.new()
+		lm.mesh = lava.commit()
+		lm.material_override = lava_material(th)
+		add_child(lm)
+
+
+## Animated lava (art bible section 4): a glowing core with brighter veins and a dark jagged
+## crust drifting over it. Unshaded, so it needs no light. Shared with the dungeon scenery.
+static func lava_material(th: TrackTheme) -> ShaderMaterial:
+	var sh := Shader.new()
+	sh.code = """shader_type spatial;
+render_mode unshaded, cull_disabled;
+uniform vec3 core : source_color;
+uniform vec3 bright : source_color;
+uniform vec3 crust : source_color;
+varying vec3 wp;
+void vertex() { wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
+void fragment() {
+	float a = sin(wp.x * 0.9 + TIME * 0.8) + sin(wp.z * 1.1 - TIME * 0.6) + sin((wp.x + wp.z) * 0.45 + TIME * 0.4);
+	float b = sin(wp.x * 2.3 - TIME * 1.3) * sin(wp.z * 2.1 + TIME * 1.1);
+	float jag = abs(sin(a * 1.7 + b * 2.2));
+	vec3 c = mix(core, bright, smoothstep(0.55, 0.95, jag));
+	float plate = step(0.78, 0.5 + 0.28 * a + 0.3 * b);
+	c = mix(c, crust, plate * 0.85);
+	ALBEDO = c;
+}
+"""
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	m.set_shader_parameter("core", th.lava_core_color)
+	m.set_shader_parameter("bright", th.lava_bright_color)
+	m.set_shader_parameter("crust", th.lava_crust_color)
+	return m
 
 
 func _normals_of(pts: PackedVector2Array, closed: bool) -> Array[Vector2]:

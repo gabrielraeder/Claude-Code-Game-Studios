@@ -11,3 +11,8 @@ extends Resource
 @export var kind: StringName = &"water"
 ## Closed outline as (x, z) points.
 @export var polygon: PackedVector2Array = PackedVector2Array()
+## Greater than 0 makes this a speed-gated hazard (the lava gap of Dungeon Depths): it is lava
+## even over a road deck, but a kart moving at least this fast (m/s) crosses it unharmed (a
+## flat stand-in for a jump; story 008 turns it into a real one). A kart below it sinks and is
+## put back on the MAIN road at the last safe point. 0 = an ordinary hazard (off-road only).
+@export var min_cross_speed: float = 0.0

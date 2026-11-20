@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="TrackTheme" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/track/track_theme.gd" id="1_theme"]
+
+[resource]
+script = ExtResource("1_theme")
+style = &"dungeon"
+sky_top_color = Color(0.07, 0.05, 0.08, 1)
+sky_horizon_color = Color(0.16, 0.1, 0.1, 1)
+ground_horizon_color = Color(0.16, 0.1, 0.1, 1)
+ground_color = Color(0.1, 0.075, 0.085, 1)
+ground_size = 1400.0
+ambient_color = Color(0.58, 0.5, 0.58, 1)
+ambient_energy = 0.8
+sun_color = Color(0.55, 0.45, 0.6, 1)
+sun_energy = 0.0
+fog_enabled = true
+fog_color = Color(0.17, 0.1, 0.12, 1)
+fog_density = 0.004
+road_color = Color(0.34, 0.29, 0.29, 1)
+curb_color_a = Color(0.95, 0.64, 0.23, 1)
+curb_color_b = Color(0.45, 0.3, 0.25, 1)
+wall_color_a = Color(0.5, 0.42, 0.4, 1)
+wall_color_b = Color(0.38, 0.31, 0.31, 1)
+wall_height = 1.0
+merlon_height = 0.0
+wall_thickness = 0.8
+wall_stripe_segments = 1
+stone_light = Color(0.46, 0.38, 0.37, 1)
+stone_dark = Color(0.3, 0.24, 0.25, 1)
+wood_color = Color(0.4, 0.26, 0.15, 1)
+dark_wood_color = Color(0.24, 0.15, 0.1, 1)
+torch_color = Color(0.949, 0.639, 0.227, 1)
+water_color = Color(1.0, 0.416, 0.102, 1)
+lava_core_color = Color(1.0, 0.416, 0.102, 1)
+lava_bright_color = Color(1.0, 0.761, 0.29, 1)
+lava_crust_color = Color(0.231, 0.114, 0.094, 1)
+crystal_color = Color(0.35, 0.62, 1.0, 1)
+pad_color_a = Color(0.15, 0.55, 0.7, 1)
+pad_color_b = Color(1.0, 0.9, 0.35, 1)
+item_box_color = Color(0.9, 0.38, 0.15, 1)
+stalagmite_position = Vector2(-19.10, 366.81)
+crusher_position = Vector2(-64.33, 312.98)
+pulley_position = Vector2(-95.07, 300.69)
+lake_center = Vector2(43.02, 309.43)
+lake_radius = 48.0
+forge_glow_position = Vector2(-55.37, 174.76)
+zone_cellar = Vector2(953.77, 92.20)
+zone_torch = Vector2(92.20, 306.41)
+zone_cavern = Vector2(306.41, 459.05)
+zone_mine = Vector2(459.05, 660.89)
+zone_forge = Vector2(660.89, 953.77)
+hall_range = Vector2(214.46, 294.41)

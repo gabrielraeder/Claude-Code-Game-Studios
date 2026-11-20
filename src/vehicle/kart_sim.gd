@@ -76,6 +76,12 @@ var _wall_cooldown: float = 0.0
 var _bump_cooldown: float = 0.0
 # Wall drag multiplier of the road the kart is on (rough passage walls grind harder).
 var _wall_drag_mult: float = 1.0
+# Floor drag multiplier of the road the kart is on (sleepers of the mine rail; 1 = smooth).
+var _floor_drag_mult: float = 1.0
+## Kind of the hazard (water, lava) the kart last sank in; picks the sink visual.
+var hazard_kind: StringName = &"water"
+# True when the sink was in a speed-gated hazard: the respawn then uses the main road.
+var _gate_sink: bool = false
 ## Knock from kart bumps (m/s): moves the kart on top of its driving velocity and fades
 ## out (stats.bump_knock_decay), so grip cannot cancel a shove at once.
 var knock: Vector2 = Vector2.ZERO
@@ -161,7 +167,9 @@ func can_drive() -> bool:
 
 ## Speed cap right now: max_speed, times the boost multiplier while boosting.
 func current_speed_cap() -> float:
-	return stats.max_speed * (stats.boost_speed_mult if boost_time > 0.0 else 1.0)
+	if boost_time > 0.0:
+		return stats.max_speed * stats.boost_speed_mult
+	return stats.max_speed / maxf(_floor_drag_mult, 1.0)
 
 
 ## Position blended between the last two ticks, for smooth rendering.
@@ -458,6 +466,7 @@ func _constrain_to_track(dt: float, track: TrackModel) -> void:
 	_segment_hint = q.segment
 	track_path = q.path
 	_wall_drag_mult = q.wall_drag_mult
+	_floor_drag_mult = q.floor_drag_mult
 	lateral = q.lateral
 	var limit: float = q.wall_offset - stats.radius
 	var touching: bool = false
@@ -483,9 +492,13 @@ func _constrain_to_track(dt: float, track: TrackModel) -> void:
 	# Progress follows the road, but never faster than the rate cap allows (smooth at junctions).
 	track_s = track.limit_progress(track_s, q.s, position.distance_to(_prev_position))
 	road_half_width = q.half_width
-	if track.has_hazards() and track.in_hazard(position, q):
-		_start_sinking(track)
-		return
+	if track.has_hazards():
+		var hz: int = track.hazard_index(position, q, speed)
+		if hz >= 0:
+			hazard_kind = track.hazard_kinds[hz]
+			_gate_sink = track.hazard_gates[hz] > 0.0
+			_start_sinking(track)
+			return
 	if absf(lateral) <= q.half_width:
 		_safe_path = q.path
 		_safe_along = q.along
@@ -519,7 +532,7 @@ func _start_sinking(track: TrackModel) -> void:
 # Back on the centerline of the road last driven safely, respawn_back_off meters behind that
 # point, facing along the road, at respawn_speed_frac of max speed with respawn immunity.
 func _respawn(track: TrackModel) -> void:
-	if _repeat_sink and _safe_path != TrackModel.MAIN_PATH:
+	if (_repeat_sink or _gate_sink) and _safe_path != TrackModel.MAIN_PATH:
 		_safe_path = TrackModel.MAIN_PATH
 		_safe_along = _main_safe_along
 	var pose: Array = track.respawn_pose(_safe_path, _safe_along)

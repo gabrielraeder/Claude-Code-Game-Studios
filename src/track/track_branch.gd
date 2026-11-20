@@ -25,6 +25,9 @@ extends Resource
 @export var curb_width: float = 0.3
 ## Multiplies wall drag on this road (rough stone that grinds a kart sliding along it > 1).
 @export var wall_drag_mult: float = 1.0
+## Floor drag multiplier (rough mine-cart sleepers). Above 1 the kart's top speed on this road
+## is divided by it unless it is boosting (boost keeps its full speed). 1 = smooth.
+@export var floor_drag_mult: float = 1.0
 ## Main-loop distance where the branch leaves the main road.
 @export var s_in: float = 0.0
 ## Main-loop distance where the branch rejoins the main road (greater than s_in).

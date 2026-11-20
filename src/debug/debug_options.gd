@@ -8,8 +8,9 @@ extends RefCounted
 ##   --log=PATH           write a small CSV (lap times, boosts per tier, max speed)
 ##   --park               the local kart never moves (a bump target)
 ##   --ram                the local kart drives into the nearest other kart (bump test)
-##   --track=ID           track to race on (castle_circuit, test_loop); the host's choice online
-##   --shortcut=ID        the autopilot takes drawbridge or secret_passage
+##   --track=ID           track to race on (castle_circuit, dungeon_depths, test_loop); the host's choice online
+##   --shortcut=ID        the autopilot takes a branch: drawbridge, secret_passage, hall_left,
+##                        hall_right, mine_rail, lava_gap
 ##   --overview-shot      one top-down picture of the whole track into --shots=, then quit
 ##   --grid-shot          fixed camera above the start grid (picture during the countdown)
 ##   --shot-s=A,B,C       pictures when the kart first passes these main-loop distances

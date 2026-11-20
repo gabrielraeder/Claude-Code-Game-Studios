@@ -43,6 +43,8 @@ class Query extends RefCounted:
 	var along: float = 0.0
 	## Wall drag multiplier of that road (TrackBranch.wall_drag_mult; 1 on the main road).
 	var wall_drag_mult: float = 1.0
+	## Floor drag multiplier of that road (TrackBranch.floor_drag_mult; 1 = smooth).
+	var floor_drag_mult: float = 1.0
 	## Distance from the point to that road's centerline.
 	var distance: float = 0.0
 
@@ -71,6 +73,8 @@ class Path extends RefCounted:
 	var half_width: float = 0.0
 	var wall_offset: float = 0.0
 	var wall_drag_mult: float = 1.0
+	## Floor drag multiplier of that road (TrackBranch.floor_drag_mult; 1 = smooth).
+	var floor_drag_mult: float = 1.0
 	var curb: float = 0.0
 	## Half road width at each point.
 	var half: PackedFloat32Array = PackedFloat32Array()
@@ -218,6 +222,9 @@ var progress_rate_cap: float = 1.95
 ## Hazard outlines and their bounding boxes (data.hazards).
 var hazard_polygons: Array[PackedVector2Array] = []
 var hazard_bounds: Array[Rect2] = []
+## Per hazard: TrackHazard.min_cross_speed (0 = ordinary) and kind (water, lava).
+var hazard_gates: PackedFloat32Array = PackedFloat32Array()
+var hazard_kinds: Array[StringName] = []
 ## Boost pads: center, unit direction along the road, half length and half width.
 var pad_centers: PackedVector2Array = PackedVector2Array()
 var pad_dirs: PackedVector2Array = PackedVector2Array()
@@ -269,6 +276,8 @@ func _init(track_data: TrackData) -> void:
 		for q in hz.polygon:
 			r = r.expand(q)
 		hazard_bounds.append(r)
+		hazard_gates.append(hz.min_cross_speed)
+		hazard_kinds.append(hz.kind)
 	for pad in data.boost_pads:
 		if pad == null:
 			continue
@@ -310,6 +319,7 @@ func _build_branch(index: int, b: TrackBranch) -> Path:
 	path.half_width = b.half_width
 	path.curb = b.curb_width
 	path.wall_drag_mult = b.wall_drag_mult
+	path.floor_drag_mult = b.floor_drag_mult
 	path.s_in = b.s_in
 	path.s_out = b.s_out
 	var cn: int = c.size()
@@ -424,6 +434,7 @@ func _to_query(p: Vector2, h: Hit) -> Query:
 	q.half_width = path.half_at(h.seg, h.t)
 	q.along = along
 	q.wall_drag_mult = path.wall_drag_mult
+	q.floor_drag_mult = path.floor_drag_mult
 	q.distance = h.dist
 	return q
 
@@ -579,9 +590,28 @@ func on_surface(p: Vector2, q: Query = null) -> bool:
 	return false
 
 
-## True when a kart center at [param p] is in a hazard: inside an outline and on no road.
-func in_hazard(p: Vector2, q: Query = null) -> bool:
-	return in_hazard_area(p) and not on_surface(p, q)
+## True when a kart center at [param p] is in a hazard: inside an outline and on no road. A
+## speed-gated hazard (min_cross_speed > 0) counts even over a road deck, but not while
+## [param speed] reaches its threshold.
+func in_hazard(p: Vector2, q: Query = null, speed: float = 0.0) -> bool:
+	return hazard_index(p, q, speed) >= 0
+
+
+## Index of the hazard that [param p] is in (see [method in_hazard]), or -1.
+func hazard_index(p: Vector2, q: Query = null, speed: float = 0.0) -> int:
+	var surface: int = -1  # lazily: 0 off the road, 1 on a road
+	for i in hazard_polygons.size():
+		if not hazard_bounds[i].has_point(p) or not Geometry2D.is_point_in_polygon(p, hazard_polygons[i]):
+			continue
+		if hazard_gates[i] > 0.0:
+			if speed < hazard_gates[i]:
+				return i
+			continue
+		if surface < 0:
+			surface = 1 if on_surface(p, q) else 0
+		if surface == 0:
+			return i
+	return -1
 
 
 ## Index of the boost pad under [param p], or -1.

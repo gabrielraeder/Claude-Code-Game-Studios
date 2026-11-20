@@ -85,6 +85,31 @@ extends Resource
 @export var zone_keep: Vector2 = Vector2.ZERO
 @export var zone_gardens: Vector2 = Vector2.ZERO
 
+@export_group("Round 3: dungeon world and anchors")
+## Fog (Dungeon Depths: purple-brown). Off by default.
+@export var fog_enabled: bool = false
+@export var fog_color: Color = Color(0.2, 0.12, 0.13)
+@export var fog_density: float = 0.006
+## Lava colors (art bible section 4): core, bright and crust; crystal blue marks shortcuts.
+@export var lava_core_color: Color = Color(1.0, 0.416, 0.102)
+@export var lava_bright_color: Color = Color(1.0, 0.761, 0.29)
+@export var lava_crust_color: Color = Color(0.231, 0.114, 0.094)
+@export var crystal_color: Color = Color(0.35, 0.62, 1.0)
+## Scenery anchors written by tools/gen_dungeon_depths.py (x, z).
+@export var stalagmite_position: Vector2 = Vector2.ZERO
+@export var crusher_position: Vector2 = Vector2.ZERO
+@export var pulley_position: Vector2 = Vector2.ZERO
+@export var lake_center: Vector2 = Vector2.ZERO
+@export var lake_radius: float = 40.0
+@export var forge_glow_position: Vector2 = Vector2.ZERO
+## Main-loop distance ranges of the dungeon zones, and of the pillar hall.
+@export var zone_cellar: Vector2 = Vector2.ZERO
+@export var zone_torch: Vector2 = Vector2.ZERO
+@export var zone_cavern: Vector2 = Vector2.ZERO
+@export var zone_mine: Vector2 = Vector2.ZERO
+@export var zone_forge: Vector2 = Vector2.ZERO
+@export var hall_range: Vector2 = Vector2.ZERO
+
 @export_group("Round 2: zone props (warm storybook palette)")
 ## Spacing in meters between prop slots along each road edge (one slot per side).
 @export var prop_spacing: float = 9.0

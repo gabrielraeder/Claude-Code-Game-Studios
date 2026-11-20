@@ -55,6 +55,9 @@ var allow_drift: bool = true
 var blind_entrance: float = 0.0
 
 var _branch: int = -2
+# True when the chosen branch carries a speed-gated hazard (the lava gap): the autopilot then holds
+# its speed (no drift) from just before the entrance until the branch ends.
+var _gate_route: bool = false
 # True after the chosen branch was missed this lap (see _update_missed).
 var _missed: bool = false
 var _drifting_intent: bool = false
@@ -64,6 +67,10 @@ var _drift_sign: float = 0.0
 func drive(input: KartInput, sim: KartSim, track: TrackModel, _dt: float) -> void:
 	if _branch == -2:
 		_branch = track.branch_index(shortcut_id) if shortcut_id != &"" else -1
+		if _branch >= 0:
+			for i in track.hazard_gates.size():
+				if track.hazard_gates[i] > 0.0 and track.distance_to_path(track.hazard_bounds[i].get_center(), _branch) < 8.0:
+					_gate_route = true
 	_update_missed(track, sim)
 	var on_open: int = _open_branch_phase(track, sim)
 	var look: float = LOOK_BASE + maxf(sim.speed, 0.0) * LOOK_PER_SPEED
@@ -101,7 +108,7 @@ func drive(input: KartInput, sim: KartSim, track: TrackModel, _dt: float) -> voi
 			input.throttle = 0.0
 			input.brake = 1.0 if sim.speed > OPEN_ENTRY_SPEED + 1.0 else 0.0
 		return
-	if not allow_drift:
+	if not allow_drift or _gate_on_route(track, sim):
 		_drifting_intent = false
 		input.drift = false
 		return
@@ -135,6 +142,10 @@ func drive(input: KartInput, sim: KartSim, track: TrackModel, _dt: float) -> voi
 # ended up on outside the main corridor (bumped onto the bridge: cross it, do not steer off).
 func _route_branch(track: TrackModel, sim: KartSim) -> int:
 	var p: int = sim.track_path
+	# A kart that slid into the opening of a rail or gap shortcut it did not choose follows it to
+	# its end instead of fighting its walls (lane splits share the main road's progress: skipped).
+	if p >= 0 and p != _branch and track.data.branches[p].type != &"lane_split" 			and track.data.branches[p].open_edge_reach <= 0.0 and track.main.nearest(sim.position, -1, 0).excess > 0.0:
+		return p
 	if p >= 0 and p != _branch and track.data.branches[p].open_edge_reach > 0.0 			and track.main.nearest(sim.position, -1, 0).excess > 0.0:
 		return p
 	return -1 if (_branch < 0 or _missed) else _branch
@@ -199,3 +210,11 @@ func _route_point(track: TrackModel, sim: KartSim, ahead: float) -> Vector2:
 
 func _route_tangent(track: TrackModel, sim: KartSim, ahead: float) -> Vector2:
 	return (_route_point(track, sim, ahead + TrackModel.TANGENT_STEP) 			- _route_point(track, sim, ahead - TrackModel.TANGENT_STEP)).normalized()
+
+
+# True from 40 m before a gated branch's entrance until its end, on that route (see _gate_route).
+func _gate_on_route(track: TrackModel, sim: KartSim) -> bool:
+	if not _gate_route or _branch < 0 or _missed:
+		return false
+	var b: TrackModel.Path = track.branches[_branch]
+	return sim.track_s >= b.s_in - 40.0 and sim.track_s <= b.s_out

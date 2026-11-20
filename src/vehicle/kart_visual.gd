@@ -41,12 +41,55 @@ func _on_drift_started(_direction: int) -> void:
 
 ## How far (meters) a kart sinking in a hazard drops below the surface (story 003).
 const SINK_DEPTH: float = 1.6
+var _was_sinking: bool = false
+
+
+## Lava sink (art bible section 4): a cartoon "scorch puff", a burst of orange-to-black smoke
+## balls, never fire or burning. One-shot, freed after it fades.
+func _spawn_scorch_puff() -> void:
+	var puff := CPUParticles3D.new()
+	var ball := SphereMesh.new()
+	ball.radius = 0.35
+	ball.height = 0.7
+	ball.radial_segments = 8
+	ball.rings = 4
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.vertex_color_use_as_albedo = true
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ball.material = mat
+	puff.mesh = ball
+	puff.amount = 22
+	puff.lifetime = 1.1
+	puff.one_shot = true
+	puff.explosiveness = 0.85
+	puff.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	puff.emission_sphere_radius = 0.7
+	puff.direction = Vector3.UP
+	puff.spread = 35.0
+	puff.initial_velocity_min = 2.0
+	puff.initial_velocity_max = 4.5
+	puff.gravity = Vector3(0, -1.5, 0)
+	puff.scale_amount_min = 0.8
+	puff.scale_amount_max = 1.8
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(0.85, 0.3, 0.06, 1.0))
+	ramp.set_color(1, Color(0.06, 0.04, 0.04, 0.0))
+	puff.color_ramp = ramp
+	puff.position = Vector3(0, 1.2 + SINK_DEPTH * 0.3, 0)
+	add_child(puff)
+	puff.emitting = true
+	get_tree().create_timer(2.0).timeout.connect(puff.queue_free)
 
 
 func _process(delta: float) -> void:
 	if _sim == null:
 		return
 	_clock += delta
+	var sinking: bool = _sim.is_sinking()
+	if sinking and not _was_sinking and _sim.hazard_kind == &"lava":
+		_spawn_scorch_puff()
+	_was_sinking = sinking
 	var fraction: float = Engine.get_physics_interpolation_fraction()
 	var p: Vector2 = _sim.interpolated_position(fraction)
 	# Sinking in a hazard (story 003): the kart drops below the water surface.

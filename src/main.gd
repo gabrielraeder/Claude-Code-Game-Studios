@@ -867,6 +867,10 @@ func _build_world() -> void:
 	env.ambient_light_color = th.ambient_color
 	env.ambient_light_energy = th.ambient_energy
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	if th.fog_enabled:  # Dungeon Depths: purple-brown fog from the theme
+		env.fog_enabled = true
+		env.fog_light_color = th.fog_color
+		env.fog_density = th.fog_density
 	var we := WorldEnvironment.new()
 	we.environment = env
 	_world.add_child(we)
@@ -875,6 +879,7 @@ func _build_world() -> void:
 	sun.light_color = th.sun_color
 	sun.light_energy = th.sun_energy
 	sun.shadow_enabled = true
+	sun.visible = th.sun_energy > 0.0  # a dungeon has no sun
 	sun.directional_shadow_max_distance = 120.0
 	_world.add_child(sun)
 	var center: Vector2 = _track.main.bounds.get_center()
@@ -911,6 +916,9 @@ func _run_overview_shot() -> void:
 	get_tree().paused = false
 	_menu.close()
 	_hud.hide()
+	for node in _world.get_children():  # no fog in the top-down picture
+		if node is WorldEnvironment:
+			(node as WorldEnvironment).environment.fog_enabled = false
 	var b: Rect2 = _track.main.bounds
 	var cam := Camera3D.new()
 	add_child(cam)
