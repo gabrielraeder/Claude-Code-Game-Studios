@@ -114,6 +114,7 @@
 - Anti-cheat and host migration · not needed among friends
 
 ## Build order
+*The first version is stories 001-007, in this order. After it (the user, 2026-11-20): 008 elevation and banking, 009 moving hazards, 011 surfaces, 012 living scenery, 013 pack-racing speed, 014 air tricks, 010 graphics pass, 015 lap evolution, 016 set pieces, 017 motion and air extras, 018 weather, 019 traffic and traps, 020 time trials and variety (features from `design/references/track-features-catalog.md`).*
 *(guessed)*
 1. **Online core and driving together:** the net architecture from day 1, the cart's drift rebuilt on top, and vehicle stats as data. Includes a 12-player stress test with headless copies on autopilot.
 2. **Castle Circuit** with shortcuts. Track character is the least proven part.

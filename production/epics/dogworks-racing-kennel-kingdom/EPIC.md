@@ -25,3 +25,13 @@ The brief's 7 Features, built in its Build order: online core and driving first,
 | 008 | Track elevation: hills, jumps, banking and a crossover | Visual/Feel | Ready | N/A |
 | 009 | Moving track hazards | Integration | Ready | N/A |
 | 010 | Graphics pass | Visual/Feel | Ready | N/A |
+| 011 | Surfaces and off-road | Visual/Feel | Ready | N/A |
+| 012 | Living and breakable scenery | Visual/Feel | Ready | N/A |
+| 013 | Pack-racing speed: drafting, biscuits, jousting straight, vehicle routes | Logic | Ready | N/A |
+| 014 | Air tricks and launchers | Visual/Feel | Ready | N/A |
+| 015 | Lap evolution: the track changes on laps 2 and 3 | Integration | Ready | N/A |
+| 016 | Set pieces and spectator camera | Visual/Feel | Ready | N/A |
+| 017 | Moving floors, glide, half-pipes and grind rails | Visual/Feel | Ready | N/A |
+| 018 | Weather, wind and time of day | Visual/Feel | Ready | N/A |
+| 019 | Track traffic, triggered traps, flyovers and boost rings | Integration | Ready | N/A |
+| 020 | Time trials, ghosts, replays and race variety | Integration | Ready | N/A |
