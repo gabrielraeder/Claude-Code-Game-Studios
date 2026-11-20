@@ -38,12 +38,14 @@
 - [ ] Basic sound: engines, drift sparks, boost, item hits, the war-horn countdown, and one music loop. Sound can be muted.
 - [ ] A full start-to-rematch loop works for 2+ PCs, with a retained screenshot of each screen (menu, lobby, HUD in a race, results).
 - [ ] **Spectators:** a player who joins while a race is running is not kicked. They connect, watch the race (a camera following the leader, with the place list), and are put in the next round when the host starts it. The host's lobby shows who is waiting. (Story 002 currently kicks late joiners; this replaces that.)
+- [ ] **Controls menu (added 2026-11-20 at the user's request):** from the main menu, the player can rebind every game action (drive, brake, steer, drift, use item, pause) for keyboard and controller. Pick an action, press the new key or button, and it takes effect at once. A key already used by another action is swapped or flagged, never silently doubled. "Reset to defaults" restores the built-in keys. The bindings are saved per PC and load at every start. The menu itself works with keyboard and controller.
 
 ---
 
 ## Implementation Notes
 
-- Text is English only. Key rebinding menu is out of scope.
+- Text is English only.
+- Rebinding: the game reads named actions, never keys. All defaults are set in `src/input/input_actions.gd`, so the controls menu only swaps InputMap events and saves them to a file under `user://`. No driving, item or network code changes. The HUD's control hints should show the current bindings, not fixed text.
 - The HUD must stay readable on stream: big numbers, high contrast against a busy track.
 - The results screen reads ranking from the networked race state (story 002), never from local guesses.
 
@@ -59,7 +61,8 @@
 
 ## Files
 
-- `src/ui/` (menu, lobby, HUD, results)
+- `src/ui/` (menu, lobby, HUD, results, controls menu)
+- `src/input/` (saving and loading custom bindings)
 - `src/audio/`, `assets/audio/`
 - `production/qa/evidence/story-007-*.png` (one screenshot per screen) and `story-007-ui-evidence.md`
 

@@ -89,6 +89,7 @@
   - Flow: lobby with racer and vehicle pick, track choice, countdown, 3 laps, results, rematch.
   - HUD: stream-readable place display and minimap.
   - Sound: engines, drift sparks, boost, item hits, war-horn countdown, and one music loop.
+  - Controls menu: players rebind keyboard and controller keys, saved per PC (moved in from "later", 2026-11-20).
 
 ## Your systems
 - driving and drift feel · in the slice
@@ -108,7 +109,6 @@
 - Full audio (music per screen, dog voices, crowd) · later
 - More vehicle types and kart parts / garage · later
 - Battle mode · later
-- Key rebinding menu · later
 - Languages other than English · later
 - Split-screen, Steam matchmaking and playing with strangers · later
 - Anti-cheat and host migration · not needed among friends
