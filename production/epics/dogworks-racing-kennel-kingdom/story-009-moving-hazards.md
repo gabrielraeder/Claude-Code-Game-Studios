@@ -1,0 +1,79 @@
+# Story 009: Moving track hazards
+
+> **Epic**: Dogworks Racing: Kennel Kingdom
+> **Status**: Ready
+> **Layer**: Core
+> **Type**: Integration
+> **Estimate**: L
+> **Build step**: core
+> **Manifest Version**: N/A (minimal — no control manifest)
+> **Last Updated**: —
+
+## Context
+
+**GDD**: `design/game-brief.md`
+**Requirement**: Brief MVP feature 4 (tracks: moving hazards, added by the user 2026-11-19)
+
+**ADR Governing Implementation**: N/A (minimal — no ADRs)
+**ADR Decision Summary**: N/A (minimal — no ADRs)
+**ADR Version**: N/A (minimal — no ADRs)
+
+**Engine**: Godot 4.8-beta3 | **Risk**: HIGH
+**Engine Notes**: none (no ADR engine-compatibility analysis at minimal)
+
+**Control Manifest Rules (this layer)**: N/A (minimal — no control manifest)
+
+---
+
+## Acceptance Criteria
+
+*From the brief's Features item 4 and the user's request ("should be way more complex", use Mario Kart, Sonic and other kart racers as examples; patterns only, nothing copied):*
+
+- [ ] Castle Circuit's drawbridge rises and lowers on a timer: while raised, the shortcut is closed and a kart that tries it is stopped at the edge (or falls into the moat and is put back on the road).
+- [ ] At least two more moving hazards across the two tracks, for example rolling barrels down a village street and a portcullis gate on a timer; Dungeon Depths gets lava bursts or a moving mine cart.
+- [ ] Hazards are synchronized online: every PC sees each hazard in the same state at the same race time.
+- [ ] A hazard hit uses the hit-slowdown profiles from story 001 and the victim-decides rule from story 004.
+- [ ] Bots (story 005) know about hazards at a basic level (wait for the drawbridge, avoid barrels).
+- [ ] Hazard timings and positions live in the track data; `tools/track_check.gd` checks that a hazard never blocks the main road completely.
+
+---
+
+## Implementation Notes
+
+- Timed hazards can be pure functions of the synced race time, so every PC agrees without sending extra messages.
+
+---
+
+## Out of Scope
+
+*Handled by neighbouring stories — do not implement here:*
+
+- Story 008: elevation (hazards that need height come after it).
+
+---
+
+## Files
+
+- `src/track/` (hazard data and nodes), `src/main.gd`
+- `assets/tracks/*/`
+
+---
+
+## QA Test Cases
+
+*N/A — no qa-lead specs at this tier; implement against the Acceptance Criteria above*
+
+---
+
+## Test Evidence
+
+**Story Type**: Integration
+**Required evidence**: `tests/integration/hazards/` OR a documented playtest (waived at qa.level minimal) + a retained screenshot of each hazard
+**Status**: [ ] Not yet created
+
+---
+
+## Dependencies
+
+- Depends on: `story-003-tracks-and-shortcuts.md`, `story-004-items.md`, `story-008-elevation.md`
+- Unlocks: None

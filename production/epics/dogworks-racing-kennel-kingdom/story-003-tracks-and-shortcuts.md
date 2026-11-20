@@ -37,6 +37,12 @@
 - [ ] The track is chosen by data (a track resource), so the lobby can pick it (story 007).
 - [ ] Each track's character reads in a retained screenshot (the user signs off on the look).
 
+*Added after the user saw the first Castle Circuit (2026-11-19): "the track is a lot simple, should be way more complex".*
+
+- [ ] **Richer layout (both tracks, still flat):** lap length, corner count and variety (hairpins, sweepers, S-bends, chicanes), road width changes, split roads and themed zones per lap follow `design/references/track-design-reference.md` (patterns studied from Mario Kart, Sonic Racing and other kart racers; layouts and looks stay original, nothing copied).
+- [ ] **Denser scenery:** each zone of a lap has its own landmark and props (castle walls, village streets, keep, moat, banners, crowds as simple low-poly shapes), so the track reads as a place, not a road in a field, and still runs smoothly with 12 racers.
+- [ ] `tools/track_check.gd` passes on both tracks (laps, grid, shortcut rewards, no skipped checkpoints) and the 12-racer stress test stays clean.
+
 ---
 
 ## Implementation Notes

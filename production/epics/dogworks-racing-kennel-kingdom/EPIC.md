@@ -22,3 +22,5 @@ The brief's 7 Features, built in its Build order: online core and driving first,
 | 005 | Tougher bots | Logic | Ready | N/A |
 | 006 | Eight knight-dog racers and two vehicles | Visual/Feel | Ready | N/A |
 | 007 | Race flow, HUD and basic sound | UI | Ready | N/A |
+| 008 | Track elevation: hills, jumps, banking and a crossover | Visual/Feel | Ready | N/A |
+| 009 | Moving track hazards | Integration | Ready | N/A |
