@@ -19,7 +19,7 @@ The brief's 7 Features, built in its Build order: online core and driving first,
 | 002 | Online host/join for up to 12 racers | Integration | Complete | N/A |
 | 003 | Two tracks with shortcuts | Visual/Feel | Complete | N/A |
 | 004 | Five medieval items | Integration | Complete | N/A |
-| 005 | Tougher bots | Logic | Ready | N/A |
+| 005 | Tougher bots | Logic | Complete | N/A |
 | 006 | Eight knight-dog racers and two vehicles | Visual/Feel | Ready | N/A |
 | 007 | Race flow, HUD and basic sound | UI | Ready | N/A |
 | 008 | Track elevation: hills, jumps, banking and a crossover | Visual/Feel | Ready | N/A |

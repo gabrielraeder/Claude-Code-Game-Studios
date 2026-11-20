@@ -1,7 +1,7 @@
 # Story 005: Tougher bots
 
 > **Epic**: Dogworks Racing: Kennel Kingdom
-> **Status**: In Progress
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: M
@@ -94,3 +94,15 @@
 
 - Depends on: `story-003-tracks-and-shortcuts.md`, `story-004-items.md`
 - Unlocks: `story-007-race-flow-hud-sound.md`
+
+## Completion Notes
+**Completed**: 2026-11-20
+**Criteria**: 8/9 passing (deferred: tougher than prototype 1's, to be judged when played)
+**Deviations**: None. Driving thresholds were moved from `bot_driver.gd` into `bot_set.tres` before closing.
+**Test Evidence**: production/qa/evidence/story-005-tougher-bots-evidence.md (race batches, sinks, stuck test, fps, regression races in `literals-batch/`); waived test files at qa.level minimal
+**Reviewed by**: self, no independent review (engine check by godot-gdscript-specialist: findings fixed)
+
+## Calls beyond the design
+- 8 personalities (Hothead, Careful, Wide Wanderer, Shortcut Hunter, Apex Ace, Outside Swinger, Item Hoarder, Steady Eddie), base pace 93-97.5% of top speed, drift, shortcut, traffic and stuck values · `assets/data/ai/bot_set.tres` · kept 2026-11-20
+- Rubber band ±3% of the bot's own top speed (starts 35 m behind the leader, 25 m ahead of 2nd); item rules (stone 9° cone at 6-50 m, spill with a kart within 16 m behind, shield with a threat within 30 m); 16 dog-knight bot names · `assets/data/ai/bot_set.tres` · kept 2026-11-20
+- Drawbridge and hazard safety: skip the drawbridge when a kart is within 12 m (so bots rarely use it), 21 m/s at its entrance and 22.5 m/s on the deck, calm 2.5 s after a respawn, never lean toward an unwalled edge, skip the lava gap when 6 m/s or more under its gate speed · `assets/data/ai/bot_set.tres`, `src/ai/bot_driver.gd` · kept 2026-11-20
