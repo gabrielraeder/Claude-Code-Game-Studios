@@ -1,0 +1,41 @@
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+   1 Careful          125.33  43.2 41.1 40.4             0(0.0)       4       0      0.9607 72.9
+   2 Wide Wanderer    124.00  39.3 42.0 41.7             0(0.0)       4       0      0.9683 64.7
+   3 Shortcut Hunter  114.33  38.4 37.5 37.6             0(0.0)       9       0      0.9646 66.3
+   4 Apex Ace         121.00  40.0 38.1 40.9             0(0.0)       7       0      0.9881 64.4
+   5 Outside Swinger  123.33  41.3 41.9 38.8             0(0.0)       5       1      0.9773 61.4
+   6 Item Hoarder     123.07  39.1 39.7 42.8             0(0.0)       5       0      0.9606 61.2
+   7 Steady Eddie     123.13  41.8 39.6 40.4             0(0.0)       4       0      0.9492 57.9
+   8 Hothead          114.60  39.0 37.0 37.0             0(0.0)       8       0      0.9704 62.4
+   9 Careful          120.00  39.5 41.3 37.6             0(0.0)       7       0      0.9552 61.2
+  10 Wide Wanderer    119.87  39.7 38.5 39.8             0(0.0)       6       0      0.9651 61.1
+  11 Shortcut Hunter  120.73  38.1 39.4 41.5             0(0.0)       9       0      0.9725 61.9
+
+bots finished: 11/11  first 114.33  last 125.33  spread 9.6% of winner
+bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+
+SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+  per personality: {}
+  per location: {}
+  SEED 384236600; karts sinking again within 5 s: 0
+  shortcuts skipped because crowded: 0
+
+shortcut enters by name/branch:
+  Careful         planned {'hall_right': 2, 'lava_gap': 1, 'hall_left': 2, 'mine_rail': 1} entered {'hall_left': 2, 'mine_rail': 1, 'hall_right': 1} missed {}
+  Wide Wanderer   planned {'hall_left': 1, 'hall_right': 4, 'lava_gap': 1, 'mine_rail': 2} entered {'hall_right': 2, 'lava_gap': 1, 'mine_rail': 1} missed {}
+  Shortcut Hunter planned {'hall_right': 2, 'mine_rail': 5, 'lava_gap': 5, 'hall_left': 3} entered {'hall_left': 2, 'mine_rail': 3, 'lava_gap': 3, 'hall_right': 1} missed {}
+  Apex Ace        planned {'mine_rail': 5, 'lava_gap': 2, 'hall_left': 3, 'hall_right': 1} entered {'hall_left': 3, 'mine_rail': 3, 'lava_gap': 1} missed {}
+  Outside Swinger planned {'hall_left': 4, 'mine_rail': 2, 'lava_gap': 3, 'hall_right': 1} entered {'hall_left': 3, 'mine_rail': 1, 'lava_gap': 1} missed {'lava_gap': 1}
+  Item Hoarder    planned {'hall_right': 1, 'mine_rail': 2, 'hall_left': 2, 'lava_gap': 3} entered {'hall_left': 2, 'lava_gap': 2, 'mine_rail': 1} missed {}
+  Steady Eddie    planned {'hall_right': 1, 'hall_left': 1, 'lava_gap': 1, 'mine_rail': 1} entered {'hall_right': 1, 'hall_left': 1, 'lava_gap': 1, 'mine_rail': 1} missed {}
+  Hothead         planned {'hall_right': 2, 'mine_rail': 5, 'lava_gap': 4, 'hall_left': 3} entered {'hall_left': 3, 'mine_rail': 3, 'lava_gap': 2} missed {}
+  Careful         planned {'hall_right': 1, 'mine_rail': 3, 'hall_left': 3, 'lava_gap': 3} entered {'hall_left': 3, 'mine_rail': 2, 'lava_gap': 2} missed {}
+  Wide Wanderer   planned {'hall_right': 3, 'mine_rail': 5, 'lava_gap': 2} entered {'mine_rail': 3, 'hall_right': 2, 'lava_gap': 1} missed {}
+  Shortcut Hunter planned {'hall_left': 3, 'mine_rail': 5, 'lava_gap': 4, 'hall_right': 2} entered {'hall_left': 2, 'mine_rail': 3, 'lava_gap': 3, 'hall_right': 1} missed {}
+
+host autopilot: [debug] finished: laps [39.3333333333336, 38.2666666666671, 39.5333333333311] boosts [19, 0, 0] start_boost 3 max_speed 35.10 cap 35.10
+[net-summary] role=host peer=1 place=3 finish=117.67 karts=12 | rtt_avg=0ms rtt_max=0ms view_delay=100ms | snaps/s=0.0 | extrap=0.0% | pred_err avg=0.000m max=0.000m | lag=0 jitter=0 loss=0% | lead_changes=5 lead_seq=0>1>0>3>0>3 | kb_out/s=0.0 kb_in/s=0.0
+
+bot item use: {'falcon': 9, 'shield': 5, 'stone': 4, 'horn': 6, 'spill': 2}
+hits by bot items: {('falcon', 'hit'): 7, ('stone', 'blocked'): 1, ('stone', 'hit'): 3, ('spill', 'hit'): 2}
+items used per bot: {'Careful': 3, 'Wide Wanderer': 2, 'Shortcut Hunter': 5, 'Item Hoarder': 2, 'Steady Eddie': 3, 'Hothead': 6}

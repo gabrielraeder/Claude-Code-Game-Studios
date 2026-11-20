@@ -1,0 +1,42 @@
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+   1 Careful          122.67  38.7 42.4 41.0             0(0.0)       6       0      0.9512 75.4
+   2 Wide Wanderer    124.80  40.9 40.3 42.7             0(0.0)       6       0      0.9730 64.9
+   3 Shortcut Hunter  117.40  37.7 39.3 39.3             0(0.0)       7       0      0.9655 66.0
+   4 Apex Ace         118.87  38.3 39.9 38.7             0(0.0)       7       0      0.9852 64.5
+   5 Outside Swinger  118.07  40.1 39.4 37.3             0(0.0)       5       0      0.9691 60.9
+   6 Item Hoarder     120.47  40.7 38.9 39.4             0(0.0)       7       0      0.9686 63.7
+   7 Steady Eddie     124.27  41.5 38.9 42.5             0(0.0)       4       0      0.9499 56.8
+   8 Hothead          118.47  38.7 37.1 41.1             0(0.0)       6       0      0.9727 60.7
+   9 Careful          124.33  42.2 39.5 41.1             0(0.0)       4       1      0.9618 58.8
+  10 Wide Wanderer    121.80  41.3 39.4 39.3             0(0.0)       5       0      0.9765 57.9
+  11 Shortcut Hunter  119.80  41.2 37.3 39.5             0(0.0)       10      0      0.9712 63.0
+
+bots finished: 11/11  first 117.40  last 124.80  spread 6.3% of winner
+bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+
+SINKS: 1 total, 0 self-caused (no bump and no hit in the last second)
+  per personality: {'Shortcut Hunter': 1}
+  per location: {'lava_gap@860': 1}
+  kart 11 Shortcut Hunter s=878 path=lava_gap hazard=lava speed=15.5 lat=-1.1 bump=0 hit=1 t=33.60
+  SEED 1239352122; karts sinking again within 5 s: 0
+  shortcuts skipped because crowded: 0
+
+shortcut enters by name/branch:
+  Careful         planned {'hall_left': 2, 'mine_rail': 4, 'hall_right': 3, 'lava_gap': 1} entered {'hall_right': 2, 'mine_rail': 2, 'lava_gap': 1, 'hall_left': 1} missed {}
+  Wide Wanderer   planned {'hall_right': 2, 'mine_rail': 3, 'lava_gap': 3, 'hall_left': 3} entered {'hall_right': 1, 'mine_rail': 1, 'lava_gap': 2, 'hall_left': 2} missed {}
+  Shortcut Hunter planned {'hall_left': 2, 'mine_rail': 5, 'lava_gap': 3, 'hall_right': 3} entered {'hall_right': 3, 'mine_rail': 3, 'lava_gap': 1} missed {}
+  Apex Ace        planned {'hall_left': 2, 'mine_rail': 4, 'lava_gap': 3, 'hall_right': 3} entered {'hall_right': 2, 'mine_rail': 2, 'lava_gap': 2, 'hall_left': 1} missed {}
+  Outside Swinger planned {'hall_right': 3, 'mine_rail': 3, 'lava_gap': 2, 'hall_left': 1} entered {'hall_right': 2, 'mine_rail': 2, 'lava_gap': 1} missed {}
+  Item Hoarder    planned {'lava_gap': 3, 'hall_left': 4, 'mine_rail': 3} entered {'hall_left': 3, 'mine_rail': 2, 'lava_gap': 2} missed {}
+  Steady Eddie    planned {'mine_rail': 2, 'hall_left': 2, 'lava_gap': 1} entered {'hall_left': 3, 'lava_gap': 1} missed {}
+  Hothead         planned {'hall_right': 3, 'mine_rail': 3, 'lava_gap': 3} entered {'mine_rail': 2, 'hall_right': 2, 'lava_gap': 2} missed {}
+  Careful         planned {'mine_rail': 5, 'lava_gap': 1, 'hall_right': 2} entered {'hall_right': 2, 'mine_rail': 2} missed {'mine_rail': 1}
+  Wide Wanderer   planned {'hall_left': 2, 'mine_rail': 4, 'lava_gap': 2, 'hall_right': 1} entered {'mine_rail': 2, 'hall_left': 1, 'lava_gap': 1, 'hall_right': 1} missed {}
+  Shortcut Hunter planned {'hall_left': 5, 'mine_rail': 5, 'lava_gap': 5} entered {'hall_left': 3, 'mine_rail': 3, 'lava_gap': 4} missed {}
+
+host autopilot: [debug] finished: laps [38.1333333333336, 38.3333333333338, 38.1333333333312] boosts [17, 0, 0] start_boost 3 max_speed 35.10 cap 35.10
+[net-summary] role=host peer=1 place=1 finish=115.13 karts=12 | rtt_avg=0ms rtt_max=0ms view_delay=100ms | snaps/s=0.0 | extrap=0.0% | pred_err avg=0.000m max=0.000m | lag=0 jitter=0 loss=0% | lead_changes=6 lead_seq=0>1>0>3>0>3>0 | kb_out/s=0.0 kb_in/s=0.0
+
+bot item use: {'stone': 9, 'shield': 1, 'spill': 6, 'horn': 7, 'falcon': 3}
+hits by bot items: {('stone', 'hit'): 6, ('spill', 'hit'): 6, ('falcon', 'hit'): 2}
+items used per bot: {'Careful': 4, 'Wide Wanderer': 1, 'Shortcut Hunter': 5, 'Apex Ace': 2, 'Outside Swinger': 3, 'Item Hoarder': 2, 'Steady Eddie': 1, 'Hothead': 2}

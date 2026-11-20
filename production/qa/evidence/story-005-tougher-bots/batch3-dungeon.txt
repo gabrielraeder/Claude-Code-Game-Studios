@@ -1,0 +1,30 @@
+[dungeon_depths-1] bots finished: 11/11  first 116.33  last 123.53  spread 6.2% of winner
+[dungeon_depths-1] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[dungeon_depths-1] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[dungeon_depths-1]   per location: {}
+[dungeon_depths-1]   SEED 3021361063; karts sinking again within 5 s: 0
+[dungeon_depths-2] bots finished: 11/11  first 112.73  last 123.07  spread 9.2% of winner
+[dungeon_depths-2] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[dungeon_depths-2] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[dungeon_depths-2]   per location: {}
+[dungeon_depths-2]   SEED 3497727603; karts sinking again within 5 s: 0
+[dungeon_depths-3] bots finished: 11/11  first 113.47  last 123.27  spread 8.6% of winner
+[dungeon_depths-3] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[dungeon_depths-3] SINKS: 1 total, 0 self-caused (no bump and no hit in the last second)
+[dungeon_depths-3]   per location: {'lava_gap@880': 1}
+[dungeon_depths-3]   SEED 3090214691; karts sinking again within 5 s: 0
+[dungeon_depths-4] bots finished: 11/11  first 113.87  last 125.00  spread 9.8% of winner
+[dungeon_depths-4] bots with a stuck event: 1, total events 1, longest stuck 2.73 s
+[dungeon_depths-4] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[dungeon_depths-4]   per location: {}
+[dungeon_depths-4]   SEED 602898552; karts sinking again within 5 s: 0
+[dungeon_depths-5] bots finished: 11/11  first 114.40  last 124.20  spread 8.6% of winner
+[dungeon_depths-5] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[dungeon_depths-5] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[dungeon_depths-5]   per location: {}
+[dungeon_depths-5]   SEED 1267095458; karts sinking again within 5 s: 0
+[dungeon_depths-6] bots finished: 11/11  first 113.33  last 126.07  spread 11.2% of winner
+[dungeon_depths-6] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[dungeon_depths-6] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[dungeon_depths-6]   per location: {}
+[dungeon_depths-6]   SEED 2300386956; karts sinking again within 5 s: 0

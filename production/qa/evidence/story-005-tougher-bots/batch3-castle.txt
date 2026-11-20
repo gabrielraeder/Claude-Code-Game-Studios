@@ -1,0 +1,20 @@
+[castle_circuit-1] bots finished: 11/11  first 117.33  last 123.33  spread 5.1% of winner
+[castle_circuit-1] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[castle_circuit-1] SINKS: 1 total, 0 self-caused (no bump and no hit in the last second)
+[castle_circuit-1]   per location: {'drawbridge@160': 1}
+[castle_circuit-1]   SEED 2341633106; karts sinking again within 5 s: 0
+[castle_circuit-2] bots finished: 11/11  first 116.20  last 123.47  spread 6.3% of winner
+[castle_circuit-2] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[castle_circuit-2] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[castle_circuit-2]   per location: {}
+[castle_circuit-2]   SEED 2766372165; karts sinking again within 5 s: 0
+[castle_circuit-3] bots finished: 11/11  first 116.60  last 124.60  spread 6.9% of winner
+[castle_circuit-3] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[castle_circuit-3] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[castle_circuit-3]   per location: {}
+[castle_circuit-3]   SEED 3198707844; karts sinking again within 5 s: 0
+[castle_circuit-4] bots finished: 11/11  first 117.00  last 122.67  spread 4.8% of winner
+[castle_circuit-4] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[castle_circuit-4] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[castle_circuit-4]   per location: {}
+[castle_circuit-4]   SEED 1335666136; karts sinking again within 5 s: 0

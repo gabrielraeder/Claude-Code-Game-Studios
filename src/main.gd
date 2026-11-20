@@ -74,6 +74,9 @@ var _items: ItemManager
 
 ## Item data (story 004): five items, odds table, box timings.
 const ITEM_SET_PATH: String = "res://assets/data/items/item_set.tres"
+## Bot AI data (story 005): personalities, names, rubber band, traffic, stuck and item tuning.
+const BOT_SET_PATH: String = "res://assets/data/ai/bot_set.tres"
+var _bot_set: BotSet
 
 
 ## The 3-2-1 countdown and start result (read by the HUD and the debug harness).
@@ -182,8 +185,18 @@ func _ready() -> void:
 			func(id: int) -> int: return _ranking.place_of(id),
 			func(place: int) -> int: return _ranking.id_at_place(place),
 			func() -> bool: return _mode == Mode.NET_RACE, _net)
+	_bot_set = load(BOT_SET_PATH) as BotSet
+	if _bot_set == null:
+		push_error("Bot data missing: %s" % BOT_SET_PATH)
+		_bot_set = BotSet.new()
+	elif _bot_set.validate() != "":
+		push_warning(_bot_set.validate())
 	_items.debug_give = -2 if _options.give_item == "all" else (item_set.index_of(StringName(_options.give_item)) if _options.give_item != "" else -1)
 	_items.auto_interval = _options.item_interval if _options.autopilot else 0.0
+	if "--bot-labels" in args or "--bot-shots=" in " ".join(args) or "--bot-cam=" in " ".join(args):
+		var bd := BotDebug.new()
+		add_child(bd)
+		bd.setup(func() -> Array: return _racers, _items, args)
 	_reset_race()
 	_camera.track = _track
 	_camera.follow(_sim)
@@ -636,7 +649,7 @@ func _host_begin_race() -> void:
 	var bots: int = _net_opts.bots if _net_opts.bots >= 0 else net_config.default_bots
 	bots = clampi(bots, 0, net_config.max_racers - slots.size())
 	for b in bots:
-		slots.append([next_id, 1, "Bot %d" % (b + 1), true])
+		slots.append([next_id, 1, _bot_set.bot_name(b), true])
 		next_id += 1
 	var info: Dictionary = {
 		"version": KartWire.VERSION,
@@ -644,10 +657,18 @@ func _host_begin_race() -> void:
 		"laps": _laps_for_race(),
 		"track": String(track_data.track_id),
 		"host_time": -vehicle_stats.start_countdown_time,
-		"seed": randi(),
+		"seed": _debug_race_seed(),
 	}
 	_net.broadcast_race_start(info)
 	_apply_race_start(info)
+
+
+# Debug: --race-seed=N makes the host use seed N, to replay a logged race (otherwise random).
+func _debug_race_seed() -> int:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--race-seed="):
+			return int(a.substr("--race-seed=".length()))
+	return randi()
 
 
 func _on_race_start_received(info: Dictionary) -> void:
@@ -701,7 +722,7 @@ func _apply_race_start(info: Dictionary) -> void:
 		if is_bot and _net.is_host():
 			r.owned = true
 			r.sim = KartSim.new(stats)
-			r.driver = BotDriver.new()
+			r.driver = BotDriver.create(_bot_set, kart_id, _bot_context(), laps_n, int(info.get("seed", 0)))
 			r.laps = LapCounter.new(laps_n, _track.length, _track.checkpoint_s)
 			r.sim.reset_to(_track, dist, lateral)
 			r.laps.reset(r.sim.track_s)
@@ -739,6 +760,19 @@ func _apply_race_start(info: Dictionary) -> void:
 		_place_grid_camera()
 	print("[net] race start: %d karts, %d laps, role=%s peer=%d kart=%d" % [
 			slots.size(), laps_n, _role(), my_id, _local.kart_id])
+
+
+# What a bot may ask about the race (story 005): racers, progress, place, held item, threats.
+func _bot_context() -> BotContext:
+	var c := BotContext.new()
+	c.racers_fn = func() -> Array: return _racers
+	c.progress_fn = func(id: int) -> float:
+		var r: Racer = _by_id.get(id)
+		return _rank_key(r) if r != null else 0.0
+	c.place_fn = func(id: int) -> int: return _ranking.place_of(id)
+	c.held_fn = func(id: int) -> StringName: return _items.held_id_of(id)
+	c.threat_fn = func(id: int) -> float: return _items.threat_distance(id)
+	return c
 
 
 func _clear_others() -> void:

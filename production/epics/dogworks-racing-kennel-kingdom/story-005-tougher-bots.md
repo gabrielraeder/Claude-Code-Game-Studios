@@ -1,13 +1,13 @@
 # Story 005: Tougher bots
 
 > **Epic**: Dogworks Racing: Kennel Kingdom
-> **Status**: Ready
+> **Status**: In Progress
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: M
 > **Build step**: core
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: —
+> **Last Updated**: 2026-11-20
 
 ## Context
 
@@ -56,15 +56,23 @@
 
 *Handled by neighbouring stories — do not implement here:*
 
-- Difficulty menu or per-bot personalities.
+- Difficulty menu (personalities themselves are in scope, see the criteria added 2026-11-19).
 - Story 006: bot racer models.
 
 ---
 
 ## Files
 
-- `src/ai/` (bot driver, line following, item use)
-- `assets/data/ai/` (bot tuning data)
+- `src/ai/bot_driver.gd` (rewritten: racing lines, drift choice, shortcut plans, traffic avoidance, stuck recovery, rubber band, item decisions, safe rail-less decks)
+- `src/ai/bot_personality.gd` (new: one personality's knobs)
+- `src/ai/bot_set.gd` (new: personalities, bot names, shared bot tuning)
+- `src/ai/bot_context.gd` (new: injected race accessors for bots)
+- `src/ai/bot_debug.gd` (new, debug only: bot labels, screenshots)
+- `assets/data/ai/bot_set.tres` (new: 8 personalities, 16 bot names, all bot tuning)
+- `src/items/item_manager.gd` (bots pick up and use items: per-bot slot, shared use path)
+- `src/main.gd` (bot wiring, bot names, race seed to bots, --race-seed)
+- `tools/bot_race_test.sh`, `tools/bot_sink_batch.sh`, `tools/bot_log_summary.py` (test rigs)
+- `production/qa/evidence/story-005-tougher-bots-evidence.md` (race batches, sinks, stuck test, fps)
 
 ---
 

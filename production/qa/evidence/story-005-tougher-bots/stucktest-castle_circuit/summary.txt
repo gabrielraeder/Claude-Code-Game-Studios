@@ -1,0 +1,27 @@
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+   1 Careful             DNF                             0(0.0)       0       1      - -
+   2 Wide Wanderer       DNF                             0(0.0)       0       0      - -
+   3 Shortcut Hunter     DNF                             0(0.0)       1       1      - -
+   4 Apex Ace            DNF                             0(0.0)       1       0      - -
+   5 Outside Swinger     DNF                             0(0.0)       0       0      - -
+bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+
+SINKS: 4 total, 2 self-caused (no bump and no hit in the last second)
+  per personality: {'Careful': 1, 'Outside Swinger': 1, 'Shortcut Hunter': 2}
+  per location: {'main@160': 1, 'main@180': 1, 'drawbridge@180': 2}
+  kart 1 Careful         s=179 path=main hazard=water speed=20.7 lat=-7.6 bump=1 hit=0 t=7.57
+  kart 5 Outside Swinger s=184 path=main hazard=water speed=25.0 lat=-7.5 bump=1 hit=0 t=7.98
+  kart 3 Shortcut Hunter s=187 path=drawbridge hazard=water speed=19.3 lat=2.6 bump=0 hit=0 t=9.90
+  kart 3 Shortcut Hunter s=193 path=drawbridge hazard=water speed=17.8 lat=2.6 bump=0 hit=0 t=11.72
+  shortcuts skipped because crowded: 2
+
+shortcut enters by name/branch:
+  Careful         planned {'village_lane': 1, 'secret_passage': 2, 'drawbridge': 1} entered {} missed {'drawbridge': 1}
+  Wide Wanderer   planned {'village_lane': 2, 'drawbridge': 1, 'secret_passage': 1} entered {} missed {}
+  Shortcut Hunter planned {'village_lane': 2, 'drawbridge': 2, 'secret_passage': 2} entered {'drawbridge': 1} missed {'drawbridge': 1}
+  Apex Ace        planned {'village_lane': 2, 'drawbridge': 1, 'secret_passage': 2} entered {'village_lane': 1} missed {}
+  Outside Swinger planned {'secret_passage': 2, 'drawbridge': 1} entered {} missed {}
+
+bot item use: {'horn': 2}
+hits by bot items: {}
+items used per bot: {'Careful': 1, 'Apex Ace': 1}

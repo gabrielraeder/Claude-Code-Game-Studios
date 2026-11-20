@@ -1,0 +1,7 @@
+ok: res://src/ai/bot_driver.gd
+ok: res://src/ai/bot_set.gd
+ok: res://src/ai/bot_personality.gd
+ok: res://src/ai/bot_context.gd
+ok: res://src/ai/bot_debug.gd
+ok: res://src/items/item_manager.gd
+ok: res://src/main.gd

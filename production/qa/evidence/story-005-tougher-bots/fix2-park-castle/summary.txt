@@ -1,0 +1,31 @@
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+   1 Careful           40.07  39.5                       0(0.0)       1       1      0.9399 69.1
+   2 Wide Wanderer     44.67  43.7                       0(0.0)       1       0      0.9661 54.8
+   3 Shortcut Hunter   39.27  38.4                       0(0.0)       2       0      0.9638 58.4
+   4 Apex Ace          41.67  39.6                       0(0.0)       0       0      0.9759 52.0
+   5 Outside Swinger   43.27  42.2                       0(0.0)       1       0      0.9686 53.7
+   6 Item Hoarder      42.27  40.9                       0(0.0)       1       0      0.9593 51.2
+   7 Steady Eddie      44.00  42.7                       0(0.0)       0       0      0.9381 48.4
+   8 Hothead           40.40  38.8                       0(0.0)       1       1      0.9692 52.2
+
+bots finished: 8/8  first 39.27  last 44.67  spread 13.8% of winner
+bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+
+SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+  per personality: {}
+  per location: {}
+  shortcuts skipped because crowded: 4
+
+shortcut enters by name/branch:
+  Careful         planned {'village_lane': 1, 'drawbridge': 1, 'secret_passage': 1} entered {'secret_passage': 1} missed {'secret_passage': 1}
+  Wide Wanderer   planned {'village_lane': 3, 'drawbridge': 2, 'secret_passage': 1} entered {'village_lane': 1} missed {}
+  Shortcut Hunter planned {'village_lane': 3, 'drawbridge': 3, 'secret_passage': 3} entered {'village_lane': 1, 'secret_passage': 1} missed {}
+  Apex Ace        planned {'drawbridge': 1, 'secret_passage': 2} entered {} missed {}
+  Outside Swinger planned {'village_lane': 3, 'drawbridge': 3, 'secret_passage': 2} entered {'village_lane': 1} missed {}
+  Item Hoarder    planned {'village_lane': 2, 'drawbridge': 2, 'secret_passage': 3} entered {'secret_passage': 1} missed {}
+  Steady Eddie    planned {'secret_passage': 1} entered {} missed {}
+  Hothead         planned {'village_lane': 3, 'secret_passage': 2, 'drawbridge': 2} entered {'village_lane': 1} missed {'secret_passage': 1}
+
+bot item use: {'spill': 3, 'stone': 2, 'horn': 1, 'shield': 2}
+hits by bot items: {('spill', 'hit'): 3, ('stone', 'hit'): 2}
+items used per bot: {'Careful': 2, 'Wide Wanderer': 1, 'Shortcut Hunter': 1, 'Apex Ace': 1, 'Outside Swinger': 2, 'Hothead': 1}

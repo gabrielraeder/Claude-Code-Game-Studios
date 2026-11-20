@@ -16,6 +16,13 @@ const BOX_PINK: Color = Color("FF4FA3")
 const BOX_CREAM: Color = Color("FFF1D0")
 const SHIELD_BUBBLE: Color = Color(1.0, 0.894, 0.541, 0.35)
 
+## What a host-owned bot holds (story 005). Bots press KartInput.item like the player.
+class BotSlot extends RefCounted:
+	var held: int = -1
+	var granted: int = -1
+	var ready_at: float = 0.0
+	var prev_btn: bool = false
+
 ## One item flying or lying on the road.
 class ActiveItem extends RefCounted:
 	var seq: int = 0
@@ -75,6 +82,7 @@ var _spin_prev: Dictionary = {}
 var _spin_start: Dictionary = {}
 var _slick_seen: Dictionary = {}
 var _flames: Dictionary = {}
+var _bots: Dictionary = {}
 
 
 ## Wires the manager. [param racers_fn] returns Array[Racer], [param local_fn] the local Racer,
@@ -116,6 +124,7 @@ func reset(track: TrackModel, seed_value: int) -> void:
 	for f in _flames.values():
 		(f as Node3D).queue_free()
 	_flames.clear()
+	_bots.clear()
 	_auto_timer = 0.0
 	_next_seq = 1
 	_early_hits.clear()
@@ -145,6 +154,7 @@ func update(dt: float, race_time: float) -> void:
 		if held < 0 and _roulette_end < 0.0:
 			_try_pickup(local)
 		_handle_use(local, dt)
+	_update_bots()
 	_update_roulette()
 	for ai in _active:
 		_step_item(ai, dt)
@@ -181,13 +191,53 @@ func active_count() -> int:
 	return _active.size()
 
 
+## Id of the item the kart [param kart_id] holds (a host-owned bot, or the local kart), "" = none.
+func held_id_of(kart_id: int) -> StringName:
+	var idx: int = -1
+	if _bots.has(kart_id):
+		idx = (_bots[kart_id] as BotSlot).held
+	elif kart_id == (_local_fn.call() as Racer).kart_id:
+		idx = held
+	return _set.items[idx].id if idx >= 0 else &""
+
+
+## Distance in meters from kart [param kart_id] to the nearest hostile item that is coming for
+## it (a stone flying toward it, a falcon locked on it, a slick ahead); INF when none.
+func threat_distance(kart_id: int) -> float:
+	var r: Racer = _racer_by_id(kart_id)
+	if r == null:
+		return INF
+	var best: float = INF
+	for ai in _active:
+		if ai.dead or ai.owner_id == kart_id:
+			continue
+		var to_me: Vector2 = r.sim.position - ai.pos
+		var d: float = to_me.length()
+		match _set.items[ai.index].id:
+			&"stone":
+				if ai.dir.dot(to_me) <= 0.0:
+					continue
+			&"falcon":
+				if ai.target_id != kart_id:
+					continue
+			&"spill":
+				if (-to_me).dot(r.sim.forward()) <= 0.0:
+					continue
+		best = minf(best, d)
+	return best
+
+
 ## Uses the held item now (the ITEM button, or the autopilot).
 func use_item() -> void:
 	if held < 0:
 		return
-	var local: Racer = _local_fn.call()
 	var idx: int = held
 	held = -1
+	_use(_local_fn.call() as Racer, idx)
+
+
+# Fires item [param idx] for [param local] (the local kart or a host-owned bot).
+func _use(local: Racer, idx: int) -> void:
 	var def: ItemDef = _set.items[idx]
 	var sim: KartSim = local.sim
 	if def.id == &"horn":
@@ -225,6 +275,36 @@ func _is_online() -> bool:
 
 func _is_host() -> bool:
 	return not _is_online() or _net == null or _net.is_host()
+
+
+# Host-owned bots: take boxes they drive into, hold the item after the roulette time, and use
+# it when their driver presses the item input. Hits and spawns use the same messages as the player's.
+func _update_bots() -> void:
+	if _time <= 0.0:
+		return
+	for r: Racer in _racers_fn.call():
+		if not r.is_bot or not r.owned or r.dropped:
+			continue
+		if not _bots.has(r.kart_id):
+			_bots[r.kart_id] = BotSlot.new()
+		var slot: BotSlot = _bots[r.kart_id]
+		if r.is_finished():
+			continue
+		if slot.granted >= 0 and _time >= slot.ready_at:
+			slot.held = slot.granted
+			slot.granted = -1
+		if slot.held < 0 and slot.granted < 0:
+			var r2: float = _set.box_pickup_radius * _set.box_pickup_radius
+			for i in _box_free_at.size():
+				if _box_free_at[i] < 0.0 and _track.item_box_position(i).distance_squared_to(r.sim.position) <= r2:
+					_grant(i, r.kart_id)
+					break
+		var btn: bool = r.input.item
+		if btn and not slot.prev_btn and slot.held >= 0:
+			var idx: int = slot.held
+			slot.held = -1
+			_use(r, idx)
+		slot.prev_btn = btn
 
 
 func _try_pickup(local: Racer) -> void:
@@ -272,6 +352,10 @@ func _apply_taken(box: int, kart_id: int, t: float, item: int) -> void:
 		return
 	_box_free_at[box] = t + _set.box_respawn
 	var local: Racer = _local_fn.call()
+	if _bots.has(kart_id):
+		var slot: BotSlot = _bots[kart_id]
+		slot.granted = item
+		slot.ready_at = t + _set.roulette_time
 	if kart_id == local.kart_id:
 		if _roulette_end >= 0.0 and _pending_box == box:
 			_granted = item

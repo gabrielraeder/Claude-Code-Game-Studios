@@ -1,0 +1,22 @@
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+   1 Careful           38.80  38.2                       0(0.0)       3       0      0.9398 62.3
+   2 Wide Wanderer     41.40  40.3                       0(0.0)       2       0      0.9596 49.6
+   3 Shortcut Hunter   40.80  39.8                       0(0.0)       3       0      0.9650 53.1
+   4 Apex Ace          40.40  38.3                       0(0.0)       2       0      0.9750 48.3
+   5 Outside Swinger   38.20  36.7                       0(0.0)       3       0      0.9590 51.0
+   6 Item Hoarder      40.93  39.5                       0(0.0)       2       0      0.9524 45.5
+
+bots finished: 6/6  first 38.20  last 41.40  spread 8.4% of winner
+bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+
+shortcut enters by name/branch:
+  Careful         planned {'hall_left': 2, 'mine_rail': 3, 'lava_gap': 1, 'hall_right': 1} entered {'hall_left': 1, 'mine_rail': 1, 'lava_gap': 1} missed {}
+  Wide Wanderer   planned {'hall_right': 2, 'lava_gap': 3, 'hall_left': 1, 'mine_rail': 1} entered {'hall_right': 1, 'lava_gap': 1} missed {}
+  Shortcut Hunter planned {'hall_left': 3, 'mine_rail': 3, 'lava_gap': 3} entered {'hall_left': 1, 'mine_rail': 1, 'lava_gap': 1} missed {}
+  Apex Ace        planned {'hall_right': 3, 'lava_gap': 1, 'mine_rail': 1} entered {'hall_right': 1, 'mine_rail': 1} missed {}
+  Outside Swinger planned {'hall_left': 1, 'lava_gap': 2, 'hall_right': 2, 'mine_rail': 2} entered {'hall_right': 1, 'mine_rail': 1, 'lava_gap': 1} missed {}
+  Item Hoarder    planned {'hall_right': 1, 'hall_left': 2, 'lava_gap': 2, 'mine_rail': 1} entered {'hall_left': 1, 'lava_gap': 1} missed {}
+
+bot item use: {'horn': 3, 'stone': 1, 'spill': 1}
+hits by bot items: {('stone', 'hit'): 1, ('spill', 'hit'): 1}
+items used per bot: {'Careful': 2, 'Wide Wanderer': 1, 'Shortcut Hunter': 1, 'Outside Swinger': 1}

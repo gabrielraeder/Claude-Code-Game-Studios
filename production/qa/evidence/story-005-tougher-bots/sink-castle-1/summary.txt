@@ -1,0 +1,10 @@
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+
+shortcut enters by name/branch:
+
+host autopilot: [debug] finished: laps [38.0000000000002, 38.0000000000005, 38.1333333333312] boosts [23, 0, 0] start_boost 3 max_speed 35.10 cap 35.10
+
+bot item use: {}
+hits by bot items: {}
+items used per bot: {}

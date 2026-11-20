@@ -1,0 +1,8 @@
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+
+shortcut enters by name/branch:
+
+bot item use: {}
+hits by bot items: {}
+items used per bot: {}

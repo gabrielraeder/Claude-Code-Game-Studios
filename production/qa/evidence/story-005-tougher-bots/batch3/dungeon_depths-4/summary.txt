@@ -1,0 +1,41 @@
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+   1 Careful          122.80  40.8 39.1 42.3             0(0.0)       3       0      0.9542 71.4
+   2 Wide Wanderer    122.93  40.6 40.4 40.9             0(0.0)       5       0      0.9735 64.5
+   3 Shortcut Hunter  125.00  40.9 37.7 45.6             1(2.7)       9       0      0.9823 68.5
+   4 Apex Ace         120.93  40.1 39.9 39.6             0(0.0)       4       0      0.9864 60.2
+   5 Outside Swinger  122.20  43.1 40.5 37.3             0(0.0)       5       0      0.9837 60.9
+   6 Item Hoarder     124.73  40.6 40.9 41.9             0(0.0)       4       0      0.9679 59.8
+   7 Steady Eddie     124.13  41.7 40.0 41.1             0(0.0)       3       0      0.9520 57.6
+   8 Hothead          113.87  37.6 37.1 37.6             0(0.0)       7       0      0.9750 62.3
+   9 Careful          120.33  42.3 37.9 38.5             0(0.0)       7       0      0.9655 59.9
+  10 Wide Wanderer    122.73  41.7 40.8 38.4             0(0.0)       5       0      0.9773 58.6
+  11 Shortcut Hunter  115.00  38.4 37.3 37.5             0(0.0)       9       0      0.9723 64.8
+
+bots finished: 11/11  first 113.87  last 125.00  spread 9.8% of winner
+bots with a stuck event: 1, total events 1, longest stuck 2.73 s
+
+SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+  per personality: {}
+  per location: {}
+  SEED 602898552; karts sinking again within 5 s: 0
+  shortcuts skipped because crowded: 0
+
+shortcut enters by name/branch:
+  Careful         planned {'hall_right': 2, 'hall_left': 2, 'lava_gap': 1, 'mine_rail': 1} entered {'hall_left': 2, 'lava_gap': 1} missed {}
+  Wide Wanderer   planned {'hall_left': 4, 'mine_rail': 2, 'lava_gap': 4, 'hall_right': 1} entered {'hall_left': 2, 'lava_gap': 2, 'hall_right': 1} missed {}
+  Shortcut Hunter planned {'hall_left': 3, 'mine_rail': 5, 'lava_gap': 5, 'hall_right': 2} entered {'hall_left': 1, 'mine_rail': 3, 'lava_gap': 3, 'hall_right': 2} missed {}
+  Apex Ace        planned {'hall_left': 3, 'hall_right': 2, 'mine_rail': 2, 'lava_gap': 1} entered {'hall_right': 1, 'mine_rail': 1, 'hall_left': 2} missed {}
+  Outside Swinger planned {'hall_right': 4, 'mine_rail': 2, 'lava_gap': 1, 'hall_left': 1} entered {'hall_right': 3, 'mine_rail': 1, 'lava_gap': 1} missed {}
+  Item Hoarder    planned {'hall_left': 2, 'mine_rail': 2, 'lava_gap': 2, 'hall_right': 2} entered {'hall_right': 2, 'mine_rail': 1, 'lava_gap': 1} missed {}
+  Steady Eddie    planned {'hall_left': 1, 'hall_right': 1, 'mine_rail': 1, 'lava_gap': 1} entered {'hall_right': 1, 'mine_rail': 1, 'lava_gap': 1} missed {}
+  Hothead         planned {'hall_left': 2, 'mine_rail': 3, 'lava_gap': 4, 'hall_right': 2} entered {'hall_right': 2, 'mine_rail': 2, 'lava_gap': 3} missed {}
+  Careful         planned {'hall_left': 3, 'hall_right': 1, 'mine_rail': 3, 'lava_gap': 2} entered {'hall_left': 2, 'hall_right': 1, 'mine_rail': 2, 'lava_gap': 2} missed {}
+  Wide Wanderer   planned {'hall_right': 2, 'mine_rail': 3, 'lava_gap': 3, 'hall_left': 3} entered {'hall_right': 1, 'hall_left': 2, 'lava_gap': 1, 'mine_rail': 1} missed {}
+  Shortcut Hunter planned {'hall_right': 3, 'mine_rail': 5, 'lava_gap': 4, 'hall_left': 2} entered {'hall_right': 1, 'mine_rail': 3, 'lava_gap': 3, 'hall_left': 2} missed {}
+
+host autopilot: [debug] finished: laps [39.3333333333336, 42.5333333333335, 40.1999999999977] boosts [16, 1, 0] start_boost 3 max_speed 35.10 cap 35.10
+[net-summary] role=host peer=1 place=6 finish=122.60 karts=12 | rtt_avg=0ms rtt_max=0ms view_delay=100ms | snaps/s=0.0 | extrap=0.0% | pred_err avg=0.000m max=0.000m | lag=0 jitter=0 loss=0% | lead_changes=5 lead_seq=0>1>0>8>11>8 | kb_out/s=0.0 kb_in/s=0.0
+
+bot item use: {'spill': 10, 'stone': 9, 'horn': 5, 'falcon': 5, 'shield': 3}
+hits by bot items: {('spill', 'hit'): 9, ('stone', 'hit'): 7, ('falcon', 'hit'): 3, ('spill', 'blocked'): 1}
+items used per bot: {'Careful': 2, 'Wide Wanderer': 3, 'Shortcut Hunter': 3, 'Apex Ace': 4, 'Item Hoarder': 2, 'Steady Eddie': 2, 'Hothead': 7}

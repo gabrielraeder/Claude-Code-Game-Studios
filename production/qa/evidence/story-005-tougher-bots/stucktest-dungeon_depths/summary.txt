@@ -1,0 +1,23 @@
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+   1 Careful             DNF                             0(0.0)       0       0      - -
+   2 Wide Wanderer       DNF                             0(0.0)       0       0      - -
+   3 Shortcut Hunter     DNF                             0(0.0)       1       0      - -
+   4 Apex Ace            DNF                             0(0.0)       1       0      - -
+   5 Outside Swinger     DNF                             0(0.0)       1       0      - -
+bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+
+SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+  per personality: {}
+  per location: {}
+  shortcuts skipped because crowded: 0
+
+shortcut enters by name/branch:
+  Careful         planned {'hall_right': 1, 'mine_rail': 1} entered {} missed {}
+  Wide Wanderer   planned {'hall_left': 1, 'lava_gap': 1} entered {} missed {}
+  Shortcut Hunter planned {'hall_right': 2, 'mine_rail': 2, 'lava_gap': 2} entered {'hall_right': 1} missed {}
+  Apex Ace        planned {'mine_rail': 1, 'hall_left': 1} entered {'hall_left': 1} missed {}
+  Outside Swinger planned {'hall_left': 2, 'lava_gap': 1, 'mine_rail': 1} entered {'hall_left': 1} missed {}
+
+bot item use: {'spill': 3}
+hits by bot items: {('spill', 'hit'): 3}
+items used per bot: {'Careful': 2, 'Apex Ace': 1}
