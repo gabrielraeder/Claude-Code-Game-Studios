@@ -1,13 +1,13 @@
 # Story 003: Two tracks with shortcuts
 
 > **Epic**: Dogworks Racing: Kennel Kingdom
-> **Status**: In Progress
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Visual/Feel
 > **Estimate**: L
 > **Build step**: core
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: 2026-11-19
+> **Last Updated**: 2026-11-20
 
 ## Context
 
@@ -117,3 +117,18 @@
 
 - Depends on: `story-001-driving-and-drift.md`
 - Unlocks: `story-004-items.md`, `story-005-tougher-bots.md`, `story-007-race-flow-hud-sound.md`
+
+## Completion Notes
+**Completed**: 2026-11-20
+**Criteria**: 10/10 passing (no deferred items)
+**Deviations**: ADVISORY — autopilot laps are about 38 s on both tracks, against the research's 45–50 s target (human laps are slower); the lava gap is gated at 92% of top speed, not boost-only; the mine rail's margin is thin (sloppy driving loses 0.17 s); remote players don't see the lava scorch puff when you sink. Brief Features item 4 stays unticked until stories 008 (elevation) and 009 (moving hazards) are done.
+**Test Evidence**: waived at qa.level minimal; track_check results, stress/bump/mixed-track/fps runs and screenshots in `production/qa/evidence/story-003-tracks-and-shortcuts/`, sign-off in `production/qa/evidence/story-003-tracks-evidence.md`
+**Reviewed by**: self, no independent review
+
+## Calls beyond the design
+- Corner directions and road widths (some flipped from the research doc), 10 and 9 checkpoints per lap, item-box spots as data only (`tools/gen_castle_circuit.py`, `tools/gen_dungeon_depths.py`, the track `.tres` files) · kept 2026-11-20
+- Castle shortcuts: 5 m rail-less drawbridge, open-top secret passage with 1.3 m walls and wall drag 2.0 (`assets/tracks/castle_circuit/castle_circuit.tres`) · kept 2026-11-20
+- Dungeon shortcuts: mine-cart rail with floor drag 1.25, lava gap gated at 24 m/s (0.92 x top speed) (`assets/tracks/dungeon_depths/dungeon_depths.tres`) · kept 2026-11-20
+- Moat and lava sink 1.0 s, respawn 4 m back at 0.26 x top speed with 3 s immunity; boost pads 0.8–1.1 s (`TrackData`, `kart_sim.gd`) · kept 2026-11-20
+- Narrow-road camera rises above the walls and follows the road (`src/test_track/chase_camera.gd`) · kept 2026-11-20
+- Dungeon lighting: 7–8 omni lights, fog 0.004, no sun (`assets/tracks/dungeon_depths/dungeon_theme.tres`) · kept 2026-11-20
