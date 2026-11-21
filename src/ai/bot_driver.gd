@@ -167,9 +167,10 @@ func _drive(input: KartInput, sim: KartSim, track: TrackModel, dt: float) -> voi
 	if not _bump_hooked:
 		_bump_hooked = true
 		sim.kart_bumped.connect(func(_strength: float) -> void: _last_bump_t = _race_t)
-		sim.mover_hit.connect(func(mi: int) -> void:
-			print("[bot] HAZARD_HIT kart=%d name=%s mover=%d s=%.0f lat=%.1f speed=%.1f t=%.2f" % [
-					kart_id, personality.display_name, mi, sim.track_s, sim.lateral, sim.speed, _race_t]))
+		# The kart is bound through a WeakRef: a connection stored in the kart's own signal that
+		# held the kart strongly would be a reference cycle (the KartSim never freed, a crash at
+		# exit when the engine tears the leaked objects down).
+		sim.mover_hit.connect(_on_mover_hit.bind(weakref(sim)))
 	if sim.spin_time > _prev_spin:
 		_last_hit_t = _race_t
 	_prev_spin = sim.spin_time
@@ -519,6 +520,15 @@ func _cart_timing_ok(track: TrackModel, sim: KartSim, bi: int) -> bool:
 				return false
 		a += maxf(_set.cart_meet_step, 0.1)
 	return true
+
+
+# Story 009 log: a timed hazard hit this bot's kart ([param sim_ref] is a WeakRef to its KartSim).
+func _on_mover_hit(mover_index: int, sim_ref: WeakRef) -> void:
+	var sim: KartSim = sim_ref.get_ref() as KartSim
+	if sim == null:
+		return
+	print("[bot] HAZARD_HIT kart=%d name=%s mover=%d s=%.0f lat=%.1f speed=%.1f t=%.2f" % [
+			kart_id, personality.display_name, mover_index, sim.track_s, sim.lateral, sim.speed, _race_t])
 
 
 # Story 009: a rolling barrel ahead on the main road within BotSet.barrel_look meters: aim for the
