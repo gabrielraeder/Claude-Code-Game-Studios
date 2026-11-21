@@ -47,6 +47,9 @@ var shortcut_id: StringName = &""
 ## open edge into the hazard (for the respawn screenshot). Negative = off.
 var dunk_s: float = -1.0
 var _dunked: bool = false
+## Debug (--auto-lane=S0:S1:LAT): (s0, s1, lateral) drive LAT meters off the line (left positive)
+## while its progress (main-loop distance, on a branch too) is between s0 and s1. s1 < s0 = off.
+var lane_window: Vector3 = Vector3(0.0, -1.0, 0.0)
 
 ## False makes a sloppy driver: full throttle, plain steering, never drifts (track check).
 var allow_drift: bool = true
@@ -98,6 +101,9 @@ func _drive_line(input: KartInput, sim: KartSim, track: TrackModel, _dt: float) 
 	if on_open > 0 or (sim.road_half_width > 0.0 and sim.road_half_width < NARROW_HALF_WIDTH):
 		look = OPEN_LOOK_BASE + maxf(sim.speed, 0.0) * OPEN_LOOK_PER_SPEED
 	var target: Vector2 = _route_point(track, sim, look)
+	if lane_window.y >= lane_window.x and sim.track_s >= lane_window.x and sim.track_s <= lane_window.y:
+		var lt: Vector2 = _route_tangent(track, sim, look)
+		target += Vector2(-lt.y, lt.x) * lane_window.z
 	var to: Vector2 = target - sim.position
 	var want: float = atan2(-to.x, -to.y)
 	var diff: float = wrapf(want - sim.yaw, -PI, PI)

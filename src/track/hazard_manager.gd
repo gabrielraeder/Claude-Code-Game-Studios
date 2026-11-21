@@ -134,6 +134,10 @@ func phase_at(m: TrackMover, t: float) -> int:
 	var u: float = _since_start(m, t)
 	if u < 0.0:
 		return Phase.ACTIVE
+	if m.is_shuttle():
+		if _shuttle_moving(m, u):
+			return Phase.ACTIVE
+		return Phase.WARNING if _shuttle_to_departure(m, u) <= m.warning_lead else Phase.IDLE
 	if m.is_traveler():
 		if u < m.travel_time():
 			return Phase.ACTIVE
@@ -152,7 +156,7 @@ func phase_at(m: TrackMover, t: float) -> int:
 ## 0 (down, idle) to 1 (fully active), linear in time through the rise and the fall.
 func progress_at(m: TrackMover, t: float) -> float:
 	var u: float = _since_start(m, t)
-	if u < 0.0:
+	if u < 0.0 or m.is_shuttle():
 		return 1.0
 	if m.is_traveler():
 		return 1.0 if u < m.travel_time() or m.period - u <= m.solid_lead else 0.0
@@ -179,6 +183,8 @@ func is_active(m: TrackMover, t: float) -> bool:
 
 ## Start and end (cycle seconds, the end may exceed the period) of the blocked window.
 func blocked_window(m: TrackMover) -> Vector2:
+	if m.is_shuttle():
+		return Vector2(0.0, m.period)
 	if m.is_traveler():
 		return Vector2(m.active_start - m.solid_lead, m.active_start + m.travel_time())
 	return Vector2(m.active_start + m.block_progress * m.transition_time,
@@ -248,20 +254,54 @@ func distance_at(m: TrackMover, t: float) -> float:
 	if m.period <= EPSILON:
 		return m.path_from + fposmod(m.speed * (t + m.phase), span)
 	var u: float = _since_start(m, t)
+	if m.is_shuttle():
+		return _shuttle_distance(m, u)
 	if m.period - u <= m.warning_lead:
 		return m.path_from
 	return m.path_from + clampf(m.speed * u, 0.0, span)
 
 
-## Seconds until the mover's next active window starts (0 with no schedule).
+## Seconds until the mover's next active window starts (0 with no schedule). For a shuttle:
+## until it next sets off from either end (0 while it moves).
 func time_to_start(m: TrackMover, t: float) -> float:
 	var u: float = _since_start(m, t)
-	return 0.0 if u < 0.0 else m.period - u
+	if u < 0.0:
+		return 0.0
+	if m.is_shuttle():
+		return 0.0 if _shuttle_moving(m, u) else _shuttle_to_departure(m, u)
+	return m.period - u
+
+
+# A shuttle's cycle (u = seconds since it set off from path_from): run out (travel_time), stand at
+# path_to, run back (travel_time), stand at path_from; each stand lasts half the period minus a run.
+func _shuttle_moving(m: TrackMover, u: float) -> bool:
+	var run: float = m.travel_time()
+	var half: float = m.period * 0.5
+	return u < run or (u >= half and u < half + run)
+
+
+# Seconds from cycle time [param u] until the shuttle next sets off (from either end).
+func _shuttle_to_departure(m: TrackMover, u: float) -> float:
+	var half: float = m.period * 0.5
+	return half - u if u < half else m.period - u
+
+
+# Distance along the road of a shuttle at cycle time [param u]: smoothstep-eased runs (it pulls
+# away and brakes at the ends; the average speed of a run is m.speed).
+func _shuttle_distance(m: TrackMover, u: float) -> float:
+	var span: float = m.path_to - m.path_from
+	var run: float = maxf(m.travel_time(), EPSILON)
+	var half: float = m.period * 0.5
+	if u < half:
+		return m.path_from + span * smoothstep(0.0, 1.0, u / run)
+	return m.path_to - span * smoothstep(0.0, 1.0, (u - half) / run)
 
 
 ## World (x, z) position of mover [param m] at time [param t]: its body for a traveler (in its
 ## lane), the hinge or the middle of the span for a gate.
 func position_at(m: TrackMover, t: float) -> Vector2:
+	if m.kind == &"burst":
+		return m.vent_center
 	var i: int = _movers.find(m)
 	var road: TrackModel.Path = _track.path_of(_paths[i] if i >= 0 else MAIN_PATH_INDEX)
 	if m.is_traveler():
@@ -271,9 +311,20 @@ func position_at(m: TrackMover, t: float) -> Vector2:
 	return road.point_at(m.path_to if m.kind == &"gate" else m.path_from)
 
 
+## Unit normal (left of the travel direction, the +lateral side) of the road under traveling mover
+## [param m] at time [param t].
+func road_normal_at(m: TrackMover, t: float) -> Vector2:
+	var i: int = _movers.find(m)
+	var road: TrackModel.Path = _track.path_of(_paths[i] if i >= 0 else MAIN_PATH_INDEX)
+	var tn: Vector2 = road.tangent_at(distance_at(m, t))
+	return Vector2(-tn.y, tn.x)
+
+
 ## World position of mover [param m] at time [param t] with its road height under it (a
 ## traveler's body rests on the road surface in its lane, banks and slopes included).
 func pose_at(m: TrackMover, t: float) -> Vector3:
+	if m.kind == &"burst":
+		return Vector3(m.vent_center.x, m.vent_height, m.vent_center.y)
 	var i: int = _movers.find(m)
 	var road: TrackModel.Path = _track.path_of(_paths[i] if i >= 0 else MAIN_PATH_INDEX)
 	var d: float = distance_at(m, t) if m.is_traveler() else (m.path_to if m.kind == &"gate" else m.path_from)
@@ -288,7 +339,8 @@ func anchor_position(i: int) -> Vector3:
 	return pose_at(_movers[i], time)
 
 
-## Rolling bodies (barrels, carts) on road [param path_idx] that are rolling or waiting at time [param t]
+## Rolling bodies (barrels, carts) on road [param path_idx] that are rolling or waiting (a shuttle:
+## always) at time [param t]
 ## between [param from_along] and [param to_along] meters: one (along, lane offset, hit radius)
 ## per body. Bots use it to pick a free lane.
 func travelers_between(path_idx: int, from_along: float, to_along: float, t: float) -> PackedVector3Array:
@@ -298,7 +350,7 @@ func travelers_between(path_idx: int, from_along: float, to_along: float, t: flo
 		if not m.is_traveler() or _paths[i] != path_idx:
 			continue
 		var ph: int = phase_at(m, t)
-		if ph != Phase.ACTIVE and ph != Phase.WARNING:
+		if ph != Phase.ACTIVE and ph != Phase.WARNING and not m.is_shuttle():
 			continue
 		var d: float = distance_at(m, t)
 		if d >= from_along and d <= to_along:
@@ -324,7 +376,8 @@ func hit_test(kart: KartSim, t: float, q: TrackModel.Query) -> int:
 						and Geometry2D.is_point_in_polygon(kart.position, m.footprint):
 					return i
 			_:
-				if m.is_traveler() and kart.position.distance_to(position_at(m, t)) <= m.hit_radius 						and absf(kart.height - pose_at(m, t).y) <= m.hit_height:
+				if m.is_traveler() and kart.position.distance_to(position_at(m, t)) <= m.hit_radius \
+						and absf(kart.height - pose_at(m, t).y) <= m.hit_height:
 					return i
 	return -1
 

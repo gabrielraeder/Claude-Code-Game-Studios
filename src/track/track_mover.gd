@@ -39,13 +39,22 @@ extends Resource
 ## barrel or cart: the stretch it travels, wrapping from path_to back to path_from.
 @export var path_from: float = 0.0
 @export var path_to: float = 0.0
-## Travel speed in m/s along the road (barrel, cart). 0 = stands still (gate, burst).
+## Travel speed in m/s along the road (barrel, cart). 0 = stands still (gate, burst). For a
+## shuttle this is the average speed of one run (it eases in and out at the ends).
 @export var speed: float = 0.0
+## How a traveler moves: "run" (waits at path_from during the warning, rolls to path_to, then is
+## hidden until the next warning: the barrels) or "shuttle" (back and forth between path_from and
+## path_to, easing in and out, standing at each end for the rest of half a period: the mine cart).
+## A shuttle is always there and always solid.
+@export var motion: StringName = &"run"
 ## Footprint outline as (x, z) points (burst); empty = none.
 @export var footprint: PackedVector2Array = PackedVector2Array()
 ## Height range (Y, meters) a kart must be in for a footprint hit.
 @export var footprint_y_min: float = -1.0
 @export var footprint_y_max: float = 4.0
+## A burst: the centre of its vent (x, z) and the road height there (the column stands on it).
+@export var vent_center: Vector2 = Vector2.ZERO
+@export var vent_height: float = 0.0
 ## A traveler (barrel) waits at path_from for warning_lead seconds before it rolls, rising out of
 ## its cellar; it is solid (hits) only for the last solid_lead seconds of that wait, so a kart that
 ## happens to be on the spot when it appears is not hit by surprise.
@@ -70,17 +79,26 @@ extends Resource
 ## with a hit-slowdown profile, as an item hit) or "stop" (a gate in an enclosed road, the
 ## portcullis: the kart is stopped against it like a wall and bounced back).
 @export var hit_effect: StringName = &"sink"
+## A traveling body that is solid (the mine cart): a kart that touches it is also pushed back out
+## of its hit circle every tick (spinning or not) and loses the speed it had into it, as off a wall.
+@export var solid_body: bool = false
+## A solid body spins a kart only when they close on each other at this speed (m/s) or more; a
+## slower touch (a kart standing against the parked cart) is only pushed back, never spun again.
+@export var spin_min_speed: float = 4.0
 ## Index into VehicleStats.hit_slowdown_profiles for a "spin" hit.
 @export var hit_profile: int = 1
 ## Water or lava look/sound of a "sink" hit (TrackHazard kind).
 @export var sink_kind: StringName = &"water"
+## Puff the victim's kart shows on a "spin" hit: "scorch" (the lava scorch puff, a burst) or empty.
+@export var hit_puff: StringName = &""
 ## A "stop" hit: the kart is pushed back off the gate and rolls back at this share of the speed it
 ## hit with (capped by its reverse top speed).
 @export_range(0.0, 1.0) var stop_rebound: float = 0.15
 
 @export_group("Look and sound")
 ## Visual kind: drawbridge (deck on chains), portcullis (an iron grille that drops in a stone
-## frame), barrel (a rolling wooden barrel with iron bands); later burst, cart.
+## frame), barrel (a rolling wooden barrel with iron bands), burst (a glowing vent and a lava
+## column), cart (an ore cart on the rails).
 @export var visual: StringName = &"drawbridge"
 ## Angle in degrees the deck stands at when fully raised.
 @export var raised_angle_deg: float = 78.0
@@ -134,6 +152,36 @@ extends Resource
 ## The body shrinks over this many meters before the end of its run (into the cellar at the
 ## bottom); at the top it grows during the warning until it is solid (see solid_lead).
 @export var appear_distance: float = 2.0
+## How much darker than body_color the stave that shows the barrel turning is (Color.darkened).
+@export_range(0.0, 1.0) var stave_darken: float = 0.45
+
+@export_group("Burst look")
+## Radius in meters of the glowing vent (the crack in the road edge) and of the lava column.
+@export var vent_radius: float = 2.6
+@export var column_radius: float = 1.6
+## Height in meters of the column at full eruption.
+@export var column_height: float = 6.0
+## Vent colours: dull (idle) and bright (warning, eruption); column colour and how much it glows.
+@export var vent_idle_color: Color = Color(0.35, 0.1, 0.04)
+@export var vent_hot_color: Color = Color(1.0, 0.62, 0.15)
+@export var column_color: Color = Color(1.0, 0.45, 0.1)
+@export var column_glow: float = 2.5
+## Vent glow (emission energy) when idle and at the peak of the warning; the warning pulses at
+## warn_blink_hz.
+@export var vent_glow_idle: float = 0.4
+@export var vent_glow_warn: float = 3.0
+## During the warning a lava dome bubbles up out of the vent, pulsing, up to this share of
+## column_height (it reads from far away, where the flat vent is a thin sliver).
+@export_range(0.0, 1.0) var warn_dome: float = 0.15
+
+@export_group("Cart look")
+## Ore cart body: width, height and length in meters; wheel radius; ore heap colour. The wood is
+## body_color, the iron bands and wheels band_color.
+@export var cart_width: float = 1.3
+@export var cart_height: float = 0.9
+@export var cart_length: float = 1.9
+@export var wheel_radius: float = 0.3
+@export var ore_color: Color = Color(0.3, 0.42, 0.62)
 
 
 ## First and last segment index (inclusive) of [param road] whose middle lies on the movable
@@ -158,14 +206,25 @@ func validate() -> String:
 		return "mover %s: transition_time must be above 0" % id
 	if speed > 0.0 and solid_lead > warning_lead:
 		return "mover %s: solid_lead exceeds warning_lead" % id
+	if is_shuttle():
+		if period > 0.0 and 2.0 * travel_time() + 2.0 * warning_lead > period:
+			return "mover %s: two runs (%.2f s each) and two warnings exceed the period" % [id, travel_time()]
+		return ""
 	if speed > 0.0 and period > 0.0 and (path_to - path_from) / speed + warning_lead > period:
 		return "mover %s: the run (%.2f s) and the warning exceed the period" % [id, (path_to - path_from) / speed]
+	if kind == &"burst" and footprint.size() < 3:
+		return "mover %s: a burst needs a footprint" % id
 	return ""
 
 
 ## True for a body that travels along its road (barrel, cart) rather than a gate or a footprint.
 func is_traveler() -> bool:
 	return speed > 0.0 and kind != &"gate"
+
+
+## True for a traveler that goes back and forth (motion "shuttle").
+func is_shuttle() -> bool:
+	return is_traveler() and motion == &"shuttle"
 
 
 ## Seconds a traveling body takes from path_from to path_to (0 when it does not travel).

@@ -1019,10 +1019,27 @@ func _check_movers() -> void:
 			_check_ok("(17) %s rolls on its road, its body inside the road surface" % m.id,
 					m.path_from >= 0.0 and m.path_to <= road.length and m.path_from < m.path_to and worst_lane <= 0.0,
 					"run %.1f..%.1f of %.1f m, body out by %.2f m" % [m.path_from, m.path_to, road.length, worst_lane])
+			if hm.path_index(i) != TrackModel.MAIN_PATH:
+				# A body on a branch (the mine cart) never reaches the main road: along its whole run its
+				# hit circle stays off the main road's surface (half width and curb).
+				var closest: float = INF
+				var dd: float = m.path_from
+				while dd <= m.path_to:
+					var tn: Vector2 = road.tangent_at(dd)
+					var bp: Vector2 = road.point_at(dd) + Vector2(-tn.y, tn.x) * m.lane_offset
+					var hit: TrackModel.Hit = _track.main.nearest(bp, -1, 0)
+					closest = minf(closest, hit.dist - _track.main.half_at(hit.seg, hit.t) - _track.main.curb - m.hit_radius)
+					dd += MOVER_BODY_STEP
+				_check_ok("(17) %s never reaches the main road" % m.id, closest > 0.0,
+						"hit circle %.2f m clear of the main road" % closest)
+				print("     (17) %s: hit circle at least %.2f m clear of the main road's curb" % [m.id, closest])
 	_check_travelers_leave_room(hm)
+	_check_bursts_leave_room(hm)
 	hm.free()
 
 
+## Meters between the samples of a traveler's run (tool value).
+const MOVER_BODY_STEP: float = 0.5
 ## Seconds scanned for the barrel cross-sections, in periods of the longest traveler period.
 const TRAVELER_SCAN_PERIODS: float = 3.0
 
@@ -1080,6 +1097,114 @@ func _check_travelers_leave_room(hm: HazardManager) -> void:
 	print("     (17) rolling bodies: %d cross-sections, narrowest free gap %.2f m (%s)" % [samples, worst_gap, worst_at])
 	_check_ok("(17) rolling bodies always leave a free lane (gap >= min_free_gap)", bad == 0,
 			"%d of %d cross-sections narrower" % [bad, samples])
+
+
+## Cross-section sampling of the burst check (tool values): meters along the road and across it.
+const BURST_ALONG_STEP: float = 0.5
+const BURST_LAT_STEP: float = 0.1
+
+# (17) Lava bursts never close the main road: every burst covers part of the road (it is a hazard
+# on the road, not beside it) but at every moment, at every cross-section through the footprints of
+# the bursts that are up then, the uncovered part of the road (kart centres, the road's half width
+# each side) has a run at least min_free_gap wide. Also reports how many bursts are up at once.
+func _check_bursts_leave_room(hm: HazardManager) -> void:
+	var idx: Array[int] = []
+	var longest: float = 0.0
+	for i in hm.count():
+		if hm.mover(i).kind == &"burst":
+			idx.append(i)
+			longest = maxf(longest, hm.mover(i).period)
+	if idx.is_empty():
+		return
+	# Gap and covered width per set of bursts that are up together (a bit mask), computed once.
+	var gap_of: Dictionary = {}
+	var max_up: int = 0
+	var bad_masks: int = 0
+	var worst_gap: float = INF
+	var worst_at: String = ""
+	var t: float = 0.0
+	while t < maxf(longest, MOVER_SCAN_STEP) * TRAVELER_SCAN_PERIODS:
+		var mask: int = 0
+		var up: int = 0
+		for k in idx.size():
+			if hm.is_active(hm.mover(idx[k]), t):
+				mask |= 1 << k
+				up += 1
+		max_up = maxi(max_up, up)
+		if mask != 0 and not gap_of.has(mask):
+			var g: Vector2 = _burst_gap(hm, idx, mask)
+			gap_of[mask] = g.x
+			if g.x < worst_gap:
+				worst_gap = g.x
+				worst_at = "t=%.2f at s %.1f" % [t, g.y]
+			for k in idx.size():
+				if mask & (1 << k) and g.x < hm.mover(idx[k]).min_free_gap:
+					bad_masks += 1
+					break
+		t += MOVER_SCAN_STEP
+	for k in idx.size():
+		var m: TrackMover = hm.mover(idx[k])
+		var cover: float = _burst_cover(m)
+		print("     (17) %s: on main s %.1f..%.1f, covers up to %.2f m of the road, blocked %.1f %% of the time" % [
+				m.id, m.path_from, m.path_to, cover, hm.blocked_fraction(m) * 100.0])
+		_check_ok("(17) %s reaches onto the road but not across it" % m.id, cover > 0.0 and hm.path_index(idx[k]) == TrackModel.MAIN_PATH,
+				"covers %.2f m" % cover)
+	print("     (17) lava bursts: at most %d up at once, narrowest free gap %.2f m (%s)" % [max_up, worst_gap, worst_at])
+	_check_ok("(17) lava bursts always leave a free lane (gap >= min_free_gap)", bad_masks == 0,
+			"%d sets of bursts up together leave a narrower gap" % bad_masks)
+
+
+# Narrowest free run (x) across the main road over the footprints of the bursts in [param mask],
+# and the s where it is (y).
+func _burst_gap(hm: HazardManager, idx: Array[int], mask: int) -> Vector2:
+	var s0: float = INF
+	var s1: float = -INF
+	for k in idx.size():
+		if mask & (1 << k):
+			s0 = minf(s0, hm.mover(idx[k]).path_from)
+			s1 = maxf(s1, hm.mover(idx[k]).path_to)
+	var worst := Vector2(INF, s0)
+	var sv: float = s0
+	while sv <= s1:
+		var c: Vector2 = _track.point_at(sv)
+		var n: Vector2 = _track.normal_at(sv)
+		var half: float = _track.half_width_at(sv)
+		var run: float = 0.0
+		var best: float = 0.0
+		var lat: float = -half
+		while lat <= half:
+			var p: Vector2 = c + n * lat
+			var hit: bool = false
+			for k in idx.size():
+				if mask & (1 << k) and Geometry2D.is_point_in_polygon(p, hm.mover(idx[k]).footprint):
+					hit = true
+					break
+			run = 0.0 if hit else run + BURST_LAT_STEP
+			best = maxf(best, run)
+			lat += BURST_LAT_STEP
+		if best < worst.x:
+			worst = Vector2(best, sv)
+		sv += BURST_ALONG_STEP
+	return worst
+
+
+# Widest part (meters) of the main road a burst's footprint covers at one cross-section.
+func _burst_cover(m: TrackMover) -> float:
+	var widest: float = 0.0
+	var sv: float = m.path_from
+	while sv <= m.path_to:
+		var c: Vector2 = _track.point_at(sv)
+		var n: Vector2 = _track.normal_at(sv)
+		var half: float = _track.half_width_at(sv)
+		var cover: float = 0.0
+		var lat: float = -half
+		while lat <= half:
+			if Geometry2D.is_point_in_polygon(c + n * lat, m.footprint):
+				cover += BURST_LAT_STEP
+			lat += BURST_LAT_STEP
+		widest = maxf(widest, cover)
+		sv += BURST_ALONG_STEP
+	return widest
 
 
 # (17) Two gates that must not be closed together (the drawbridge and the portcullis).

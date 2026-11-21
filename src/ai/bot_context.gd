@@ -18,6 +18,8 @@ var time_fn: Callable
 ## (road_id: StringName, from_t: float, to_t: float) -> bool: true when the timed gate on that
 ## branch (the drawbridge) is blocked at any moment of the time range.
 var gate_blocked_fn: Callable
-## (path_index: int, from_along: float, to_along: float) -> PackedVector3Array: rolling bodies
-## (barrels) on that road between the two distances now, one (along, lane offset, hit radius) each.
+## (path_index: int, from_along: float, to_along: float, at_time: float) -> PackedVector3Array:
+## rolling bodies (barrels, the mine cart) on that road between the two distances at race time
+## at_time (a negative at_time = now), one (along, lane offset, hit radius) each. Every hazard is a
+## pure function of the race time, so a future time is a prediction that comes true.
 var travelers_fn: Callable

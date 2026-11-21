@@ -92,6 +92,9 @@ var _auto_timer: float = 0.0
 var _next_seq: int = 1
 var _active: Array[ActiveItem] = []
 var _early_hits: Dictionary = {}
+# Item id of every item used this race (seq -> id), so a hit message for an item that is already
+# gone here (one spill hitting two karts: the first hit ends it) still logs its kind.
+var _seq_item: Dictionary = {}
 var _shield: Dictionary = {}
 var _shield_nodes: Dictionary = {}
 var _box_mm: MultiMeshInstance3D
@@ -152,6 +155,7 @@ func reset(track: TrackModel, seed_value: int) -> void:
 	_auto_timer = 0.0
 	_next_seq = 1
 	_early_hits.clear()
+	_seq_item.clear()
 	_shield.clear()
 	hit_log.clear()
 	for ai in _active:
@@ -497,6 +501,7 @@ func _on_item_spawn(seq: int, item: int, owner_id: int, t: float, pos: Vector2, 
 func _spawn(seq: int, idx: int, owner_id: int, t: float, pos: Vector2, dir: Vector2, target: int) -> void:
 	var def: ItemDef = _set.items[idx]
 	_log("USE %s seq=%d owner=%d target=%d" % [def.id, seq, owner_id, target])
+	_seq_item[seq] = def.id
 	item_event.emit(def.id, "spawn seq=%d owner=%d" % [seq, owner_id])
 	sound_cue.emit(def.id, owner_id)
 	if def.id == &"shield":
@@ -632,7 +637,10 @@ func _on_item_hit(seq: int, victim: int, blocked: bool, t: float) -> void:
 	_early_hits[seq] = true
 	if blocked:
 		_shield.erase(victim)
-	hit_log.append("HIT seq=%d victim=%d blocked=%d t=%.2f" % [seq, victim, 1 if blocked else 0, t])
+	if _seq_item.has(seq):
+		hit_log.append("HIT seq=%d item=%s victim=%d blocked=%d t=%.2f" % [seq, _seq_item[seq], victim, 1 if blocked else 0, t])
+	else:
+		hit_log.append("HIT seq=%d victim=%d blocked=%d t=%.2f" % [seq, victim, 1 if blocked else 0, t])
 	_log(hit_log[-1])
 
 

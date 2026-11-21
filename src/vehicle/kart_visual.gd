@@ -69,6 +69,7 @@ func bind(sim: KartSim, racer: RacerDef = null, style: PennantStyle = null, slot
 	_color = sim.stats.paint_color
 	_sim.drift_started.connect(_on_drift_started)
 	_sim.landed.connect(_on_landed)
+	_sim.mover_hit.connect(_on_mover_hit)
 	_build()
 
 
@@ -125,6 +126,12 @@ func apply_identity(slot: int, color: Color) -> void:
 ## Pennant pole length in meters (0 before bind).
 func pennant_height() -> float:
 	return _pennant.pole_height() if _pennant != null else 0.0
+
+
+# Story 009: a lava burst that spins the kart shows the same scorch puff as a lava sink.
+func _on_mover_hit(_mover_index: int) -> void:
+	if _sim != null and _sim.mover_hit_puff == &"scorch":
+		_spawn_scorch_puff()
 
 
 func _on_drift_started(_direction: int) -> void:

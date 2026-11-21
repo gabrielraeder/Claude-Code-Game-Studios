@@ -224,7 +224,7 @@ func _drive(input: KartInput, sim: KartSim, track: TrackModel, dt: float) -> voi
 	var desired: float = _line_offset(track, sim, turn, turn_far, usable, route_branch, narrow)
 	_scan_traffic(sim, usable)
 	desired += _av_shift
-	desired = _barrel_lane(sim, desired, usable)
+	desired = _barrel_lane(track, sim, desired, usable)
 	if _barrel_near:
 		# Steer at a nearer point so the kart is in the chosen lane where the barrel is (a far
 		# pursuit point cuts the inside of the market S-bend, into the barrel lanes).
@@ -489,24 +489,58 @@ func _gate_timing_ok(track: TrackModel, sim: KartSim, bi: int) -> bool:
 		var t1: float = t + (to_entry + m.path_to) / v + err + margin
 		if _ctx.gate_blocked_fn.call(id, t0, t1):
 			return false
+	return _cart_timing_ok(track, sim, bi)
+
+
+# Story 009 part 3: a traveler on branch [param bi] (the mine cart): predicts from the closed-form
+# hazard state whether it will meet the bot on the branch, at BotSet.gate_eta_speed. A meeting
+# turns only a careful bot (gate_risk below BotSet.cart_pass_risk) away; the others pass it by lane.
+func _cart_timing_ok(track: TrackModel, sim: KartSim, bi: int) -> bool:
+	if not _ctx.time_fn.is_valid() or not _ctx.travelers_fn.is_valid() or personality.gate_risk >= _set.cart_pass_risk:
+		return true
+	var id: StringName = track.data.branches[bi].id
+	var has_cart: bool = false
+	for m in track.data.movers:
+		if m.path == id and m.is_traveler():
+			has_cart = true
+	if not has_cart:
+		return true
+	var t: float = _ctx.time_fn.call()
+	var to_entry: float = track.branches[bi].s_in - sim.track_s
+	var v: float = maxf(_set.gate_eta_speed, 0.1)
+	var a: float = 0.0
+	var length: float = track.branch_length(bi)
+	while a <= length:
+		var ta: float = t + (to_entry + a) / v
+		var near: PackedVector3Array = _ctx.travelers_fn.call(bi, a - _set.cart_meet_step, a + _set.cart_meet_step, ta)
+		for b in near:
+			if absf(b.x - a) <= b.z + _set.cart_meet_margin:
+				print("[bot] CART kart=%d name=%s meet at %.1f m of %s in %.2f s" % [kart_id, personality.display_name, a, id, ta - t])
+				return false
+		a += maxf(_set.cart_meet_step, 0.1)
 	return true
 
 
 # Story 009: a rolling barrel ahead on the main road within BotSet.barrel_look meters: aim for the
 # free lane nearest the wanted line (the wanted line itself when it is already clear of every barrel
 # by BotSet.barrel_clear). With no free lane the line is kept. Pure lateral choice, never a brake.
-func _barrel_lane(sim: KartSim, desired: float, usable: float) -> float:
+func _barrel_lane(track: TrackModel, sim: KartSim, desired: float, usable: float) -> float:
 	_barrel_near = false
 	_barrel_conflict = false
-	if not _ctx.travelers_fn.is_valid() or sim.track_path != TrackModel.MAIN_PATH or usable <= 0.0:
+	if not _ctx.travelers_fn.is_valid() or usable <= 0.0:
 		return desired
-	var ahead: PackedVector3Array = _ctx.travelers_fn.call(TrackModel.MAIN_PATH, sim.track_s - _set.barrel_behind,
-			sim.track_s + _set.barrel_look)
+	# Along the road the kart is on: the main road's s, or the distance along a branch (the cart on
+	# the mine rail is passed the same way as a barrel).
+	var along: float = sim.track_s
+	if sim.track_path != TrackModel.MAIN_PATH:
+		along = track.branch_along(sim.track_path, sim.position)
+	var ahead: PackedVector3Array = _ctx.travelers_fn.call(sim.track_path, along - _set.barrel_behind,
+			along + _set.barrel_look, -1.0)
 	if ahead.is_empty():
 		return desired
 	_barrel_near = true
 	for b in ahead:
-		if b.x > sim.track_s and b.x - sim.track_s < _set.barrel_lift_dist and absf(sim.lateral - b.y) < b.z + _set.barrel_clear:
+		if b.x > along and b.x - along < _set.barrel_lift_dist and absf(sim.lateral - b.y) < b.z + _set.barrel_clear:
 			_barrel_conflict = true
 	var n: int = maxi(_set.barrel_lane_samples, 2)
 	var best: float = desired

@@ -50,6 +50,9 @@ var mover_spin_count: int = 0
 var mover_stop_count: int = 0
 ## Speed (m/s) the kart had when a timed hazard last spun or stopped it (logs).
 var mover_hit_speed: float = 0.0
+## Puff of the last timed-hazard hit (TrackMover.hit_puff: "scorch" for a lava burst, else empty),
+## set before mover_hit is emitted so the kart's visual can show it.
+var mover_hit_puff: StringName = &""
 
 var position: Vector2 = Vector2.ZERO
 var velocity: Vector2 = Vector2.ZERO
@@ -674,7 +677,8 @@ func _constrain_to_track(dt: float, track: TrackModel) -> void:
 
 
 # Story 009: tests this kart against the timed hazards. A "sink" hit drops it into the water and
-# puts it back on the main road (a deck raised under it, a lava burst); a "spin" hit spins it out
+# puts it back on the main road (a deck raised under it); a "spin" hit (barrel, lava burst, mine
+# cart) spins it out
 # with the mover's hit-slowdown profile unless it is immune or already spinning. True = sinking now.
 func _mover_hit(track: TrackModel, q: TrackModel.Query) -> bool:
 	var mi: int = hazard_manager.hit_test(self, hazard_manager.time, q)
@@ -687,13 +691,45 @@ func _mover_hit(track: TrackModel, q: TrackModel.Query) -> bool:
 		_start_sinking(track)
 		return true
 	var before: float = speed
-	if m.hit_effect == &"spin" and not is_hit_immune() and hit():
+	var closing: float = INF
+	if m.solid_body:
+		closing = _push_off_body(m)
+	if m.hit_effect == &"spin" and closing >= m.spin_min_speed and not is_hit_immune() and hit():
 		mover_hit_speed = before
+		mover_hit_puff = m.hit_puff
 		apply_hit_slowdown(m.hit_profile)
 		start_hit_immunity()
 		mover_spin_count += 1
 		mover_hit.emit(mi)
 	return false
+
+
+# Story 009 part 3: a solid traveling body (the mine cart) is not driven through: the kart is put
+# back on the edge of its hit circle, on the free-lane side, and the velocity into the body bounces
+# back like a wall knock (stats.bump_knockback). Returns the speed (m/s) they closed at, the
+# body's own motion included (a cart running into a standing kart closes at the cart's speed).
+func _push_off_body(m: TrackMover) -> float:
+	var t: float = hazard_manager.time
+	var c: Vector2 = hazard_manager.position_at(m, t)
+	var body_vel: Vector2 = (hazard_manager.position_at(m, t + BODY_VELOCITY_DT) - c) / BODY_VELOCITY_DT
+	var away: Vector2 = position - c
+	# Always out to the free lane: a kart that touched the body from its outer side (between it and
+	# the wall) goes round it to the open side, never into the gap where the body would trap it.
+	var rn: Vector2 = hazard_manager.road_normal_at(m, t)
+	var free_side: float = -signf(m.lane_offset)
+	if free_side != 0.0 and away.dot(rn) * free_side < 0.0:
+		away -= rn * 2.0 * away.dot(rn)
+	var n: Vector2 = away.normalized() if away.length() > EPSILON else rn * free_side
+	position = c + n * m.hit_radius
+	var into: float = velocity.dot(-n)
+	if into > 0.0:
+		velocity += n * into * stats.bump_knockback
+	return into + body_vel.dot(n)
+
+
+## Seconds ahead used to find a moving body's velocity from its closed-form position (numeric
+## derivative step, not tuning).
+const BODY_VELOCITY_DT: float = 0.05
 
 
 # Story 009: a "stop" gate (the portcullis) that is down acts as a wall across the road: the kart
@@ -718,6 +754,7 @@ func _mover_stop(q: TrackModel.Query) -> void:
 				_wall_cooldown = stats.wall_hit_cooldown
 				mover_stop_count += 1
 				mover_hit_speed = before
+				mover_hit_puff = m.hit_puff
 				wall_bumped.emit(true)
 				mover_hit.emit(int(r.x))
 		_stop_prev_along = r.y

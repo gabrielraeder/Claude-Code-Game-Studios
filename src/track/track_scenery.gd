@@ -747,6 +747,7 @@ func _mine() -> void:
 			continue
 		var path: TrackModel.Path = _track.branches[bi]
 		var hw: float = _track.data.branches[bi].half_width
+		var lane: float = _track.data.branches[bi].rail_lane
 		var d: float = 1.0
 		while d < path.length - 1.0:
 			var p: Vector2 = path.point_at(d)
@@ -754,7 +755,7 @@ func _mine() -> void:
 			var n: Vector2 = Vector2(-t.y, t.x)
 			_box(p, 0.12, Vector3(hw * 2.0, 0.1, 0.34), t, _th.wood_color)
 			for side in [-1.0, 1.0]:
-				_box(p + n * side * 0.9, 0.2, Vector3(0.1, 0.12, 1.7), t, Color(0.55, 0.55, 0.6))
+				_box(p + n * (lane + side * 0.9), 0.2, Vector3(0.1, 0.12, 1.7), t, Color(0.55, 0.55, 0.6))
 			d += 1.6
 
 

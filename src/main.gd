@@ -214,6 +214,7 @@ func _ready() -> void:
 			var ap := AutopilotDriver.new()
 			ap.shortcut_id = StringName(_options.shortcut)
 			ap.dunk_s = _options.dunk_s
+			ap.lane_window = _options.auto_lane
 			ap.trick_hops = not _options.no_trick
 			_local.driver = ap
 		else:
@@ -1212,8 +1213,8 @@ func _bot_context() -> BotContext:
 	c.gate_blocked_fn = func(path_id: StringName, t0: float, t1: float) -> bool:
 		var gi: int = _hazards.gate_on_path(_track.branch_index(path_id))
 		return gi >= 0 and _hazards.blocked_between(_hazards.mover(gi), t0, t1)
-	c.travelers_fn = func(path_index: int, from_along: float, to_along: float) -> PackedVector3Array:
-		return _hazards.travelers_between(path_index, from_along, to_along, _hazards.time)
+	c.travelers_fn = func(path_index: int, from_along: float, to_along: float, at_time: float) -> PackedVector3Array:
+		return _hazards.travelers_between(path_index, from_along, to_along, _hazards.time if at_time < 0.0 else at_time)
 	return c
 
 

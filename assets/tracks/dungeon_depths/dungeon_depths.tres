@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="TrackData" load_steps=19 format=3]
+[gd_resource type="Resource" script_class="TrackData" load_steps=24 format=3]
 
 [ext_resource type="Script" path="res://src/test_track/track_data.gd" id="1_data"]
 [ext_resource type="Script" path="res://src/track/track_branch.gd" id="2_branch"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://src/track/track_hazard.gd" id="4_hazard"]
 [ext_resource type="Script" path="res://src/track/track_pad.gd" id="5_pad"]
 [ext_resource type="Script" path="res://src/track/track_ramp.gd" id="6_ramp"]
+[ext_resource type="Script" path="res://src/track/track_mover.gd" id="7_mover"]
 
 [sub_resource type="Resource" id="Branch_hl"]
 script = ExtResource("2_branch")
@@ -46,7 +47,7 @@ script = ExtResource("2_branch")
 id = &"mine_rail"
 type = &"mine_rail"
 control_points = PackedVector2Array(-51.468, 360.057, -53.900, 358.239, -56.333, 356.421, -58.696, 354.515, -60.969, 352.502, -63.233, 350.478, -65.497, 348.454, -67.761, 346.430, -70.025, 344.406, -72.289, 342.382, -74.553, 340.358, -76.817, 338.334, -79.081, 336.310, -81.345, 334.286, -83.609, 332.262, -85.873, 330.238, -88.137, 328.214, -90.401, 326.190, -92.665, 324.167, -94.929, 322.143, -97.193, 320.119, -99.457, 318.095, -101.721, 316.071, -103.985, 314.047, -106.239, 312.013, -108.396, 309.877, -110.475, 307.662, -112.553, 305.448)
-half_width = 2.25
+half_width = 3.25
 curb_width = 0.40
 s_in = 486.262
 s_out = 622.999
@@ -58,6 +59,7 @@ wall_alt_color = Color(0.36, 0.46, 0.66, 1)
 wall_height = 0.90
 floor_drag_mult = 1.25
 wall_drag_mult = 2.0
+rail_lane = 1.75
 heights = PackedFloat32Array(1.002, 1.000, 1.000, 1.000, 1.000, 1.002, 1.005, 1.024, 1.043, 1.057, 1.080, 1.103, 1.127, 1.134, 1.119, 1.103, 1.081, 1.064, 1.047, 1.031, 1.014, 1.004, 1.001, 1.000, 1.000, 1.000, 1.000, 1.000)
 
 [sub_resource type="Resource" id="Branch_gap"]
@@ -87,6 +89,140 @@ color_a = Color(0.45, 0.36, 0.3, 1)
 color_b = Color(0.3, 0.38, 0.55, 1)
 side_color = Color(0.32, 0.26, 0.25, 1)
 stripes = 4
+
+[sub_resource type="Resource" id="Mover_burst_shore_a"]
+script = ExtResource("7_mover")
+id = &"burst_shore_a"
+kind = &"burst"
+period = 7.50
+active_start = 3.00
+active_time = 1.60
+transition_time = 0.35
+phase = 0.000
+warning_lead = 1.50
+block_progress = 0.25
+path = &"main"
+path_from = 341.40
+path_to = 349.40
+footprint = PackedVector2Array(-7.267, 302.116, -9.432, 304.281, -12.494, 304.281, -14.659, 302.116, -14.659, 299.055, -12.494, 296.890, -9.432, 296.890, -7.267, 299.055)
+footprint_y_min = 0.753
+footprint_y_max = 4.753
+vent_center = Vector2(-10.963, 300.586)
+vent_height = 2.253
+min_free_gap = 3.0
+hit_effect = &"spin"
+hit_profile = 1
+hit_puff = &"scorch"
+visual = &"burst"
+warn_blink_hz = 3.0
+warn_dome = 0.15
+vent_radius = 3.40
+column_radius = 1.6
+column_height = 6.0
+sound_warn = &"burst_rumble"
+sound_down = &""
+sound_active = &"burst_erupt"
+
+[sub_resource type="Resource" id="Mover_burst_shore_b"]
+script = ExtResource("7_mover")
+id = &"burst_shore_b"
+kind = &"burst"
+period = 7.50
+active_start = 3.00
+active_time = 1.60
+transition_time = 0.35
+phase = 2.500
+warning_lead = 1.50
+block_progress = 0.25
+path = &"main"
+path_from = 370.90
+path_to = 378.90
+footprint = PackedVector2Array(-5.822, 326.189, -7.987, 328.354, -11.049, 328.354, -13.213, 326.189, -13.213, 323.128, -11.049, 320.963, -7.987, 320.963, -5.822, 323.128)
+footprint_y_min = 0.754
+footprint_y_max = 4.754
+vent_center = Vector2(-9.518, 324.658)
+vent_height = 2.254
+min_free_gap = 3.0
+hit_effect = &"spin"
+hit_profile = 1
+hit_puff = &"scorch"
+visual = &"burst"
+warn_blink_hz = 3.0
+warn_dome = 0.15
+vent_radius = 3.40
+column_radius = 1.6
+column_height = 6.0
+sound_warn = &"burst_rumble"
+sound_down = &""
+sound_active = &"burst_erupt"
+
+[sub_resource type="Resource" id="Mover_burst_bridge"]
+script = ExtResource("7_mover")
+id = &"burst_bridge"
+kind = &"burst"
+period = 7.50
+active_start = 3.00
+active_time = 1.60
+transition_time = 0.35
+phase = 5.000
+warning_lead = 1.50
+block_progress = 0.25
+path = &"main"
+path_from = 679.89
+path_to = 685.89
+footprint = PackedVector2Array(-118.632, 250.627, -120.256, 252.251, -122.552, 252.251, -124.175, 250.627, -124.175, 248.331, -122.552, 246.708, -120.256, 246.708, -118.632, 248.331)
+footprint_y_min = 0.500
+footprint_y_max = 4.500
+vent_center = Vector2(-121.404, 249.479)
+vent_height = 2.000
+min_free_gap = 3.0
+hit_effect = &"spin"
+hit_profile = 1
+hit_puff = &"scorch"
+visual = &"burst"
+warn_blink_hz = 3.0
+warn_dome = 0.15
+vent_radius = 2.55
+column_radius = 1.6
+column_height = 6.0
+sound_warn = &"burst_rumble"
+sound_down = &""
+sound_active = &"burst_erupt"
+
+[sub_resource type="Resource" id="Mover_cart"]
+script = ExtResource("7_mover")
+id = &"mine_cart"
+kind = &"cart"
+period = 14.00
+active_start = 0.0
+active_time = 0.0
+transition_time = 0.0
+phase = 0.0
+warning_lead = 1.20
+path = &"mine_rail"
+path_from = 32.13
+path_to = 49.87
+speed = 5.00
+motion = &"shuttle"
+lane_offset = 1.75
+hit_radius = 1.70
+hit_height = 1.5
+min_free_gap = 3.0
+hit_effect = &"spin"
+hit_profile = 2
+solid_body = true
+visual = &"cart"
+body_radius = 0.65
+body_color = Color(0.42, 0.28, 0.16, 1)
+band_color = Color(0.2, 0.2, 0.22, 1)
+cart_width = 1.3
+cart_height = 0.9
+cart_length = 1.9
+wheel_radius = 0.3
+ore_color = Color(0.3, 0.42, 0.62, 1)
+sound_warn = &""
+sound_down = &""
+sound_active = &"cart_rumble"
 
 [sub_resource type="Resource" id="Hazard_0"]
 script = ExtResource("4_hazard")
@@ -175,3 +311,4 @@ solid_below = 99.0
 pillar_color = Color(0.3, 0.24, 0.25, 1)
 deck_under_color = Color(0.24, 0.19, 0.2, 1)
 ramps = Array[ExtResource("6_ramp")]([SubResource("Ramp_gap")])
+movers = Array[ExtResource("7_mover")]([SubResource("Mover_burst_shore_a"), SubResource("Mover_burst_shore_b"), SubResource("Mover_burst_bridge"), SubResource("Mover_cart")])

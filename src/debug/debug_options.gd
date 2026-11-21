@@ -28,6 +28,8 @@ extends RefCounted
 ##                        [air] lines for takeoffs, landings, tricks and falls (story 008)
 ##                        (--height-log=every-tick instead: a [height] line per kart per tick online)
 ##   --no-trick           the autopilot does not hop before ramp lips (no trick boosts)
+##   --auto-lane=S0:S1:LAT  the autopilot drives LAT meters off its line (left positive) while
+##                        its main-loop distance is in S0..S1 (to drive into a lava burst, story 009)
 
 var autopilot: bool = false
 var shots_dir: String = ""
@@ -59,6 +61,8 @@ var grid_shot: bool = false
 var shot_s: PackedFloat32Array = PackedFloat32Array()
 ## Main-loop distance where the autopilot drives into the moat once (--dunk-at=), -1 = off.
 var dunk_s: float = -1.0
+## Autopilot lane window (--auto-lane=S0:S1:LAT): (s0, s1, lateral offset); s1 < s0 = off.
+var auto_lane: Vector3 = Vector3(0.0, -1.0, 0.0)
 ## Per-tick height CSV of the local kart (--height-log=PATH), "" = off.
 var height_log: String = ""
 ## Print one "[hazard]" line per race second (--hazard-log), so two PCs can be compared.
@@ -135,6 +139,10 @@ static func parse(args: PackedStringArray) -> DebugOptions:
 			o.no_trick = true
 		elif a.begins_with("--dunk-at="):
 			o.dunk_s = a.substr("--dunk-at=".length()).to_float()
+		elif a.begins_with("--auto-lane="):
+			var parts: PackedStringArray = a.substr("--auto-lane=".length()).split(":")
+			if parts.size() == 3:
+				o.auto_lane = Vector3(parts[0].to_float(), parts[1].to_float(), parts[2].to_float())
 		elif a.begins_with("--give-item="):
 			o.give_item = a.substr("--give-item=".length())
 		elif a.begins_with("--item-interval="):

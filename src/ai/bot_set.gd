@@ -106,6 +106,14 @@ extends Resource
 @export var barrel_lift_min_speed: float = 14.0
 @export var barrel_clear: float = 0.6
 @export var barrel_lane_samples: int = 9
+## The mine cart (story 009 part 3): before a planned branch with a traveler on it (the cart on the
+## mine rail) the bot predicts, at gate_eta_speed, whether the cart will be within its hit radius
+## plus cart_meet_margin meters of it anywhere on the branch, sampling every cart_meet_step meters.
+## A bot whose personality's gate_risk is below cart_pass_risk then stays on the main road; a
+## bolder one takes the rail and passes the cart in the free lane (the barrel lane logic).
+@export var cart_meet_margin: float = 1.0
+@export var cart_meet_step: float = 2.0
+@export_range(0.0, 1.0) var cart_pass_risk: float = 0.25
 ## Per shortcut type (TrackBranch.type) factor on the personality's shortcut chance.
 @export var branch_factor: Dictionary = {}
 

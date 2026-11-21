@@ -4,7 +4,9 @@ extends Node3D
 ## rotates up on a hinge at the gatehouse end, its chains, and the gate posts with the signal
 ## lantern (green = open, flashing amber = warning, red = raised); for a portcullis the iron grille
 ## that drops in its stone frame, with the same lanterns on the frame; for a barrel the rolling
-## wooden barrel with iron bands, in its lane on the road surface. It only reads the HazardManager's
+## wooden barrel with iron bands, in its lane on the road surface; for a lava burst a glowing vent
+## in the road edge that brightens and pulses in the warning and a lava column that shoots up out
+## of it; for the mine cart an ore cart on its rails with turning wheels. It only reads the HazardManager's
 ## time, so every PC draws the same state. Nodes are built once; each frame only transforms and the
 ## lantern color change.
 ## Implements production/epics/dogworks-racing-kennel-kingdom/story-009-moving-hazards.md.
@@ -45,6 +47,17 @@ class BarrelView extends RefCounted:
 	var mover: TrackMover
 	var body: Node3D
 
+class BurstView extends RefCounted:
+	var mover: TrackMover
+	var vent_mat: StandardMaterial3D
+	var column: Node3D
+
+class CartView extends RefCounted:
+	var mover: TrackMover
+	var road: TrackModel.Path
+	var body: Node3D
+	var wheels: Array[Node3D] = []
+
 ## Radial segments of the barrel's cylinders (low poly).
 const BARREL_SEGMENTS: int = 10
 ## Barrel shape relative to its radius / length (pure geometry of the model): end radius, iron band
@@ -61,11 +74,31 @@ const LINTEL_HEIGHT: float = 0.7
 const GRILLE_RAILS: int = 4
 ## Seconds ahead used to find a barrel's direction of travel.
 const HEADING_DT: float = 0.05
+## Radial segments of the burst's vent disc and column, and the vent disc's thickness (low poly).
+const BURST_SEGMENTS: int = 8
+const VENT_THICKNESS: float = 0.1
+## Height of the vent's top above the road, so it does not flicker with the road surface.
+const VENT_LIFT: float = 0.03
+## Burst column shape (pure geometry of the model): top radius relative to the bottom, how far it
+## reaches below the vent (into the lava beside the road), the blob on top relative to the radius.
+const COLUMN_TOP_SCALE: float = 0.55
+const COLUMN_SINK: float = 1.5
+const COLUMN_BLOB_SCALE: float = 1.15
+## Ore cart shape relative to its size (pure geometry of the model): wheel inset from the ends,
+## wheel width, the iron bands' positions along the body and thickness, the ore heap's height.
+const CART_WHEEL_INSET: float = 0.22
+const CART_WHEEL_WIDTH: float = 0.16
+const CART_BAND_AT: PackedFloat32Array = [-0.38, 0.38]
+const CART_BAND_SIZE: float = 0.08
+const CART_ORE_HEIGHT: float = 0.45
+const CART_WHEEL_SEGMENTS: int = 8
 
 var _hazards: HazardManager
 var _gates: Array[GateView] = []
 var _portcullises: Array[PortcullisView] = []
 var _barrels: Array[BarrelView] = []
+var _bursts: Array[BurstView] = []
+var _carts: Array[CartView] = []
 
 
 ## Builds the views for every gate mover of [param track]; [param hazards] supplies the state.
@@ -76,13 +109,20 @@ func setup(track: TrackModel, hazards: HazardManager) -> void:
 		if m.visual == &"barrel":
 			_build_barrel(m)
 			continue
+		if m.visual == &"burst":
+			_build_burst(m)
+			continue
+		if m.visual == &"cart":
+			_build_cart(track.path_of(hazards.path_index(i)), m)
+			continue
 		if m.kind != &"gate" or hazards.path_index(i) < 0:
 			continue
 		if m.visual == &"portcullis":
 			_build_portcullis(track, m)
 		else:
 			_build_gate(track, i, m)
-	set_process(not _gates.is_empty() or not _portcullises.is_empty() or not _barrels.is_empty())
+	set_process(not _gates.is_empty() or not _portcullises.is_empty() or not _barrels.is_empty()
+			or not _bursts.is_empty() or not _carts.is_empty())
 
 
 func _process(_delta: float) -> void:
@@ -102,6 +142,10 @@ func _process(_delta: float) -> void:
 		_set_lanterns(pm, t, pv.lantern_mat)
 	for bv in _barrels:
 		_place_barrel(bv, t)
+	for uv in _bursts:
+		_place_burst(uv, t)
+	for cv in _carts:
+		_place_cart(cv, t)
 
 
 # Lantern color of a gate at time [param t]: red while blocked or moving, flashing amber during the
@@ -130,7 +174,8 @@ func _place_barrel(bv: BarrelView, t: float) -> void:
 	if phase == HazardManager.Phase.WARNING:
 		var since: float = m.warning_lead - _hazards.time_to_start(m, t)
 		grow = clampf(since / maxf(m.warning_lead - m.solid_lead, HazardManager.EPSILON), 0.0, 1.0)
-	bv.body.visible = (phase == HazardManager.Phase.ACTIVE or phase == HazardManager.Phase.WARNING) 			and grow > HazardManager.EPSILON
+	bv.body.visible = (phase == HazardManager.Phase.ACTIVE or phase == HazardManager.Phase.WARNING) \
+			and grow > HazardManager.EPSILON
 	if not bv.body.visible:
 		return
 	var pose: Vector3 = _hazards.pose_at(m, t)
@@ -163,12 +208,153 @@ func _build_barrel(m: TrackMover) -> void:
 	var sm := BoxMesh.new()
 	sm.size = Vector3(m.body_radius * STAVE_WIDTH * 2.0, m.body_length * 0.5, m.body_radius * STAVE_WIDTH * 0.5)
 	stave.mesh = sm
-	stave.material_override = _flat(m.body_color.darkened(0.45))
+	stave.material_override = _flat(m.body_color.darkened(m.stave_darken))
 	# On the bulge, sunk to half its thickness (a darker stave, not a plank sticking out).
 	stave.position = Vector3(0.0, 0.0, m.body_radius)
 	bv.body.add_child(stave)
 	bv.body.visible = false
 	_barrels.append(bv)
+
+
+# A lava burst: the vent glows dull while idle, pulses brighter through the warning (it is about to
+# blow) while a lava dome bubbles out of it, and burns bright while the column is up; the column grows out of the vent with the burst's
+# progress (rise, full, fall) and is hidden while idle.
+func _place_burst(uv: BurstView, t: float) -> void:
+	var m: TrackMover = uv.mover
+	var phase: int = _hazards.phase_at(m, t)
+	var progress: float = _hazards.progress_at(m, t)
+	var heat: float = 0.0
+	if phase == HazardManager.Phase.WARNING:
+		var lead: float = maxf(m.warning_lead, HazardManager.EPSILON)
+		var ramp: float = clampf(1.0 - _hazards.time_to_start(m, t) / lead, 0.0, 1.0)
+		var pulse: float = 0.5 + 0.5 * sin(t * m.warn_blink_hz * TAU)
+		heat = ramp * (0.5 + 0.5 * pulse)
+	elif phase != HazardManager.Phase.IDLE:
+		heat = 1.0
+	uv.vent_mat.albedo_color = m.vent_idle_color.lerp(m.vent_hot_color, heat)
+	uv.vent_mat.emission = uv.vent_mat.albedo_color
+	uv.vent_mat.emission_energy_multiplier = lerpf(m.vent_glow_idle, m.vent_glow_warn, heat)
+	var rise: float = progress
+	if phase == HazardManager.Phase.WARNING:
+		rise = m.warn_dome * heat
+	uv.column.visible = rise > HazardManager.EPSILON
+	if uv.column.visible:
+		uv.column.scale = Vector3(1.0, rise, 1.0)
+
+
+func _build_burst(m: TrackMover) -> void:
+	var uv := BurstView.new()
+	uv.mover = m
+	var base := Vector3(m.vent_center.x, m.vent_height, m.vent_center.y)
+	var vent := MeshInstance3D.new()
+	var vm := CylinderMesh.new()
+	vm.top_radius = m.vent_radius
+	vm.bottom_radius = m.vent_radius
+	vm.height = VENT_THICKNESS
+	vm.radial_segments = BURST_SEGMENTS
+	vm.rings = 1
+	vent.mesh = vm
+	uv.vent_mat = StandardMaterial3D.new()
+	uv.vent_mat.emission_enabled = true
+	uv.vent_mat.albedo_color = m.vent_idle_color
+	uv.vent_mat.emission = m.vent_idle_color
+	uv.vent_mat.emission_energy_multiplier = m.vent_glow_idle
+	vent.material_override = uv.vent_mat
+	vent.position = base + Vector3.UP * (VENT_LIFT - VENT_THICKNESS * 0.5)
+	add_child(vent)
+	# The column: opaque and unshaded (a solid cartoon jet, no transparent overdraw), its pivot at
+	# the vent so scaling Y grows it upward.
+	uv.column = Node3D.new()
+	uv.column.position = base
+	add_child(uv.column)
+	var hot := StandardMaterial3D.new()
+	hot.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	hot.albedo_color = m.column_color
+	hot.emission_enabled = true
+	hot.emission = m.column_color
+	hot.emission_energy_multiplier = m.column_glow
+	var cm := CylinderMesh.new()
+	cm.bottom_radius = m.column_radius
+	cm.top_radius = m.column_radius * COLUMN_TOP_SCALE
+	cm.height = m.column_height + COLUMN_SINK
+	cm.radial_segments = BURST_SEGMENTS
+	cm.rings = 1
+	var col := MeshInstance3D.new()
+	col.mesh = cm
+	col.material_override = hot
+	col.position = Vector3.UP * ((m.column_height - COLUMN_SINK) * 0.5)
+	uv.column.add_child(col)
+	var blob := MeshInstance3D.new()
+	var bm := SphereMesh.new()
+	bm.radius = m.column_radius * COLUMN_BLOB_SCALE
+	bm.height = m.column_radius * COLUMN_BLOB_SCALE * 2.0
+	bm.radial_segments = BURST_SEGMENTS
+	bm.rings = BURST_SEGMENTS / 2
+	blob.mesh = bm
+	var bright := hot.duplicate() as StandardMaterial3D
+	bright.albedo_color = m.vent_hot_color
+	bright.emission = m.vent_hot_color
+	blob.material_override = bright
+	blob.position = Vector3.UP * m.column_height
+	uv.column.add_child(blob)
+	uv.column.visible = false
+	_bursts.append(uv)
+
+
+# The ore cart stands on its rails in its lane, lined up with the rail (it is the same both ways
+# round, so it never turns), wheels turning by the distance it has gone over their radius.
+func _place_cart(cv: CartView, t: float) -> void:
+	var m: TrackMover = cv.mover
+	var d: float = _hazards.distance_at(m, t)
+	var pose: Vector3 = _hazards.pose_at(m, t)
+	var tn: Vector2 = cv.road.tangent_at(d)
+	var fwd := Vector3(tn.x, 0.0, tn.y)
+	var side: Vector3 = Vector3.UP.cross(fwd).normalized()
+	cv.body.transform = Transform3D(Basis(side, Vector3.UP, fwd), pose)
+	var turn: float = (d - m.path_from) / maxf(m.wheel_radius, HazardManager.EPSILON)
+	for w in cv.wheels:
+		w.basis = Basis(Vector3.RIGHT, turn) * Basis(Vector3.BACK, PI * 0.5)
+
+
+func _build_cart(road: TrackModel.Path, m: TrackMover) -> void:
+	var cv := CartView.new()
+	cv.mover = m
+	cv.road = road
+	cv.body = Node3D.new()
+	add_child(cv.body)
+	var wood := _flat(m.body_color)
+	var iron := _flat(m.band_color)
+	var ore := _flat(m.ore_color)
+	var floor_y: float = m.wheel_radius * 2.0
+	# Local X across the rail, Y up, Z along it.
+	_add_box(cv.body, Transform3D(Basis.IDENTITY, Vector3.UP * (floor_y + m.cart_height * 0.5)),
+			Vector3(m.cart_width, m.cart_height, m.cart_length), wood)
+	for at in CART_BAND_AT:
+		_add_box(cv.body, Transform3D(Basis.IDENTITY, Vector3(0.0, floor_y + m.cart_height * 0.5, m.cart_length * at)),
+				Vector3(m.cart_width + CART_BAND_SIZE, m.cart_height + CART_BAND_SIZE, CART_BAND_SIZE * 2.0), iron)
+	# The ore heaped above the rim: a low wide box turned 45 degrees under a smaller ridge.
+	var top: float = floor_y + m.cart_height
+	_add_box(cv.body, Transform3D(Basis(Vector3.UP, PI * 0.25), Vector3.UP * (top + CART_ORE_HEIGHT * 0.25)),
+			Vector3(m.cart_width * 0.7, CART_ORE_HEIGHT * 0.5, m.cart_width * 0.7), ore)
+	_add_box(cv.body, Transform3D(Basis.IDENTITY, Vector3.UP * (top + CART_ORE_HEIGHT * 0.5)),
+			Vector3(m.cart_width * 0.5, CART_ORE_HEIGHT * 0.5, m.cart_length * 0.45), ore)
+	for zs in [-1.0, 1.0]:
+		for xs in [-1.0, 1.0]:
+			var w := Node3D.new()
+			w.position = Vector3(xs * m.cart_width * 0.5, m.wheel_radius, zs * (m.cart_length * 0.5 - CART_WHEEL_INSET))
+			cv.body.add_child(w)
+			var mi := MeshInstance3D.new()
+			var wm := CylinderMesh.new()
+			wm.top_radius = m.wheel_radius
+			wm.bottom_radius = m.wheel_radius
+			wm.height = CART_WHEEL_WIDTH
+			wm.radial_segments = CART_WHEEL_SEGMENTS
+			wm.rings = 1
+			mi.mesh = wm
+			mi.material_override = iron
+			w.add_child(mi)
+			cv.wheels.append(w)
+	_carts.append(cv)
 
 
 func _cylinder(radius: float, length: float, mat: StandardMaterial3D, at: float) -> MeshInstance3D:

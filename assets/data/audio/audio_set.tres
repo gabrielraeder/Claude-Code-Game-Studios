@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="AudioSet" load_steps=55 format=3]
+[gd_resource type="Resource" script_class="AudioSet" load_steps=58 format=3]
 
 [ext_resource type="Script" path="res://src/audio/audio_set.gd" id="1_set"]
 [ext_resource type="Script" path="res://src/audio/audio_event_def.gd" id="2_def"]
@@ -306,9 +306,39 @@ pitch_max = 0.7
 max_voices = 1
 min_interval_s = 1.0
 
+[sub_resource type="Resource" id="ev_burst_rumble"]
+script = ExtResource("2_def")
+event = &"burst_rumble"
+stream = ExtResource("s_bump")
+volume_db = 4.0
+pitch_min = 0.3
+pitch_max = 0.34
+max_voices = 2
+min_interval_s = 0.8
+
+[sub_resource type="Resource" id="ev_burst_erupt"]
+script = ExtResource("2_def")
+event = &"burst_erupt"
+stream = ExtResource("s_lava_sizzle")
+volume_db = 3.0
+pitch_min = 0.75
+pitch_max = 0.85
+max_voices = 2
+min_interval_s = 1.0
+
+[sub_resource type="Resource" id="ev_cart_rumble"]
+script = ExtResource("2_def")
+event = &"cart_rumble"
+stream = ExtResource("s_bump")
+volume_db = 3.0
+pitch_min = 0.25
+pitch_max = 0.28
+max_voices = 1
+min_interval_s = 1.0
+
 [resource]
 script = ExtResource("1_set")
-events = Array[ExtResource("2_def")]([SubResource("ev_boost"), SubResource("ev_bump"), SubResource("ev_wall"), SubResource("ev_spin"), SubResource("ev_item_pickup"), SubResource("ev_item_horn"), SubResource("ev_horn_go"), SubResource("ev_countdown"), SubResource("ev_countdown_go"), SubResource("ev_stone_launch"), SubResource("ev_spill_splash"), SubResource("ev_falcon_screech"), SubResource("ev_shield_up"), SubResource("ev_shield_break"), SubResource("ev_item_hit"), SubResource("ev_splash"), SubResource("ev_lava_sizzle"), SubResource("ev_lap"), SubResource("ev_finish"), SubResource("ev_ui_move"), SubResource("ev_ui_accept"), SubResource("ev_ui_back"), SubResource("ev_roulette_land"), SubResource("ev_drawbridge_up"), SubResource("ev_drawbridge_down"), SubResource("ev_barrel_roll"), SubResource("ev_portcullis_warn"), SubResource("ev_portcullis_slam")])
+events = Array[ExtResource("2_def")]([SubResource("ev_boost"), SubResource("ev_bump"), SubResource("ev_wall"), SubResource("ev_spin"), SubResource("ev_item_pickup"), SubResource("ev_item_horn"), SubResource("ev_horn_go"), SubResource("ev_countdown"), SubResource("ev_countdown_go"), SubResource("ev_stone_launch"), SubResource("ev_spill_splash"), SubResource("ev_falcon_screech"), SubResource("ev_shield_up"), SubResource("ev_shield_break"), SubResource("ev_item_hit"), SubResource("ev_splash"), SubResource("ev_lava_sizzle"), SubResource("ev_lap"), SubResource("ev_finish"), SubResource("ev_ui_move"), SubResource("ev_ui_accept"), SubResource("ev_ui_back"), SubResource("ev_roulette_land"), SubResource("ev_drawbridge_up"), SubResource("ev_drawbridge_down"), SubResource("ev_barrel_roll"), SubResource("ev_portcullis_warn"), SubResource("ev_portcullis_slam"), SubResource("ev_burst_rumble"), SubResource("ev_burst_erupt"), SubResource("ev_cart_rumble")])
 engine_stream = ExtResource("s_engine_loop")
 drift_stream = ExtResource("s_drift_loop")
 music_stream = ExtResource("s_music_loop")

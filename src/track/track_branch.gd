@@ -28,6 +28,10 @@ extends Resource
 ## Floor drag multiplier (rough mine-cart sleepers). Above 1 the kart's top speed on this road
 ## is divided by it unless it is boosting (boost keeps its full speed). 1 = smooth.
 @export var floor_drag_mult: float = 1.0
+## Mine rail (story 009): sideways offset in meters of the cart's rails from the road centerline
+## (left positive, like TrackModel.Query.lateral). The ore cart rides there; the rest of the road
+## is the lane karts pass it in.
+@export var rail_lane: float = 0.0
 ## Main-loop distance where the branch leaves the main road.
 @export var s_in: float = 0.0
 ## Main-loop distance where the branch rejoins the main road (greater than s_in).

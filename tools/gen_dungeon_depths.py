@@ -429,7 +429,10 @@ RAIL_D = float(os.environ.get("RAIL_D", "8.0"))
 RAIL_R = float(os.environ.get("RAIL_R", "40.0"))
 rail_ctrl = fillet([rA, add(rA, mul(tA_, RAIL_D)), sub(rB, mul(tB_, RAIL_D)), rB], [0, RAIL_R, RAIL_R, 0], 3.0)
 Lr, rail_pts = branch_len(rail_ctrl, 8)
-RAIL_HW = 2.25
+# Story 009 part 3: the rail is wide enough for a kart to pass the ore cart, which rides its rails
+# on one side (RAIL_LANE); a cart shuttling inside a one-lane rail would always meet a kart on it.
+RAIL_HW = float(os.environ.get("RAIL_HW", "3.25"))
+RAIL_LANE = float(os.environ.get("RAIL_LANE", "1.75"))
 
 # lava gap: cuts the long forge 90
 fb_i = elem_index("free_b"); fa_i = elem_index("free_a")
@@ -555,6 +558,168 @@ for hz in hazards:
 GAP_RAMP_AT = GAP_U - GAP_LEN / 2 - GAP_RUNOFF - GAP_RAMP_LEN
 print("lava gap: branch flat at %.2f m, ramp %.1f..%.1f m (lip %.2f), strip %.1f..%.1f m" % (
     gap_h, GAP_RAMP_AT, GAP_RAMP_AT + GAP_RAMP_LEN, GAP_RAMP_LIP, GAP_U - GAP_LEN / 2, GAP_U + GAP_LEN / 2))
+
+
+# ------------------------------------------------------------------ timed hazards (story 009 part 3)
+def _v2(lst):
+    return "PackedVector2Array(" + ", ".join("%.3f, %.3f" % (q[0], q[1]) for q in lst) + ")"
+
+
+def bank_deg(sv):
+    """Main-road bank (degrees, as written to TrackData.banks) at spline distance sv."""
+    sv %= LENGTH
+    k = max(i for i in range(len(cp_s)) if cp_s[i] <= sv)
+    k2 = (k + 1) % len(cp_s)
+    span = (cp_s[k2] - cp_s[k]) % LENGTH
+    f = (sv - cp_s[k]) / span if span > 1e-9 else 0.0
+    return cp_bank[k] + (cp_bank[k2] - cp_bank[k]) * f
+
+
+def surface_h(sv, lat):
+    """Main-road surface height at spline distance sv, lateral lat (TrackModel.Path.surface_y)."""
+    reach = hw_at(sv) + CURB
+    return main_h(sv) + max(-reach, min(reach, lat)) * math.tan(math.radians(bank_deg(sv)))
+
+
+# Lava bursts: vents in the lava-side road edge (the shore's open left edge, the bridge's right
+# edge). Each erupts for a short time on its own cycle; the cycles are staggered so only one is up at
+# a time. The footprint (kart centres that are hit) is an octagon over the edge part of the road.
+BURST_PERIOD = float(os.environ.get("BURST_PERIOD", "7.5"))
+BURST_START = 3.0
+BURST_ACTIVE = float(os.environ.get("BURST_ACTIVE", "1.6"))     # rise + full, s
+BURST_TRANS = 0.35
+BURST_WARN = float(os.environ.get("BURST_WARN", "1.5"))
+# (id, main s, side, footprint radius m, vent centre in from the curb's outer edge m). The shore
+# vents sit on the inside of the left-hand sweeper, where the racing line runs.
+BURSTS = [("burst_shore_a", ts("shore", 0.3), -1, 4.0, 1.2), ("burst_shore_b", ts("shore", 0.72), -1, 4.0, 1.2),
+          ("burst_bridge", ts("bridge", 0.55), 1, 3.0, 1.5)]
+mover_subs, mover_ids = [], []
+burst_report = []
+for k, (bid, bs, side, BURST_R, BURST_INSET) in enumerate(BURSTS):
+    n_ = normal_at(bs)
+    lat_c = side * (hw_at(bs) + CURB - BURST_INSET)
+    c = add(point_at(bs), mul(n_, lat_c))
+    poly = [add(c, (BURST_R * math.cos(math.tau * j / 8 + math.pi / 8), BURST_R * math.sin(math.tau * j / 8 + math.pi / 8))) for j in range(8)]
+    vh = surface_h(bs, lat_c)
+    covered = BURST_R - (hw_at(bs) - abs(lat_c))   # metres of the road's half width reached by the footprint
+    free_gap = 2 * hw_at(bs) - max(0.0, covered)
+    burst_report.append("%s s=%.1f side=%+d lat=%.2f h=%.2f covers %.2f m of %.1f, free %.2f" % (bid, bs, side, lat_c, vh, covered, 2 * hw_at(bs), free_gap))
+    mover_ids.append('SubResource("Mover_%s")' % bid)
+    mover_subs.append("""[sub_resource type="Resource" id="Mover_%s"]
+script = ExtResource("7_mover")
+id = &"%s"
+kind = &"burst"
+period = %.2f
+active_start = %.2f
+active_time = %.2f
+transition_time = %.2f
+phase = %.3f
+warning_lead = %.2f
+block_progress = 0.25
+path = &"main"
+path_from = %.2f
+path_to = %.2f
+footprint = %s
+footprint_y_min = %.3f
+footprint_y_max = %.3f
+vent_center = Vector2(%.3f, %.3f)
+vent_height = %.3f
+min_free_gap = 3.0
+hit_effect = &"spin"
+hit_profile = 1
+hit_puff = &"scorch"
+visual = &"burst"
+warn_blink_hz = 3.0
+warn_dome = 0.15
+vent_radius = %.2f
+column_radius = 1.6
+column_height = 6.0
+sound_warn = &"burst_rumble"
+sound_down = &""
+sound_active = &"burst_erupt"
+""" % (bid, bid, BURST_PERIOD, BURST_START, BURST_ACTIVE, BURST_TRANS, BURST_PERIOD * k / len(BURSTS), BURST_WARN,
+       bs - BURST_R, bs + BURST_R, _v2(poly), vh - 1.5, vh + 2.5, c[0], c[1], vh, BURST_R * 0.85))
+print("bursts: period %.1f s, up %.2f s (+%.2f fall), warn %.1f s, staggered by %.2f s" % (BURST_PERIOD, BURST_ACTIVE, BURST_TRANS, BURST_WARN, BURST_PERIOD / len(BURSTS)))
+for line in burst_report:
+    print("  " + line)
+
+# Mine cart: shuttles back and forth on the rail between two points where the cart (in its lane,
+# with its hit circle) is clear of the main road, standing at each end; always solid. Karts pass it
+# in the free lane of the widened rail.
+CART_SPEED = float(os.environ.get("CART_SPEED", "5.0"))       # average m/s of a run
+CART_PERIOD = float(os.environ.get("CART_PERIOD", "14.0"))
+CART_WARN = 1.2
+CART_HIT_R = 1.7
+CART_MARGIN = 0.3      # m between the cart's hit circle and the main road's curb
+_rc = [0.0]
+for _i in range(1, len(rail_pts)):
+    _rc.append(_rc[-1] + ln(sub(rail_pts[_i], rail_pts[_i - 1])))
+
+
+def _rail_clear(i):
+    a = rail_pts[max(i - 1, 0)]
+    b = rail_pts[min(i + 1, len(rail_pts) - 1)]
+    t_ = norm(sub(b, a))
+    q = add(rail_pts[i], mul(nrm(t_), RAIL_LANE))
+    sq = s_of(q)
+    return ln(sub(q, point_at(sq))) - hw_at(sq) - CURB - CART_HIT_R
+
+
+_clear = [_rail_clear(i) for i in range(len(rail_pts))]
+_ok = [c_ > CART_MARGIN for c_ in _clear]
+# the longest run of clear samples
+best_run = (0, -1, -1)
+i0 = None
+for i, ok_ in enumerate(_ok + [False]):
+    if ok_ and i0 is None:
+        i0 = i
+    elif not ok_ and i0 is not None:
+        if _rc[i - 1] - _rc[i0] > best_run[0]:
+            best_run = (_rc[i - 1] - _rc[i0], i0, i - 1)
+        i0 = None
+CART_FROM = _rc[best_run[1]] + 1.0
+CART_TO = _rc[best_run[2]] - 1.0
+cart_run = (CART_TO - CART_FROM) / CART_SPEED
+assert 2 * cart_run + 2 * CART_WARN <= CART_PERIOD, "cart runs do not fit the period"
+print("mine cart: rail %.1f m, hw %.2f, lane %+.2f; clear stretch %.1f..%.1f (%.1f m), run %.2f s each way, stands %.2f s, period %.1f s" % (
+      _rc[-1], RAIL_HW, RAIL_LANE, CART_FROM, CART_TO, CART_TO - CART_FROM, cart_run, CART_PERIOD * 0.5 - cart_run, CART_PERIOD))
+print("  rail clearance profile (along: m past main corridor + hit radius):", " ".join("%.0f:%.1f" % (_rc[i], _clear[i]) for i in range(0, len(rail_pts), 4)))
+mover_ids.append('SubResource("Mover_cart")')
+mover_subs.append("""[sub_resource type="Resource" id="Mover_cart"]
+script = ExtResource("7_mover")
+id = &"mine_cart"
+kind = &"cart"
+period = %.2f
+active_start = 0.0
+active_time = 0.0
+transition_time = 0.0
+phase = 0.0
+warning_lead = %.2f
+path = &"mine_rail"
+path_from = %.2f
+path_to = %.2f
+speed = %.2f
+motion = &"shuttle"
+lane_offset = %.2f
+hit_radius = %.2f
+hit_height = 1.5
+min_free_gap = 3.0
+hit_effect = &"spin"
+hit_profile = 2
+solid_body = true
+visual = &"cart"
+body_radius = 0.65
+body_color = Color(0.42, 0.28, 0.16, 1)
+band_color = Color(0.2, 0.2, 0.22, 1)
+cart_width = 1.3
+cart_height = 0.9
+cart_length = 1.9
+wheel_radius = 0.3
+ore_color = Color(0.3, 0.42, 0.62, 1)
+sound_warn = &""
+sound_down = &""
+sound_active = &"cart_rumble"
+""" % (CART_PERIOD, CART_WARN, CART_FROM, CART_TO, CART_SPEED, RAIL_LANE, CART_HIT_R))
 
 
 # ------------------------------------------------------------------ report
@@ -684,7 +849,7 @@ add_branch("Branch_hl", "hall_left", "lane_split", lane_l_cps, SPLIT_LANE_HW, 0.
 add_branch("Branch_hr", "hall_right", "lane_split", lane_r_cps, SPLIT_LANE_HW, 0.6, lane_s_in, lane_s_out, 8, *STONE, 1.0, hws=lane_r_hw)
 add_branch("Branch_rail", "mine_rail", "mine_rail", rail_ctrl, RAIL_HW, 0.4, rail_s_in, rail_s_out, 8,
            "Color(0.42, 0.28, 0.16, 1)", "Color(0.34, 0.22, 0.13, 1)", "Color(0.30, 0.38, 0.55, 1)", "Color(0.36, 0.46, 0.66, 1)", 0.9,
-           "floor_drag_mult = %g\nwall_drag_mult = 2.0\nheights = %s\n" % (MINE_DRAG, f32(rail_heights)))
+           "floor_drag_mult = %g\nwall_drag_mult = 2.0\nrail_lane = %.2f\nheights = %s\n" % (MINE_DRAG, RAIL_LANE, f32(rail_heights)))
 add_branch("Branch_gap", "lava_gap", "lava_gap", gap_ctrl, GAP_HW, 0.4, gap_s_in, gap_s_out, 8,
            "Color(0.27, 0.2, 0.18, 1)", "Color(0.22, 0.16, 0.15, 1)", "Color(0.30, 0.38, 0.55, 1)", "Color(0.36, 0.46, 0.66, 1)", 0.9,
            "heights = %s\n" % f32([gap_h] * len(gap_ctrl)))
@@ -699,6 +864,7 @@ color_b = Color(0.3, 0.38, 0.55, 1)
 side_color = Color(0.32, 0.26, 0.25, 1)
 stripes = 4
 """ % (GAP_RAMP_AT, GAP_RAMP_LEN, GAP_RAMP_LIP))
+subs.extend(mover_subs)
 haz_ids = []
 for i, h_ in enumerate(hazards):
     haz_ids.append('SubResource("Hazard_%d")' % i)
@@ -730,6 +896,7 @@ TRES = """[gd_resource type="Resource" script_class="TrackData" load_steps=%d fo
 [ext_resource type="Script" path="res://src/track/track_hazard.gd" id="4_hazard"]
 [ext_resource type="Script" path="res://src/track/track_pad.gd" id="5_pad"]
 [ext_resource type="Script" path="res://src/track/track_ramp.gd" id="6_ramp"]
+[ext_resource type="Script" path="res://src/track/track_mover.gd" id="7_mover"]
 
 %s
 [resource]
@@ -763,11 +930,12 @@ solid_below = 99.0
 pillar_color = Color(0.3, 0.24, 0.25, 1)
 deck_under_color = Color(0.24, 0.19, 0.2, 1)
 ramps = Array[ExtResource("6_ramp")]([SubResource("Ramp_gap")])
+movers = Array[ExtResource("7_mover")]([%s])
 """
 with open(os.path.join(out, "dungeon_depths.tres"), "w", newline="\n") as f:
-    f.write(TRES % (7 + len(subs), "\n".join(subs), ", ".join(branch_ids), ", ".join(haz_ids), ", ".join(pad_ids), v2(items), v2(cps), f32(cp_hw), SPP, CURB,
+    f.write(TRES % (8 + len(subs), "\n".join(subs), ", ".join(branch_ids), ", ".join(haz_ids), ", ".join(pad_ids), v2(items), v2(cps), f32(cp_hw), SPP, CURB,
                     v3(open_edges), OPEN_EDGE_REACH, SINK_TIME, RESPAWN_SPEED_FRAC, RESPAWN_IMMUNITY, RESPAWN_BACK_OFF, PAD_BOOST_TIME,
-                    f32(cp_h), f32(cp_bank)))
+                    f32(cp_h), f32(cp_bank), ", ".join(mover_ids)))
 
 THEME = """[gd_resource type="Resource" script_class="TrackTheme" load_steps=2 format=3]
 
