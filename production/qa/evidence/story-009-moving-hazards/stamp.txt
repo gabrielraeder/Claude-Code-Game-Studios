@@ -1,0 +1,7 @@
+Reviewed-Content-Hash: src/track/hazard_manager.gd ec65b05a930c966ff0b135a58e92878b24ba780a
+Reviewed-Content-Hash: src/track/track_mover.gd 4b7c8f686bb4fb1a767b3c7c9ae21ba96630518a
+Reviewed-Content-Hash: src/track/mover_view.gd a929bb8cede135129c991e040493e031dce2a0ca
+Reviewed-Content-Hash: src/vehicle/kart_sim.gd ccb46611d6a33c4946a104b24d8501e59a42c487
+Reviewed-Content-Hash: src/ai/bot_driver.gd 0068b5f890d937cf356b08976970ee25f9433baa
+Reviewed-Content-Hash: assets/tracks/castle_circuit/castle_circuit.tres e48d7e21617ac542712c2f86404319100a5a0444
+Reviewed-Content-Hash: assets/tracks/dungeon_depths/dungeon_depths.tres cf21dda2eb3dcb0116ec929e0aa74cde63f963ef

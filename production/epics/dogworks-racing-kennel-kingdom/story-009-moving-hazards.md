@@ -54,8 +54,16 @@
 
 ## Files
 
-- `src/track/` (hazard data and nodes), `src/main.gd`
-- `assets/tracks/*/`
+- `src/track/track_mover.gd`, `hazard_manager.gd`, `mover_view.gd` (new: hazard data, runtime, visuals)
+- `src/test_track/track_data.gd`, `track_mesh.gd`, `src/track/track_branch.gd`
+- `src/vehicle/kart_sim.gd`, `kart_visual.gd` (hazard hits, stop, push-off, scorch puff)
+- `src/ai/bot_driver.gd`, `bot_set.gd`, `bot_personality.gd`, `bot_context.gd`, `assets/data/ai/bot_set.tres` (gate timing, barrel lanes, cart meeting)
+- `src/items/item_manager.gd` (HIT log keeps the item id)
+- `src/main.gd`, `src/debug/debug_options.gd`, `debug_harness.gd`, `autopilot_driver.gd`
+- `tools/gen_castle_circuit.py`, `tools/gen_dungeon_depths.py` → `assets/tracks/castle_circuit/`, `assets/tracks/dungeon_depths/`
+- `assets/data/audio/audio_set.tres` (hazard sound events, existing wavs)
+- `tools/track_check.gd` (check 17), `tools/hazard_compare.py` (new)
+- `production/qa/evidence/story-009-moving-hazards-evidence.md`, `production/qa/evidence/story-009-moving-hazards/`
 
 ---
 
