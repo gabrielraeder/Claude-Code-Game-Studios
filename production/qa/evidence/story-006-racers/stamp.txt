@@ -1,0 +1,11 @@
+Reviewed-Content-Hash: src/vehicle/kart_visual.gd 09f0846dcc48fc788f895de097d6c45cb0f30105
+Reviewed-Content-Hash: src/vehicle/pennant.gd e4bf17ef9c5ce98f560ec73015f8b61c787530df
+Reviewed-Content-Hash: src/vehicle/model_batcher.gd ebf862107fba9aa3f782f1d7f51903ec658e81a6
+Reviewed-Content-Hash: src/vehicle/vehicle_visual_stats.gd 3ad96fac8cba20819c683b71d1eb88a40ed7f6b3
+Reviewed-Content-Hash: assets/data/vehicles/armored_cart.tres 5bb7a58fe2a1044339111e40ccd7bbb5d4ff6903
+Reviewed-Content-Hash: assets/data/vehicles/war_bike.tres 43bdd45baefb292ab7a8393bbbeff4de39b69c59
+Reviewed-Content-Hash: assets/data/racers/racer_set.tres 8e0a1bc9b6125a21950fd7ff355cbde3bbfa8c9e
+Reviewed-Content-Hash: src/main.gd c3d51a4b6051448cb6fca177261b71b79b7fd9a2
+Reviewed-Content-Hash: assets/vehicles/veh_cart_armored.glb caac976687eed36a065065034dbadb76fcd4ec19
+Reviewed-Content-Hash: assets/vehicles/veh_bike_war.glb a3adae54e891f5657d5d178d1f3591a0cd410e82
+Reviewed-Content-Hash: assets/characters/char_dog_mascot.glb de2ec86f02405215bc6d752158d79c843cd86b02

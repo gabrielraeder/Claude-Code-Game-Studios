@@ -58,10 +58,18 @@
 
 ## Files
 
-- `assets/characters/` (dog models), `assets/vehicles/`
-- `assets/data/vehicles/` (war-bike data)
-- `src/vehicle/` (model swap and pennant)
-- `production/qa/evidence/story-006-racers-evidence.md`
+- `assets/characters/char_dog_{mascot,sunny,bolt,fern,violet,frost,cinder,skye}.glb` (new: the 8 dog models)
+- `assets/vehicles/veh_cart_armored.glb`, `assets/vehicles/veh_bike_war.glb` (new: the vehicle models)
+- `tools/blender/common.py`, `make_dogs.py`, `make_vehicles.py`, `render_previews.py` (new: model and preview scripts)
+- `assets/data/vehicles/war_bike.tres`, `war_bike_notes.md`, `vehicle_set.tres` (new); `armored_cart.tres` (model block, pennant 1.45x)
+- `assets/data/racers/racer_set.tres` (new: 8 racers and the pennant style)
+- `assets/data/net/net_config.tres`, `src/net/net_config.gd` (art-bible slot colours, loadout_wait)
+- `assets/data/ai/bot_set.tres`, `src/ai/bot_set.gd`, `src/ai/bot_driver.gd` (no drift start near open edges)
+- `src/vehicle/racer_def.gd`, `racer_set.gd`, `vehicle_set.gd`, `pennant_style.gd`, `pennant.gd`, `spatial_vehicle_pennant_flag.gdshader`, `model_batcher.gd` (new)
+- `src/vehicle/kart_visual.gd`, `vehicle_stats.gd`, `vehicle_visual_stats.gd` (model pipeline, wheels, rider motion, colours)
+- `src/main.gd`, `src/net/net_session.gd`, `src/net/kart_wire.gd` (loadouts, sync, VERSION bump, netlog perf columns)
+- `src/debug/debug_options.gd`, `src/debug/lineup_showcase.gd` (--racer, --vehicle, --lineup)
+- `production/qa/evidence/story-006-racers-evidence.md`, `production/qa/evidence/story-006-racers/`
 
 ---
 
