@@ -81,6 +81,13 @@ extends Resource
 ## minus this many m/s at that point (a bump or a hit just before it). On the route the bot uses
 ## its full top speed (no personality or handicap reduction) so it clears the gate.
 @export var gate_speed_slack: float = 6.0
+## Timed gates (the drawbridge, story 009): the bot checks the gate at branch_gate_dist before the
+## entrance and takes the branch only if the gate stays open while it crosses the deck. It assumes
+## this speed (m/s) to the deck, keeps this margin (seconds) before and after, and its arrival
+## estimate is off by up to gate_eta_error seconds times its personality's gate_risk.
+@export var gate_eta_speed: float = 24.0
+@export var gate_margin: float = 0.9
+@export var gate_eta_error: float = 0.7
 ## Per shortcut type (TrackBranch.type) factor on the personality's shortcut chance.
 @export var branch_factor: Dictionary = {}
 

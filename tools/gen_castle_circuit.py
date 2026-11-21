@@ -660,6 +660,39 @@ bridge_strip = strip_l[::3] + [strip_l[-1]] + list(reversed(strip_r[::3] + [stri
 print("drawbridge strip: %d corners pulled back from the spiral top; nearest strip corner %.1f m outside its corridor" % (_trimmed, min(_high_excess(q) for q in bridge_strip)))
 
 
+# ------------------------------------------------------------------ drawbridge deck span (story 009)
+# The movable deck: the stretch of the bridge branch that lies over the moat (outside the main
+# road's corridor by more than DECK_OUT_MARGIN) and is straight. Its far end (toward the gatehouse)
+# is the hinge. Distances are meters along the branch (TrackBranch path distance).
+DECK_OUT_MARGIN = float(os.environ.get("DECK_OUT_MARGIN", "1.0"))
+_bcum = [0.0]
+for _i in range(1, len(bridge_pts)):
+    _bcum.append(_bcum[-1] + ln(sub(bridge_pts[_i], bridge_pts[_i - 1])))
+
+
+def _main_excess(q):
+    return min(ln(sub(q, pts[k])) - pts_hw[k] - CURB for k in range(0, len(pts)))
+
+
+_bex = [_main_excess(q) for q in bridge_pts]
+_dir_str = norm(sub(V2b, V1b))   # the straight plank between the entry arc and the landing arc
+DECK_STRAIGHT_DEG = float(os.environ.get("DECK_STRAIGHT_DEG", "2.0"))
+_over = []
+for _i in range(1, len(bridge_pts) - 1):
+    _h = norm(sub(bridge_pts[_i + 1], bridge_pts[_i - 1]))
+    _ang = math.degrees(math.acos(max(-1.0, min(1.0, dot(_h, _dir_str)))))
+    if _bex[_i] > DECK_OUT_MARGIN and _ang < DECK_STRAIGHT_DEG:
+        _over.append(_i)
+DECK_LENGTH = float(os.environ.get("DECK_LENGTH", "18.0"))   # the raised deck is this tall (m): short, so it reads as a leaf
+DECK_TO = _bcum[_over[-1]]
+DECK_FROM = max(_bcum[_over[0]], DECK_TO - DECK_LENGTH)
+# The signal posts stand at the branch entrance (first point clearly over the water), so a kart
+# reads the lantern before it commits to the bridge.
+DECK_SIGNAL_EXCESS = float(os.environ.get("DECK_SIGNAL_EXCESS", "3.0"))
+DECK_SIGNAL = next(_bcum[i] for i in range(len(bridge_pts)) if _bex[i] > DECK_SIGNAL_EXCESS)
+print("drawbridge deck span %.1f..%.1f of %.1f m branch (%.1f m long, straight, over water)" % (DECK_FROM, DECK_TO, _bcum[-1], DECK_TO - DECK_FROM))
+
+
 # The village lane runs beside the main lane: same height at the same place, so a kart changing
 # lane or merging meets no step (the default branch blend would differ from the main climb).
 lane_heights = [round(main_h(s_of(q)), 3) for q in lane_cps]
@@ -774,7 +807,7 @@ def v3(lst):
 
 
 _root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-for _need in ("src/track/track_hazard.gd", "src/track/track_pad.gd"):
+for _need in ("src/track/track_hazard.gd", "src/track/track_pad.gd", "src/track/track_mover.gd"):
     if not os.path.exists(os.path.join(_root, _need)):
         raise SystemExit("refusing to write: %s does not exist yet (round-2 model not in place)" % _need)
 out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "tracks", "castle_circuit")
@@ -834,6 +867,43 @@ wall_height = 1.3
 arch_ends = true
 roofed = false
 """ % (v2(passage_ctrl), PASSAGE_HW, PASSAGE_WALL_DRAG, pz_s_in, pz_s_out))
+# Drawbridge timer (story 009): down 12 s, raised 8 s (the rise starts at second 12 of the 20 s
+# cycle, takes 1.2 s; the horn and the flashing lantern warn 1.5 s before). PHASE shifts the cycle.
+DRAW_PERIOD = float(os.environ.get("DRAW_PERIOD", "20.0"))
+DRAW_ACTIVE_START = float(os.environ.get("DRAW_ACTIVE_START", "12.0"))
+DRAW_ACTIVE_TIME = float(os.environ.get("DRAW_ACTIVE_TIME", "8.0"))
+DRAW_TRANSITION = float(os.environ.get("DRAW_TRANSITION", "1.2"))
+DRAW_WARNING = float(os.environ.get("DRAW_WARNING", "1.5"))
+DRAW_PHASE = float(os.environ.get("DRAW_PHASE", "0.0"))
+subs.append("""[sub_resource type="Resource" id="Mover_drawbridge"]
+script = ExtResource("7_mover")
+id = &"drawbridge_deck"
+kind = &"gate"
+period = %.2f
+active_start = %.2f
+active_time = %.2f
+transition_time = %.2f
+phase = %.2f
+warning_lead = %.2f
+block_progress = 0.25
+path = &"drawbridge"
+path_from = %.2f
+path_to = %.2f
+hit_effect = &"sink"
+sink_kind = &"water"
+visual = &"drawbridge"
+raised_angle_deg = 78.0
+deck_half_width = %.2f
+deck_color = Color(0.55, 0.36, 0.2, 1)
+deck_alt_color = Color(0.46, 0.29, 0.16, 1)
+signal_along = %.2f
+signal_side = 4.6
+signal_height = 3.2
+chain_anchor_height = 20.0
+chain_anchor_beyond = 1.5
+sound_warn = &"drawbridge_up"
+sound_down = &"drawbridge_down"
+""" % (DRAW_PERIOD, DRAW_ACTIVE_START, DRAW_ACTIVE_TIME, DRAW_TRANSITION, DRAW_PHASE, DRAW_WARNING, DECK_FROM, DECK_TO, BRIDGE_HW, DECK_SIGNAL))
 subs.append("""[sub_resource type="Resource" id="Hazard_moat"]
 script = ExtResource("4_hazard")
 id = &"moat"
@@ -872,6 +942,7 @@ TRES = """[gd_resource type="Resource" script_class="TrackData" load_steps=%d fo
 [ext_resource type="Script" path="res://src/track/track_hazard.gd" id="4_hazard"]
 [ext_resource type="Script" path="res://src/track/track_pad.gd" id="5_pad"]
 [ext_resource type="Script" path="res://src/track/track_ramp.gd" id="6_ramp"]
+[ext_resource type="Script" path="res://src/track/track_mover.gd" id="7_mover"]
 
 %s
 [resource]
@@ -882,6 +953,7 @@ theme = ExtResource("3_theme")
 branches = Array[ExtResource("2_branch")]([SubResource("Branch_lane"), SubResource("Branch_bridge"), SubResource("Branch_passage")])
 hazards = Array[ExtResource("4_hazard")]([SubResource("Hazard_moat"), SubResource("Hazard_edge"), SubResource("Hazard_bridge")])
 boost_pads = Array[ExtResource("5_pad")]([%s])
+movers = Array[ExtResource("7_mover")]([SubResource("Mover_drawbridge")])
 checkpoint_count = 10
 item_box_spots = %s
 control_points = %s

@@ -66,6 +66,7 @@ var _was_sinking: bool = false
 var _gate_branch: int = -1
 var _gate_speed: float = 0.0
 var _speed_checked: int = -1
+var _timing_checked: int = -1
 var _calm_until: float = -1.0
 var _trace: bool = false
 var _trace_next: float = 0.0
@@ -394,6 +395,7 @@ func _select_branch(track: TrackModel, sim: KartSim) -> void:
 		_plan_crossings = _crossings
 		_gate_branch = -1
 		_speed_checked = -1
+		_timing_checked = -1
 		_roll_plan(track)
 	var best: int = -1
 	var best_in: float = INF
@@ -418,6 +420,17 @@ func _select_branch(track: TrackModel, sim: KartSim) -> void:
 					kart_id, personality.display_name, _crossings - 1, track.data.branches[best].id])
 			_select_branch(track, sim)
 			return
+	# Story 009: a branch with a timed gate (the drawbridge) is taken only when the gate will be open
+	# while the bot crosses it. Otherwise the bot stays on the main road and never waits.
+	if best == _branch and best >= 0 and _timing_checked != best \
+			and sim.track_s >= track.branches[best].s_in - _set.branch_gate_dist:
+		_timing_checked = best
+		if not _gate_timing_ok(track, sim, best):
+			_plan[best] = false
+			print("[bot] BRANCH kart=%d name=%s lap=%d id=%s ev=skip_timing" % [
+					kart_id, personality.display_name, _crossings - 1, track.data.branches[best].id])
+			_select_branch(track, sim)
+			return
 	if best == _branch and best >= 0 and _gate_speed > 0.0 and _speed_checked != best \
 			and sim.track_s >= track.branches[best].s_in - _set.branch_gate_dist:
 		_speed_checked = best
@@ -439,6 +452,28 @@ func _select_branch(track: TrackModel, sim: KartSim) -> void:
 			if track.hazard_gates[i] > 0.0 and track.distance_to_path(track.hazard_bounds[i].get_center(), best) < 8.0:
 				_gate_route = true
 				_gate_speed = maxf(_gate_speed, track.hazard_gates[i])
+
+
+# True when the timed gate on branch [param bi] (if any) stays open from the bot's estimated arrival
+# at the deck's start to its estimated exit, with a margin. The estimate uses BotSet.gate_eta_speed;
+# a risk-taking personality has a smaller margin and a noisier estimate, so it can mis-time.
+func _gate_timing_ok(track: TrackModel, sim: KartSim, bi: int) -> bool:
+	if not _ctx.time_fn.is_valid() or not _ctx.gate_blocked_fn.is_valid():
+		return true
+	var id: StringName = track.data.branches[bi].id
+	for m in track.data.movers:
+		if m.kind != &"gate" or m.path != id:
+			continue
+		var t: float = _ctx.time_fn.call()
+		var to_entry: float = track.branches[bi].s_in - sim.track_s
+		var v: float = maxf(_set.gate_eta_speed, 0.1)
+		var err: float = _rng.randf_range(-1.0, 1.0) * _set.gate_eta_error * personality.gate_risk
+		var margin: float = _set.gate_margin * (1.0 - personality.gate_risk)
+		var t0: float = t + (to_entry + m.path_from) / v + err - margin
+		var t1: float = t + (to_entry + m.path_to) / v + err + margin
+		if _ctx.gate_blocked_fn.call(id, t0, t1):
+			return false
+	return true
 
 
 # ---------------------------------------------------------------- racing line

@@ -42,6 +42,9 @@ extends Resource
 @export var road_keep_band: float = 1.5
 ## Open hazard areas (moat water). See TrackHazard.
 @export var hazards: Array[TrackHazard] = []
+## Timed moving hazards (drawbridge, later barrels, portcullis, lava bursts, mine cart). See
+## TrackMover and HazardManager (story 009).
+@export var movers: Array[TrackMover] = []
 ## Boost pads on the roads. See TrackPad.
 @export var boost_pads: Array[TrackPad] = []
 ## Main-road edges with no wall: one (s_from, s_to, side) per stretch, where side +1 is

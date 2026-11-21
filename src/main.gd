@@ -77,6 +77,9 @@ var _perf_frame_max_us: int = 0
 var _perf_proc_max_ms: float = 0.0
 var _perf_phys_max_ms: float = 0.0
 var _items: ItemManager
+## Timed moving hazards (story 009): states are pure functions of race_time.
+var _hazards: HazardManager
+var _mover_view: MoverView
 ## Sound (story 007 part 2): the director plays everything; RaceSound maps race moments to it.
 const AUDIO_SET_PATH: String = "res://assets/data/audio/audio_set.tres"
 var _audio: AudioDirector
@@ -145,6 +148,12 @@ var start_sequence: StartSequence:
 		return _start
 
 
+## The timed hazards (read by the debug harness and the tools).
+var hazards: HazardManager:
+	get:
+		return _hazards
+
+
 ## The item system (read by the debug harness).
 var items: ItemManager:
 	get:
@@ -187,8 +196,10 @@ func _ready() -> void:
 	if _camera != null:
 		_camera.track = _track
 	_load_rosters()
+	_setup_hazards()
 	_local = Racer.new()
 	_local.sim = KartSim.new(_stats_for(_my_loadout.y, 0))
+	_local.sim.hazard_manager = _hazards
 	_local.laps = LapCounter.new(_laps_for_race(), _track.length, _track.checkpoint_s)
 	if _options.ram:
 		var ram := RamDriver.new()
@@ -324,6 +335,7 @@ func menu_is_open() -> bool:
 func _physics_process(dt: float) -> void:
 	match _mode:
 		Mode.SOLO:
+			_hazards.update(race_time)
 			if _tick_owned(_local, dt, false):
 				race_time += dt
 				_laps.update(_sim.track_s, race_time)
@@ -408,6 +420,7 @@ func _tick_owned(r: Racer, dt: float, synced: bool) -> bool:
 
 func _net_tick(dt: float) -> void:
 	race_time += dt
+	_hazards.update(race_time)
 	var keys: Dictionary = {}
 	for r in _racers:
 		if r.dropped:
@@ -671,6 +684,29 @@ func _setup_audio() -> void:
 
 func _toggle_mute() -> void:
 	_audio.toggle_mute()
+
+
+# Creates the hazard manager (once) and points it at the current track. Its phase changes play the
+# warning horn and the thud of the deck coming down (AudioSet events named by the TrackMover).
+func _setup_hazards() -> void:
+	if _hazards == null:
+		_hazards = HazardManager.new()
+		_hazards.name = &"HazardManager"
+		add_child(_hazards)
+		_hazards.phase_changed.connect(_on_hazard_phase)
+		_hazards.log_enabled = _options.hazard_log
+		_hazards.debug_time_offset = _options.hazard_time_offset
+	_hazards.setup(_track)
+
+
+func _on_hazard_phase(mover_index: int, phase: int, position: Vector3) -> void:
+	var m: TrackMover = _hazards.mover(mover_index)
+	if _audio == null or race_time < 0.0:
+		return
+	if phase == HazardManager.Phase.WARNING:
+		_audio.play_event(m.sound_warn, position)
+	elif phase == HazardManager.Phase.IDLE:
+		_audio.play_event(m.sound_down, position)
 
 
 func _on_item_sound_cue(kind: StringName, kart_id: int) -> void:
@@ -1082,6 +1118,7 @@ func _apply_race_start(info: Dictionary) -> void:
 		if is_bot and _net.is_host():
 			r.owned = true
 			r.sim = KartSim.new(stats)
+			r.sim.hazard_manager = _hazards
 			r.driver = BotDriver.create(_bot_set, kart_id, _bot_context(), laps_n, int(info.get("seed", 0)))
 			r.laps = LapCounter.new(laps_n, _track.length, _track.checkpoint_s)
 			r.sim.reset_to(_track, dist, lateral)
@@ -1138,6 +1175,10 @@ func _bot_context() -> BotContext:
 	c.place_fn = func(id: int) -> int: return _ranking.place_of(id)
 	c.held_fn = func(id: int) -> StringName: return _items.held_id_of(id)
 	c.threat_fn = func(id: int) -> float: return _items.threat_distance(id)
+	c.time_fn = func() -> float: return _hazards.time
+	c.gate_blocked_fn = func(path_id: StringName, t0: float, t1: float) -> bool:
+		var gi: int = _hazards.gate_on_path(_track.branch_index(path_id))
+		return gi >= 0 and _hazards.blocked_between(_hazards.mover(gi), t0, t1)
 	return c
 
 
@@ -1362,6 +1403,7 @@ func _ensure_track(id: String) -> bool:
 		return false
 	track_data = data
 	_track = TrackModel.new(data)
+	_hazards.setup(_track)
 	if _camera != null:
 		_camera.track = _track
 	_laps.configure_track(_track.length, _track.checkpoint_s)
@@ -1423,6 +1465,9 @@ func _build_world() -> void:
 	var mesh := TrackMesh.new()
 	_world.add_child(mesh)
 	mesh.build(_track)
+	_mover_view = MoverView.new()
+	_world.add_child(_mover_view)
+	_mover_view.setup(_track, _hazards)
 	var scenery := TrackScenery.new()
 	_world.add_child(scenery)
 	scenery.build(_track)

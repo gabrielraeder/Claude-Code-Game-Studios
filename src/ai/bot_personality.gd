@@ -32,6 +32,9 @@ extends Resource
 ## Chance (0..1) per lap that the bot plans to take a given shortcut (scaled by the
 ## per-type factor in BotSet.branch_factor). A planned shortcut can still be missed.
 @export_range(0.0, 1.0) var shortcut_chance: float = 0.6
+## Willingness to gamble on a timed gate (the drawbridge): 0 keeps the full margin and an exact
+## estimate, 1 keeps no margin and a noisy estimate (it can fall in).
+@export_range(0.0, 1.0) var gate_risk: float = 0.3
 
 @export_group("Pace")
 ## Share of the vehicle's top speed this bot can use (1 = full). Below 1 makes a slower driver.

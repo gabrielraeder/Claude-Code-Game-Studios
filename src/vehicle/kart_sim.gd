@@ -39,6 +39,9 @@ const EPSILON: float = 0.001
 
 ## Handling data for this kart.
 var stats: VehicleStats
+## Timed moving hazards (story 009), injected by whoever owns this kart's simulation. The kart tests
+## itself against them at the manager's time (victim decides). null = none (previews, tools).
+var hazard_manager: HazardManager = null
 
 var position: Vector2 = Vector2.ZERO
 var velocity: Vector2 = Vector2.ZERO
@@ -637,6 +640,8 @@ func _constrain_to_track(dt: float, track: TrackModel) -> void:
 			_gate_sink = track.hazard_gates[hz] > 0.0
 			_start_sinking(track)
 			return
+	if hazard_manager != null and _mover_hit(track, q):
+		return
 	var over_hazard: bool = not q.on_deck and track.has_hazards() and track.hazard_below(position, height)
 	if not over_hazard and _fell_off(dt, q, track):
 		return
@@ -653,6 +658,25 @@ func _constrain_to_track(dt: float, track: TrackModel) -> void:
 		if not _on_pad:
 			pad_boosted.emit()
 	_on_pad = pad >= 0
+
+
+# Story 009: tests this kart against the timed hazards. A "sink" hit drops it into the water and
+# puts it back on the main road (a deck raised under it, a lava burst); a "spin" hit spins it out
+# with the mover's hit-slowdown profile unless it is immune or already spinning. True = sinking now.
+func _mover_hit(track: TrackModel, q: TrackModel.Query) -> bool:
+	var mi: int = hazard_manager.hit_test(self, hazard_manager.time, q)
+	if mi < 0:
+		return false
+	var m: TrackMover = hazard_manager.mover(mi)
+	if m.hit_effect == &"sink":
+		hazard_kind = m.sink_kind
+		_gate_sink = true
+		_start_sinking(track)
+		return true
+	if not is_hit_immune() and hit():
+		apply_hit_slowdown(m.hit_profile)
+		start_hit_immunity()
+	return false
 
 
 # Height follows the road through a damped spring with the surface's own vertical speed as

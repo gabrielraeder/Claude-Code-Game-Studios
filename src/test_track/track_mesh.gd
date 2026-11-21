@@ -170,7 +170,14 @@ func _branch_road(st: SurfaceTool, track: TrackModel, bi: int) -> void:
 	var path: TrackModel.Path = track.branches[bi]
 	var pts: PackedVector2Array = path.points
 	var normals: Array[Vector2] = _normals_of(pts, false)
+	# Story 009: the movable deck of a gate (drawbridge) is drawn by MoverView, not here.
+	var deck: Vector2i = Vector2i(-1, -1)
+	for m in track.data.movers:
+		if m.kind == &"gate" and m.path == b.id:
+			deck = m.deck_segments(path)
 	for i in pts.size() - 1:
+		if i >= deck.x and i <= deck.y and deck.x >= 0:
+			continue
 		var col: Color = b.deck_color if i % 2 == 0 else b.deck_alt_color
 		var ha: float = path.half[i] + b.curb_width
 		var hb: float = path.half[i + 1] + b.curb_width

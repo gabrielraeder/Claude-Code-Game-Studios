@@ -61,6 +61,10 @@ var shot_s: PackedFloat32Array = PackedFloat32Array()
 var dunk_s: float = -1.0
 ## Per-tick height CSV of the local kart (--height-log=PATH), "" = off.
 var height_log: String = ""
+## Print one "[hazard]" line per race second (--hazard-log), so two PCs can be compared.
+var hazard_log: bool = false
+## Seconds added to the race time the hazards see (--hazard-time-offset=N): meets a state on demand.
+var hazard_time_offset: float = 0.0
 ## The autopilot never hops before a ramp lip (--no-trick).
 var no_trick: bool = false
 ## Racer index from --racer= (-1 = not given, the mascot).
@@ -123,6 +127,10 @@ static func parse(args: PackedStringArray) -> DebugOptions:
 				o.shot_s.append(part.to_float())
 		elif a.begins_with("--height-log="):
 			o.height_log = a.substr("--height-log=".length())
+		elif a == "--hazard-log":
+			o.hazard_log = true
+		elif a.begins_with("--hazard-time-offset="):
+			o.hazard_time_offset = a.substr("--hazard-time-offset=".length()).to_float()
 		elif a == "--no-trick":
 			o.no_trick = true
 		elif a.begins_with("--dunk-at="):
@@ -172,4 +180,4 @@ static func parse(args: PackedStringArray) -> DebugOptions:
 
 ## True when any option that needs a DebugHarness node is set.
 func needs_harness() -> bool:
-	return shots_dir != "" or quit_after_race or quit_after_seconds > 0.0 or log_path != "" or verbose 			or height_log != ""
+	return shots_dir != "" or quit_after_race or quit_after_seconds > 0.0 or log_path != "" or verbose 			or height_log != "" or hazard_log

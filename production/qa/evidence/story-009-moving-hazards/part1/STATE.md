@@ -1,0 +1,21 @@
+# Story 009 part 1 STATE
+- [ ] started 2026-11-21; reading code
+- DESIGN: TrackMover (src/track/track_mover.gd) kinds gate/barrel/cart/burst; HazardManager (src/track/hazard_manager.gd) holds time (set by main each tick), KartSim.hazard_manager injected, KartSim._constrain_to_track calls hit_test(kart,t,q) -> sink via _gate_sink (respawn main road). Gate footprint = branch path id + along range [a0,a1] (span over water, generator computes) ; blocked when angle>block_angle. Deck mesh = separate node (src/track/drawbridge_deck.gd?) rotating about hinge at gatehouse end. Lantern on gate posts. Bots: BotContext.hazard_fn.
+- generator: deck span computed (DECK_FROM/DECK_TO, straight part, over water); branch len ~117 m; tres not yet changed
+- [x] track_mover.gd + TrackData.movers written (not parsed)
+- [x] hazard_manager.gd, KartSim hook written (not parsed)
+- [x] generator movers written + regenerated castle (DRAW_* env: period20 start12 active8 tr1.2 warn1.5 phase0)
+- [x] audio events added to audio_set.tres; TrackMover.deck_segments + signal_along; deck 18 m long (DECK_LENGTH) regenerated. NEXT: MoverView (src/track/mover_view.gd), TrackMesh skip deck segs, main wiring
+- [x] mover_view.gd, TrackMesh skip, main wiring (_hazards, sounds, BotContext time_fn/gate_blocked_fn), debug opts --hazard-log/--hazard-time-offset written, NOT parsed. NEXT: bots (bot_driver/bot_set/bot_personality/bot_set.tres), track_check, parse, verify
+- [x] bots: bot_driver _gate_timing_ok, BotSet gate_eta_speed 24/gate_margin .9/gate_eta_error .7, personality gate_risk (default .3, hothead .8, careful 0, hunter .9). NEXT: track_check, import+parse
+- [x] track_check (17) _check_movers written; TrackMover min_open_fraction .4 / min_blocked_fraction .2. NEXT: import+parse
+- [x] import + parse of all 13 changed gd exit 0 (runs/parse_*.log). NEXT: track_check castle/dungeon, autopilot lap, tune phase
+- [x] track_check castle ALL PASS ((17): blocked 43%, open 57%, longest closed 8.65 s/open 11.4 s), dungeon see log
+- [x] autopilot lap offset0 (runs/auto_phase0.log): arrives t=8.47/47.0/85.6 = cycle 8.5/7.0/5.6 all open, crosses; offset4 run in runs/auto_offset4.log. data phase stays 0 (pack lap1 arrives cycle ~9-11)
+- bot batch running (bg task b9m26fbv4) -> runs/bots_batch.out. NEXT after: item_net_test castle, 2-peer hazard compare, fps x2, shots
+- [x] bots batch castle 5 races: 11/11 finished each, 0 stuck, 0 sinks (see runs/bots_batch.out); NEXT item_net, 2-peer, fps, shots
+- [x] item_net_test castle 1 lap IDENTICAL 20 hits, 0 errors x3 (runs/item_net_castle)
+- [x] 2-peer castle 1 lap: 56 s compared, 0 phase mismatches, max angle diff 0.8/0.9 deg (~0.014 s), 0 errors (runs/peer_castle). NEXT fps x2, shots
+- [x] fps windowed host+11 bots x2: min 60 / 59, median 60, worst frame 29.5/35.3 ms, 0 err (runs/fps_castle_1,2). auto_offset4: lap1 53.93 vs 38.67 (4 sinks forced by autopilot, ~3.8 s each). bots entered bridge 13 (5 races), skip_timing 10, skip_crowded 73. NEXT shots
+- [x] shots opened: shots_down (deck down, chains), shots_up at_s150 (amber lanterns), at_s215/240 (raised, end on), moat_sink (kart sinking, red lantern). NEXT side shots, report
+- [x] side shots: only side_up opened (useless, camera inside houses); done. REPORT written.

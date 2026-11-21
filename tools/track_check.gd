@@ -153,6 +153,7 @@ func _init() -> void:
 	_check_corners_and_lap(main_avg)
 	_check_shortcut_savings(savings)
 	_check_height()
+	_check_movers()
 	print("== %s ==" % ("ALL PASS" if _fails == 0 else "%d FAILED" % _fails))
 	quit(1 if _fails > 0 else 0)
 
@@ -952,3 +953,57 @@ func _self_level_probe(path: TrackModel.Path, d: float, p: Vector2, y: float, se
 		elif absf(oy - y) > JUNCTION_TOLERANCE and absf(oy - y) < sep:
 			out.y = 1.0
 	return out
+
+
+# ---------------------------------------------------------------- (17) timed hazards (story 009)
+## Seconds between samples when scanning a mover's schedule.
+const MOVER_SCAN_STEP: float = 0.05
+
+func _check_movers() -> void:
+	if _data.movers.is_empty():
+		print("     (17) skipped: no timed hazards on %s" % _data.track_id)
+		return
+	var hm := HazardManager.new()
+	hm.setup(_track)
+	for i in hm.count():
+		var m: TrackMover = hm.mover(i)
+		_check_ok("(17) mover %s: schedule consistent" % m.id, m.validate() == "", m.validate())
+		var span: float = maxf(m.period * 3.0, MOVER_SCAN_STEP)
+		var blocked_n: int = 0
+		var main_blocked_n: int = 0
+		var n: int = 0
+		var run_len: float = 0.0
+		var longest_closed: float = 0.0
+		var longest_open: float = 0.0
+		var cur: bool = hm.is_active(m, 0.0)
+		var t: float = 0.0
+		while t < span:
+			var act: bool = hm.is_active(m, t)
+			n += 1
+			if act:
+				blocked_n += 1
+				if hm.path_index(i) == TrackModel.MAIN_PATH and m.kind == &"gate":
+					main_blocked_n += 1
+			if act == cur:
+				run_len += MOVER_SCAN_STEP
+			else:
+				if cur:
+					longest_closed = maxf(longest_closed, run_len)
+				else:
+					longest_open = maxf(longest_open, run_len)
+				cur = act
+				run_len = MOVER_SCAN_STEP
+			t += MOVER_SCAN_STEP
+		var frac: float = hm.blocked_fraction(m)
+		print("     (17) %s: blocked %.1f %% of the time (scan %.1f %%), longest closed %.2f s, longest open %.2f s, period %.1f s" % [
+				m.id, frac * 100.0, 100.0 * float(blocked_n) / float(n), longest_closed, longest_open, m.period])
+		_check_ok("(17) %s never blocks the main road" % m.id, main_blocked_n == 0 and hm.path_index(i) != TrackModel.MAIN_PATH or m.kind != &"gate",
+				"%d of %d samples with a gate blocking the main road" % [main_blocked_n, n])
+		if m.kind == &"gate":
+			_check_ok("(17) %s open at least %.0f %% and closed at least %.0f %% of the time" % [m.id, m.min_open_fraction * 100.0, m.min_blocked_fraction * 100.0],
+					1.0 - frac >= m.min_open_fraction and frac >= m.min_blocked_fraction,
+					"open %.1f %%, closed %.1f %%" % [(1.0 - frac) * 100.0, frac * 100.0])
+			_check_ok("(17) %s deck lies on its branch and inside it" % m.id,
+					hm.path_index(i) >= 0 and m.path_from >= 0.0 and m.path_to <= _track.branch_length(hm.path_index(i)) and m.path_from < m.path_to,
+					"deck %.1f..%.1f of %.1f m" % [m.path_from, m.path_to, _track.branch_length(maxi(hm.path_index(i), 0))])
+	hm.free()

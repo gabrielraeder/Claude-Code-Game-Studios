@@ -13,3 +13,8 @@ var place_fn: Callable
 var held_fn: Callable
 ## (kart_id: int) -> float: distance in meters to the nearest hostile item coming for the kart.
 var threat_fn: Callable
+## () -> float: the race time the timed hazards are evaluated at (story 009).
+var time_fn: Callable
+## (road_id: StringName, from_t: float, to_t: float) -> bool: true when the timed gate on that
+## branch (the drawbridge) is blocked at any moment of the time range.
+var gate_blocked_fn: Callable
