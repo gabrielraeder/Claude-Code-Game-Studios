@@ -77,6 +77,14 @@ var _perf_frame_max_us: int = 0
 var _perf_proc_max_ms: float = 0.0
 var _perf_phys_max_ms: float = 0.0
 var _items: ItemManager
+## Sound (story 007 part 2): the director plays everything; RaceSound maps race moments to it.
+const AUDIO_SET_PATH: String = "res://assets/data/audio/audio_set.tres"
+var _audio: AudioDirector
+var _race_sound: RaceSound
+# Reused per frame for the minimap (no allocation per frame).
+var _map_pos: PackedVector2Array = PackedVector2Array()
+var _map_yaw: PackedFloat32Array = PackedFloat32Array()
+var _map_col: PackedColorArray = PackedColorArray()
 
 ## Item data (story 004): five items, odds table, box timings.
 const ITEM_SET_PATH: String = "res://assets/data/items/item_set.tres"
@@ -185,11 +193,14 @@ func _ready() -> void:
 	_camera = ChaseCamera.new()
 	_camera.far = 1500.0
 	add_child(_camera)
-	_hud = RaceHud.new()
-	add_child(_hud)
 	_ui = RaceFlowUi.new()
 	add_child(_ui)
 	_ui.setup(_racer_set, _vehicle_set, net_config.kart_colors, net_config.max_racers)
+	_hud = RaceHud.new()
+	add_child(_hud)
+	_hud.setup(_ui.theme_data)
+	_hud.set_track(_track)
+	_setup_audio()
 	_wire_ui()
 	_net = NetSession.new()
 	_net.name = &"NetSession"
@@ -219,6 +230,7 @@ func _ready() -> void:
 			func(id: int) -> int: return _ranking.place_of(id),
 			func(place: int) -> int: return _ranking.id_at_place(place),
 			func() -> bool: return _mode == Mode.NET_RACE, _net)
+	_items.sound_cue.connect(_on_item_sound_cue)
 	_bot_set = load(BOT_SET_PATH) as BotSet
 	if _bot_set == null:
 		push_error("Bot data missing: %s" % BOT_SET_PATH)
@@ -299,6 +311,9 @@ func _process(delta: float) -> void:
 		_lobby_timer = 0.0
 	_hud.refresh(_sim, _laps, race_time, _start, _mode == Mode.SOLO)
 	_hud.set_item(_items.hud_icon())
+	_update_minimap()
+	var racing: bool = (_mode == Mode.SOLO or _mode == Mode.NET_RACE) and not get_tree().paused 			and not _ui.flow_open()
+	_race_sound.update(_racers, _local, _start, _track, racing)
 	if _debug_cam != null and not _grid_shot_done and _start.is_counting():
 		_grid_shot_timer += delta
 		if _grid_shot_timer > 1.5:
@@ -572,6 +587,67 @@ func _wire_ui() -> void:
 	_ui.results.lobby_requested.connect(_on_back_to_lobby)
 	_ui.results.restart_requested.connect(_restart)
 	_ui.results.menu_requested.connect(_back_to_menu)
+	_ui.menu.sound_toggle_requested.connect(_toggle_mute)
+	_ui.pause.sound_toggle_requested.connect(_toggle_mute)
+	_ui.mute_requested.connect(_toggle_mute)
+
+
+# Creates the one AudioDirector (music from the start: menu, lobby and races share the loop) and
+# the race sound wiring; UI screens play their sounds through it.
+func _setup_audio() -> void:
+	var audio_set: AudioSet = load(AUDIO_SET_PATH) as AudioSet
+	if audio_set == null:
+		push_error("Audio data missing: %s" % AUDIO_SET_PATH)
+		audio_set = AudioSet.new()
+	_audio = AudioDirector.new()
+	_audio.name = &"AudioDirector"
+	add_child(_audio)
+	_audio.setup(audio_set)
+	_race_sound = RaceSound.new(_audio, audio_set)
+	_race_sound.watch_owned(_local, true)
+	_race_sound.watch_laps(_laps)
+	_ui.set_sound_player(func(ev: StringName) -> void: _audio.play_event(ev))
+	_ui.set_sound_state(_audio.is_muted())
+	_audio.mute_changed.connect(_ui.set_sound_state)
+	_audio.start_music()
+
+
+func _toggle_mute() -> void:
+	_audio.toggle_mute()
+
+
+func _on_item_sound_cue(kind: StringName, kart_id: int) -> void:
+	var r: Racer = _by_id.get(kart_id)
+	if r == null and kart_id == _local.kart_id:
+		r = _local
+	_race_sound.item_cue(kind, r, r == _local)
+
+
+# Minimap markers: every racer's sim position, heading and slot colour; the local kart and the
+# leader (online ranking) are marked.
+func _update_minimap() -> void:
+	var n: int = 0
+	var local_i: int = -1
+	var leader_i: int = -1
+	var leader_id: int = _ranking.leader() if _mode == Mode.NET_RACE else -1
+	_map_pos.resize(_racers.size())
+	_map_yaw.resize(_racers.size())
+	_map_col.resize(_racers.size())
+	for r in _racers:
+		if r.dropped or r.sim == null:
+			continue
+		_map_pos[n] = r.sim.position
+		_map_yaw[n] = r.sim.yaw
+		_map_col[n] = _slot_color(r.kart_id)
+		if r == _local:
+			local_i = n
+		if r.kart_id == leader_id:
+			leader_i = n
+		n += 1
+	_map_pos.resize(n)
+	_map_yaw.resize(n)
+	_map_col.resize(n)
+	_hud.set_minimap_racers(_map_pos, _map_yaw, _map_col, local_i, leader_i)
 
 
 # The start screen (offline, paused behind it). [param message] shows under the panels.
@@ -907,6 +983,7 @@ func _apply_race_start(info: Dictionary) -> void:
 			r.sim.reset_to(_track, dist, lateral)
 			r.laps.reset(r.sim.track_s)
 			r.start.begin(stats)
+			_race_sound.watch_owned(r, false)
 		else:
 			r.owned = false
 			r.remote = RemoteKart.new(stats, net_config, _net_stats)
@@ -918,6 +995,7 @@ func _apply_race_start(info: Dictionary) -> void:
 		_by_id[kart_id] = r
 	_ranking.reset(ids)
 	_items.reset(_track, int(info.get("seed", 0)))
+	_race_sound.reset()
 	_lead_seq = [_ranking.leader()]
 	_net_stats.reset_race()
 	_send_accum = 0.0
@@ -1150,6 +1228,8 @@ func _reset_race() -> void:
 	_start.begin(_sim.stats)
 	if _items != null:
 		_items.reset(_track, 0)
+	if _race_sound != null:
+		_race_sound.reset()
 
 
 # Loads [param id] when it is not the current track (a client follows the host's choice).
@@ -1165,6 +1245,8 @@ func _ensure_track(id: String) -> bool:
 	if _camera != null:
 		_camera.track = _track
 	_laps.configure_track(_track.length, _track.checkpoint_s)
+	if _hud != null:
+		_hud.set_track(_track)
 	_build_world()
 	_reset_race()
 	print("[net] loaded track %s from the host" % id)

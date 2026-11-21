@@ -3,7 +3,7 @@ extends Node
 ## Plays all race sound: pooled one-shots (2D or 3D), per-kart engine/drift loops,
 ## the music loop, buses (Master/Music/Sfx created at runtime), mute and saved volumes.
 ## No autoload: create one, add it to the tree, then call setup(audio_set).
-## Works silently under --headless (dummy audio driver).
+## Under --headless it plays nothing (no voice is started), so automation quits cleanly.
 ## Implements: production/epics/dogworks-racing-kennel-kingdom/story-007-race-flow-hud-sound.md (basic sound).
 
 ## Emitted when mute changes.
@@ -49,6 +49,9 @@ var _engine_stream: AudioStream
 var _drift_stream: AudioStream
 var _clock_s: float = 0.0
 var _ready_ok: bool = false
+# Headless (the automation): every voice stays stopped. Nothing can be heard there, and a voice
+# still playing when the tree quits is reported as a leaked resource at exit.
+var _silent: bool = false
 
 
 ## Builds buses, loads saved settings, prepares loops. Call once, after adding to the tree.
@@ -58,6 +61,7 @@ func setup(audio_set: AudioSet) -> void:
 		return
 	_set = audio_set
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_silent = DisplayServer.get_name() == "headless"
 	_defs.clear()
 	for def: AudioEventDef in _set.events:
 		if def != null and def.event != &"":
@@ -92,6 +96,9 @@ func play_event(event: StringName, position: Vector3 = Vector3.INF, kart_id: int
 	if def.min_interval_s > 0.0 and _last_play_s.has(key) and now_s - float(_last_play_s[key]) < def.min_interval_s:
 		return
 	if _count_playing_total() >= _set.max_total_oneshot_voices:
+		return
+	if _silent:
+		_last_play_s[key] = now_s
 		return
 	var positional: bool = position != Vector3.INF and position.is_finite()
 	var player: Node = _acquire(def, positional)
@@ -147,7 +154,7 @@ func clear_all_engines() -> void:
 ## Starts the music loop (no-op if already playing).
 func start_music() -> void:
 	_music_wanted = true
-	if _music != null and _music.stream != null and not _music.playing:
+	if _music != null and _music.stream != null and not _music.playing and not _silent:
 		_music.play()
 
 
@@ -222,6 +229,23 @@ func get_active_engine_voice_count() -> int:
 		if v.kart_id != -1:
 			n += 1
 	return n
+
+
+## Stops every voice and drops the streams (also done when the director leaves the tree), so
+## quitting while sounds play leaves no playback behind.
+func shutdown() -> void:
+	_ready_ok = false
+	for c: Node in get_children():
+		if c is AudioStreamPlayer:
+			(c as AudioStreamPlayer).stop()
+			(c as AudioStreamPlayer).stream = null
+		elif c is AudioStreamPlayer3D:
+			(c as AudioStreamPlayer3D).stop()
+			(c as AudioStreamPlayer3D).stream = null
+
+
+func _exit_tree() -> void:
+	shutdown()
 
 
 func _process(delta: float) -> void:
@@ -307,7 +331,7 @@ func _drive_voice(v: EngineVoice, req: EngineRequest, is_local: bool, k: float) 
 
 
 func _set_loop_player(p: Node, db: float, pitch: float) -> void:
-	var audible: bool = db > _SILENT_DB + 4.0
+	var audible: bool = db > _SILENT_DB + 4.0 and not _silent
 	if p is AudioStreamPlayer:
 		var p2: AudioStreamPlayer = p as AudioStreamPlayer
 		p2.volume_db = db

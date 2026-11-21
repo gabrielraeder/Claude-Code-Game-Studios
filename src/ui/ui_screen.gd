@@ -5,8 +5,16 @@ extends CanvasLayer
 ## UiTheme.base_height). Subclasses build their content in [method _build]. Screens only
 ## show data and emit signals; the owner decides what a press does.
 
+## The player pressed the "Sound: On/Off" button of this screen (screens that have one).
+signal sound_toggle_requested
+
 ## Theme data (colours, sizes, text).
 var ui: UiTheme
+## Plays a UI sound by event name (&"ui_move", &"ui_accept", &"ui_back") through the audio
+## event system; set by the owner (RaceFlowUi.set_sound_player). Empty = silent.
+var sound_fn: Callable = Callable()
+var _sound_button: Button
+var _opened_frame: int = -1
 ## Root Control the content goes into; its size is the window size divided by the UI scale.
 var _root: Control
 
@@ -21,6 +29,7 @@ func setup(theme_data: UiTheme) -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_root)
 	get_viewport().size_changed.connect(_fit)
+	get_viewport().gui_focus_changed.connect(_on_focus_changed)
 	_build(_root)
 	_fit()
 	visible = false
@@ -34,8 +43,15 @@ func is_open() -> bool:
 ## Shows the screen.
 func open() -> void:
 	visible = true
+	_opened_frame = Engine.get_process_frames()
 	_fit()
 	_on_open()
+
+
+## Shows "Sound: On" or "Sound: Off" on this screen's sound button (if it has one).
+func set_sound_state(muted: bool) -> void:
+	if _sound_button != null:
+		_sound_button.text = ui.t("sound_off" if muted else "sound_on")
 
 
 ## Hides the screen.
@@ -92,3 +108,33 @@ func _banner(text: String, size: int) -> PanelContainer:
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	p.add_child(l)
 	return p
+
+
+## Adds the "Sound: On/Off" button to [param parent]; pressing it emits sound_toggle_requested.
+func _add_sound_button(parent: Control) -> Button:
+	_sound_button = ui.button(ui.t("sound_on"))
+	_sound_button.pressed.connect(func() -> void: sound_toggle_requested.emit())
+	parent.add_child(_sound_button)
+	return _sound_button
+
+
+# UI sounds, hooked once for every screen: a tick when the focus moves inside this screen (not
+# the focus the screen grabs as it opens), accept when a focused button is pressed, back on ui_cancel.
+func _on_focus_changed(control: Control) -> void:
+	if not visible or control == null or not is_ancestor_of(control):
+		return
+	if control is BaseButton and not control.has_meta(&"ui_sound"):
+		control.set_meta(&"ui_sound", true)
+		(control as BaseButton).pressed.connect(func() -> void: _play_ui(&"ui_accept"))
+	if Engine.get_process_frames() - _opened_frame > 1:
+		_play_ui(&"ui_move")
+
+
+func _input(event: InputEvent) -> void:
+	if visible and event.is_action_pressed(&"ui_cancel") and not event.is_echo():
+		_play_ui(&"ui_back")
+
+
+func _play_ui(event_name: StringName) -> void:
+	if sound_fn.is_valid():
+		sound_fn.call(event_name)

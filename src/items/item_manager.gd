@@ -54,6 +54,11 @@ var held: int = -1
 var hit_log: Array[String] = []
 ## Fired whenever an item event happens: kind, text (debug shots and logs).
 signal item_event(kind: StringName, text: String)
+## Fired for the sounds of item moments (story 007 part 2): [param kind] is &"box" (the local
+## kart broke a box), &"roulette_land" (the local roulette stopped on an item), an item id
+## when it is used (horn, stone, spill, falcon, shield), &"hit" or &"shield_break" (the victim);
+## [param kart_id] is the kart it happened to.
+signal sound_cue(kind: StringName, kart_id: int)
 
 var _set: ItemSet
 var _track: TrackModel
@@ -189,16 +194,16 @@ func has_shield(kart_id: int) -> bool:
 	return _shield.has(kart_id)
 
 
-## HUD data: {visible, color, glyph, spinning}.
+## HUD data: {visible, color, glyph, id, spinning}.
 func hud_icon() -> Dictionary:
 	if _roulette_end >= 0.0:
 		var n: int = _set.items.size()
 		var i: int = int(_time / _set.roulette_tick) % n
-		return {"visible": true, "color": _set.items[i].color, "glyph": "?", "spinning": true}
+		return {"visible": true, "color": _set.items[i].color, "glyph": "?", "id": _set.items[i].id, "spinning": true}
 	if held >= 0:
 		var d: ItemDef = _set.items[held]
-		return {"visible": true, "color": d.color, "glyph": d.display_name.substr(0, 1), "spinning": false}
-	return {"visible": false, "color": Color.WHITE, "glyph": "", "spinning": false}
+		return {"visible": true, "color": d.color, "glyph": d.display_name.substr(0, 1), "id": d.id, "spinning": false}
+	return {"visible": false, "color": Color.WHITE, "glyph": "", "id": &"", "spinning": false}
 
 
 ## Number of items flying or lying around (debug).
@@ -258,6 +263,7 @@ func _use(local: Racer, idx: int) -> void:
 	if def.id == &"horn":
 		sim.boost_time = maxf(sim.boost_time, def.duration)
 		item_event.emit(&"horn", "horn kart=%d" % local.kart_id)
+		sound_cue.emit(&"horn", local.kart_id)
 		_log("USE horn kart=%d boost=%.2f" % [local.kart_id, def.duration])
 		return
 	var fwd: Vector2 = sim.forward()
@@ -360,11 +366,13 @@ func _try_pickup(local: Racer) -> void:
 		_box_asked[i] = _time
 		if wants:
 			item_event.emit(&"roulette", "box=%d owner=%d" % [i, local.kart_id])
+			sound_cue.emit(&"box", local.kart_id)
 			_pending_box = i
 			_roulette_end = _time + _set.roulette_time
 			_granted = -1
 		else:
 			item_event.emit(&"box_break", "box=%d owner=%d" % [i, local.kart_id])
+			sound_cue.emit(&"box", local.kart_id)
 		if _is_host():
 			_grant(i, local.kart_id, wants)
 		elif _net != null:
@@ -428,6 +436,7 @@ func _update_roulette() -> void:
 		return
 	if _time >= _roulette_end and _granted >= 0:
 		held = _granted
+		sound_cue.emit(&"roulette_land", (_local_fn.call() as Racer).kart_id)
 		_roulette_end = -1.0
 		_pending_box = -1
 		_granted = -1
@@ -466,6 +475,7 @@ func _spawn(seq: int, idx: int, owner_id: int, t: float, pos: Vector2, dir: Vect
 	var def: ItemDef = _set.items[idx]
 	_log("USE %s seq=%d owner=%d target=%d" % [def.id, seq, owner_id, target])
 	item_event.emit(def.id, "spawn seq=%d owner=%d" % [seq, owner_id])
+	sound_cue.emit(def.id, owner_id)
 	if def.id == &"shield":
 		_shield[owner_id] = def.duration
 		return
@@ -599,6 +609,7 @@ func _register_hit(ai: ActiveItem, victim: int, blocked: bool, t: float) -> void
 	hit_log.append(line)
 	_log(line)
 	item_event.emit(&"shield_break" if blocked else &"hit", "victim=%d item=%s" % [victim, id])
+	sound_cue.emit(&"shield_break" if blocked else &"hit", victim)
 	var vr: Racer = _racer_by_id(victim)
 	if vr != null:
 		_spawn_puff(vr, blocked)

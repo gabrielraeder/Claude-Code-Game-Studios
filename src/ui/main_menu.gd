@@ -92,6 +92,7 @@ func _build(root: Control) -> void:
 	_controls_button.disabled = true
 	_controls_button.pressed.connect(func() -> void: controls_requested.emit())
 	lbox.add_child(_controls_button)
+	_add_sound_button(lbox)
 	_quit_button = ui.button(ui.t("menu_quit"))
 	_quit_button.pressed.connect(func() -> void: quit_requested.emit())
 	lbox.add_child(_quit_button)

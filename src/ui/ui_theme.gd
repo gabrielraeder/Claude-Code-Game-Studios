@@ -62,6 +62,80 @@ extends Resource
 ## CanvasLayer order of the screens (above the HUD).
 @export var screen_layer: int = 10
 
+@export_group("Race HUD")
+## Base-pixel sizes of the race HUD (designed at base_height, scaled with the window like the screens).
+## Gap from the screen edges.
+@export var hud_margin: float = 14.0
+## Place numeral, its ordinal suffix and the "/12" total (art bible 7: 96 px numeral at 1080p).
+@export var hud_place_font: int = 64
+@export var hud_place_suffix_font: int = 30
+@export var hud_place_total_font: int = 28
+## Countdown numbers and GO (160 px at 1080p).
+@export var hud_countdown_font: int = 107
+## Centre messages (PERFECT START!, SPUN OUT!, the finish panel, lobby text).
+@export var hud_message_font: int = 34
+## Lap pill (36 px at 1080p), time pill and the small best-lap / item-name text.
+@export var hud_lap_font: int = 24
+@export var hud_time_font: int = 22
+@export var hud_small_font: int = 17
+## Control hints line and the network status line (never below 20 px at 1080p).
+@export var hud_hint_font: int = 15
+## Ink outline of cream text drawn straight over the world.
+@export var hud_outline: int = 6
+## Ink outline of the place numeral.
+@export var hud_place_outline: int = 8
+## Ink outline width of badges (item circle, pills).
+@export var hud_badge_border: int = 3
+## Extra weight given to the fallback font for numerals (FontVariation embolden).
+@export var hud_numeral_embolden: float = 0.7
+## Cream used for text over the world.
+@export var hud_cream: Color = Color("F6EBD0")
+## Badge fill (pills and the item circle), slightly see-through parchment.
+@export var hud_badge_fill: Color = Color(0.9529, 0.902, 0.7686, 0.94)
+## Item circle radius and the radius of the icon inside it.
+@export var hud_item_radius: float = 40.0
+@export var hud_item_icon_radius: float = 26.0
+## Vertical gap between the badges of the left column.
+@export var hud_column_gap: int = 8
+## Pill inner padding (left/right) and height.
+@export var hud_pill_pad: int = 14
+@export var hud_pill_height: float = 34.0
+## Drift meter: pip size, gap, tier colours (art bible 4: T1 blue, T2 orange, T3 purple),
+## unlit pip and the boost colour (all pips while a boost runs).
+@export var hud_pip_size: float = 14.0
+@export var hud_pip_gap: float = 5.0
+@export var hud_drift_tier_colors: PackedColorArray = PackedColorArray([Color("3FA9FF"), Color("FF9A1F"), Color("A64DFF")])
+@export var hud_pip_off: Color = Color(0.1647, 0.1176, 0.149, 0.18)
+@export var hud_boost_color: Color = Color("F2A33A")
+## Colour of "GO!".
+@export var hud_go_color: Color = Color("F5C542")
+## Place numeral pop when the place changes: peak scale and duration (0 = no pop).
+@export var hud_place_pop_scale: float = 1.2
+@export var hud_place_pop_time: float = 0.2
+## Minimap: tile size (square, bottom right), inner padding, corner radius.
+@export var hud_minimap_size: float = 210.0
+@export var hud_minimap_pad: float = 16.0
+@export var hud_minimap_corner: int = 16
+## Minimap road: ink outer line, inner road colour, widths (main loop, branches), start line.
+@export var hud_minimap_road_outer: float = 10.0
+@export var hud_minimap_road_inner: float = 5.0
+@export var hud_minimap_branch_outer: float = 7.0
+@export var hud_minimap_branch_inner: float = 3.0
+@export var hud_minimap_road_color: Color = Color("8C919A")
+@export var hud_minimap_start_color: Color = Color("E8452C")
+## Most points kept per road line (the centerline is thinned to this once per track).
+@export var hud_minimap_max_points: int = 200
+## Racer pennant triangle: length (tip to back) and half width; local player's cream ring
+## radius and width; the leader's gold ring radius.
+@export var hud_minimap_dot_len: float = 15.0
+@export var hud_minimap_dot_half: float = 8.0
+@export var hud_minimap_dot_border: float = 2.0
+@export var hud_minimap_local_ring: float = 12.0
+@export var hud_minimap_local_ring_width: float = 3.5
+@export var hud_minimap_leader_ring: float = 10.0
+## CanvasLayer order of the race HUD (below the screens).
+@export var hud_layer: int = 1
+
 @export_group("Rules")
 ## Recent hosts kept, the address offered first time, and where they are saved.
 @export var recent_max: int = 5

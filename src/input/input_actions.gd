@@ -13,6 +13,8 @@ const DRIFT: StringName = &"drift"
 const ITEM: StringName = &"item"
 const RESTART: StringName = &"restart"
 const PAUSE: StringName = &"pause"
+## Sound on / off (story 007 part 2), anywhere in the game.
+const MUTE: StringName = &"mute"
 
 ## Stick and trigger deadzone (axis values below this read as zero).
 const AXIS_DEADZONE: float = 0.2
@@ -29,6 +31,7 @@ static func register() -> void:
 	# Restart on the finish screen only (main checks); no keyboard key. Enter/A use ui_accept.
 	_action(RESTART, [], [JOY_BUTTON_START], [])
 	_action(PAUSE, [KEY_ESCAPE], [JOY_BUTTON_START], [])
+	_action(MUTE, [KEY_M], [JOY_BUTTON_BACK], [])
 	_add_button(&"ui_accept", JOY_BUTTON_A)
 	_add_button(&"ui_cancel", JOY_BUTTON_B)
 

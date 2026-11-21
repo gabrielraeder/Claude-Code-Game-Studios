@@ -76,3 +76,33 @@ extends Resource
 @export var countdown_event: StringName = &"countdown"
 ## Event played for the GO step (step 0).
 @export var countdown_go_event: StringName = &"countdown_go"
+
+@export_group("Race events")
+## Which event each race moment plays (story 007 part 2, wired by RaceSound).
+## A new or longer boost (drift release, horn, pad, start boost).
+@export var boost_event: StringName = &"boost"
+## A boost counts as new when the kart's boost time rises by more than this (s).
+@export var boost_rise_min_s: float = 0.05
+## Kart-kart bump (owned karts) and the weakest bump (0..1) that makes a sound.
+@export var bump_event: StringName = &"bump"
+@export_range(0.0, 1.0) var bump_min_strength: float = 0.15
+## Hard wall hit (scrapes are silent apart from the engine).
+@export var wall_event: StringName = &"wall"
+## A kart spins out.
+@export var spin_event: StringName = &"spin"
+## The local kart breaks an item box, and its roulette lands on an item.
+@export var box_event: StringName = &"item_pickup"
+@export var roulette_land_event: StringName = &"roulette_land"
+## Item used, by item id (horn, stone, spill, falcon, shield).
+@export var item_use_events: Dictionary = {&"horn": &"item_horn", &"stone": &"stone_launch",
+		&"spill": &"spill_splash", &"falcon": &"falcon_screech", &"shield": &"shield_up"}
+## An item hits a kart, or a shield blocks it.
+@export var item_hit_event: StringName = &"item_hit"
+@export var shield_break_event: StringName = &"shield_break"
+## A kart starts sinking in a hazard, by hazard kind (TrackHazard.kind).
+@export var hazard_events: Dictionary = {&"water": &"splash", &"lava": &"lava_sizzle"}
+## The local kart starts a new lap, and finishes the race.
+@export var lap_event: StringName = &"lap"
+@export var finish_event: StringName = &"finish"
+## Height above the road of 3D kart sounds (m).
+@export var kart_sound_height: float = 0.6

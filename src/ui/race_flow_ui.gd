@@ -6,6 +6,9 @@ extends Node
 ## Where the screen look and text live.
 const THEME_PATH: String = "res://assets/data/ui/ui_theme.tres"
 
+## The mute action (M / controller Back) was pressed, on any screen or in a race.
+signal mute_requested
+
 ## The look and text data.
 var theme_data: UiTheme
 var menu: MainMenu
@@ -16,6 +19,7 @@ var pause: PauseMenu
 
 ## Builds every screen (hidden). [param colors] is the 12-slot kart palette.
 func setup(racers: RacerSet, vehicles: VehicleSet, colors: PackedColorArray, max_racers: int) -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	theme_data = load(THEME_PATH) as UiTheme
 	if theme_data == null:
 		push_error("UI theme missing: %s" % THEME_PATH)
@@ -32,6 +36,14 @@ func setup(racers: RacerSet, vehicles: VehicleSet, colors: PackedColorArray, max
 	pause = PauseMenu.new()
 	add_child(pause)
 	pause.setup(theme_data)
+
+
+# Mute works everywhere, also while the tree is paused behind a menu. A text field that has
+# the focus keeps its letters (the GUI handles the key first).
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed(InputActions.MUTE) and not event.is_echo():
+		get_viewport().set_input_as_handled()
+		mute_requested.emit()
 
 
 ## True while any screen is showing.
@@ -70,3 +82,16 @@ func show_results(entries: Array, my_kart: int, viewer: ResultsScreen.Viewer) ->
 	close_all()
 	results.show_results(entries, my_kart, viewer)
 	results.open()
+
+
+## Routes every screen's UI sounds to [param play_fn] (event name -> plays it), e.g.
+## AudioDirector.play_event.
+func set_sound_player(play_fn: Callable) -> void:
+	for screen: UiScreen in [menu, lobby, results, pause]:
+		screen.sound_fn = play_fn
+
+
+## Shows the mute state on the screens' "Sound: On/Off" buttons.
+func set_sound_state(muted: bool) -> void:
+	for screen: UiScreen in [menu, lobby, results, pause]:
+		screen.set_sound_state(muted)
