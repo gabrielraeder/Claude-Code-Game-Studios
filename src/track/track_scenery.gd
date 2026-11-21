@@ -4,7 +4,10 @@ extends Node3D
 ## round 2) each zone of design/references/track-design-reference.md section 8 gets its own
 ## props along both road edges plus a landmark:
 ##   Tourney Field: grandstands with a crowd, striped pavilion tents, jousting fence, pennants
-##   Moat & Gatehouse: curtain wall with towers, gatehouse arch with portcullis teeth
+##   Moat & Gatehouse: curtain wall with towers, gatehouse arch with portcullis teeth; where a
+##                     road crosses over the gate arch (story 008 part 5, the Barbican Spiral) the
+##                     deck is the gatehouse top: piers under it, a bone balustrade on its parapet,
+##                     and the round barbican tower with a paw crest at the spiral's centre
 ##   Market Village: timber-frame facades both sides, striped stalls on the lane-split island,
 ##                   the well, barrels and crates, hanging signs
 ##   Keep Courtyard: the keep (tallest landmark), knight-dog statue on the hairpin fountain,
@@ -28,6 +31,20 @@ const GUARD_REACH: float = 4.0
 const GUARD_STEP: float = 0.5
 ## Road guard: bounding radius of every unit mesh (box half diagonal 0.87, cylinder 1.12).
 const GUARD_UNIT_RADIUS: float = 1.2
+## Farthest (m) a dungeon torch slot moves back along the road to get clear of an open edge.
+const TORCH_SLOT_SHIFT: float = 12.0
+## ... clear of the open edge's reach times this (the edge's corridor widens over a few meters).
+const TORCH_EDGE_REACH_MULT: float = 1.5
+## Gatehouse deck (story 008 part 5): how far (m) along the gate road and the deck the open span is
+## searched for, the sample step (m), and the bone size (m: shaft radius, shaft height, knob radius).
+const GATE_SEARCH: float = 30.0
+const GATE_STEP: float = 0.25
+const BONE_SHAFT: Vector2 = Vector2(0.13, 0.8)
+const BONE_KNOB: float = 0.12
+## Village houses and barrels keep this far (m) beyond the barbican's radius (the rampart ring of the
+## spiral stays clear) and this far (m) from the gatehouse centre (the entry towers).
+const BARBICAN_CLEAR: float = 25.0
+const GATE_CLEAR: float = 22.0
 
 
 ## Segments of every road bucketed in a grid, for fast "how far outside the walls" queries.
@@ -161,6 +178,9 @@ var _top_road: float = 0.0
 var _guard_moved: Dictionary = {}
 var _guard_dropped: Dictionary = {}
 var _guard_shrunk: Dictionary = {}
+# Story 008 part 5: while true, props keep the absolute heights they were built with (the gatehouse
+# under and on a deck, where the nearest road in plan is the other level).
+var _no_lift: bool = false
 
 
 ## Builds the props for [param track] as children of this node.
@@ -230,7 +250,7 @@ func _place(pieces: Array) -> void:
 	if pieces.is_empty():
 		return
 	_guard_props[_tag] = int(_guard_props.get(_tag, 0)) + 1
-	var lift: Vector2 = _road_lift(pieces)
+	var lift: Vector2 = Vector2.ZERO if _no_lift else _road_lift(pieces)
 	var shift := Vector3(0.0, lift.x, 0.0)
 	# Story 008 part 4: raised beside (not on) its road's deck, the prop gets a plinth to the ground.
 	if lift.x > _th.scenery_plinth_min_lift and lift.y > 0.0:
@@ -473,6 +493,7 @@ func _build_castle() -> void:
 	_start_arch()
 	_tourney()
 	_moat_and_gate()
+	_barbican()
 	_village()
 	_keep()
 	_gardens()
@@ -513,14 +534,31 @@ func _dungeon_torches() -> void:
 		while s < _track.length:
 			var in_cavern: bool = s >= cav.x and s <= cav.y
 			var step: float = 40.0 if in_cavern else 12.0
-			var p: Vector2 = _edge(s, side, 0.5)
-			if not _is_open_edge(s, side) and _free(p, s, 0.25):
+			# Story 008 part 4 leftover: a torch just before an open edge stood inside the edge's
+			# reach (the drop beside the lava bridge); it moves back along the road until clear.
+			var ts_: float = _torch_slot(s, side)
+			var p: Vector2 = _edge(ts_, side, 0.5)
+			if ts_ >= 0.0 and _free(p, ts_, 0.25):
 				_begin_prop()
-				_box(p, 0.95, Vector3(0.22, 1.9, 0.22), _track.tangent_at(s), _th.dark_wood_color)
+				_box(p, 0.95, Vector3(0.22, 1.9, 0.22), _track.tangent_at(ts_), _th.dark_wood_color)
 				_add("glowsphere", Transform3D(Basis.from_scale(Vector3(0.3, 0.38, 0.3)), Vector3(p.x, 2.15, p.y)), _th.torch_color)
 				_add("glowsphere", Transform3D(Basis.from_scale(Vector3(0.16, 0.2, 0.16)), Vector3(p.x, 2.2, p.y)), _th.lava_bright_color)
 				_end_prop()
 			s += step
+
+
+# Story 008 part 5: [param s] moved back along the road (up to TORCH_SLOT_SHIFT m) until no open
+# edge on [param side] lies within its reach (TrackData.open_edge_reach) ahead or behind; -1 when
+# there is no such place.
+func _torch_slot(s: float, side: int) -> float:
+	var reach: float = _track.data.open_edge_reach * TORCH_EDGE_REACH_MULT + 1.0
+	var shift: float = 0.0
+	while shift <= TORCH_SLOT_SHIFT:
+		var sv: float = fposmod(s - shift, _track.length)
+		if not _is_open_edge(sv, side) and not _is_open_edge(sv + reach, side) and not _is_open_edge(sv - reach, side):
+			return sv
+		shift += 2.0
+	return -1.0
 
 
 # Cellar Vaults: stone arches every 12 m, barrel racks and giant casks outside the walls, lanterns.
@@ -925,28 +963,36 @@ func _moat_and_gate() -> void:
 	var g: Vector2 = th.gate_position
 	if g == Vector2.ZERO:
 		return
-	var gs: float = _track.query(g, -1).s
+	# Story 008 part 5: the gate arch is the ground level under the gatehouse deck; a query
+	# without height could return the deck above it.
+	var ground: float = maxf(_track.data.ground_y, 0.0)
+	var gs: float = _track.query(g, -1, ground).s
 	var t: Vector2 = _track.tangent_at(gs)
 	var n: Vector2 = _track.normal_at(gs)
 	var hw: float = _track.wall_offset_at(gs, 1)
-	# Gatehouse: two towers, a top block, portcullis teeth.
-	for side in [1.0, -1.0]:
-		var tp: Vector2 = g + n * side * (hw + 3.0)
-		_begin_prop()
-		_cyl(tp, 6.0, 3.2, 12.0, th.tower_color)
-		_cone(tp, 15.0, 4.0, 6.0, th.roof_color)
-		_end_prop()
-	_box(g, 9.5, Vector3(2.0 * hw + 6.0, 5.0, 5.0), t, th.stone_light)
-	for k in 7:
-		var tooth: Vector2 = g + n * (-hw + 0.5 + k * (2.0 * hw - 1.0) / 6.0)
-		_box(tooth, 6.4, Vector3(0.25, 1.4, 0.25), t, th.dark_wood_color)
+	if is_finite(_track.deck_above(g, ground, 0.0)):
+		_gatehouse_deck(gs)
+	else:
+		# Gatehouse: two towers, a top block, portcullis teeth.
+		for side in [1.0, -1.0]:
+			var tp: Vector2 = g + n * side * (hw + 3.0)
+			_begin_prop()
+			_cyl(tp, 6.0, 3.2, 12.0, th.tower_color)
+			_cone(tp, 15.0, 4.0, 6.0, th.roof_color)
+			_end_prop()
+		_box(g, 9.5, Vector3(2.0 * hw + 6.0, 5.0, 5.0), t, th.stone_light)
+		for k in 7:
+			var tooth: Vector2 = g + n * (-hw + 0.5 + k * (2.0 * hw - 1.0) / 6.0)
+			_box(tooth, 6.4, Vector3(0.25, 1.4, 0.25), t, th.dark_wood_color)
 	# Curtain wall both ways from the gate, with towers every 32 m, skipping roads and water.
 	_tag = "curtain_wall"
 	for side in [1.0, -1.0]:
 		var d: float = hw + 6.0
 		while d < 80.0:
 			var p: Vector2 = g + n * side * d
-			if _free(p, gs, 1.5):
+			# Part 5: never under a road at any level (the gatehouse deck runs along this line;
+			# the solid rampart under it is the wall there).
+			if _free(p, gs, 1.5) and _track.excess_at(p) >= 1.5:
 				_begin_prop()
 				_box(p, 2.5, Vector3(4.0, 5.0, 2.2), t, th.stone_light)
 				if int(d / 4.0) % 2 == 0:
@@ -967,6 +1013,176 @@ func _moat_and_gate() -> void:
 			_box(p, stud * 0.5, Vector3(0.6, stud, 0.6), _track.tangent_at(s), th.stone_dark)
 
 
+# Story 008 part 5: the gate road runs under the gatehouse deck (the Barbican Spiral's gate_top
+# straight crosses over it), so the deck IS the gatehouse top. No tower or block may stand on the
+# upper road: two stone piers fill the open span under the deck on both sides of the gate passage
+# (from the passage to where the solid rampart begins), the portcullis hangs under the deck's
+# entry edge, two round towers flank the entry, and a bone balustrade fills the crenels of the
+# deck's parapet over the span (art bible section 6: bone railing posts).
+func _gatehouse_deck(gs: float) -> void:
+	var th: TrackTheme = _th
+	var d: TrackData = _track.data
+	var ground: float = maxf(d.ground_y, 0.0)
+	var g: Vector2 = _track.point_at(gs)
+	var t: Vector2 = _track.tangent_at(gs)
+	var n: Vector2 = _track.normal_at(gs)
+	var up: TrackModel.Path = _track.main
+	var hit: TrackModel.Hit = up.nearest_filtered(g, ground + d.level_separation, INF)
+	if hit == null:
+		return
+	var count: int = up.points.size()
+	var ua: Vector2 = up.points[hit.seg]
+	var ub: Vector2 = up.points[(hit.seg + 1) % count]
+	var u: Vector2 = (ub - ua).normalized()
+	var u_s: float = up.cumulative[hit.seg] + hit.t * (up.cumulative[hit.seg + 1] - up.cumulative[hit.seg])
+	var sin_th: float = absf(t.cross(u))
+	var cos_th: float = absf(t.dot(u))
+	if sin_th < 0.3:
+		return  # roads nearly parallel: not a gate crossing
+	# where the two centrelines cross
+	var a_x: float = (ua.lerp(ub, hit.t) - g).cross(u) / t.cross(u)
+	var x: Vector2 = g + t * a_x
+	var u_x: float = u_s + (x - ua.lerp(ub, hit.t)).dot(u)
+	var lower_wall: float = maxf(_track.wall_offset_at(gs, 1), _track.wall_offset_at(gs, -1))
+	var upper_wall: float = up.wall_at(hit.seg, hit.t, 1)
+	_tag = "gatehouse"
+	_no_lift = true
+	# Piers: from the passage wall to the end of the open span, under the deck, on both sides.
+	var pier_half: float = upper_wall - 0.5
+	for sgn in [1.0, -1.0]:
+		var open_end: float = 0.0
+		var b: float = 0.0
+		while b <= GATE_SEARCH:
+			var stv: Vector2 = up.seg_t_at(u_x + sgn * b)
+			var c: Vector2 = up.point_at(u_x + sgn * b)
+			if not _track.road_below(c, up.height_at(int(stv.x), stv.y), up.half_at(int(stv.x), stv.y) + up.curb + TrackMesh.PILLAR_CLEARANCE):
+				break
+			open_end = b
+			b += GATE_STEP
+		var inner: float = (lower_wall + th.scenery_road_margin + 0.1 + pier_half * cos_th) / sin_th
+		var outer: float = open_end - 0.3
+		if outer - inner < 1.0:
+			continue
+		var dir: Vector2 = u * sgn
+		var side_n: Vector2 = Vector2(-dir.y, dir.x)
+		var top: float = INF
+		for along in [inner, outer]:
+			for across in [-pier_half, pier_half]:
+				top = minf(top, _track.deck_above(x + dir * along + side_n * across, ground, 0.0))
+		if not is_finite(top):
+			continue
+		top -= th.deck_prop_gap
+		var pc: Vector2 = x + dir * (inner + outer) * 0.5
+		_begin_prop()
+		_box(pc, ground + (top - ground) * 0.5, Vector3(pier_half * 2.0, top - ground, outer - inner), dir, th.stone_light)
+		_end_prop()
+	# Portcullis under the deck's entry edge (the side the gate road comes from) and the entry towers.
+	var d0: float = INF
+	var k: float = -GATE_SEARCH
+	while k <= GATE_SEARCH:
+		if is_finite(_track.deck_above(_track.point_at(gs + k), ground, 0.0)):
+			d0 = k
+			break
+		k += GATE_STEP
+	if is_finite(d0):
+		var se: float = gs + d0 + 0.3
+		var pe: Vector2 = _track.point_at(se)
+		var ne: Vector2 = _track.normal_at(se)
+		var te: Vector2 = _track.tangent_at(se)
+		var under: float = _track.deck_above(pe, ground, 0.0)
+		var hwe: float = _track.half_width_at(se)
+		if is_finite(under):
+			_begin_prop()
+			_box(pe, under - 0.2, Vector3(2.0 * hwe, 0.25, 0.25), te, th.dark_wood_color)
+			for j in 7:
+				var tooth: Vector2 = pe + ne * (-hwe + 0.5 + float(j) * (2.0 * hwe - 1.0) / 6.0)
+				_box(tooth, under - 0.75, Vector3(0.25, 1.4, 0.25), te, th.dark_wood_color)
+			_end_prop()
+		for side in [1.0, -1.0]:
+			var tp: Vector2 = _track.point_at(gs + d0 - 4.0) + _track.normal_at(gs + d0 - 4.0) * side * (lower_wall + 3.6)
+			_begin_prop()
+			_cyl(tp, ground + 6.0, 3.2, 12.0, th.tower_color)
+			_cone(tp, ground + 15.0, 4.0, 6.0, th.roof_color)
+			_end_prop()
+	# Bone balustrade: one bone in each crenel (the wall segments without a merlon) of the deck's
+	# parapet over the open span, both sides.
+	var stripe: int = maxi(th.wall_stripe_segments, 1)
+	var reach: int = int(GATE_SEARCH / maxf(up.length / float(count), 0.1))
+	for o in range(-reach, reach + 1):
+		var i: int = posmod(hit.seg + o, count)
+		var j: int = (i + 1) % count
+		if (i / stripe) % 2 != 1:
+			continue
+		if not _track.road_below(up.points[i], up.y[i], up.half[i] + up.curb + TrackMesh.PILLAR_CLEARANCE):
+			continue
+		var seg_dir: Vector2 = (up.points[j] - up.points[i]).normalized()
+		var nrm: Vector2 = (up.points[j] - up.points[posmod(i - 1, count)]).normalized()
+		nrm = Vector2(-nrm.y, nrm.x)
+		for side in [1.0, -1.0]:
+			var wi: float = up.wall_pos[i] if side > 0.0 else up.wall_neg[i]
+			if wi > up.half[i] + up.curb + 0.05:
+				continue
+			var wj: float = up.wall_pos[j] if side > 0.0 else up.wall_neg[j]
+			var mid: Vector2 = (up.points[i] + up.points[j]) * 0.5 + nrm * side * ((wi + wj) * 0.5 + th.wall_thickness * 0.5)
+			var base: float = (up.y[i] + wi * side * tan(up.bank[i]) + up.y[j] + wj * side * tan(up.bank[j])) * 0.5 + th.wall_height
+			_begin_prop()
+			_add("capsule", Transform3D(Basis.from_scale(Vector3(BONE_SHAFT.x * 2.0, BONE_SHAFT.y * 0.5, BONE_SHAFT.x * 2.0)),
+					Vector3(mid.x, base + BONE_SHAFT.y * 0.5 + BONE_KNOB * 0.5, mid.y)), th.bone_color)
+			for end_y in [base + BONE_KNOB * 0.6, base + BONE_SHAFT.y + BONE_KNOB * 0.4]:
+				for e in [-1.0, 1.0]:
+					var kp: Vector2 = mid + seg_dir * e * BONE_KNOB * 0.9
+					_sphere(kp, end_y, BONE_KNOB, th.bone_color)
+			_end_prop()
+	_no_lift = false
+
+
+# Story 008 part 5: the barbican, a round tower at the centre of the Barbican Spiral: stone body,
+# a darker ring course, a cone roof, and a paw crest standing on the roof's apex facing the gate
+# (art bible section 6: the paw crest at its largest scale on a gate building).
+func _barbican() -> void:
+	var bp: Vector2 = _th.barbican_position
+	if bp == Vector2.ZERO:
+		return
+	_tag = "barbican"
+	var th: TrackTheme = _th
+	var ground: float = maxf(_track.data.ground_y, 0.0)
+	var r: float = th.barbican_radius
+	var h: float = th.barbican_height
+	var face: Vector2 = (th.gate_position - bp).normalized() if th.gate_position != Vector2.ZERO else Vector2(1.0, 0.0)
+	_no_lift = true
+	_begin_prop()
+	_cyl(bp, ground + h * 0.5, r, h, th.tower_color)
+	_cyl(bp, ground + h - 0.4, r + 0.35, 0.8, th.stone_dark)
+	_cone(bp, ground + h + th.barbican_roof_height * 0.5, r + 0.9, th.barbican_roof_height, th.roof_color)
+	# paw crest: a disc on the apex facing the gate, a big pad and four toes on both faces
+	var cr: float = th.barbican_crest_radius
+	var c3 := Vector3(bp.x, ground + h + th.barbican_roof_height + cr * 0.85, bp.y)
+	var f3 := Vector3(face.x, 0.0, face.y)
+	var p3 := Vector3(-face.y, 0.0, face.x)
+	_add("cyl", Transform3D(Basis(p3 * cr, f3 * 0.12, Vector3.UP * cr), c3), th.crest_color)
+	for fs in [1.0, -1.0]:
+		var o3: Vector3 = c3 + f3 * fs * 0.14
+		_add("sphere", Transform3D(Basis(p3 * cr * 0.36, f3 * 0.08, Vector3.UP * cr * 0.3), o3 - Vector3.UP * cr * 0.22), th.crest_paw_color)
+		for toe in 4:
+			var a: float = deg_to_rad(-54.0 + 36.0 * float(toe))
+			var tp3: Vector3 = o3 + p3 * sin(a) * cr * 0.5 + Vector3.UP * (cos(a) * cr * 0.5 - cr * 0.05)
+			_add("sphere", Transform3D(Basis(p3 * cr * 0.13, f3 * 0.07, Vector3.UP * cr * 0.16), tp3), th.crest_paw_color)
+	_end_prop()
+	_no_lift = false
+
+
+# True when [param p] is within the barbican's radius plus [param extra] meters of its centre.
+func _near_barbican(p: Vector2, extra: float) -> bool:
+	var bp: Vector2 = _th.barbican_position
+	return bp != Vector2.ZERO and p.distance_to(bp) < _th.barbican_radius + extra
+
+
+# True when [param p] is within [param radius] meters of the gatehouse (TrackTheme.gate_position).
+func _near_gate(p: Vector2, radius: float) -> bool:
+	var g: Vector2 = _th.gate_position
+	return g != Vector2.ZERO and p.distance_to(g) < radius
+
+
 # Market Village: house facades on both sides, stalls on the island of the lane split, the
 # well, barrels, crates and hanging signs.
 func _village() -> void:
@@ -979,7 +1195,9 @@ func _village() -> void:
 		for side in [1, -1]:
 			var out: Vector2 = _track.normal_at(s) * float(side)
 			var p: Vector2 = _edge(s, side, 4.2)
-			if not _free(p, s, 3.0):
+			# Story 008 part 5: the Barbican Spiral and the gatehouse stand clear: no house on the
+			# rampart ring around the barbican or against the gate towers (they cut into each other).
+			if not _free(p, s, 3.0) or _near_barbican(p, BARBICAN_CLEAR) or _near_gate(p, GATE_CLEAR):
 				continue
 			_tag = "village_house"
 			_begin_prop()
@@ -999,7 +1217,7 @@ func _village() -> void:
 			if k % 2 == 0:
 				_tag = "village_barrels"
 				var bp: Vector2 = _edge(s, side, 0.9) + t * 2.0
-				if _free(bp, s, 0.4):
+				if _free(bp, s, 0.4) and not _near_barbican(bp, BARBICAN_CLEAR) and not _near_gate(bp, GATE_CLEAR):
 					_begin_prop()
 					_cyl(bp, 0.5, 0.45, 1.0, th.wood_color)
 					_cyl(bp + t * 1.0, 0.5, 0.45, 1.0, th.wood_color)
@@ -1107,11 +1325,14 @@ func _gardens() -> void:
 	for s in _range_steps(r, 7.0):
 		var t: Vector2 = _track.tangent_at(s)
 		for side in [1, -1]:
-			var hp: Vector2 = _edge(s, side, 1.2)
-			if _free(hp, s, 0.5):
-				# A 7 m hedge row along the road edge (it was turned along the normal, so it reached
-				# 2.3 m into the road; bugfix 2026-11-20).
-				_box(hp, 0.6, Vector3(1.0, 1.2, 7.0), t, th.hedge_color)
+			# A 7 m hedge row along the road edge (it was turned along the normal, so it reached
+			# 2.3 m into the road; bugfix 2026-11-20), in two 3.5 m pieces that follow the bend
+			# (story 008 part 5: one straight 7 m piece cut 0.25 m into the inside of hairpin 2).
+			for half_off in [-1.75, 1.75]:
+				var hs: float = s + half_off
+				var hp: Vector2 = _edge(hs, side, 1.2)
+				if _free(hp, hs, 0.5):
+					_box(hp, 0.6, Vector3(1.0, 1.2, 3.5), _track.tangent_at(hs), th.hedge_color)
 			var p: Vector2 = _edge(s, side, 5.0 + float(k % 3) * 2.5)
 			if _free(p, s, 3.0):
 				_begin_prop()

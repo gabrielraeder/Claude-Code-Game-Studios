@@ -78,6 +78,24 @@ extends Resource
 @export var orchard_center: Vector2 = Vector2.ZERO
 @export var windmill_position: Vector2 = Vector2.ZERO
 @export var gate_position: Vector2 = Vector2.ZERO
+## Story 008 part 5, the Barbican Spiral: centre of the spiral (x, z), where the round barbican
+## tower stands (ZERO = no barbican). Written by tools/gen_castle_circuit.py.
+@export var barbican_position: Vector2 = Vector2.ZERO
+## Barbican tower: radius and height (m) of the round body, height of the cone roof, radius of
+## the paw crest disc on the roof's road-facing side.
+@export var barbican_radius: float = 6.0
+@export var barbican_height: float = 15.0
+@export var barbican_roof_height: float = 8.0
+@export var barbican_crest_radius: float = 2.2
+## Paw crest colors (art bible section 6: the paw crest on the gate): disc and pads.
+@export var crest_color: Color = Color(0.9, 0.38, 0.15)
+@export var crest_paw_color: Color = Color(0.95, 0.9, 0.74)
+## Bone balustrade on the gatehouse-top parapet (art bible: bone railing posts): bone color,
+## spacing (m) of the bones along the parapet, and the gap (m) kept under a deck's underside by
+## any gatehouse piece standing below it.
+@export var bone_color: Color = Color(0.93, 0.9, 0.8)
+@export var bone_spacing: float = 1.6
+@export var deck_prop_gap: float = 0.2
 ## Main-loop distance range (from, to) of each castle zone.
 @export var zone_tourney: Vector2 = Vector2.ZERO
 @export var zone_moat: Vector2 = Vector2.ZERO

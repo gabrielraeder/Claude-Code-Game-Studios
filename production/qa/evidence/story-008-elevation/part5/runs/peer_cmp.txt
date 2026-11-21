@@ -1,0 +1,4 @@
+delay 0.050 remote on B vs owner on A: n=2647 max=0.060 avg=0.0011 over0.15=0 | vertical-motion n=582 max=0.060 | drawn-road min=0.000
+   zones: under_deck n=102 max=0.008, spiral n=198 max=0.013, deck n=88 max=0.002
+delay 0.050 remote on A vs owner on B: n=2650 max=0.053 avg=0.0011 over0.15=0 | vertical-motion n=574 max=0.053 | drawn-road min=0.000
+   zones: under_deck n=100 max=0.009, spiral n=198 max=0.011, deck n=88 max=0.001

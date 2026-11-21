@@ -12,7 +12,9 @@ const MAX_RACE_SECONDS: float = 240.0
 const INFIELD_STARTS: int = 200
 const INFIELD_SECONDS: float = 10.0
 ## Castle Circuit targets (reference doc section 5).
-const CASTLE_LENGTH: Vector2 = Vector2(1000.0, 1150.0)
+# Story 008 part 5: the owner widened the upper limit to 1,200 m for the Barbican Spiral (~1,146 m),
+# crossover-decision.md. Dungeon keeps its limits.
+const CASTLE_LENGTH: Vector2 = Vector2(1000.0, 1200.0)
 const CASTLE_LAP: Vector2 = Vector2(45.0, 50.0)
 const CASTLE_CORNERS: Vector2i = Vector2i(12, 15)
 ## Dungeon Depths targets (reference doc section 7): 950-1,100 m, 14-16 corners.
@@ -39,6 +41,11 @@ const MIN_CLEARANCE: float = -0.05
 const JUNCTION_TOLERANCE: float = 0.35
 ## Spacing (meters) of the road samples of the static height checks.
 const HEIGHT_PROBE_STEP: float = 2.0
+# Story 008 part 5: (16) a road compared with ITSELF (a self-crossing loop) ignores its own samples
+# closer than this along the road (meters), so only the other pass of the loop counts.
+const SELF_CROSS_MIN_GAP: float = 40.0
+# (13) an arc of one direction turning at least this much is a spiral (the Barbican Spiral, 280 deg).
+const SPIRAL_MIN_DEG: float = 200.0
 
 var _fails: int = 0
 var _stats: VehicleStats
@@ -579,7 +586,9 @@ func _check_corners_and_lap(main_avg: float) -> void:
 				corners.append("S/chicane %s%s @%.0f" % [a.dir, b.dir, a.s])
 				continue
 		var kind: String = "kink"
-		if float(a.deg) >= 150.0 and float(a.r) < 20.0 and float(a.end) - float(a.s) < 60.0:
+		if float(a.deg) >= SPIRAL_MIN_DEG:
+			kind = "spiral"
+		elif float(a.deg) >= 150.0 and float(a.r) < 20.0 and float(a.end) - float(a.s) < 60.0:
 			kind = "hairpin"
 		elif float(a.r) < 30.0 and float(a.deg) >= 60.0:
 			kind = "90"
@@ -673,7 +682,10 @@ func _check_infield() -> void:
 		sim.position = p
 		sim.yaw = rng.randf_range(-PI, PI)
 		sim._segment_hint = -1
-		sim.track_s = _track.query(p, -1).s
+		# Story 008 part 5: the start is on the ground; with its height the query picks the ground
+		# level next to the Barbican Spiral's crossing, not the gatehouse deck above it.
+		sim.height = maxf(_data.ground_y, 0.0)
+		sim.track_s = _track.query(p, -1, sim.height).s
 		var laps := LapCounter.new(_data.lap_count, _track.length, _track.checkpoint_s)
 		laps.reset(_track.length - 1.0)
 		laps.update(1.0, 0.0)
@@ -882,6 +894,14 @@ func _check_height() -> void:
 				if absf(q.height - q.ramp_rise - y) > JUNCTION_TOLERANCE:
 					mixed += 1
 					mixed_at = "road %d at %.0f m lat %.1f: own %.2f, query %.2f (road %d)" % [path.index, d, lat, y, q.height, q.path]
+				# Story 008 part 5: the main loop crosses itself (Barbican Spiral over the gate arch).
+				if path.closed:
+					var self_hit: Vector2 = _self_level_probe(path, d, p, y, sep)
+					if self_hit.x > 0.5:
+						crossings += 1
+					if self_hit.y > 0.5:
+						cut += 1
+						cut_at = "road %d at %.0f m crosses itself at its own level (%.2f)" % [path.index, d, y]
 				for other in roads:
 					if other == path or not other.bounds.has_point(p):
 						continue
@@ -901,3 +921,34 @@ func _check_height() -> void:
 	_check_ok("(16) no road deck cuts through another (overlaps are junctions at one level or crossovers)", cut == 0,
 			"%d samples, %d cuts, %d samples over a road below (crossovers)%s" % [samples, cut, crossings,
 					(" (last " + cut_at + ")") if cut > 0 else ""])
+	if _castle:
+		_check_ok("(16) the Barbican Spiral crossover exists (samples over a road below > 0, none mixed)",
+				crossings > 0 and mixed == 0, "%d samples over a road below, %d mixed" % [crossings, mixed])
+
+
+# Story 008 part 5: the main loop against its OTHER pass (samples further than SELF_CROSS_MIN_GAP
+# along the loop) at [param p]. x = 1 when that pass's corridor holds p at least [param sep] below
+# [param y] (a crossover sample), y = 1 when it holds p at a height that is neither within
+# JUNCTION_TOLERANCE of y nor [param sep] away (a deck cutting through the other pass).
+func _self_level_probe(path: TrackModel.Path, d: float, p: Vector2, y: float, sep: float) -> Vector2:
+	var out := Vector2.ZERO
+	var n: int = path.points.size()
+	for i in path.segment_count():
+		var gap: float = absf(path.cumulative[i] - d)
+		if minf(gap, path.length - gap) < SELF_CROSS_MIN_GAP:
+			continue
+		var a: Vector2 = path.points[i]
+		var ab: Vector2 = path.points[(i + 1) % n] - a
+		var l2: float = ab.length_squared()
+		var t: float = clampf((p - a).dot(ab) / l2, 0.0, 1.0) if l2 > 0.0 else 0.0
+		var off: Vector2 = p - (a + ab * t)
+		var side: int = 1 if off.dot(Vector2(-ab.y, ab.x)) >= 0.0 else -1
+		if off.length() - path.wall_at(i, t, side) > 0.0:
+			continue
+		var lat: float = off.dot(Vector2(-ab.y, ab.x).normalized()) if l2 > 0.0 else 0.0
+		var oy: float = path.surface_y(i, t, lat)
+		if oy <= y - sep:
+			out.x = 1.0
+		elif absf(oy - y) > JUNCTION_TOLERANCE and absf(oy - y) < sep:
+			out.y = 1.0
+	return out

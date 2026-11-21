@@ -1740,16 +1740,16 @@ func _run_side_shot() -> void:
 	_hud.hide()
 	var s: float = _options.side_shot
 	var c: Vector2 = _track.point_at(s)
-	var side: Vector2 = _track.normal_at(s) * 40.0
+	var side: Vector2 = _track.normal_at(s) * _options.side_dist
 	var y: float = _track.height_at(s)
 	var cam := Camera3D.new()
 	add_child(cam)
 	cam.far = 1500.0
 	cam.fov = 55.0
-	cam.look_at_from_position(Vector3(c.x + side.x, y + 3.0, c.y + side.y), Vector3(c.x, y * 0.5, c.y))
+	cam.look_at_from_position(Vector3(c.x + side.x, y + _options.side_lift, c.y + side.y), Vector3(c.x, y * 0.5, c.y))
 	cam.current = true
 	await get_tree().create_timer(1.5).timeout
-	_debug_save("side_s%d" % int(s))
+	_debug_save("side_s%d_d%d_l%d" % [int(s), int(_options.side_dist), int(_options.side_lift)])
 	get_tree().quit()
 
 

@@ -13,6 +13,8 @@ extends RefCounted
 ##                        hall_right, mine_rail, lava_gap
 ##   --overview-shot      one top-down picture of the whole track into --shots=, then quit
 ##   --side-shot=S        one picture from the side of the road at main-loop distance S (elevation check), then quit
+##   --side-dist=M        that camera's distance from the road (default 40; negative = the other side)
+##   --side-lift=M        that camera's height above the road (default 3; higher looks down on it)
 ##   --grid-shot          fixed camera above the start grid (picture during the countdown)
 ##   --shot-s=A,B,C       pictures when the kart first passes these main-loop distances
 ##   --racer=N            the local kart's dog, 0..7 (default 0, the mascot); works for host and clients
@@ -47,6 +49,10 @@ var overview_shot: bool = false
 var overview_tilt: float = 90.0
 ## Main-loop distance of a side-on picture of the road and its supports (--side-shot=S, needs --shots=), -1 = off.
 var side_shot: float = -1.0
+## Side picture camera: meters to the road's normal side (negative = other side) and above the road
+## (--side-dist=, --side-lift=; story 008 part 5, the Barbican Spiral pictures).
+var side_dist: float = 40.0
+var side_lift: float = 3.0
 ## Fixed camera above the start grid, one picture during the countdown (--grid-shot).
 var grid_shot: bool = false
 ## Main-loop distances where a picture is saved on the first lap (--shot-s=a,b,c).
@@ -106,6 +112,10 @@ static func parse(args: PackedStringArray) -> DebugOptions:
 			o.overview_tilt = clampf(a.substr("--overview-tilt=".length()).to_float(), 10.0, 90.0)
 		elif a.begins_with("--side-shot="):
 			o.side_shot = a.substr("--side-shot=".length()).to_float()
+		elif a.begins_with("--side-dist="):
+			o.side_dist = a.substr("--side-dist=".length()).to_float()
+		elif a.begins_with("--side-lift="):
+			o.side_lift = a.substr("--side-lift=".length()).to_float()
 		elif a == "--grid-shot":
 			o.grid_shot = true
 		elif a.begins_with("--shot-s="):

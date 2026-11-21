@@ -53,7 +53,11 @@ ELEMS = [
     S(34.8, 6.5, 'moat', tag='wall_run', open=True),
     A(16.0, 100.0, 6.0, 'moat', tag='gate_turn', corner='90', bank=0.0),  # moat zone stays flat
     S(24.0, 4.5, 'moat', tag='gate_arch'),
-    A(20.0, 80.0, 5.5, 'village', tag='village_in', corner='90', bank=6.0),
+    # Story 008 part 5, the Barbican Spiral (owner's decision, crossover-decision.md): a 280 degree
+    # LEFT curl around the barbican tower outside the gate, climbing, then the gate_top straight
+    # runs over the gatehouse, crossing above the gate arch road it just left.
+    A(16.0, -280.0, 5.5, 'village', tag='spiral', corner='spiral'),
+    S(35.0, 5.5, 'village', tag='gate_top'),
     S(10.0, 5.5, 'village'),
     A(22.0, -55.9, 5.5, 'village', tag='well_s1', corner='S (well)'),
     S(10.0, 5.5, 'village', tag='well'),
@@ -71,7 +75,10 @@ ELEMS = [
     S(6.0, 7.0, 'gardens', tag='garden_in'),
     A(41.6, -61.6, 7.0, 'gardens', tag='sweep3', corner='sweeper'),
     S(None, 7.5, 'gardens', tag='free_b'),
-    A(168.5, 20.0, 8.0, 'gardens', tag='kink2', corner='kink', bank=-4.0),  # off-camber on the rampart
+    # The kink is two halves of one arc: the rampart jump (end of free_b) lands on the first half
+    # (flat, see FLAT), the off-camber is on the second half (part 5, designer's recommendation).
+    A(168.5, 10.0, 8.0, 'gardens', tag='kink2', corner='kink'),
+    A(168.5, 10.0, 8.0, 'gardens', tag='kink2b', bank=-4.0),  # off-camber on the rampart
     S(20.0, 8.0, 'gardens', tag='garden_straight'),
     A(18.7, -86.7, 8.0, 'gardens', tag='hook', corner='90'),
     S(20.0, 8.0, 'gardens'),
@@ -118,7 +125,12 @@ def displacement(elems, lens):
 
 free = [i for i, e in enumerate(ELEMS) if e["kind"] == "S" and e["length"] is None]
 p0, hsum = displacement(ELEMS, {free[0]: 0.0, free[1]: 0.0})
-assert abs(hsum - 360.0) < 1e-6, "turning must total +360, got %s" % hsum
+# Net turning of the lap. A closed road that never crosses itself turns +-360 degrees; each
+# self-crossing changes that by 360, so a lap with exactly ONE crossing (the Barbican Spiral passing
+# over the gate arch, story 008 part 5) turns 0 (or 720), never 360: the 280 degree left curl
+# replaced a 80 degree right, 360 less.
+TOTAL_TURN = 0.0
+assert abs(hsum - TOTAL_TURN) < 1e-6, "turning must total %+.0f, got %s" % (TOTAL_TURN, hsum)
 
 
 def heading_before(idx):
@@ -309,9 +321,14 @@ def hw_at(s):
     return pts_hw[lo] + (pts_hw[(lo + 1) % len(pts)] - pts_hw[lo]) * f
 
 
-def s_of(p):
+def s_of(p, lo=None, hi=None):
+    """Main-loop spline distance of the centerline point nearest p. Story 008 part 5: the loop now
+    crosses itself (the Barbican Spiral over the gate arch), so a nearest point can be on the
+    wrong level there; lo/hi (spline meters, lo < hi, no wrap) restrict the search to one stretch."""
     best = (1e18, 0.0)
     for i in range(len(pts)):
+        if lo is not None and (cum[i + 1] < lo or cum[i] > hi):
+            continue
         a = pts[i]
         b = pts[(i + 1) % len(pts)]
         ab = sub(b, a)
@@ -324,9 +341,22 @@ def s_of(p):
     return best[1]
 
 
+def turtle_to_s(turtle_s):
+    """Main-loop spline distance of turtle distance turtle_s, by index: control point k is the
+    turtle sample at k * CP_STEP + LINE_SHIFT and sits at spline distance cum[k * SPP], so the
+    mapping is linear between control points. Unlike a nearest-point search (s_of) it cannot pick
+    the other level where the loop crosses itself (story 008 part 5)."""
+    u = ((turtle_s - LINE_SHIFT) % (n_cp * CP_STEP)) / CP_STEP
+    k = int(math.floor(u)) % n_cp
+    f = u - math.floor(u)
+    a = cum[k * SPP]
+    b = cum[(k + 1) * SPP] if k + 1 < n_cp else LENGTH
+    return (a + (b - a) * f) % LENGTH
+
+
 def ts(tag, frac=0.0):
     """Main-loop spline distance of a turtle location (element tag, fraction)."""
-    return s_of(dense[min(int(round(elem_s(tag, frac) / STEP)), N - 1)]["p"]) if True else 0.0
+    return turtle_to_s(elem_s(tag, frac))
 
 
 def branch_len(c, spp):
@@ -473,7 +503,7 @@ open_side = -1  # inside of a left turn
 # Moat lens: the main road's inner edge between where the bridge leaves and rejoins the main
 # corridor, closed by the bridge itself (the strips below cover both sides of the bridge).
 def _main_dist(p):
-    sv = s_of(p)
+    sv = s_of(p, br_s_in - 30.0, br_s_out + 10.0)  # the moat level, never the gate_top deck above
     return ln(sub(p, point_at(sv))), sv
 outside = [q for q in bridge_pts if _main_dist(q)[0] > hw_at(_main_dist(q)[1]) + CURB + 0.5]
 lens_s0 = _main_dist(outside[0])[1]
@@ -509,7 +539,10 @@ hp2_end = ts("free_a", 0.0)
 pads = []
 # outside exit of hairpin 1 (left hairpin: outside = +side), outside exit of hairpin 2 (right: -side)
 pads.append(("", hp1_end + 6.0, -hp_sign * 0.5 * hw_at(hp1_end + 6.0), 6.0, 3.0))
-pads.append(("", hp2_end + 6.0, -0.5 * hw_at(hp2_end + 6.0), 6.0, 3.0))
+# Part 5: 13 m (was 6) past hairpin 2: the autopilot now leaves the hairpin wider (it arrives faster
+# after the rampart jump moved onto kink2) and crossed the old pad's lane outside it.
+HP2_PAD_AHEAD = 13.0
+pads.append(("", hp2_end + HP2_PAD_AHEAD, -0.5 * hw_at(hp2_end + HP2_PAD_AHEAD), 6.0, 3.0))
 # drawbridge landing (on the arch road just after the bridge joins) and passage exit
 pads.append(("drawbridge", Lb - 14.0, 0.0, 5.0, 3.0))
 pads.append(("secret_passage", Lp - 6.0, 0.0, 6.0, 4.0))
@@ -531,22 +564,33 @@ for lat in (-7.5, -2.5, 2.5, 7.5):
 # hairpin. The moat zone (drawbridge, open edge, gatehouse) stays at ground level and flat.
 cp_s = [cum[k * SPP] for k in range(len(cps))]
 KEEP_H = 8.0
+GATE_TOP_H = 7.12     # key height of the gatehouse deck: the blur rounds it to 7.0 over the gate arch (underside 6.4)
+GATE_TOP_FROM = 0.15  # fraction of gate_top where the climb ends (the crossing is at ~0.39)
+GATE_TOP_TO = 0.85    # ... and where the drop into the market starts (~70 m to the split)
+MARKET_H = 4.5        # the lane split (part 4 profile at the split end)
+SPIRAL_FLAT = 25.0    # meters at the start of the spiral kept unbanked (no bank lift reaches the arch)
 H_KEYS = [
     (ts("free_a", 0.15), 0.0), (ts("after_line", 1.0), 0.0),
     (ts("sweep1", 0.45), 1.4), (ts("sweep1", 0.9), 1.6), (ts("kink1", 0.3), 1.2),     # tourney crest
-    (br_s_in - 12.0, 0.0), (ts("gate_arch", 0.6), 0.0),                                 # moat, gate: ground
-    (ts("well_s1", 0.5), 1.6), (ts("split", 0.0), 3.0), (ts("split", 1.0), 4.5),        # village climb
+    (br_s_in - 12.0, 0.0), (ts("spiral", 0.0), 0.0),                                    # moat, gate: ground
+    # Barbican Spiral (part 5): climb 0 -> GATE_TOP_H around the barbican, level over the gate arch,
+    # then drop into the market to the lane split.
+    (ts("gate_top", GATE_TOP_FROM), GATE_TOP_H), (ts("gate_top", GATE_TOP_TO), GATE_TOP_H),
+    (ts("split", 0.0), MARKET_H), (ts("split", 1.0), MARKET_H),                         # market, lane split
     (ts("plaza", 0.25), KEEP_H), (ts("back_gate", 0.5), KEEP_H),                        # climb to the keep
-    (ts("free_b", 0.0), 7.4), (ts("kink2", 0.5), 6.5), (ts("hook", 0.5), 4.6),          # rampart walk
+    (ts("free_b", 0.0), 7.4), (ts("kink2b", 0.0), 6.5), (ts("hook", 0.5), 4.6),         # rampart walk
     (ts("hairpin2", 0.3), 1.6), (ts("free_a", 0.0), 0.0),                               # down to the field
 ]
 RAMP_LEN = 8.0
 RAMP_LIP = 1.4
-ramp_s = ts("free_b", 0.12)  # the rampart jump: lip ~18 m into the straight before the kink
+# The rampart jump (part 5): the lip RAMP_END_GAP before the end of free_b, landing on kink2's first half.
+RAMP_END_GAP = 2.0
+ramp_s = ts("free_b", 1.0) - RAMP_END_GAP - RAMP_LEN
 FLAT = [(br_s_in - 14.0, br_s_in + 16.0), (br_s_out - 16.0, br_s_out + 14.0),
         (lane_s_in - 14.0, lane_s_in + 14.0), (lane_s_out - 14.0, lane_s_out + 14.0),
         (pz_s_in - 14.0, pz_s_in + 14.0), (pz_s_out - 16.0, pz_s_out + 14.0),
-        (open_s0 - 6.0, open_s1 + 6.0), (LENGTH - 70.0, 12.0), (ramp_s - 10.0, ramp_s + RAMP_LEN + 18.0)]
+        (open_s0 - 6.0, open_s1 + 6.0), (LENGTH - 70.0, 12.0), (ramp_s - 10.0, max(ramp_s + RAMP_LEN + 18.0, ts("kink2b", 0.0))),
+        (ts("spiral", 0.0) - 2.0, ts("spiral", 0.0) + SPIRAL_FLAT)]
 cp_bank = ev.banks(cp_s, LENGTH, cp_turn, FLAT)
 cp_h = ev.blur(ev.piecewise(cp_s, LENGTH, H_KEYS), 3)
 cp_h, bank_need = ev.lift_for_banks(cp_h, cp_bank, [w + CURB for w in cp_hw])
@@ -562,6 +606,58 @@ def main_h(sv):
     span = (cp_s[k2] - cp_s[k]) % LENGTH
     f = (sv - cp_s[k]) / span if span > 1e-9 else 0.0
     return cp_h[k] + (cp_h[k2] - cp_h[k]) * f
+
+
+# Crossover report (part 5): where the main loop passes over itself (centerlines closest with the
+# two places far apart along the loop), the two heights and the clearance under the deck.
+DECK_THICKNESS = 0.6  # TrackData.deck_thickness default
+_xing = (1e9, 0.0, 0.0)
+for _i in range(0, len(pts), 2):
+    for _j in range(_i + 1, len(pts), 2):
+        _ds = abs(cum[_j] - cum[_i])
+        if min(_ds, LENGTH - _ds) < 60.0:
+            continue
+        _d = ln(sub(pts[_i], pts[_j]))
+        if _d < _xing[0]:
+            _xing = (_d, cum[_i], cum[_j])
+_lo_s, _hi_s = sorted((_xing[1], _xing[2]), key=main_h)
+_g_up = max(abs(main_h(sv + 1.0) - main_h(sv)) for sv in [ts("spiral", 0.0) + k for k in range(int(ts("gate_top", 0.5) - ts("spiral", 0.0)))])
+print("crossover: lower s %.1f h %.2f, upper s %.1f h %.2f, centerlines %.2f m apart, deck underside %.2f, clearance %.2f m; "
+      "spiral s %.1f..%.1f (h %.2f..%.2f, mid %.2f), gate_top s %.1f..%.1f, max climb grade %.1f %%, market split h %.2f" % (
+          _lo_s, main_h(_lo_s), _hi_s, main_h(_hi_s), _xing[0], main_h(_hi_s) - DECK_THICKNESS,
+          main_h(_hi_s) - DECK_THICKNESS - main_h(_lo_s), ts("spiral", 0.0), ts("gate_top", 0.0), main_h(ts("spiral", 0.0)),
+          main_h(ts("gate_top", 0.0)), main_h(ts("spiral", 0.5)), ts("gate_top", 0.0), ts("gate_top", 1.0), 100 * _g_up,
+          main_h(ts("split", 0.0))))
+CROSS_LOW_S, CROSS_HIGH_S = _lo_s, _hi_s
+
+
+# The drawbridge water strip must not claim the spiral top (part 5): where a strip corner lies within
+# STRIP_CLEAR of the corridor of main road raised LEVEL_SEP or more (the spiral, 6+ m beside the
+# landing), it is pulled back toward the bridge until clear. The road up there always wins.
+LEVEL_SEP = 3.0     # TrackData.level_separation default
+STRIP_CLEAR = 1.0
+_high = [k for k in range(len(pts)) if main_h(cum[k]) >= LEVEL_SEP]
+
+
+def _high_excess(q):
+    best = 1e9
+    for k in _high:
+        best = min(best, ln(sub(q, pts[k])) - pts_hw[k] - CURB)
+    return best
+
+
+_trimmed = 0
+for _side in (strip_l, strip_r):
+    for _i, _q in enumerate(_side):
+        _c = bridge_pts[_i]
+        _f = 1.0
+        while _high_excess(add(_c, mul(sub(_q, _c), _f))) < STRIP_CLEAR and _f > 0.3:
+            _f -= 0.05
+        if _f < 1.0:
+            _side[_i] = add(_c, mul(sub(_q, _c), _f))
+            _trimmed += 1
+bridge_strip = strip_l[::3] + [strip_l[-1]] + list(reversed(strip_r[::3] + [strip_r[-1]]))
+print("drawbridge strip: %d corners pulled back from the spiral top; nearest strip corner %.1f m outside its corridor" % (_trimmed, min(_high_excess(q) for q in bridge_strip)))
 
 
 # The village lane runs beside the main lane: same height at the same place, so a kart changing
@@ -610,6 +706,10 @@ s3 = ELEMS[elem_index("sweep3")]
 s3s = dense[starts[elem_index("sweep3")]]
 orchard_center = add(s3s["p"], mul(nrm(dirv(s3s["h"])), s3["radius"]))
 gate_p = point_at(ts("gate_arch", 0.5))
+# Story 008 part 5: the barbican tower stands at the centre of the spiral (a left curl: centre on -side).
+sp_i = elem_index("spiral")
+sps = dense[starts[sp_i]]
+barbican = add(sps["p"], mul(nrm(dirv(sps["h"])), -ELEMS[sp_i]["radius"]))
 bounds_min = (min(p_[0] for p_ in pts), min(p_[1] for p_ in pts))
 bounds_max = (max(p_[0] for p_ in pts), max(p_[1] for p_ in pts))
 windmill = (bounds_max[0] + 90.0, bounds_min[1] - 40.0)
@@ -618,7 +718,10 @@ trebuchet = add(orchard_center, (0.0, 0.0))
 PLOT = os.environ.get("PLOT")
 if PLOT:
     from PIL import Image, ImageDraw
-    sc = 1.6
+    sc = float(os.environ.get("PLOT_SCALE", "1.6"))
+    if os.environ.get("PLOT_GATE"):  # zoom on the Barbican Spiral and the gate
+        bounds_min = (barbican[0] - 70.0, barbican[1] - 70.0)
+        bounds_max = (barbican[0] + 70.0, barbican[1] + 70.0)
     W = int((bounds_max[0] - bounds_min[0] + 80) * sc)
     H = int((bounds_max[1] - bounds_min[1] + 80) * sc)
     img = Image.new("RGB", (W, H), (60, 110, 50))
@@ -636,10 +739,10 @@ if PLOT:
         o = spline_open(pl, 4) if pl is lane_cps else pl
         for i in range(len(o) - 1):
             dr.line([T(o[i]), T(o[i + 1])], fill=col, width=int(2 * w * sc))
-    for s_ in range(0, int(LENGTH), 50):
+    for s_ in range(0, int(LENGTH), 10 if os.environ.get("PLOT_GATE") else 50):
         dr.text(T(point_at(s_)), str(s_), fill=(255, 255, 255))
     dr.line([T(add(point_at(0), mul(normal_at(0), 10))), T(add(point_at(0), mul(normal_at(0), -10)))], fill=(255, 255, 255), width=3)
-    for q in (statue, keep, well, windmill, lists_center, orchard_center):
+    for q in (statue, keep, well, windmill, lists_center, orchard_center, barbican):
         dr.ellipse([T(sub(q, (3, 3))), T(add(q, (3, 3)))], fill=(230, 60, 30))
     for it in items:
         q = add(point_at(it[0]), mul(normal_at(it[0]), it[1]))
@@ -817,8 +920,8 @@ with open(os.path.join(out, "castle_circuit.tres"), "w", newline="\n") as f:
                     v3([(open_s0, open_s1, open_side)]), OPEN_EDGE_REACH, SINK_TIME, RESPAWN_SPEED_FRAC,
                     RESPAWN_IMMUNITY, RESPAWN_BACK_OFF, PAD_BOOST_TIME, f32(cp_h), f32(cp_bank)))
 
-zr = {"tourney": (ts("free_a"), ts("moat_sweep")), "moat": (ts("moat_sweep"), ts("village_in")),
-      "village": (ts("village_in"), ts("plaza")), "keep": (ts("plaza"), ts("back_gate")),
+zr = {"tourney": (ts("free_a"), ts("moat_sweep")), "moat": (ts("moat_sweep"), ts("spiral")),
+      "village": (ts("spiral"), ts("plaza")), "keep": (ts("plaza"), ts("back_gate")),
       "gardens": (ts("back_gate"), ts("free_a"))}
 print("zones (main s):", {k: (round(v[0]), round(v[1])) for k, v in zr.items()})
 THEME = """[gd_resource type="Resource" script_class="TrackTheme" load_steps=2 format=3]
@@ -851,6 +954,7 @@ lists_center = Vector2(%.2f, %.2f)
 orchard_center = Vector2(%.2f, %.2f)
 windmill_position = Vector2(%.2f, %.2f)
 gate_position = Vector2(%.2f, %.2f)
+barbican_position = Vector2(%.2f, %.2f)
 zone_tourney = Vector2(%.2f, %.2f)
 zone_moat = Vector2(%.2f, %.2f)
 zone_village = Vector2(%.2f, %.2f)
@@ -858,7 +962,7 @@ zone_keep = Vector2(%.2f, %.2f)
 zone_gardens = Vector2(%.2f, %.2f)
 """
 with open(os.path.join(out, "castle_theme.tres"), "w", newline="\n") as f:
-    vals = list(keep) + list(statue) + list(well) + list(lists_center) + list(orchard_center) + list(windmill) + list(gate_p)
+    vals = list(keep) + list(statue) + list(well) + list(lists_center) + list(orchard_center) + list(windmill) + list(gate_p) + list(barbican)
     for z in ("tourney", "moat", "village", "keep", "gardens"):
         vals += list(zr[z])
     f.write(THEME % tuple(vals))
