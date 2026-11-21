@@ -10,8 +10,15 @@ extends Node
 ## rpc_ping / rpc_pong (client <-> host, unreliable). Every send goes through _send() so
 ## --lag/--jitter/--loss apply, and through _call_if_connected() so a send never reaches a
 ## peer that has disconnected.
+##
+## Version handshake (KartWire.VERSION 8): before any RPC, SceneMultiplayer authentication
+## exchanges a NetHandshake packet. The client sends its version, the host answers with its
+## own and completes only on a match (otherwise it drops the peer once the answer is out);
+## the client completes only on a match too. A peer that sends no valid packet within
+## NetConfig.auth_timeout (an older build without the check) is dropped by the engine.
+## peer_joined and connected_to_host fire only for verified peers.
 
-## A peer connected (host side: a joiner; client side: also the host and other clients).
+## A peer connected (and passed the version check) (host side: a joiner; client side: also the host and other clients).
 signal peer_joined(peer_id: int)
 ## A peer disconnected.
 signal peer_left(peer_id: int)
@@ -21,6 +28,10 @@ signal connected_to_host
 signal connection_failed
 ## This client lost the host.
 signal host_lost
+## Client side: the version check before any RPC failed and the connection should be closed.
+## [param host_version] is the host's version, or -1 when the host sent no valid answer
+## within NetConfig.auth_timeout (an older build without the check).
+signal handshake_failed(host_version: int)
 ## The host started the race; [param info] holds version, slots, laps and host_time.
 signal race_start_received(info: Dictionary)
 ## A kart state update arrived.
@@ -55,8 +66,15 @@ var lag_ms: float = 0.0
 var jitter_ms: float = 0.0
 ## Fake network, percent of position updates dropped.
 var loss_pct: float = 0.0
+## Version this PC sends and expects in the handshake. Normally KartWire.VERSION; Main sets
+## it from --net-version-override= for tests.
+var advertised_version: int = KartWire.VERSION
 
 var _config: NetConfig
+# Host: peers whose handshake was answered (true = accepted, false = refused).
+var _answered: Dictionary[int, bool] = {}
+# Client: the version check failed; the following disconnect is not reported as host_lost.
+var _handshake_failed: bool = false
 var _active: bool = false
 var _hooked: bool = false
 var _queue: Array[Dictionary] = []
@@ -108,6 +126,7 @@ func join(address: String) -> Error:
 func close() -> void:
 	_active = false
 	_queue.clear()
+	_answered.clear()
 	if multiplayer.multiplayer_peer != null:
 		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = null
@@ -150,6 +169,21 @@ func broadcast_race_start(info: Dictionary) -> void:
 	if not _active:
 		return
 	_send(func() -> void: rpc_race_start.rpc(info), true, false)
+
+
+## Host only: sends the start info of the running race to one late joiner (reliable). The info
+## carries "spectate": true, so that client watches instead of racing (KartWire.VERSION 7).
+func send_race_start_to(peer: int, info: Dictionary) -> void:
+	if not _active:
+		return
+	_send(func() -> void: rpc_race_start.rpc_id(peer, info), true, false, peer)
+
+
+## Host only: sends the final results to one peer (a late joiner who arrived on the results).
+func send_race_results_to(peer: int, entries: Array) -> void:
+	if not _active:
+		return
+	_send(func() -> void: rpc_race_results.rpc_id(peer, entries), true, false, peer)
 
 
 ## Sends one kart's state to everyone (unreliable ordered; fake loss applies).
@@ -238,15 +272,21 @@ func pop_bandwidth() -> Vector2:
 func _open(peer: ENetMultiplayerPeer, as_host: bool) -> void:
 	_is_host_flag = as_host
 	_my_id = 1
-	multiplayer.multiplayer_peer = peer
-	_active = true
-	_ping_timer = 0.0
+	_answered.clear()
+	_handshake_failed = false
+	var smp: SceneMultiplayer = multiplayer as SceneMultiplayer
+	if smp != null:
+		smp.auth_callback = _on_auth_data
+		smp.auth_timeout = _config.auth_timeout
+	else:
+		push_warning("NetSession: the multiplayer API is not a SceneMultiplayer; no version handshake.")
 	if not _hooked:
 		_hooked = true
 		multiplayer.peer_connected.connect(func(id: int) -> void:
 			if _active:
 				peer_joined.emit(id))
 		multiplayer.peer_disconnected.connect(func(id: int) -> void:
+			_answered.erase(id)
 			if _active:
 				peer_left.emit(id))
 		multiplayer.connected_to_server.connect(func() -> void:
@@ -256,8 +296,84 @@ func _open(peer: ENetMultiplayerPeer, as_host: bool) -> void:
 			if _active:
 				connection_failed.emit())
 		multiplayer.server_disconnected.connect(func() -> void:
-			if _active:
+			if _active and not _handshake_failed:
 				host_lost.emit())
+		if smp != null:
+			smp.peer_authenticating.connect(_on_peer_authenticating)
+			smp.peer_authentication_failed.connect(_on_peer_authentication_failed)
+	multiplayer.multiplayer_peer = peer
+	_active = true
+	_ping_timer = 0.0
+
+
+# ENet connected [param id]; the version check starts. The client speaks first.
+func _on_peer_authenticating(id: int) -> void:
+	if not _active:
+		return
+	if _is_host_flag:
+		print("[net] peer %d connecting: checking its version" % id)
+	elif id == 1:
+		(multiplayer as SceneMultiplayer).send_auth(1, NetHandshake.encode(advertised_version))
+
+
+# A handshake packet arrived from [param id] (SceneMultiplayer auth_callback).
+func _on_auth_data(id: int, data: PackedByteArray) -> void:
+	if not _active:
+		return
+	var smp: SceneMultiplayer = multiplayer as SceneMultiplayer
+	var theirs: int = NetHandshake.decode(data)
+	if _is_host_flag:
+		if _answered.has(id):
+			return  # one answer per peer
+		smp.send_auth(id, NetHandshake.encode(advertised_version))
+		if theirs == advertised_version:
+			_answered[id] = true
+			smp.complete_auth(id)
+			return
+		_answered[id] = false
+		print("[net] refused peer %d: it runs version %d, this host %d" % [id, theirs, advertised_version])
+		_refuse(id)
+	elif id == 1 and not _handshake_failed:
+		if theirs == advertised_version:
+			smp.complete_auth(1)
+		else:
+			_fail_handshake(theirs)
+
+
+# Host: drops [param id] once the answer sent just before has been delivered.
+func _refuse(id: int) -> void:
+	var ep: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	var pp: ENetPacketPeer = ep.get_peer(id) if ep != null else null
+	if pp != null:
+		pp.peer_disconnect_later()
+	elif multiplayer.multiplayer_peer != null:
+		multiplayer.multiplayer_peer.disconnect_peer(id)
+
+
+# The engine gave up on [param id]: timed out, or it disconnected before completing.
+func _on_peer_authentication_failed(id: int) -> void:
+	if not _active:
+		return
+	if _is_host_flag:
+		if not _answered.has(id):
+			print("[net] dropped peer %d: no version check within %.1f s (an older build?)" % [id, _config.auth_timeout])
+		_answered.erase(id)
+	elif id == 1:
+		_fail_handshake(-1)
+
+
+func _fail_handshake(host_version: int) -> void:
+	if _handshake_failed:
+		return
+	_handshake_failed = true
+	print("[net] version check failed: host %d, this build %d" % [host_version, advertised_version])
+	# Deferred: never tear the connection down from inside the engine's network poll.
+	_emit_handshake_failed.call_deferred(host_version)
+
+
+func _emit_handshake_failed(host_version: int) -> void:
+	if _active:
+		handshake_failed.emit(host_version)
 
 
 func _process(delta: float) -> void:
@@ -272,7 +388,11 @@ func _process(delta: float) -> void:
 
 func _is_connected() -> bool:
 	var mp: MultiplayerPeer = multiplayer.multiplayer_peer
-	return mp != null and mp.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
+	if mp == null or mp.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
+		return false
+	# A client is only connected once the host passed the version check (ENet reports
+	# CONNECTED while the handshake is still running).
+	return _is_host_flag or multiplayer.get_peers().has(1)
 
 
 # Every send goes through here so fake lag / jitter / loss apply to all of it.

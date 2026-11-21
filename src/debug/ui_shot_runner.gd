@@ -2,7 +2,9 @@ class_name UiShotRunner
 extends Node
 ## DEBUG AID (--ui-shot=NAME --shots=DIR). Opens one menu screen with made-up sample data,
 ## saves a PNG named NAME_WIDTHxHEIGHT.png and quits. Names: menu, lobby, lobby-client,
-## results, results-client, results-solo, pause. Evidence for story 007 part 1.
+## results, results-client, results-solo, pause (part 1); controls, controls-capture,
+## controls-swap (part 3: the controls screen, a capture running, the message after a swap;
+## the controls screen saves nothing in this mode).
 
 const SETTLE_FRAMES: int = 30
 const SAMPLE_HUMANS: int = 9
@@ -39,6 +41,17 @@ func run(shot_name: String, dir: String, ui: RaceFlowUi, racers: RacerSet, vehic
 			ui.show_results(entries, SAMPLE_MY_KART if shot_name != "results-solo" else 0, viewer)
 		"pause":
 			ui.pause.open_pause(true)
+		"controls", "controls-capture", "controls-swap":
+			ui.controls.save_path = ""
+			ui.open_controls(ui.menu)
+			if shot_name == "controls-capture":
+				ui.controls.begin_capture(InputActions.DRIFT, InputBindings.Device.CONTROLLER)
+			elif shot_name == "controls-swap":
+				# Drive gets Space, which Drift had: the two swap.
+				var space := InputEventKey.new()
+				space.physical_keycode = KEY_SPACE
+				space.pressed = true
+				ui.controls.apply_binding(InputActions.ACCEL, space)
 		_:
 			printerr("[ui-shot] unknown screen '%s'" % shot_name)
 			get_tree().quit(1)

@@ -136,6 +136,27 @@ extends Resource
 ## CanvasLayer order of the race HUD (below the screens).
 @export var hud_layer: int = 1
 
+@export_group("Controls")
+## Controls screen (story 007 part 3): size of one binding box, width of the action names,
+## gap between the rows.
+@export var controls_cell_size: Vector2 = Vector2(290, 34)
+@export var controls_action_width: float = 210.0
+@export var controls_row_gap: int = 4
+## Font size of the binding boxes.
+@export var controls_cell_font: int = 20
+## Seconds a capture waits for the new input before it gives up.
+@export var controls_capture_timeout: float = 8.0
+## How far a stick or trigger must move (0..1) to be captured.
+@export var controls_axis_threshold: float = 0.6
+## Milliseconds after a capture during which stick movement is ignored (the bound stick is still held).
+@export var controls_quiet_ms: int = 400
+
+@export_group("Spectating")
+## Standings column of a spectator (story 007 part 3): row height, swatch size, name width.
+@export var spec_row_height: float = 24.0
+@export var spec_swatch: float = 14.0
+@export var spec_name_width: float = 150.0
+
 @export_group("Rules")
 ## Recent hosts kept, the address offered first time, and where they are saved.
 @export var recent_max: int = 5

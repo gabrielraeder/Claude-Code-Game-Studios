@@ -8,6 +8,10 @@ extends Resource
 @export var port: int = 24680
 ## Racers in one race, humans plus bots.
 @export var max_racers: int = 12
+## Seconds a new connection has to pass the version handshake (NetHandshake) before it is
+## dropped. Covers one round trip with a wide margin; an older build without the check is
+## dropped after this long (KartWire.VERSION 8).
+@export var auth_timeout: float = 3.0
 ## State updates per second sent for each kart a PC owns.
 @export var send_hz: float = 30.0
 ## Lower bound of the adaptive view delay, seconds.

@@ -5,6 +5,8 @@ extends Node
 ## rows (--auto-pick=R,V), then as host the track, bots and laps rows (--auto-track=, --auto-bots=,
 ## --auto-laps=) and Start once every client is ready; as client Ready. On every results screen
 ## the host presses Rematch until --auto-races races were played, then everyone quits.
+## A client that joins while a race runs is put in spectator mode by the host (story 007 part 3);
+## the driver then waits for the results like a racer and plays the next race.
 ## It reads screen state only through the screens' public API.
 
 var _options: DebugOptions
@@ -15,6 +17,8 @@ var _timer: float = 0.0
 var _stage: String = "menu"
 var _races_seen: int = 0
 var _step: float = 0.6
+## Returns true while this PC watches a race as a spectator (set by Main).
+var spectating_fn: Callable = Callable()
 
 
 ## Attaches to the running screens.
@@ -44,7 +48,10 @@ func _process(delta: float) -> void:
 					_ui.menu.join_button().pressed.emit()
 				_stage = "lobby"
 		"lobby":
-			if _ui.lobby.is_open() and _ui.lobby.state().humans() > 0:
+			if spectating_fn.is_valid() and bool(spectating_fn.call()):
+				print("[auto-ui] spectating the running race")
+				_stage = "race"
+			elif _ui.lobby.is_open() and _ui.lobby.state().humans() > 0:
 				_stage = "pick"
 		"pick":
 			_do_pick()

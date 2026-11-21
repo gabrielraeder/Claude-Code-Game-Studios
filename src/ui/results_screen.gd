@@ -26,6 +26,7 @@ var _colors: PackedColorArray = PackedColorArray()
 var _rows: VBoxContainer
 var _buttons: HBoxContainer
 var _wait_label: Label
+var _note: Label
 var _first_button: Button
 var _viewer: Viewer = Viewer.SOLO
 var _title: PanelContainer
@@ -67,6 +68,12 @@ func show_results(entries: Array, my_kart: int, viewer: Viewer) -> void:
 		_first_button.grab_focus()
 
 
+## A line under the table (who watched the race and joins the next one); empty hides it.
+func set_note(text: String) -> void:
+	_note.text = text
+	_note.visible = text != ""
+
+
 ## The first button (Rematch for the host); debug scripts press it.
 func first_button() -> Button:
 	return _first_button
@@ -84,6 +91,10 @@ func _build(root: Control) -> void:
 	_rows = VBoxContainer.new()
 	_rows.add_theme_constant_override(&"separation", 3)
 	box.add_child(_rows)
+	_note = ui.label("", ui.body_font, ui.place_first)
+	_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_note.visible = false
+	column.add_child(_note)
 	_wait_label = ui.label(ui.t("results_wait_host"), ui.body_font, ui.parchment)
 	_wait_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(_wait_label)

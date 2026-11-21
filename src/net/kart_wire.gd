@@ -7,7 +7,11 @@ extends RefCounted
 ## 4 (story 006): the race start info carries each kart's loadout, and clients send theirs.
 ## 5 (bugfix 2026-11-20): box take carries wants_item; box taken with item -1 = broken, no item.
 ## 6 (story 007 part 1): lobby messages (state, pick) and the race results message.
-const VERSION: int = 6
+## 7 (story 007 part 3): a race start with "spectate" true lets a late joiner watch the running
+##   race; lobby entries carry "new".
+## 8 (story 007 part 3): version handshake through SceneMultiplayer authentication before any
+##   RPC (NetHandshake), so a build with a different RPC set is refused cleanly.
+const VERSION: int = 8
 const X: int = 0
 const Z: int = 1
 const VX: int = 2

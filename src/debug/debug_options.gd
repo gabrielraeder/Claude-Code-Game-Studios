@@ -65,6 +65,9 @@ var auto_races: int = 2
 var give_item: String = ""
 ## Seconds between automatic item uses by the autopilot (--item-interval=), 0 = off.
 var item_interval: float = 0.0
+## Controls file to load and save instead of user://controls.cfg (--controls-file=PATH; tests
+## and screenshots use it so they never touch the player's own bindings).
+var controls_file: String = ""
 
 
 ## Parses [param args] (normally OS.get_cmdline_user_args()).
@@ -118,6 +121,8 @@ static func parse(args: PackedStringArray) -> DebugOptions:
 			o.auto_bots = a.substr("--auto-bots=".length()).to_int()
 		elif a.begins_with("--auto-laps="):
 			o.auto_laps = a.substr("--auto-laps=".length()).to_int()
+		elif a.begins_with("--controls-file="):
+			o.controls_file = a.substr("--controls-file=".length())
 		elif a.begins_with("--auto-races="):
 			o.auto_races = a.substr("--auto-races=".length()).to_int()
 		elif a == "--park":

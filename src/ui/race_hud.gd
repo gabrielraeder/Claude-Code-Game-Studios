@@ -4,6 +4,9 @@ extends CanvasLayer
 ## roulette (top left), lap / time / speed pills and the 3-pip drift meter under it, the
 ## countdown and centre messages, the control hints (bottom left) and a minimap (bottom right)
 ## with every racer as a pennant triangle in its slot colour.
+## The control hints are built from the current InputMap (BindingText; refresh_hints() after a
+## rebind). A spectator (story 007 part 3) sees a standings column on the left, a "Spectating"
+## banner at the top and who the camera follows instead of the item and lap badges.
 ## Layout follows art bible section 7; every size, colour and string is in UiTheme
 ## (assets/data/ui/ui_theme.tres, group "Race HUD" and the hud_* texts). The layer is scaled
 ## to the window height from UiTheme.base_height, like UiScreen.
@@ -37,6 +40,12 @@ var _lobby: bool = false
 var _shown_place: int = -1
 var _pop_time: float = 0.0
 var _last_ms: int = 0
+var _left_col: VBoxContainer
+var _spectating: bool = false
+var _spec_box: VBoxContainer
+var _spec_rows: VBoxContainer
+var _spec_follow: Label
+var _standings_key: String = ""
 
 
 ## Builds the HUD from [param theme_data]. Call once, after the node is in the tree.
@@ -60,9 +69,73 @@ func setup(theme_data: UiTheme) -> void:
 	_help.offset_left = _ui.hud_margin
 	_help.offset_bottom = -_ui.hud_margin
 	_help.offset_top = -_ui.hud_margin
-	_help.text = _ui.t("hud_hints")
+	refresh_hints()
+	_build_spectator()
 	get_viewport().size_changed.connect(_fit)
 	_fit()
+
+
+## Rebuilds the control hints from the current bindings (call after the controls screen changed one).
+func refresh_hints() -> void:
+	if _help != null:
+		_help.text = BindingText.fill(_ui.t("hud_hints"), _ui)
+
+
+## Spectator view on or off: the standings column and the banner replace the item, lap, time
+## and speed badges and the control hints.
+func set_spectating(on: bool) -> void:
+	_spectating = on
+	if _spec_box == null:
+		return
+	_spec_box.visible = on
+	_spec_rows.get_parent().visible = on
+	_left_col.visible = not on
+	_help.visible = not on
+	if not on:
+		_standings_key = ""
+
+
+## Spectator standings: [param names] one per racer, best place first (the places are numbered
+## here), [param colors] their slot colours, [param highlight] the row the camera follows
+## (-1 = none), [param follow_text] the line under the banner. Rebuilt only when something changed.
+func set_standings(names: PackedStringArray, colors: PackedColorArray, highlight: int, follow_text: String) -> void:
+	if _spec_rows == null:
+		return
+	_spec_follow.text = follow_text
+	var key: String = "%d|%s|%s" % [highlight, "|".join(names), str(colors)]
+	if key == _standings_key:
+		return
+	_standings_key = key
+	for c in _spec_rows.get_children():
+		_spec_rows.remove_child(c)
+		c.queue_free()
+	for i in names.size():
+		var row := PanelContainer.new()
+		var mine: bool = i == highlight
+		var sb: StyleBoxFlat = _ui.box(_ui.parchment_dark if mine else Color(0, 0, 0, 0), _ui.primary if mine else Color(0, 0, 0, 0), 2, 4)
+		sb.content_margin_top = 0
+		sb.content_margin_bottom = 0
+		row.add_theme_stylebox_override(&"panel", sb)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var h := HBoxContainer.new()
+		h.add_theme_constant_override(&"separation", 6)
+		row.add_child(h)
+		var place: Label = _ink_label(_ui.hud_small_font, true)
+		place.text = UiTheme.ordinal(i + 1)
+		place.custom_minimum_size = Vector2(float(_ui.hud_small_font) * 2.4, _ui.spec_row_height)
+		h.add_child(place)
+		var sw := ColorRect.new()
+		sw.color = colors[i] if i < colors.size() else _ui.primary
+		sw.custom_minimum_size = Vector2(_ui.spec_swatch, _ui.spec_swatch)
+		sw.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		sw.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		h.add_child(sw)
+		var nm: Label = _ink_label(_ui.hud_small_font, mine)
+		nm.text = names[i]
+		nm.clip_text = true
+		nm.custom_minimum_size = Vector2(_ui.spec_name_width, _ui.spec_row_height)
+		h.add_child(nm)
+		_spec_rows.add_child(row)
 
 
 ## Text shown in the middle of the screen instead of the usual one (empty = none), for
@@ -241,6 +314,7 @@ func _update_pop(dt: float) -> void:
 
 func _build_left_column() -> void:
 	var col := VBoxContainer.new()
+	_left_col = col
 	col.position = Vector2(_ui.hud_margin, _ui.hud_margin)
 	col.add_theme_constant_override(&"separation", _ui.hud_column_gap)
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -332,6 +406,40 @@ func _build_center() -> void:
 	_center.anchor_top = 0.3
 	_center.anchor_bottom = 0.3
 	_center.grow_horizontal = Control.GROW_DIRECTION_BOTH
+
+
+# Spectator widgets (hidden until set_spectating(true)): the banner and follow line at the top
+# centre, the standings panel at the top left.
+func _build_spectator() -> void:
+	_spec_box = VBoxContainer.new()
+	_spec_box.anchor_left = 0.5
+	_spec_box.anchor_right = 0.5
+	_spec_box.offset_top = _ui.hud_margin
+	_spec_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_spec_box.alignment = BoxContainer.ALIGNMENT_BEGIN
+	_spec_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_spec_box)
+	var banner := PanelContainer.new()
+	banner.add_theme_stylebox_override(&"panel", _ui.box(_ui.parchment, _ui.ink, _ui.border_width, 12))
+	banner.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_spec_box.add_child(banner)
+	var bl: Label = _ink_label(_ui.hud_lap_font, true)
+	bl.text = _ui.t("spec_banner")
+	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner.add_child(bl)
+	_spec_follow = _world_label(_ui.hud_small_font, HORIZONTAL_ALIGNMENT_CENTER, false)
+	_spec_box.add_child(_spec_follow)
+	_spec_box.visible = false
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override(&"panel", _ui.box(_ui.hud_badge_fill, _ui.ink, _ui.hud_badge_border, 8))
+	panel.position = Vector2(_ui.hud_margin, _ui.hud_margin)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(panel)
+	_spec_rows = VBoxContainer.new()
+	_spec_rows.add_theme_constant_override(&"separation", 1)
+	panel.add_child(_spec_rows)
+	panel.visible = false
 
 
 func _build_minimap() -> void:

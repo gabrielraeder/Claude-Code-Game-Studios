@@ -9,6 +9,8 @@ extends RefCounted
 ##   --lag=MS --jitter=MS --loss=PCT   fake network (loss hits position updates only)
 ##   --netlog=PATH       per-second net log CSV
 ##   --port=N            host on this UDP port instead of the configured one (tests)
+##   --net-version-override=N  send and expect version N in the version handshake instead of
+##                       KartWire.VERSION (tests of the mismatch refusal; payloads unchanged)
 
 var host: bool = false
 var join: String = ""
@@ -20,6 +22,8 @@ var jitter_ms: float = 0.0
 var loss_pct: float = 0.0
 var netlog_path: String = ""
 var port: int = 0
+## Handshake version from --net-version-override= (0 = off, use KartWire.VERSION).
+var version_override: int = 0
 
 
 ## Parses [param args] (normally OS.get_cmdline_user_args()).
@@ -46,4 +50,6 @@ static func parse(args: PackedStringArray) -> NetOptions:
 			o.port = a.substr("--port=".length()).to_int()
 		elif a.begins_with("--netlog="):
 			o.netlog_path = a.substr("--netlog=".length())
+		elif a.begins_with("--net-version-override="):
+			o.version_override = a.substr("--net-version-override=".length()).to_int()
 	return o

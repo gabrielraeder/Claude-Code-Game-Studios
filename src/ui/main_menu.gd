@@ -10,7 +10,7 @@ signal solo_requested
 signal host_requested
 ## Join the host at [param address] ("ip" or "ip:port").
 signal join_requested(address: String)
-## The Controls button was pressed (the controls menu is wired by story 007 part 4).
+## The Controls button was pressed (RaceFlowUi opens the controls screen).
 signal controls_requested
 ## Quit the game.
 signal quit_requested
@@ -23,6 +23,7 @@ var _ip_edit: LineEdit
 var _join_button: Button
 var _recent_box: VBoxContainer
 var _status: Label
+var _hint: Label
 
 
 ## The IP text field (debug scripts type into it).
@@ -125,13 +126,14 @@ func _build(root: Control) -> void:
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status.visible = false
 	column.add_child(_status)
-	var hint: Label = ui.label(ui.t("menu_hint"), ui.small_font, ui.parchment)
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(hint)
+	_hint = ui.label("", ui.small_font, ui.parchment)
+	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_hint)
 
 
 func _on_open() -> void:
 	refresh_recent()
+	_hint.text = BindingText.fill(ui.t("menu_hint"), ui)
 	_host_button.grab_focus()
 
 

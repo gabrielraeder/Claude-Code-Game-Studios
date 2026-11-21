@@ -353,6 +353,8 @@ func _rebuild_roster(my_index: int) -> void:
 			tags.append(ui.t("role_host"))
 		if mine:
 			tags.append(ui.t("role_you"))
+		if bool(e.get("new", false)):
+			tags.append(ui.t("role_new"))
 		box.add_child(_cell(", ".join(tags), COLUMN_WIDTHS[2], ui.ink, ui.small_font))
 		box.add_child(_cell(_racers.racer_at(racer).display_name, COLUMN_WIDTHS[3], ui.ink, ui.body_font))
 		box.add_child(_cell(_vehicles.vehicle_at(vehicle).display_name, COLUMN_WIDTHS[4], ui.ink, ui.body_font))

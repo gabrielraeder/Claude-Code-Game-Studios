@@ -118,6 +118,25 @@ var _kart_loadouts: Dictionary = {}
 ## What the local kart's stats and visual are built for (a lobby pick may differ until the race starts).
 var _built_loadout: Vector2i = Vector2i.ZERO
 var _joining_address: String = ""
+## Kart id the local Racer carries while spectating (no kart of the race has it).
+const SPECTATOR_KART_ID: int = -1
+## Controls file loaded at start and saved by the controls screen (--controls-file= overrides).
+var _controls_path: String = InputBindings.DEFAULT_PATH
+## Host: the start info of the race running now (sent to late joiners with "spectate").
+var _race_info: Dictionary = {}
+## Host: the results last published (a joiner who arrives on the results screen gets them).
+var _last_results: Array = []
+## Host: peers that joined during the current race and watch it; they race the next one.
+var _spectators: Dictionary = {}
+## Client: this PC watches the running race (no own kart) and joins the next round.
+var _spectating: bool = false
+## Spectator: the place the camera follows (1 = the leader); steer left / right change it.
+var _spec_place: int = 1
+var _spec_target: int = -2
+var _spec_follow_key: String = ""
+var _spec_follow_text: String = ""
+var _spec_time: float = 0.0
+var _spec_shots: int = 0
 
 
 ## The 3-2-1 countdown and start result (read by the HUD and the debug harness).
@@ -148,6 +167,11 @@ func _ready() -> void:
 	InputActions.register()
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	_options = DebugOptions.parse(args)
+	if _options.controls_file != "":
+		_controls_path = _options.controls_file
+	var loaded: int = InputBindings.load_saved(_controls_path)
+	if loaded > 0:
+		print("[controls] loaded %d action binding(s) from %s" % [loaded, _controls_path])
 	_net_opts = NetOptions.parse(args)
 	if _net_opts.port > 0:
 		net_config = net_config.duplicate()
@@ -196,6 +220,7 @@ func _ready() -> void:
 	_ui = RaceFlowUi.new()
 	add_child(_ui)
 	_ui.setup(_racer_set, _vehicle_set, net_config.kart_colors, net_config.max_racers)
+	_ui.controls.save_path = _controls_path if _options.ui_shot == "" else ""
 	_hud = RaceHud.new()
 	add_child(_hud)
 	_hud.setup(_ui.theme_data)
@@ -206,6 +231,11 @@ func _ready() -> void:
 	_net.name = &"NetSession"
 	add_child(_net)
 	_net.setup(net_config, _net_opts.lag_ms, _net_opts.jitter_ms, _net_opts.loss_pct)
+	if _net_opts.version_override > 0:
+		_net.advertised_version = _net_opts.version_override
+		print("[net] version check uses %d instead of %d (--net-version-override)" % [
+				_net_opts.version_override, KartWire.VERSION])
+	_net.handshake_failed.connect(_on_handshake_failed)
 	_net.race_clock = func() -> float: return race_time
 	_net.race_active = func() -> bool: return _mode == Mode.NET_RACE
 	_net.peer_joined.connect(_on_peer_joined)
@@ -263,6 +293,7 @@ func _ready() -> void:
 		var auto := AutoUiDriver.new()
 		add_child(auto)
 		auto.setup(_options, _ui)
+		auto.spectating_fn = func() -> bool: return _spectating
 	if _options.overview_shot:
 		_run_overview_shot()
 		return
@@ -319,10 +350,15 @@ func _process(delta: float) -> void:
 		if _grid_shot_timer > 1.5:
 			_grid_shot_done = true
 			_debug_save("grid")
+	if _spectating:
+		_spectate_tick(delta)
 	if _mode == Mode.NET_RACE:
-		_hud.show_place(_ranking.place_of(_local.kart_id), _ranking.count())
-		_hud.set_net_info("rtt %d ms   view delay %d ms   karts %d" % [
-				int(_net_stats.rtt * 1000.0), int(_net_stats.view_delay * 1000.0), _racers.size()])
+		_hud.show_place(_ranking.place_of(_spec_target if _spectating else _local.kart_id), _ranking.count())
+		var net_line: String = "rtt %d ms   view delay %d ms   karts %d" % [
+				int(_net_stats.rtt * 1000.0), int(_net_stats.view_delay * 1000.0), _racers.size() - (1 if _spectating else 0)]
+		if _net.is_host() and not _spectators.is_empty():
+			net_line += "\n" + _ui.theme_data.t("spec_waiting_host", [_spectators.size()])
+		_hud.set_net_info(net_line)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -332,6 +368,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		_restart()
 	elif event.is_action_pressed(InputActions.PAUSE) and not _ui.any_open():
 		_open_pause()
+	elif _spectating and not _ui.any_open() and (event.is_action_pressed(InputActions.STEER_LEFT) \
+			or event.is_action_pressed(InputActions.STEER_RIGHT)) and not event.is_echo():
+		# Spectator: the next / previous racer by place.
+		_spec_place += -1 if event.is_action_pressed(InputActions.STEER_LEFT) else 1
+		_spec_place = posmod(_spec_place - 1, maxi(_ranking.count(), 1)) + 1
 
 
 # ---------------------------------------------------------------- ticking
@@ -590,6 +631,8 @@ func _wire_ui() -> void:
 	_ui.menu.sound_toggle_requested.connect(_toggle_mute)
 	_ui.pause.sound_toggle_requested.connect(_toggle_mute)
 	_ui.mute_requested.connect(_toggle_mute)
+	_ui.bindings_changed.connect(_hud.refresh_hints)
+	_ui.bindings_changed.connect(func() -> void: _spec_follow_key = "")
 
 
 # Creates the one AudioDirector (music from the start: menu, lobby and races share the loop) and
@@ -639,7 +682,7 @@ func _update_minimap() -> void:
 		_map_pos[n] = r.sim.position
 		_map_yaw[n] = r.sim.yaw
 		_map_col[n] = _slot_color(r.kart_id)
-		if r == _local:
+		if r == _local or (_spectating and r.kart_id == _spec_target):
 			local_i = n
 		if r.kart_id == leader_id:
 			leader_i = n
@@ -771,6 +814,17 @@ func _on_connected_to_host() -> void:
 		RecentHosts.remember(_ui.theme_data.recent_file, _joining_address, _ui.theme_data.default_address, _ui.theme_data.recent_max)
 
 
+# The version check before any RPC failed (KartWire.VERSION 8): back to the menu with the reason.
+# [param host_version] -1 = the host gave no valid answer in time (an older build).
+func _on_handshake_failed(host_version: int) -> void:
+	var mine: int = _net.advertised_version
+	if host_version >= 0:
+		_leave_network("The host runs a different version of the game (host v%d, you v%d). Update to the same build." % [
+				host_version, mine])
+	else:
+		_leave_network("The host did not answer the version check; it may run an older build of the game (you v%d). Update to the same build." % mine)
+
+
 # Host: remembers what a client chose (values are clamped, a bad message never crashes).
 func _on_loadout_received(peer_id: int, racer: int, vehicle: int) -> void:
 	var lo := Vector2i(clampi(racer, 0, maxi(_racer_set.count() - 1, 0)),
@@ -788,12 +842,13 @@ func _on_peer_joined(id: int) -> void:
 		else:
 			_refresh_host_text()
 	else:
-		_net.kick(id)
+		_add_spectator(id)
 
 
 func _on_peer_left(id: int) -> void:
 	_peer_loadouts.erase(id)
 	_peer_ready.erase(id)
+	_spectators.erase(id)
 	if _mode == Mode.HOST_LOBBY:
 		if _ui_flow:
 			_publish_lobby()
@@ -896,6 +951,11 @@ func _host_begin_race() -> void:
 		"host_time": -_sim.stats.start_countdown_time,
 		"seed": race_seed,
 	}
+	_race_info = info
+	_last_results = []
+	if not _spectators.is_empty():
+		print("[spectate] host: %d watcher(s) join this race as racers: peers %s" % [_spectators.size(), str(_spectators.keys())])
+	_spectators.clear()
 	_net.broadcast_race_start(info)
 	_apply_race_start(info)
 
@@ -909,7 +969,9 @@ func _debug_race_seed() -> int:
 
 
 func _on_race_start_received(info: Dictionary) -> void:
-	if _net.is_host() or (_mode == Mode.NET_RACE and not _results_open):
+	if _net.is_host():
+		return
+	if _mode == Mode.NET_RACE and not _results_open and (not _spectating or bool(info.get("spectate", false))):
 		return
 	if int(info.get("version", -1)) != KartWire.VERSION:
 		_leave_network("The host runs a different network version.")
@@ -925,6 +987,9 @@ func _on_race_start_received(info: Dictionary) -> void:
 func _apply_race_start(info: Dictionary) -> void:
 	var build_start_us: int = Time.get_ticks_usec()
 	_clear_others()
+	var spectate: bool = bool(info.get("spectate", false))
+	if spectate:
+		_begin_spectating()
 	var my_id: int = _net.my_id()
 	var laps_n: int = int(info.laps)
 	var slots: Array = info.slots
@@ -1016,6 +1081,9 @@ func _apply_race_start(info: Dictionary) -> void:
 	_camera.snap()
 	if _options.grid_shot:
 		_place_grid_camera()
+	if spectate:
+		_hud.set_spectating(true)
+		print("[spectate] watching the running race: %d karts, race clock %.1f s, %d laps" % [slots.size(), race_time, laps_n])
 	print("[net] built %d karts in %.1f ms" % [slots.size(), float(Time.get_ticks_usec() - build_start_us) / 1000.0])
 	print("[net] race start: %d karts, %d laps, role=%s peer=%d kart=%d" % [
 			slots.size(), laps_n, _role(), my_id, _local.kart_id])
@@ -1035,6 +1103,8 @@ func _bot_context() -> BotContext:
 
 
 func _clear_others() -> void:
+	if _spectating:
+		_end_spectating()
 	for r in _racers:
 		if r != _local and r.visual != null:
 			r.visual.queue_free()
@@ -1089,7 +1159,7 @@ func _loadout_of(loadouts: Dictionary, kart_id: int, is_bot: bool, race_seed: in
 
 # Identity slot of a kart (12 slots, one per kart id) and its palette color.
 func _slot_of(kart_id: int) -> int:
-	return kart_id % maxi(net_config.kart_colors.size(), 1)
+	return posmod(kart_id, maxi(net_config.kart_colors.size(), 1))
 
 
 func _slot_color(kart_id: int) -> Color:
@@ -1320,7 +1390,7 @@ func _publish_lobby() -> void:
 	_lobby.entries.append(LobbyState.make_entry(LobbyState.HOST_PEER, _my_loadout.x, _my_loadout.y, true))
 	for p in peers:
 		var lo: Vector2i = _peer_loadouts.get(p, Vector2i.ZERO)
-		_lobby.entries.append(LobbyState.make_entry(p, lo.x, lo.y, bool(_peer_ready.get(p, false))))
+		_lobby.entries.append(LobbyState.make_entry(p, lo.x, lo.y, bool(_peer_ready.get(p, false)), _spectators.has(p)))
 	_lobby.bots = clampi(_lobby.bots, 0, _lobby.max_bots(net_config.max_racers))
 	_ui.lobby.show_state(_lobby, LobbyState.HOST_PEER, true)
 	_net.send_lobby_state(_lobby.to_dict())
@@ -1467,6 +1537,7 @@ func _publish_results() -> void:
 		entries.append({"place": place, "kart_id": id, "name": r.display_name, "racer": lo.x, "vehicle": lo.y,
 				"time": r.finish_time() if r.is_finished() else -1.0, "bot": r.is_bot})
 	_results_open = true
+	_last_results = entries
 	_net.send_race_results(entries)
 	_show_results(entries, ResultsScreen.Viewer.HOST)
 
@@ -1480,9 +1551,15 @@ func _on_race_results_received(entries: Array) -> void:
 
 func _show_results(entries: Array, viewer: ResultsScreen.Viewer) -> void:
 	for e: Dictionary in entries:
-		print("[results] role=%s place=%d kart=%d name=%s racer=%d vehicle=%d time=%.2f" % [_role(), int(e.place),
-				int(e.kart_id), str(e.name), int(e.racer), int(e.vehicle), float(e.time)])
+		print("[results] role=%s place=%d kart=%d name=%s racer=%d vehicle=%d time=%.2f%s" % [_role(), int(e.place),
+				int(e.kart_id), str(e.name), int(e.racer), int(e.vehicle), float(e.time), " (seen as spectator)" if _spectating else ""])
 	_ui.show_results(entries, _local.kart_id, viewer)
+	var note: String = ""
+	if _spectating:
+		note = _ui.theme_data.t("spec_results_you")
+	elif _net.is_host() and not _spectators.is_empty():
+		note = _ui.theme_data.t("spec_results_note", [_spectators.size()])
+	_ui.results.set_note(note)
 
 
 # Solo: a moment after the finish line, the results of the one-kart race.
@@ -1496,6 +1573,99 @@ func _solo_results_tick(delta: float) -> void:
 	var entry: Dictionary = {"place": 1, "kart_id": _local.kart_id, "name": _ui.theme_data.t("player_name", [1]),
 			"racer": _built_loadout.x, "vehicle": _built_loadout.y, "time": _laps.finish_race_time, "bot": false}
 	_show_results([entry], ResultsScreen.Viewer.SOLO)
+
+
+# ---------------------------------------------------------------- spectators (story 007 part 3)
+
+# Host: [param id] connected while a race runs. It is not kicked: it gets the running race's
+# start info (without karts that left) with the host's race clock and "spectate", watches, and
+# is a normal player of the next race (rematch or lobby: it is one of the connected peers).
+func _add_spectator(id: int) -> void:
+	if _race_info.is_empty():
+		push_warning("Peer %d joined with no race info to send; it waits for the next race." % id)
+		_spectators[id] = true
+		return
+	_spectators[id] = true
+	var info: Dictionary = _race_info.duplicate(true)
+	var slots: Array = []
+	for slot: Array in info.slots:
+		var r: Racer = _by_id.get(int(slot[0]))
+		if r != null and r.dropped:
+			continue
+		slots.append(slot)
+	info["slots"] = slots
+	info["host_time"] = race_time
+	info["spectate"] = true
+	_net.send_race_start_to(id, info)
+	if _results_open and not _last_results.is_empty():
+		_net.send_race_results_to(id, _last_results)
+	print("[spectate] host: peer %d joined during the race and watches it (%d watching)%s" % [id, _spectators.size(),
+			" - results sent" if _results_open else ""])
+
+
+# Client: the local kart leaves the race view (hidden, not simulated, no kart id of the race).
+func _begin_spectating() -> void:
+	_spectating = true
+	_spec_place = 1
+	_spec_target = -2
+	_spec_follow_key = ""
+	_spec_time = 0.0
+	_by_id.clear()
+	_local.kart_id = SPECTATOR_KART_ID
+	_local.dropped = true
+	_local.visual.visible = false
+	_input.clear()
+
+
+# Client: back to a normal local kart (the next race, the lobby or the menu).
+func _end_spectating() -> void:
+	_spectating = false
+	_local.dropped = false
+	_local.kart_id = 0
+	_local.visual.visible = true
+	_spec_target = -2
+	_hud.set_spectating(false)
+	_camera.follow(_sim)
+	print("[spectate] spectating ended")
+
+
+# Spectator, per frame: the countdown follows the race clock, the camera follows the racer at
+# _spec_place (it switches when that place changes hands), the standings column is refreshed.
+func _spectate_tick(delta: float) -> void:
+	_spec_time += delta
+	if race_time < 0.0:
+		_start.since_go = -1.0
+		_start.time_to_go = -race_time
+	else:
+		_start.since_go = race_time
+		_start.time_to_go = 0.0
+	var n: int = _ranking.count()
+	if n == 0:
+		return
+	_spec_place = clampi(_spec_place, 1, n)
+	var id: int = _ranking.id_at_place(_spec_place)
+	var target: Racer = _by_id.get(id)
+	if id != _spec_target and target != null and target.sim != null:
+		_spec_target = id
+		_camera.follow(target.sim)
+		print("[spectate] camera follows kart %d (%s), place %d" % [id, target.display_name, _spec_place])
+	var names: PackedStringArray = PackedStringArray()
+	var colors: PackedColorArray = PackedColorArray()
+	for place in range(1, n + 1):
+		var pid: int = _ranking.id_at_place(place)
+		var r: Racer = _by_id.get(pid)
+		names.append(r.display_name if r != null else str(pid))
+		colors.append(_slot_color(pid))
+	var key: String = "%d|%d" % [_spec_target, _spec_place]
+	if key != _spec_follow_key:
+		_spec_follow_key = key
+		var who: String = target.display_name if target != null else ""
+		_spec_follow_text = BindingText.fill(_ui.theme_data.t("spec_follow", [who, UiTheme.ordinal(_spec_place)]), _ui.theme_data)
+	_hud.set_standings(names, colors, _spec_place - 1, _spec_follow_text)
+	# Debug (--shots=): two pictures of the spectator view.
+	if _options.shots_dir != "" and _spec_shots < 2 and _spec_time > 6.0 + 8.0 * float(_spec_shots):
+		_spec_shots += 1
+		_debug_save("spectate_%d" % _spec_shots)
 
 
 # ---------------------------------------------------------------- debug cameras and shots

@@ -14,7 +14,8 @@ var version: int = 0
 var track: String = ""
 var bots: int = 0
 var laps: int = 3
-## One entry per human, host first, then clients by peer id: {peer, racer, vehicle, ready}.
+## One entry per human, host first, then clients by peer id: {peer, racer, vehicle, ready, new}
+## ("new" = joined while a race ran and watched it, KartWire.VERSION 7).
 var entries: Array[Dictionary] = []
 
 
@@ -72,10 +73,11 @@ static func from_dict(d: Dictionary) -> LobbyState:
 			if e is Dictionary:
 				var ed: Dictionary = e
 				s.entries.append({"peer": int(ed.get("peer", 0)), "racer": int(ed.get("racer", 0)),
-						"vehicle": int(ed.get("vehicle", 0)), "ready": bool(ed.get("ready", false))})
+						"vehicle": int(ed.get("vehicle", 0)), "ready": bool(ed.get("ready", false)),
+						"new": bool(ed.get("new", false))})
 	return s
 
 
-## An entry dictionary.
-static func make_entry(peer: int, racer: int, vehicle: int, ready: bool) -> Dictionary:
-	return {"peer": peer, "racer": racer, "vehicle": vehicle, "ready": ready}
+## An entry dictionary; [param is_new] marks a player who watched the last race as a spectator.
+static func make_entry(peer: int, racer: int, vehicle: int, ready: bool, is_new: bool = false) -> Dictionary:
+	return {"peer": peer, "racer": racer, "vehicle": vehicle, "ready": ready, "new": is_new}

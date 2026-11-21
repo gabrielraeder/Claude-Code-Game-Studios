@@ -6,6 +6,7 @@
 script = ExtResource("1_net")
 port = 24680
 max_racers = 12
+auth_timeout = 3.0
 send_hz = 30.0
 view_delay_min = 0.05
 view_delay_max = 0.35

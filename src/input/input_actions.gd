@@ -18,22 +18,37 @@ const MUTE: StringName = &"mute"
 
 ## Stick and trigger deadzone (axis values below this read as zero).
 const AXIS_DEADZONE: float = 0.2
+## The actions the controls menu can rebind (story 007 part 3), in the order it lists them.
+## RESTART is not listed: it is the finish screen's Start button and follows no rebinding.
+const REBINDABLE: Array[StringName] = [ACCEL, BRAKE, STEER_LEFT, STEER_RIGHT, DRIFT, ITEM, PAUSE, MUTE]
 
 
-## Adds every game action to the InputMap. Safe to call more than once.
+## Adds every game action to the InputMap. Safe to call more than once. Saved custom
+## bindings are applied afterwards by [method InputBindings.load_saved].
 static func register() -> void:
-	_action(ACCEL, [KEY_W, KEY_UP], [], [[JOY_AXIS_TRIGGER_RIGHT, 1.0]])
-	_action(BRAKE, [KEY_S, KEY_DOWN], [], [[JOY_AXIS_TRIGGER_LEFT, 1.0]])
-	_action(STEER_LEFT, [KEY_A, KEY_LEFT], [], [[JOY_AXIS_LEFT_X, -1.0]])
-	_action(STEER_RIGHT, [KEY_D, KEY_RIGHT], [], [[JOY_AXIS_LEFT_X, 1.0]])
-	_action(DRIFT, [KEY_SPACE, KEY_SHIFT], [JOY_BUTTON_RIGHT_SHOULDER], [])
-	_action(ITEM, [KEY_E, KEY_CTRL], [JOY_BUTTON_LEFT_SHOULDER], [])
-	# Restart on the finish screen only (main checks); no keyboard key. Enter/A use ui_accept.
-	_action(RESTART, [], [JOY_BUTTON_START], [])
-	_action(PAUSE, [KEY_ESCAPE], [JOY_BUTTON_START], [])
-	_action(MUTE, [KEY_M], [JOY_BUTTON_BACK], [])
+	_defaults(false)
 	_add_button(&"ui_accept", JOY_BUTTON_A)
 	_add_button(&"ui_cancel", JOY_BUTTON_B)
+
+
+## Puts the built-in keys and buttons back on every game action ("Reset to defaults").
+static func reset_to_defaults() -> void:
+	_defaults(true)
+
+
+# The built-in bindings, the only place they are written down. [param force] replaces the
+# events of actions that already exist.
+static func _defaults(force: bool) -> void:
+	_action(ACCEL, [KEY_W, KEY_UP], [], [[JOY_AXIS_TRIGGER_RIGHT, 1.0]], force)
+	_action(BRAKE, [KEY_S, KEY_DOWN], [], [[JOY_AXIS_TRIGGER_LEFT, 1.0]], force)
+	_action(STEER_LEFT, [KEY_A, KEY_LEFT], [], [[JOY_AXIS_LEFT_X, -1.0]], force)
+	_action(STEER_RIGHT, [KEY_D, KEY_RIGHT], [], [[JOY_AXIS_LEFT_X, 1.0]], force)
+	_action(DRIFT, [KEY_SPACE, KEY_SHIFT], [JOY_BUTTON_RIGHT_SHOULDER], [], force)
+	_action(ITEM, [KEY_E, KEY_CTRL], [JOY_BUTTON_LEFT_SHOULDER], [], force)
+	# Restart on the finish screen only (main checks); no keyboard key. Enter/A use ui_accept.
+	_action(RESTART, [], [JOY_BUTTON_START], [], force)
+	_action(PAUSE, [KEY_ESCAPE], [JOY_BUTTON_START], [], force)
+	_action(MUTE, [KEY_M], [JOY_BUTTON_BACK], [], force)
 
 
 ## Adds a controller button to an existing action unless it is already there.
@@ -44,10 +59,13 @@ static func _add_button(action: StringName, button: JoyButton) -> void:
 		InputMap.action_add_event(action, e)
 
 
-static func _action(action: StringName, keys: Array, buttons: Array, axes: Array) -> void:
+static func _action(action: StringName, keys: Array, buttons: Array, axes: Array, force: bool = false) -> void:
 	if InputMap.has_action(action):
-		return
-	InputMap.add_action(action, AXIS_DEADZONE)
+		if not force:
+			return
+		InputMap.action_erase_events(action)
+	else:
+		InputMap.add_action(action, AXIS_DEADZONE)
 	for k in keys:
 		var e := InputEventKey.new()
 		e.physical_keycode = k as Key

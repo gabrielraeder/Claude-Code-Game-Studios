@@ -1,7 +1,7 @@
 class_name PauseMenu
 extends UiScreen
 ## The pause menu (Esc or Start during a race): Resume, Restart (offline only), Back to menu,
-## Sound On/Off, Quit. Navigable with the keyboard, the mouse and the controller (ui_up / ui_down /
+## Controls, Sound On/Off, Quit. Navigable with the keyboard, the mouse and the controller (ui_up / ui_down /
 ## ui_accept, Esc / Start / B closes). Emits signals only; the owner decides what they do.
 ## The start screen, lobby and results are their own screens (MainMenu, LobbyScreen, ResultsScreen).
 
@@ -13,6 +13,8 @@ signal restart_requested
 signal menu_requested
 ## The player chose Quit.
 signal quit_requested
+## The player chose Controls (RaceFlowUi opens the controls screen).
+signal controls_requested
 
 var _resume_button: Button
 var _restart_button: Button
@@ -38,6 +40,7 @@ func _build(root: Control) -> void:
 	_resume_button = _add(column, "pause_resume", true, resume_requested)
 	_restart_button = _add(column, "pause_restart", false, restart_requested)
 	_menu_button = _add(column, "pause_menu", false, menu_requested)
+	_add(column, "pause_controls", false, controls_requested)
 	_add_sound_button(column)
 	_quit_button = _add(column, "pause_quit", false, quit_requested)
 
