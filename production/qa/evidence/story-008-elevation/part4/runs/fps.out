@@ -1,0 +1,12 @@
+production/qa/evidence/story-008-elevation/part4/runs/fps_castle_circuit_1/host.csv fps n 66 min 59.0 median 60.0 mean 60.0
+  worst frame 44.2 ms at race_time 60.00; ERROR lines below
+0
+production/qa/evidence/story-008-elevation/part4/runs/fps_castle_circuit_2/host.csv fps n 66 min 59.0 median 60.0 mean 60.0
+  worst frame 31.8 ms at race_time 10.00; ERROR lines below
+0
+production/qa/evidence/story-008-elevation/part4/runs/fps_dungeon_depths_1/host.csv fps n 66 min 59.0 median 60.0 mean 60.0
+  worst frame 27.3 ms at race_time 68.00; ERROR lines below
+0
+production/qa/evidence/story-008-elevation/part4/runs/fps_dungeon_depths_2/host.csv fps n 66 min 59.0 median 60.0 mean 60.0
+  worst frame 61.2 ms at race_time 36.00; ERROR lines below
+0

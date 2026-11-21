@@ -90,8 +90,12 @@ class RoadGrid extends RefCounted:
 			var l2: float = ab.length_squared()
 			var t: float = clampf((p - a).dot(ab) / l2, 0.0, 1.0) if l2 > 0.0 else 0.0
 			var d: float = p.distance_squared_to(a + ab * t)
-			if d < best_d[code.x] and leveled and not track.blocks_level(path.height_at(code.y, t), y_lo, y_hi, clear, flat):
-				continue
+			# Story 008 part 4: the surface height at p's side of the road (a banked road's low edge
+			# is far below its centreline), not the centreline height.
+			if d < best_d[code.x] and leveled:
+				var lat: float = (p - a).dot(Vector2(-ab.y, ab.x).normalized()) if l2 > 0.0 else 0.0
+				if not track.blocks_level(path.surface_y(code.y, t, lat), y_lo, y_hi, clear, flat):
+					continue
 			if d < best_d[code.x]:
 				best_d[code.x] = d
 				best_seg[code.x] = code.y
@@ -114,11 +118,11 @@ class RoadGrid extends RefCounted:
 
 	## Story 008 part 3: (excess over the nearest road's wall, that road's surface height at its
 	## nearest point) for [param p], any level. x = reach when no road is near.
-	func nearest_surface(p: Vector2) -> Vector2:
+	func nearest_surface(p: Vector2) -> Vector3:
 		var key := Vector2i(floori(p.x / cell), floori(p.y / cell))
 		if not cells.has(key):
-			return Vector2(reach, 0.0)
-		var out := Vector2(reach, 0.0)
+			return Vector3(reach, 0.0, reach)
+		var out := Vector3(reach, 0.0, reach)
 		for code: Vector2i in cells[key]:
 			var path: TrackModel.Path = paths[code.x]
 			var a: Vector2 = path.points[code.y]
@@ -130,7 +134,7 @@ class RoadGrid extends RefCounted:
 			var e: float = off.length() - path.wall_at(code.y, t, side)
 			if e < out.x:
 				var lat: float = off.dot(Vector2(-ab.y, ab.x).normalized()) if l2 > 0.0 else 0.0
-				out = Vector2(e, path.surface_y(code.y, t, lat))
+				out = Vector3(e, path.surface_y(code.y, t, lat), off.length() - path.half_at(code.y, t) - path.curb)
 		return out
 
 var _track: TrackModel
@@ -226,7 +230,12 @@ func _place(pieces: Array) -> void:
 	if pieces.is_empty():
 		return
 	_guard_props[_tag] = int(_guard_props.get(_tag, 0)) + 1
-	var shift := Vector3(0.0, _road_lift(pieces), 0.0)
+	var lift: Vector2 = _road_lift(pieces)
+	var shift := Vector3(0.0, lift.x, 0.0)
+	# Story 008 part 4: raised beside (not on) its road's deck, the prop gets a plinth to the ground.
+	if lift.x > _th.scenery_plinth_min_lift and lift.y > 0.0:
+		pieces = pieces.duplicate()
+		pieces.append(_plinth(pieces, lift.x))
 	var moved: float = 0.0
 	for attempt in 4:
 		var away: Array = [Vector2.ZERO]
@@ -247,19 +256,45 @@ func _place(pieces: Array) -> void:
 	_guard_dropped[_tag] = int(_guard_dropped.get(_tag, 0)) + 1
 
 
-# Story 008 part 3: how high a prop is raised. A prop whose pieces' centre is over a road or within
-# TrackTheme.scenery_attach_reach of its wall belongs to that road (walls, posts, banners, arches)
-# and stands on its surface height there; farther props stay on the ground (0). 0 on a flat track.
-func _road_lift(pieces: Array) -> float:
+# Story 008 part 3: how high a prop is raised (x). A prop whose pieces' centre is over a road or
+# within TrackTheme.scenery_attach_reach of its wall belongs to that road (walls, posts, banners,
+# arches) and stands on its surface height there; farther props stay on the ground (0). 0 on a flat
+# track. Part 4: y = how far (meters) the centre is beyond that road's deck edge (<= 0 = on the deck).
+func _road_lift(pieces: Array) -> Vector2:
 	if _top_road <= 0.0:
-		return 0.0
+		return Vector2.ZERO
 	var c := Vector2.ZERO
 	for pc in pieces:
 		var o: Vector3 = (pc[1] as Transform3D).origin
 		c += Vector2(o.x, o.z)
 	c /= float(pieces.size())
-	var near: Vector2 = _grid.nearest_surface(c)
-	return maxf(near.y, 0.0) if near.x <= _th.scenery_attach_reach else 0.0
+	var near: Vector3 = _grid.nearest_surface(c)
+	return Vector2(maxf(near.y, 0.0), near.z) if near.x <= _th.scenery_attach_reach else Vector2.ZERO
+
+
+# A plinth piece under [param pieces] (in their unraised coordinates, so after the [param lift]
+# it spans the ground up to the road surface): a box over the pieces' footprint.
+func _plinth(pieces: Array, lift: float) -> Array:
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for pc in pieces:
+		var xf: Transform3D = pc[1]
+		if xf.origin.y > _th.scenery_clear_height:
+			continue  # high parts (roofs, flames) do not widen the base
+		var half: float = 0.5 * maxf(xf.basis.x.length(), xf.basis.z.length())
+		lo = Vector2(minf(lo.x, xf.origin.x - half), minf(lo.y, xf.origin.z - half))
+		hi = Vector2(maxf(hi.x, xf.origin.x + half), maxf(hi.y, xf.origin.z + half))
+	if lo.x == INF:
+		var o: Vector3 = (pieces[0][1] as Transform3D).origin
+		lo = Vector2(o.x, o.z)
+		hi = lo
+	var m: float = _th.scenery_plinth_margin
+	var size := Vector2(maxf(hi.x - lo.x + m, m), maxf(hi.y - lo.y + m, m))
+	var c: Vector2 = (lo + hi) * 0.5
+	var g: float = _track.data.ground_y
+	var height: float = lift - g
+	return ["box", Transform3D(Basis.from_scale(Vector3(size.x, height, size.y)), Vector3(c.x, g - lift + height * 0.5, c.y)),
+			_track.data.deck_under_color]
 
 
 # True when [param pieces] would pass the road guard where they are (no move).

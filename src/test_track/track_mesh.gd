@@ -23,6 +23,8 @@ const GAP_MARGIN: float = 0.6
 ## the step it slides along its own road to find a clear spot.
 const PILLAR_CLEARANCE: float = 0.8
 const PILLAR_SHIFT_STEP: float = 1.5
+## A solid road's edge lower than this above the ground (meters) gets no side face (nothing to see).
+const SKIRT_MIN_HEIGHT: float = 0.05
 
 
 ## Creates the meshes for [param track] as children of this node.
@@ -37,6 +39,7 @@ func build(track: TrackModel) -> void:
 	_pads(road, track, th)
 	_ramps(road, track)
 	_deck_underside(road, track)
+	_solid_sides(road, track)
 	add_child(_instance(road.commit()))
 
 	var walls := SurfaceTool.new()
@@ -220,7 +223,7 @@ func _main_walls(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
 				continue  # open edge over water
 			var a: Vector2 = pts[i] + normals[i] * wi * side
 			var b: Vector2 = pts[j] + normals[j] * wj * side
-			if _in_branch_opening(track, (a + b) * 0.5):
+			if _in_branch_opening(track, (a + b) * 0.5, (path.y[i] + path.y[j]) * 0.5):
 				continue
 			var odd: bool = (i / stripe) % 2 == 1
 			var h: float = th.wall_height + (0.0 if odd else th.merlon_height)
@@ -242,9 +245,11 @@ func _branch_walls(st: SurfaceTool, track: TrackModel, bi: int) -> void:
 			var a: Vector2 = pts[i] + normals[i] * path.wall_pos[i] * side
 			var c: Vector2 = pts[i + 1] + normals[i + 1] * path.wall_pos[i + 1] * side
 			var mid: Vector2 = (a + c) * 0.5
-			if track.main.nearest(mid, -1, 0).excess < GAP_MARGIN:
+			var yc: float = (path.y[i] + path.y[i + 1]) * 0.5
+			var mh: TrackModel.Hit = track.main.nearest(mid, -1, 0)
+			if mh.excess < GAP_MARGIN and _same_level(track, track.main.height_at(mh.seg, mh.t), yc):
 				continue
-			if _in_other_branch(track, mid, bi):
+			if _in_other_branch(track, mid, bi, yc):
 				continue
 			var ya: float = path.y[i] + DECK_Y + path.wall_pos[i] * side * tan(path.bank[i])
 			var yb: float = path.y[i + 1] + DECK_Y + path.wall_pos[i + 1] * side * tan(path.bank[i + 1])
@@ -252,19 +257,33 @@ func _branch_walls(st: SurfaceTool, track: TrackModel, bi: int) -> void:
 					b.wall_alt_color if i % 2 == 1 else b.wall_color)
 
 
-# True when [param p] (a wall point of the main road) lies in the opening of a branch.
-func _in_branch_opening(track: TrackModel, p: Vector2) -> bool:
+# True when [param p] (a wall point of the main road at centerline height [param y]) lies in the
+# opening of a branch at the same level (story 008 part 4: a branch crossing over or under the main
+# road opens no gap in its walls).
+func _in_branch_opening(track: TrackModel, p: Vector2, y: float) -> bool:
 	for bp in track.branches:
-		if bp.bounds.has_point(p) and bp.nearest(p, -1, 0).excess < GAP_MARGIN:
+		if not bp.bounds.has_point(p):
+			continue
+		var h: TrackModel.Hit = bp.nearest(p, -1, 0)
+		if h.excess < GAP_MARGIN and _same_level(track, bp.height_at(h.seg, h.t), y):
 			return true
 	return false
 
 
-func _in_other_branch(track: TrackModel, p: Vector2, skip: int) -> bool:
+func _in_other_branch(track: TrackModel, p: Vector2, skip: int, y: float) -> bool:
 	for bp in track.branches:
-		if bp.index != skip and bp.bounds.has_point(p) and bp.nearest(p, -1, 0).excess < GAP_MARGIN:
+		if bp.index == skip or not bp.bounds.has_point(p):
+			continue
+		var h: TrackModel.Hit = bp.nearest(p, -1, 0)
+		if h.excess < GAP_MARGIN and _same_level(track, bp.height_at(h.seg, h.t), y):
 			return true
 	return false
+
+
+# Two road heights belong to the same level (they meet at a junction) unless they are at least
+# TrackData.level_separation apart (one passes over the other).
+func _same_level(track: TrackModel, a: float, b: float) -> bool:
+	return absf(a - b) < track.data.level_separation
 
 
 # Fills the area between a branch and the main road it bypasses when the branch asks for it
@@ -369,8 +388,30 @@ func _road_y(track: TrackModel, p: Vector2, y_hint: float = NAN) -> float:
 
 # Square support columns under raised main road, from the ground up to just below the surface.
 func _pillars(st: SurfaceTool, track: TrackModel) -> void:
+	for path in _roads(track):
+		_pillars_of(st, track, path)
+
+
+# Every road: the main loop, then the branches.
+func _roads(track: TrackModel) -> Array[TrackModel.Path]:
+	var roads: Array[TrackModel.Path] = [track.main]
+	roads.append_array(track.branches)
+	return roads
+
+
+# True where road [param path] at sample [param i] is drawn solid down to the ground (story 008
+# part 4, TrackData.solid_below): low enough, and no other road passes under it there.
+func _solid_at(track: TrackModel, path: TrackModel.Path, i: int) -> bool:
 	var d: TrackData = track.data
-	var path: TrackModel.Path = track.main
+	if d.solid_below <= 0.0 or path.y[i] - d.ground_y > d.solid_below:
+		return false
+	return not track.road_below(path.points[i], path.y[i], path.half[i] + path.curb + PILLAR_CLEARANCE)
+
+
+func _pillars_of(st: SurfaceTool, track: TrackModel, path: TrackModel.Path) -> void:
+	var d: TrackData = track.data
+	if d.solid_below > 0.0:
+		return  # solid roads stand on their side faces; an open span rests on them like a bridge
 	var hw: float = d.pillar_half_width
 	var count: int = int(path.length / maxf(d.pillar_spacing, 1.0))
 	for k in count:
@@ -467,17 +508,23 @@ func _ramp_data(track: TrackModel, index: int) -> TrackRamp:
 # Underside and edge faces of raised main road (story 008): a bridge or a raised deck reads as a
 # solid slab data.deck_thickness thick from below and from the side, instead of a paper surface.
 func _deck_underside(st: SurfaceTool, track: TrackModel) -> void:
+	for path in _roads(track):
+		_deck_underside_of(st, track, path)
+
+
+func _deck_underside_of(st: SurfaceTool, track: TrackModel, path: TrackModel.Path) -> void:
 	var d: TrackData = track.data
-	var path: TrackModel.Path = track.main
 	var pts: PackedVector2Array = path.points
 	var n: int = pts.size()
-	var normals: Array[Vector2] = _normals_of(pts, true)
+	var normals: Array[Vector2] = _normals_of(pts, path.closed)
 	var th: float = d.deck_thickness
 	if th <= 0.0:
 		return
-	for i in n:
+	for i in (n if path.closed else n - 1):
 		var j: int = (i + 1) % n
 		if minf(path.y[i], path.y[j]) - d.ground_y < d.pillar_min_height:
+			continue
+		if _solid_at(track, path, i) and _solid_at(track, path, j):
 			continue
 		var wa: float = path.half[i] + path.curb
 		var wb: float = path.half[j] + path.curb
@@ -499,6 +546,55 @@ func _deck_underside(st: SurfaceTool, track: TrackModel) -> void:
 		_tri(st, _v3(pa, ypa - th), _v3(nb, ynb - th), _v3(na, yna - th))
 		_vquad(st, pa, pb, ypa - th, ypb - th, th, normals[i])
 		_vquad(st, na, nb, yna - th, ynb - th, th, -normals[i])
+
+
+# Story 008 part 4: side faces from each edge of a solid road (TrackData.solid_below) down to the
+# ground, so a raised road reads as an embankment, a rampart wall or a rock ledge. None where the
+# edge is at the ground, where the road is open over another road, or where the edge runs inside
+# another road's corridor at the same level (a junction: the other deck continues there).
+func _solid_sides(st: SurfaceTool, track: TrackModel) -> void:
+	var d: TrackData = track.data
+	if d.solid_below <= 0.0:
+		return
+	for path in _roads(track):
+		var pts: PackedVector2Array = path.points
+		var n: int = pts.size()
+		var normals: Array[Vector2] = _normals_of(pts, path.closed)
+		var solid := PackedByteArray()
+		solid.resize(n)
+		for i in n:
+			solid[i] = 1 if _solid_at(track, path, i) else 0
+		for i in (n if path.closed else n - 1):
+			var j: int = (i + 1) % n
+			if solid[i] == 0 or solid[j] == 0:
+				continue
+			for side in [1.0, -1.0]:
+				var wa: float = path.half[i] + path.curb
+				var wb: float = path.half[j] + path.curb
+				var ya: float = path.y[i] + wa * side * tan(path.bank[i])
+				var yb: float = path.y[j] + wb * side * tan(path.bank[j])
+				if maxf(ya, yb) - d.ground_y < SKIRT_MIN_HEIGHT:
+					continue
+				var a: Vector2 = pts[i] + normals[i] * wa * side
+				var b: Vector2 = pts[j] + normals[j] * wb * side
+				if _inside_other_road(track, path, (a + b) * 0.5, (ya + yb) * 0.5):
+					continue
+				st.set_color(d.deck_under_color)
+				st.set_normal(_v3(normals[i] * side, 0.0))
+				_tri(st, _v3(a, d.ground_y), _v3(b, d.ground_y), _v3(b, yb))
+				_tri(st, _v3(a, d.ground_y), _v3(b, yb), _v3(a, ya))
+
+
+# True when [param p] lies inside the corridor of a road other than [param own] whose surface there
+# is at the same level as [param y].
+func _inside_other_road(track: TrackModel, own: TrackModel.Path, p: Vector2, y: float) -> bool:
+	for path in _roads(track):
+		if path == own or not path.bounds.has_point(p):
+			continue
+		var h: TrackModel.Hit = path.nearest(p, -1, 0)
+		if h.excess < 0.0 and _same_level(track, path.height_at(h.seg, h.t), y):
+			return true
+	return false
 
 
 func _v3(p: Vector2, y: float) -> Vector3:

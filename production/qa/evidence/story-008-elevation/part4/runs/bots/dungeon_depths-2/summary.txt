@@ -1,0 +1,41 @@
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+   1 Careful          125.93  42.9 39.3 43.2             0(0.0)       2       1      0.9605 74.3
+   2 Wide Wanderer    125.00  42.0 42.1 40.1             0(0.0)       5       0      0.9742 66.7
+   3 Shortcut Hunter  118.93  40.7 38.3 38.5             0(0.0)       7       0      0.9827 68.0
+   4 Apex Ace         121.73  39.4 41.5 38.9             0(0.0)       4       0      0.9928 63.6
+   5 Outside Swinger  121.40  40.9 37.5 41.6             0(0.0)       6       0      0.9734 63.3
+   6 Item Hoarder     125.60  42.3 40.4 41.5             0(0.0)       4       0      0.9726 60.7
+   7 Steady Eddie     124.73  38.4 40.5 44.5             0(0.0)       5       0      0.9453 62.0
+   8 Hothead          126.40  40.5 41.9 42.5             0(0.0)       6       0      0.9886 62.7
+   9 Careful          121.80  41.0 39.7 39.5             0(0.0)       7       0      0.9691 73.2
+  10 Wide Wanderer    117.33  39.9 37.8 37.8             0(0.0)       7       0      0.9738 64.1
+  11 Shortcut Hunter  122.53  40.1 39.6 41.1             0(0.0)       8       1      0.9871 65.6
+
+bots finished: 11/11  first 117.33  last 126.40  spread 7.7% of winner
+bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+
+SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+  per personality: {}
+  per location: {}
+  SEED 1589040811; karts sinking again within 5 s: 0
+  shortcuts skipped because crowded: 0
+
+shortcut enters by name/branch:
+  Careful         planned {'mine_rail': 4, 'hall_right': 1, 'hall_left': 1} entered {'hall_right': 1, 'mine_rail': 1} missed {'mine_rail': 1}
+  Wide Wanderer   planned {'mine_rail': 5, 'hall_right': 1, 'hall_left': 2} entered {'hall_right': 1, 'mine_rail': 3, 'hall_left': 1} missed {}
+  Shortcut Hunter planned {'hall_right': 4, 'mine_rail': 5, 'hall_left': 1, 'lava_gap': 3} entered {'hall_right': 2, 'mine_rail': 3, 'lava_gap': 2} missed {}
+  Apex Ace        planned {'hall_right': 3, 'lava_gap': 4, 'hall_left': 1, 'mine_rail': 1} entered {'hall_right': 1, 'lava_gap': 2, 'hall_left': 1} missed {}
+  Outside Swinger planned {'hall_left': 3, 'hall_right': 1, 'mine_rail': 4, 'lava_gap': 1} entered {'hall_right': 1, 'mine_rail': 3, 'hall_left': 1, 'lava_gap': 1} missed {}
+  Item Hoarder    planned {'hall_left': 5, 'mine_rail': 1, 'lava_gap': 1} entered {'hall_left': 3, 'mine_rail': 1} missed {}
+  Steady Eddie    planned {'hall_right': 2, 'lava_gap': 1, 'hall_left': 1, 'mine_rail': 2} entered {'lava_gap': 1, 'hall_left': 1, 'mine_rail': 2, 'hall_right': 1} missed {}
+  Hothead         planned {'hall_right': 3, 'mine_rail': 5, 'hall_left': 2} entered {'hall_left': 2, 'mine_rail': 3, 'hall_right': 1} missed {}
+  Careful         planned {'hall_left': 2, 'hall_right': 2, 'mine_rail': 1, 'lava_gap': 4} entered {'hall_right': 2, 'mine_rail': 1, 'lava_gap': 3, 'hall_left': 1} missed {}
+  Wide Wanderer   planned {'hall_left': 4, 'lava_gap': 3, 'mine_rail': 3} entered {'hall_left': 2, 'lava_gap': 3, 'mine_rail': 2} missed {}
+  Shortcut Hunter planned {'hall_left': 3, 'mine_rail': 5, 'lava_gap': 4, 'hall_right': 2} entered {'hall_left': 2, 'lava_gap': 3, 'mine_rail': 2, 'hall_right': 1} missed {'mine_rail': 1}
+
+host autopilot: [debug] finished: laps [38.2666666666669, 38.1333333333338, 38.1333333333312] boosts [18, 0, 0] start_boost 3 max_speed 35.10 cap 35.10
+[net-summary] role=host peer=1 place=1 finish=115.07 karts=12 | rtt_avg=0ms rtt_max=0ms view_delay=100ms | snaps/s=0.0 | extrap=0.0% | pred_err avg=0.000m max=0.000m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=0.0 kb_in/s=0.0
+
+bot item use: {'stone': 7, 'horn': 6, 'falcon': 3, 'spill': 3}
+hits by bot items: {('stone', 'hit'): 6, ('falcon', 'hit'): 3, ('spill', 'hit'): 3}
+items used per bot: {'Careful': 1, 'Wide Wanderer': 1, 'Shortcut Hunter': 2, 'Apex Ace': 3, 'Outside Swinger': 1, 'Item Hoarder': 1, 'Steady Eddie': 3, 'Hothead': 1}

@@ -546,6 +546,13 @@ func query(p: Vector2, hint: int, y_hint: float = NAN) -> Query:
 		main_hit = main.nearest_filtered(p, y_hint - sep, y_hint + sep)
 	if main_hit == null:
 		main_hit = main.nearest(p, main_hint, _window)
+	# Story 008 part 4: a kart on a branch that crosses over (or under) the main road must not be
+	# captured by the main road at the other level; the hint near the branch's mapped s is no help
+	# there, so the main road is searched at the kart's level instead.
+	if leveled and cur_path != MAIN_PATH and absf(main.height_at(main_hit.seg, main_hit.t) - y_hint) > sep:
+		var lvl: Hit = main.nearest_filtered(p, y_hint - sep, y_hint + sep)
+		if lvl != null:
+			main_hit = lvl
 	var hits: Array[Hit] = [main_hit]
 	for bp in branches:
 		if bp.bounds.has_point(p):
@@ -563,6 +570,12 @@ func query(p: Vector2, hint: int, y_hint: float = NAN) -> Query:
 			cur = h
 		if best == null or _better(h, best):
 			best = h
+	# Story 008 part 4: past the open end of a branch (beyond its last point, or before its first)
+	# the kart has left it, even while still near its end: keeping it would hold the kart at the
+	# branch end's height while the main road it rejoined climbs or falls away.
+	if cur != null and cur.path.index != MAIN_PATH and best != cur and best.path.index == MAIN_PATH \
+			and best.excess <= 0.0 and _past_open_end(cur):
+		cur = null
 	# Stay on the current road while still inside its corridor: a kart only changes road when
 	# it actually leaves one, so following the main road past a branch entrance (where both
 	# centerlines start together) never captures it into the branch.
@@ -574,6 +587,13 @@ func query(p: Vector2, hint: int, y_hint: float = NAN) -> Query:
 	elif cur != null and best != cur and best.excess > 0.0 and cur.excess - best.excess <= _switch_margin:
 		best = cur
 	return _to_query(p, best, y_hint)
+
+
+# True when hit [param h] on an open road is its end point reached from beyond the end (the
+# nearest point is clamped to the first or last sample).
+func _past_open_end(h: Hit) -> bool:
+	var last: int = h.path.segment_count() - 1
+	return (h.seg == last and h.t >= 1.0) or (h.seg == 0 and h.t <= 0.0)
 
 
 # Inside beats outside; among inside roads the nearest centerline wins; among outside roads
@@ -693,13 +713,24 @@ func road_below(p: Vector2, y: float, margin: float) -> bool:
 ## reaches below h + [param clear] (kart height over that road) and its top is above
 ## h + [param flat] (drive-over detail) on a road near the ground, or above the deck's underside
 ## (h - deck_thickness) on a raised road: a prop through a bridge deck is in the way, one under the
-## deck and above the karts of the road below is not.
+## deck and above the karts of the road below is not. Story 008 part 4: a solid road
+## (TrackData.solid_below) counts as ground level: flat detail on its surface (rails, sleepers) is
+## fine, and what is under its surface is inside the embankment.
 func blocks_level(h: float, y_lo: float, y_hi: float, clear: float, flat: float) -> bool:
 	if y_lo >= h + clear:
 		return false
-	if h - data.ground_y >= data.pillar_min_height:
+	if h >= _open_deck_from():
 		return y_hi > h - data.deck_thickness
 	return y_hi > h + flat
+
+
+# Road heights (centreline Y) from which a road is an open deck for the scenery rules: above
+# pillar_min_height, and above solid_below on a track with solid roads.
+func _open_deck_from() -> float:
+	var lift: float = data.pillar_min_height
+	if data.solid_below > 0.0:
+		lift = maxf(lift, data.solid_below)
+	return data.ground_y + lift
 
 
 ## Like [method excess_at], but only roads that a piece spanning heights [param y_lo]..[param y_hi]
@@ -708,7 +739,7 @@ func excess_at_level(p: Vector2, y_lo: float, y_hi: float, clear: float, flat: f
 	var best: float = INF
 	var roads: Array[Path] = [main]
 	roads.append_array(branches)
-	var raised: float = data.ground_y + data.pillar_min_height
+	var raised: float = _open_deck_from()
 	for path in roads:
 		# Ground-level roads (centreline below `raised`) and raised ones have different bands.
 		var lo_a: float = y_lo - clear

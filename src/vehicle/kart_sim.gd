@@ -34,6 +34,8 @@ signal trick_boosted()
 
 ## hazard_kind of a fall off the track (story 008): the kart falls instead of sinking.
 const FALL_KIND: StringName = &"fall"
+## Smallest divisor (seconds or m/s) used to keep a ratio finite; not a tuning value.
+const EPSILON: float = 0.001
 
 ## Handling data for this kart.
 var stats: VehicleStats
@@ -459,7 +461,7 @@ func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 				height = track.data.ground_y
 				vertical_velocity = 0.0
 		else:
-			sink_progress = 1.0 - sink_time / maxf(_sink_total, 0.001)
+			sink_progress = 1.0 - sink_time / maxf(_sink_total, EPSILON)
 		speed = 0.0
 		velocity = Vector2.ZERO
 		knock = Vector2.ZERO
@@ -610,7 +612,7 @@ func _constrain_to_track(dt: float, track: TrackModel) -> void:
 		var into_wall: float = velocity.dot(outward)
 		if into_wall > 0.0:
 			touching = true
-			var angle: float = rad_to_deg(asin(clampf(into_wall / maxf(velocity.length(), 0.001), 0.0, 1.0)))
+			var angle: float = rad_to_deg(asin(clampf(into_wall / maxf(velocity.length(), EPSILON), 0.0, 1.0)))
 			velocity -= outward * into_wall * stats.bump_knockback
 			_wall_contact(angle, dt)
 	if (touching or _wall_slide_time > 0.0) and _turnback_rate > 0.0 and speed > 0.0:
@@ -779,7 +781,7 @@ func _start_sinking(track: TrackModel) -> void:
 	# did not work for this kart: the next respawn uses the main road instead (no loop).
 	_repeat_sink = hit_immunity_time > 0.0 and respawn_count > 0
 	_trick_pending = false
-	_sink_total = maxf(track.data.fall_respawn_delay if hazard_kind == FALL_KIND else track.data.respawn_sink_time, 0.001)
+	_sink_total = maxf(track.data.fall_respawn_delay if hazard_kind == FALL_KIND else track.data.respawn_sink_time, EPSILON)
 	sink_time = _sink_total
 	sink_progress = 0.0
 	sank.emit()

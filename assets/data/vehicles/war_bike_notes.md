@@ -23,3 +23,10 @@ Cart value -> bike value, and why:
 | spin_time | 1.1 | 1.25 | longer spin-out |
 | wall_impact_max_speed_loss | 0.6 | 0.7 | |
 | hit_slowdown_profiles | 0.3/0.3/0.6 s | 0.4/0.45/0.8 s, lower floors, steeper decel | harsher |
+| air_yaw_accel / air_yaw_max (story 008) | 3.0 / 1.5 | 3.6 / 1.7 | slightly more air control (+20% / +13%): a light bike turns in the air a little better |
+| visual land_squash_amount / land_squash_time (story 008) | 0.22 / 0.28 s | 0.16 / 0.22 s | lighter landing (the squash is look only) |
+
+Story 008 part 4: every other surface and air field (ride_*, slope_gravity, bank_grip_gain, air_gravity,
+air_takeoff_gap, trick_*, bump_max_height_diff, surface_tilt / camera_bank_roll, land_squash_full_speed,
+land_detect_speed) is written explicitly in both files with the same value (the script defaults the
+elevation stories were tested with).

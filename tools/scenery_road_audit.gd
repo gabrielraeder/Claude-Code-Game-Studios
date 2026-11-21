@@ -148,7 +148,11 @@ func _check(id: String, tag: String, kind: String, index: int, xf: Transform3D, 
 	var line: String = "%s s=%.1f road=%s tag=%s kind=%s#%d pos=(%.1f, %.1f) y=%.2f..%.2f size=%.1fm into_road=%.2fm%s" % [
 		id, q.s, road, tag, kind, index, c.x, c.y, maxf(y_lo, KART_BAND.x), minf(y_hi, KART_BAND.y), size, -hit.x,
 		" in_hazard" if _track.in_hazard_area(c) else ""]
-	if y_hi <= FLAT_TOP + (q.height if _top > 0.0 else 0.0):
+	# Story 008 part 4: on a raised track the top is compared with the road surface at the top's own
+	# level, so a plinth or anything inside a solid road's embankment (top at the surface) is surface
+	# detail, not on the road.
+	var top_road: float = _track.query(c, -1, y_hi).height if _top > 0.0 else 0.0
+	if y_hi <= FLAT_TOP + top_road:
 		flat.append(line)
 	else:
 		on_road.append(line)

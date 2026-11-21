@@ -14,6 +14,7 @@ Heading convention: 0 = +x, positive angles turn toward +z (a right turn for the
 Side convention: +1 is TrackModel's normal (-t.y, t.x), the inside of a right turn.
 """
 import math, os
+import elevation_profile as ev
 
 SPP = 4            # spline samples per control-point segment (TrackData.samples_per_segment)
 CP_STEP = 5.0      # meters between control points
@@ -46,17 +47,17 @@ ELEMS = [
     S(30.0, 9.5, 'tourney', tag='after_line'),
     A(40.0, 130.1, 8.0, 'tourney', tag='sweep1', corner='sweeper'),
     S(20.0, 7.0, 'tourney'),
-    A(145.5, 10.0, 7.0, 'tourney', tag='kink1', corner='kink'),
+    A(145.5, 10.0, 7.0, 'tourney', tag='kink1', corner='kink', bank=-4.0),  # off-camber on the crest
     S(10.0, 6.5, 'tourney', tag='pre_moat'),
     A(31.3, -156.6, 6.5, 'moat', tag='moat_sweep', open=True, corner='sweeper'),
     S(34.8, 6.5, 'moat', tag='wall_run', open=True),
-    A(16.0, 100.0, 6.0, 'moat', tag='gate_turn', corner='90'),
+    A(16.0, 100.0, 6.0, 'moat', tag='gate_turn', corner='90', bank=0.0),  # moat zone stays flat
     S(24.0, 4.5, 'moat', tag='gate_arch'),
-    A(20.0, 80.0, 5.5, 'village', tag='village_in', corner='90'),
+    A(20.0, 80.0, 5.5, 'village', tag='village_in', corner='90', bank=6.0),
     S(10.0, 5.5, 'village'),
     A(22.0, -55.9, 5.5, 'village', tag='well_s1', corner='S (well)'),
     S(10.0, 5.5, 'village', tag='well'),
-    A(24.0, 55.9, 5.5, 'village', tag='well_s2'),
+    A(24.0, 55.9, 5.5, 'village', tag='well_s2', bank=-3.0),  # off-camber
     S(104.0, 5.5, 'village', tag='split'),
     A(20.0, 80.0, 6.0, 'village', tag='village_out', corner='90'),
     S(75.0, 11.5, 'keep', tag='plaza'),
@@ -70,7 +71,7 @@ ELEMS = [
     S(6.0, 7.0, 'gardens', tag='garden_in'),
     A(41.6, -61.6, 7.0, 'gardens', tag='sweep3', corner='sweeper'),
     S(None, 7.5, 'gardens', tag='free_b'),
-    A(168.5, 20.0, 8.0, 'gardens', tag='kink2', corner='kink'),
+    A(168.5, 20.0, 8.0, 'gardens', tag='kink2', corner='kink', bank=-4.0),  # off-camber on the rampart
     S(20.0, 8.0, 'gardens', tag='garden_straight'),
     A(18.7, -86.7, 8.0, 'gardens', tag='hook', corner='90'),
     S(20.0, 8.0, 'gardens'),
@@ -219,6 +220,7 @@ for k, dp in enumerate(dense):
 # ------------------------------------------------------------------ control points
 cps = []
 cp_hw = []
+cp_turn = []
 n_cp = int(round(TURTLE_LEN / CP_STEP))
 for k in range(n_cp):
     idx = int(round((k * CP_STEP + LINE_SHIFT) / STEP)) % N
@@ -228,6 +230,8 @@ for k in range(n_cp):
         pt = add(pt, mul(nrm(dirv(dp["h"])), split_offset(dp["u"])))
     cps.append(pt)
     cp_hw.append(dp["hw"])
+    _e = ELEMS[dp["elem"]]
+    cp_turn.append((_e["radius"], 1 if _e["angle"] > 0 else -1, _e.get("bank")) if _e["kind"] == "A" else (None, 0, None))
 
 
 def cr_pt(p0, p1, p2, p3, t):
@@ -521,6 +525,50 @@ row3 = ts("plaza", 0.8)
 for lat in (-7.5, -2.5, 2.5, 7.5):
     items.append((row3, lat))
 
+# ------------------------------------------------------------------ elevation (story 008 part 4)
+# Climb from the tourney field through the village up to the keep courtyard (8 m), a rampart
+# wall-walk through the gardens with banked corners and a jump, back down to the field by the last
+# hairpin. The moat zone (drawbridge, open edge, gatehouse) stays at ground level and flat.
+cp_s = [cum[k * SPP] for k in range(len(cps))]
+KEEP_H = 8.0
+H_KEYS = [
+    (ts("free_a", 0.15), 0.0), (ts("after_line", 1.0), 0.0),
+    (ts("sweep1", 0.45), 1.4), (ts("sweep1", 0.9), 1.6), (ts("kink1", 0.3), 1.2),     # tourney crest
+    (br_s_in - 12.0, 0.0), (ts("gate_arch", 0.6), 0.0),                                 # moat, gate: ground
+    (ts("well_s1", 0.5), 1.6), (ts("split", 0.0), 3.0), (ts("split", 1.0), 4.5),        # village climb
+    (ts("plaza", 0.25), KEEP_H), (ts("back_gate", 0.5), KEEP_H),                        # climb to the keep
+    (ts("free_b", 0.0), 7.4), (ts("kink2", 0.5), 6.5), (ts("hook", 0.5), 4.6),          # rampart walk
+    (ts("hairpin2", 0.3), 1.6), (ts("free_a", 0.0), 0.0),                               # down to the field
+]
+RAMP_LEN = 8.0
+RAMP_LIP = 1.4
+ramp_s = ts("free_b", 0.12)  # the rampart jump: lip ~18 m into the straight before the kink
+FLAT = [(br_s_in - 14.0, br_s_in + 16.0), (br_s_out - 16.0, br_s_out + 14.0),
+        (lane_s_in - 14.0, lane_s_in + 14.0), (lane_s_out - 14.0, lane_s_out + 14.0),
+        (pz_s_in - 14.0, pz_s_in + 14.0), (pz_s_out - 16.0, pz_s_out + 14.0),
+        (open_s0 - 6.0, open_s1 + 6.0), (LENGTH - 70.0, 12.0), (ramp_s - 10.0, ramp_s + RAMP_LEN + 18.0)]
+cp_bank = ev.banks(cp_s, LENGTH, cp_turn, FLAT)
+cp_h = ev.blur(ev.piecewise(cp_s, LENGTH, H_KEYS), 3)
+cp_h, bank_need = ev.lift_for_banks(cp_h, cp_bank, [w + CURB for w in cp_hw])
+cp_h = [round(h, 3) for h in cp_h]
+ev.report("castle main", cp_s, cp_h, cp_bank, LENGTH, bool(os.environ.get("PROFILE")))
+
+
+def main_h(sv):
+    """Main-road centerline height at spline distance sv (linear between control points)."""
+    sv %= LENGTH
+    k = max(i for i in range(len(cp_s)) if cp_s[i] <= sv)
+    k2 = (k + 1) % len(cp_s)
+    span = (cp_s[k2] - cp_s[k]) % LENGTH
+    f = (sv - cp_s[k]) / span if span > 1e-9 else 0.0
+    return cp_h[k] + (cp_h[k2] - cp_h[k]) * f
+
+
+# The village lane runs beside the main lane: same height at the same place, so a kart changing
+# lane or merging meets no step (the default branch blend would differ from the main climb).
+lane_heights = [round(main_h(s_of(q)), 3) for q in lane_cps]
+
+
 # ------------------------------------------------------------------ report
 print("main length %.1f m (turtle %.1f), control points %d, free straights %.1f / %.1f" % (LENGTH, TURTLE_LEN, len(cps), la, lb))
 for i, e in enumerate(ELEMS):
@@ -645,7 +693,8 @@ deck_alt_color = Color(0.43, 0.39, 0.34, 1)
 wall_color = Color(0.55, 0.38, 0.22, 1)
 wall_alt_color = Color(0.48, 0.33, 0.19, 1)
 wall_height = 0.9
-""" % (v2(lane_cps), SPLIT_LANE_HW, f32(lane_hw), lane_s_in, lane_s_out))
+heights = %s
+""" % (v2(lane_cps), SPLIT_LANE_HW, f32(lane_hw), lane_s_in, lane_s_out, f32(lane_heights)))
 subs.append("""[sub_resource type="Resource" id="Branch_bridge"]
 script = ExtResource("2_branch")
 id = &"drawbridge"
@@ -719,6 +768,7 @@ TRES = """[gd_resource type="Resource" script_class="TrackData" load_steps=%d fo
 [ext_resource type="Resource" path="res://assets/tracks/castle_circuit/castle_theme.tres" id="3_theme"]
 [ext_resource type="Script" path="res://src/track/track_hazard.gd" id="4_hazard"]
 [ext_resource type="Script" path="res://src/track/track_pad.gd" id="5_pad"]
+[ext_resource type="Script" path="res://src/track/track_ramp.gd" id="6_ramp"]
 
 %s
 [resource]
@@ -746,11 +796,26 @@ boost_pad_time = %.2f
 lap_count = 3
 start_distance_behind_line = 6.0
 query_window = 24
+heights = %s
+banks = %s
+solid_below = 99.0
+pillar_color = Color(0.56, 0.55, 0.57, 1)
+deck_under_color = Color(0.42, 0.41, 0.43, 1)
+ramps = Array[ExtResource("6_ramp")]([SubResource("Ramp_0")])
 """
+subs.append("""[sub_resource type="Resource" id="Ramp_0"]
+script = ExtResource("6_ramp")
+distance = %.3f
+length = %.2f
+lip_height = %.2f
+color_a = Color(0.85, 0.62, 0.2, 1)
+color_b = Color(0.55, 0.32, 0.12, 1)
+side_color = Color(0.56, 0.55, 0.57, 1)
+""" % (ramp_s, RAMP_LEN, RAMP_LIP))
 with open(os.path.join(out, "castle_circuit.tres"), "w", newline="\n") as f:
-    f.write(TRES % (6 + len(subs), "\n".join(subs), ", ".join(pad_ids), v2(items), v2(cps), f32(cp_hw), SPP, CURB,
+    f.write(TRES % (7 + len(subs), "\n".join(subs), ", ".join(pad_ids), v2(items), v2(cps), f32(cp_hw), SPP, CURB,
                     v3([(open_s0, open_s1, open_side)]), OPEN_EDGE_REACH, SINK_TIME, RESPAWN_SPEED_FRAC,
-                    RESPAWN_IMMUNITY, RESPAWN_BACK_OFF, PAD_BOOST_TIME))
+                    RESPAWN_IMMUNITY, RESPAWN_BACK_OFF, PAD_BOOST_TIME, f32(cp_h), f32(cp_bank)))
 
 zr = {"tourney": (ts("free_a"), ts("moat_sweep")), "moat": (ts("moat_sweep"), ts("village_in")),
       "village": (ts("village_in"), ts("plaza")), "keep": (ts("plaza"), ts("back_gate")),
@@ -763,6 +828,10 @@ THEME = """[gd_resource type="Resource" script_class="TrackTheme" load_steps=2 f
 [resource]
 script = ExtResource("1_theme")
 style = &"castle"
+scenery_road_margin = 0.15
+scenery_clear_height = 2.5
+scenery_flat_height = 0.3
+scenery_max_nudge = 3.0
 ground_color = Color(0.36, 0.56, 0.26, 1)
 ground_size = 1400.0
 road_color = Color(0.5, 0.46, 0.4, 1)

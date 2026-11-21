@@ -20,9 +20,17 @@ var stuck_longest: float = 0.0
 
 ## What _open_edge_side returns when both edges of the road are open.
 const OPEN_BOTH: float = 2.0
+## A ramp passed again after this many seconds is a new jump (a new trick roll); not a tuning value.
+const TRICK_REROLL_TIME: float = 3.0
 
 var _set: BotSet
 var _seed: int = 0
+# Story 008 trick jumps: ramp index of the current roll (-1 = none), when it was rolled, whether this
+# jump gets the hop, and how many rolls so far (part of the roll's hash).
+var _trick_ramp: int = -1
+var _trick_roll_t: float = -99.0
+var _trick_go: bool = false
+var _trick_rolls: int = 0
 var _ctx: BotContext
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _base_max: float = 0.0
@@ -97,6 +105,32 @@ static func create(set: BotSet, id: int, ctx: BotContext, laps: int, race_seed: 
 	return d
 
 
+# Story 008: before a ramp lip on the bot's own road, let go of drift, then hop just before the lip
+# for the trick boost, on trick_chance of the jumps. The roll is a hash (not _rng), so it never
+# shifts the bot's other rolls and is the same on every PC.
+func _trick_hop(input: KartInput, sim: KartSim, track: TrackModel) -> void:
+	if not sim.grounded:
+		return
+	var lead: float = maxf(sim.speed, 1.0) * sim.stats.trick_window * _set.trick_hop_lead_frac
+	for i in track.ramp_lip_s.size():
+		if track.ramp_paths[i] != sim.track_path:
+			continue
+		var to_lip: float = wrapf(track.ramp_lip_s[i] - sim.track_s, -track.length * 0.5, track.length * 0.5)
+		if to_lip <= 0.0 or to_lip > lead + _set.trick_release_meters:
+			continue
+		if _trick_ramp != i or _race_t - _trick_roll_t > TRICK_REROLL_TIME:
+			_trick_ramp = i
+			_trick_roll_t = _race_t
+			_trick_rolls += 1
+			_trick_go = float(absi(hash([kart_id, _seed, _trick_rolls, i])) % 1000) < _set.trick_chance * 1000.0
+			if _trick_go:
+				_state = " trick"
+		if not _trick_go:
+			return
+		input.drift = to_lip <= lead
+		return
+
+
 ## One line about what the bot is doing (debug labels).
 func describe() -> String:
 	var held: StringName = _ctx.held_fn.call(kart_id) if _ctx != null else &""
@@ -107,6 +141,8 @@ func describe() -> String:
 func drive(input: KartInput, sim: KartSim, track: TrackModel, dt: float) -> void:
 	var t0: int = Time.get_ticks_usec()
 	_drive(input, sim, track, dt)
+	if time_to_go <= 0.0 and not sim.is_sinking():
+		_trick_hop(input, sim, track)
 	_ai_us += Time.get_ticks_usec() - t0
 	_ticks += 1
 

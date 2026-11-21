@@ -42,6 +42,9 @@ var track_id: String = ""
 var shortcut: String = ""
 ## Save one top-down picture of the whole track and quit (--overview-shot, needs --shots=).
 var overview_shot: bool = false
+## Camera pitch below the horizon (degrees) of that picture: 90 = straight down; less shows the
+## track's height from an angle (--overview-tilt=DEG, story 008 part 4).
+var overview_tilt: float = 90.0
 ## Main-loop distance of a side-on picture of the road and its supports (--side-shot=S, needs --shots=), -1 = off.
 var side_shot: float = -1.0
 ## Fixed camera above the start grid, one picture during the countdown (--grid-shot).
@@ -99,6 +102,8 @@ static func parse(args: PackedStringArray) -> DebugOptions:
 			o.shortcut = a.substr("--shortcut=".length())
 		elif a == "--overview-shot":
 			o.overview_shot = true
+		elif a.begins_with("--overview-tilt="):
+			o.overview_tilt = clampf(a.substr("--overview-tilt=".length()).to_float(), 10.0, 90.0)
 		elif a.begins_with("--side-shot="):
 			o.side_shot = a.substr("--side-shot=".length()).to_float()
 		elif a == "--grid-shot":

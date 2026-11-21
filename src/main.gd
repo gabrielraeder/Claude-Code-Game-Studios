@@ -218,6 +218,7 @@ func _ready() -> void:
 	_camera = ChaseCamera.new()
 	_camera.far = 1500.0
 	add_child(_camera)
+	MaterialPrewarm.warm(_world, _camera)  # the first track was built before the camera existed
 	_ui = RaceFlowUi.new()
 	add_child(_ui)
 	_ui.setup(_racer_set, _vehicle_set, net_config.kart_colors, net_config.max_racers)
@@ -1425,6 +1426,8 @@ func _build_world() -> void:
 	var scenery := TrackScenery.new()
 	_world.add_child(scenery)
 	scenery.build(_track)
+	# Story 008 part 4: compile every track material's pipeline now, not at its first sight mid-race.
+	MaterialPrewarm.warm(_world, _camera)
 
 
 # ---------------------------------------------------------------- lobby and results flow (menu-driven online)
@@ -1763,10 +1766,11 @@ func _run_overview_shot() -> void:
 	add_child(cam)
 	var vp: Vector2 = get_viewport().get_visible_rect().size
 	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-	cam.size = maxf(b.size.y, b.size.x / (vp.x / vp.y)) * 1.04
+	var tilt: float = _options.overview_tilt
+	cam.size = maxf(b.size.y * sin(deg_to_rad(tilt)) + _track.max_surface_height(), b.size.x / (vp.x / vp.y)) * 1.04
 	cam.far = 2000.0
-	cam.position = Vector3(b.get_center().x, 600.0, b.get_center().y)
-	cam.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
+	cam.rotation_degrees = Vector3(-tilt, 0.0, 0.0)
+	cam.position = Vector3(b.get_center().x, 0.0, b.get_center().y) + cam.basis.z * 600.0  # 600 m back along the view
 	cam.current = true
 	await get_tree().create_timer(1.5).timeout
 	_debug_save("overview")

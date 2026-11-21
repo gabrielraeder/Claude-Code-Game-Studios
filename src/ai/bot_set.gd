@@ -146,6 +146,16 @@ extends Resource
 ## Shield: a hostile item within this many meters counts as a threat.
 @export var threat_range: float = 30.0
 
+@export_group("Jumps (story 008)")
+## Share of ramp jumps a bot times with a hop for the trick boost (rolled per jump, the same on
+## every PC). The rest fly without the trick.
+@export_range(0.0, 1.0) var trick_chance: float = 0.75
+## The hop is pressed when the lip is this share of the kart's trick window (in seconds of travel)
+## ahead ...
+@export var trick_hop_lead_frac: float = 0.5
+## ... after the drift button was let go for this many meters before that (a held drift is no hop).
+@export var trick_release_meters: float = 6.0
+
 
 ## Display names for bots (dog plus medieval puns), handed out by bot slot. Story 006 can
 ## replace or extend the list.

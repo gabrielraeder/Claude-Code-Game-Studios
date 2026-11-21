@@ -14,6 +14,7 @@ Heading convention: 0 = +x, positive angles turn toward +z (a right turn for the
 Side convention: +1 is TrackModel's normal (-t.y, t.x), the inside of a right turn.
 """
 import math, os
+import elevation_profile as ev
 
 SPP = 4
 CP_STEP = 5.0
@@ -31,6 +32,13 @@ PAD_BOOST_TIME = 0.8   # dungeon pads: shorter than Castle's, so a pad is worth 
 MINE_DRAG = float(os.environ.get("MINE_DRAG", "1.25"))        # TrackBranch.floor_drag_mult of the rail
 GAP_SPEED = float(os.environ.get("GAP_SPEED", "24.0"))       # m/s needed to cross the lava gap: 0.92 x max_speed 26 (boost 35.1); a slow or crashed kart sinks
 GAP_LEN = 7.0
+# Story 008 part 4: the lava gap is a real jump. A low ramp ends GAP_RUNOFF meters before the strip;
+# its launch is flat enough that only a kart at about the old gate speed (GAP_SPEED) carries over the
+# strip; a slower one lands in the lava (the hazard still sinks any grounded kart slower than
+# GAP_SPEED), a faster or boosting one clears it.
+GAP_RAMP_LEN = float(os.environ.get("GAP_RAMP_LEN", "6.0"))
+GAP_RAMP_LIP = float(os.environ.get("GAP_RAMP_LIP", "0.6"))
+GAP_RUNOFF = float(os.environ.get("GAP_RUNOFF", "2.0"))
 
 
 def S(length, hw, zone, **kw):
@@ -73,18 +81,18 @@ ELEMS = [
     S(8.0, 4.75, 'torch', tag='hall_out'),
     # 3 Great Cavern: wide, lava shore sweeper (open edge left), hairpin around the stalagmite
     S(18.0, 11.0, 'cavern', tag='cav_in'),
-    A(66.4, -60.6, 12.0, 'cavern', tag='shore', open=True, corner='sweeper (lava shore)'),
+    A(66.4, -60.6, 12.0, 'cavern', tag='shore', open=True, corner='sweeper (lava shore)', bank=-5.0),  # off-camber
     S(14.0, 11.0, 'cavern', tag='stal_run'),
-    A(17.0, 170.0, 11.0, 'cavern', tag='stalagmite', corner='hairpin'),
+    A(17.0, 170.0, 11.0, 'cavern', tag='stalagmite', corner='hairpin', bank=10.0),
     # 4 Mine Works: 90 R, hairpin around the ore crusher, 90 R (a bay hanging off the road; the rail runs straight past its mouth)
     S(MS1, 6.5, 'mine', tag='mine_in'),
-    A(90.0, KINK2, 6.5, 'mine', tag='kink2', corner='kink'),
+    A(90.0, KINK2, 6.5, 'mine', tag='kink2', corner='kink', bank=-3.0),  # off-camber
     S(MS2, 6.5, 'mine', tag='rail_in'),
-    A(MR, 90.0, 6.5, 'mine', tag='mine90a', corner='90'),
+    A(MR, 90.0, 6.5, 'mine', tag='mine90a', corner='90', bank=10.0),
     S(ML1, 6.5, 'mine', tag='leg1'),
-    A(MH, -170.0, 6.5, 'mine', tag='crusher1', corner='hairpin (crusher)'),
+    A(MH, -170.0, 6.5, 'mine', tag='crusher1', corner='hairpin (crusher)', bank=12.0),
     S(ML3, 6.5, 'mine', tag='leg3'),
-    A(MR, 90.0, 6.5, 'mine', tag='mine90b', corner='90'),
+    A(MR, 90.0, 6.5, 'mine', tag='mine90b', corner='90', bank=10.0),
     S(14.0, 6.5, 'mine', tag='rail_out'),
     A(35.0, 33.2 - KINK2, 6.5, 'mine', tag='mine_out', corner='sweeper'),
     # 5 Lava Forge (home): bridge, S-bend through furnaces, long 90 onto the grid
@@ -240,6 +248,7 @@ for k, dp in enumerate(dense):
 # ------------------------------------------------------------------ control points
 cps = []
 cp_hw = []
+cp_turn = []
 n_cp = int(round(TURTLE_LEN / CP_STEP))
 for k in range(n_cp):
     idx = int(round((k * CP_STEP + LINE_SHIFT) / STEP)) % N
@@ -247,6 +256,8 @@ for k in range(n_cp):
     pt = dp["p"]
     cps.append(pt)
     cp_hw.append(dp["hw"])
+    _e = ELEMS[dp["elem"]]
+    cp_turn.append((_e["radius"], 1 if _e["angle"] > 0 else -1, _e.get("bank")) if _e["kind"] == "A" else (None, 0, None))
 
 
 def cr_pt(p0, p1, p2, p3, t):
@@ -465,10 +476,10 @@ shore_s1 = ts("stal_run", 0.6)
 br_s0 = ts("bridge", 0.0)
 br_s1 = ts("bridge", 1.0)
 open_edges = [(shore_s0, shore_s1, -1), (br_s0, br_s1, 1), (br_s0, br_s1, -1)]
-hazards = [("lava_shore", "lava", edge_strip(shore_s0, shore_s1, -1), 0.0),
-           ("lava_bridge_l", "lava", edge_strip(br_s0, br_s1, -1), 0.0),
-           ("lava_bridge_r", "lava", edge_strip(br_s0, br_s1, 1), 0.0),
-           ("lava_gap", "lava", gap_poly, GAP_SPEED)]
+hazards = [["lava_shore", "lava", edge_strip(shore_s0, shore_s1, -1), 0.0, 0.0],
+           ["lava_bridge_l", "lava", edge_strip(br_s0, br_s1, -1), 0.0, 0.0],
+           ["lava_bridge_r", "lava", edge_strip(br_s0, br_s1, 1), 0.0, 0.0],
+           ["lava_gap", "lava", gap_poly, GAP_SPEED, 0.0]]
 
 
 # ------------------------------------------------------------------ pads, items
@@ -492,6 +503,59 @@ for lat in (-8.0, -3.0, 3.0, 8.0):
 row = ts("free_b", 0.35)
 for lat in (-4.5, -1.5, 1.5, 4.5):
     items.append((row, lat))
+
+# ------------------------------------------------------------------ elevation (story 008 part 4)
+# The lap starts high in the cellar vaults (TOP_H), drops down the winding torch tunnel into the
+# depths (the pillar hall, the cavern and the mine works lie low, just above the lava), crosses the
+# lava channel on a raised bridge and climbs back out through the forge to the grid. The lava-gap
+# branch runs flat at the top and jumps its lava strip from a low ramp.
+cp_s = [cum[k * SPP] for k in range(len(cps))]
+TOP_H = 7.0
+LOW_H = 1.0
+BRIDGE_H = 2.0
+H_KEYS = [
+    (ts("free_b", 0.15), TOP_H), (ts("gal_sweep", 0.2), TOP_H),                          # forge top, grid, cellar
+    (ts("tun1", 0.5), 5.0), (ts("tun2", 0.5), 3.2), (ts("tun3", 0.5), 1.7),             # the drop
+    (ts("hall_in", 0.5), LOW_H), (ts("mine_out", 0.5), LOW_H),                           # hall, cavern, mine
+    (ts("bridge", 0.0), BRIDGE_H), (ts("bridge", 1.0), BRIDGE_H),                        # lava bridge
+    (ts("forge_s1", 0.5), 3.4), (ts("forge_s2", 0.5), 5.8),                              # climb out
+]
+FLAT = [(lane_s_in - 14.0, lane_s_in + 14.0), (lane_s_out - 14.0, lane_s_out + 14.0),
+        (rail_s_in - 14.0, ts("leg1", 0.5)), (ts("leg3", 0.3), rail_s_out + 14.0),  # the rail overlaps both 90s (level crossings)
+        (gap_s_in - 14.0, gap_s_in + 14.0), (gap_s_out - 14.0, gap_s_out + 14.0),
+        (lane_s_in, lane_s_out), (br_s0 - 6.0, br_s1 + 6.0), (LENGTH - 70.0, 12.0)]
+cp_bank = ev.banks(cp_s, LENGTH, cp_turn, FLAT)
+cp_h = ev.blur(ev.piecewise(cp_s, LENGTH, H_KEYS), 3)
+cp_h, bank_need = ev.lift_for_banks(cp_h, cp_bank, [w + CURB for w in cp_hw])
+cp_h = [round(h, 3) for h in cp_h]
+ev.report("dungeon main", cp_s, cp_h, cp_bank, LENGTH, bool(os.environ.get("PROFILE")))
+
+
+def main_h(sv):
+    """Main-road centerline height at spline distance sv (linear between control points)."""
+    sv %= LENGTH
+    k = max(i for i in range(len(cp_s)) if cp_s[i] <= sv)
+    k2 = (k + 1) % len(cp_s)
+    span = (cp_s[k2] - cp_s[k]) % LENGTH
+    f = (sv - cp_s[k]) / span if span > 1e-9 else 0.0
+    return cp_h[k] + (cp_h[k2] - cp_h[k]) * f
+
+
+# The mine rail crosses the main corridor at the crusher bay's mouth (a level crossing): it runs at
+# the main road's height wherever it is (that part of the main road is not banked, see FLAT).
+rail_heights = [round(main_h(s_of(q)), 3) for q in rail_ctrl]
+gap_h = main_h(gap_s_in)
+if abs(main_h(gap_s_out) - gap_h) > 0.05:
+    raise SystemExit("lava gap ends at different heights: %.2f vs %.2f" % (gap_h, main_h(gap_s_out)))
+for hz in hazards:
+    if hz[0] == "lava_gap":
+        hz[4] = gap_h
+    elif hz[0].startswith("lava_bridge"):
+        hz[4] = 0.0
+GAP_RAMP_AT = GAP_U - GAP_LEN / 2 - GAP_RUNOFF - GAP_RAMP_LEN
+print("lava gap: branch flat at %.2f m, ramp %.1f..%.1f m (lip %.2f), strip %.1f..%.1f m" % (
+    gap_h, GAP_RAMP_AT, GAP_RAMP_AT + GAP_RAMP_LEN, GAP_RAMP_LIP, GAP_U - GAP_LEN / 2, GAP_U + GAP_LEN / 2))
+
 
 # ------------------------------------------------------------------ report
 print("main length %.1f m (turtle %.1f), control points %d, free straights %.1f / %.1f" % (LENGTH, TURTLE_LEN, len(cps), la, lb))
@@ -620,9 +684,21 @@ add_branch("Branch_hl", "hall_left", "lane_split", lane_l_cps, SPLIT_LANE_HW, 0.
 add_branch("Branch_hr", "hall_right", "lane_split", lane_r_cps, SPLIT_LANE_HW, 0.6, lane_s_in, lane_s_out, 8, *STONE, 1.0, hws=lane_r_hw)
 add_branch("Branch_rail", "mine_rail", "mine_rail", rail_ctrl, RAIL_HW, 0.4, rail_s_in, rail_s_out, 8,
            "Color(0.42, 0.28, 0.16, 1)", "Color(0.34, 0.22, 0.13, 1)", "Color(0.30, 0.38, 0.55, 1)", "Color(0.36, 0.46, 0.66, 1)", 0.9,
-           "floor_drag_mult = %g\nwall_drag_mult = 2.0\n" % MINE_DRAG)
+           "floor_drag_mult = %g\nwall_drag_mult = 2.0\nheights = %s\n" % (MINE_DRAG, f32(rail_heights)))
 add_branch("Branch_gap", "lava_gap", "lava_gap", gap_ctrl, GAP_HW, 0.4, gap_s_in, gap_s_out, 8,
-           "Color(0.27, 0.2, 0.18, 1)", "Color(0.22, 0.16, 0.15, 1)", "Color(0.30, 0.38, 0.55, 1)", "Color(0.36, 0.46, 0.66, 1)", 0.9)
+           "Color(0.27, 0.2, 0.18, 1)", "Color(0.22, 0.16, 0.15, 1)", "Color(0.30, 0.38, 0.55, 1)", "Color(0.36, 0.46, 0.66, 1)", 0.9,
+           "heights = %s\n" % f32([gap_h] * len(gap_ctrl)))
+subs.append("""[sub_resource type="Resource" id="Ramp_gap"]
+script = ExtResource("6_ramp")
+road = &"lava_gap"
+distance = %.3f
+length = %.2f
+lip_height = %.2f
+color_a = Color(0.45, 0.36, 0.3, 1)
+color_b = Color(0.3, 0.38, 0.55, 1)
+side_color = Color(0.32, 0.26, 0.25, 1)
+stripes = 4
+""" % (GAP_RAMP_AT, GAP_RAMP_LEN, GAP_RAMP_LIP))
 haz_ids = []
 for i, h_ in enumerate(hazards):
     haz_ids.append('SubResource("Hazard_%d")' % i)
@@ -632,7 +708,8 @@ id = &"%s"
 kind = &"%s"
 polygon = %s
 min_cross_speed = %.2f
-""" % (i, h_[0], h_[1], v2(h_[2]), h_[3]))
+surface_height = %.3f
+""" % (i, h_[0], h_[1], v2(h_[2]), h_[3], h_[4]))
 pad_ids = []
 for i, pd_ in enumerate(pads):
     pad_ids.append('SubResource("Pad_%d")' % i)
@@ -652,6 +729,7 @@ TRES = """[gd_resource type="Resource" script_class="TrackData" load_steps=%d fo
 [ext_resource type="Resource" path="res://assets/tracks/dungeon_depths/dungeon_theme.tres" id="3_theme"]
 [ext_resource type="Script" path="res://src/track/track_hazard.gd" id="4_hazard"]
 [ext_resource type="Script" path="res://src/track/track_pad.gd" id="5_pad"]
+[ext_resource type="Script" path="res://src/track/track_ramp.gd" id="6_ramp"]
 
 %s
 [resource]
@@ -679,10 +757,17 @@ boost_pad_time = %.2f
 lap_count = 3
 start_distance_behind_line = 6.0
 query_window = 24
+heights = %s
+banks = %s
+solid_below = 99.0
+pillar_color = Color(0.3, 0.24, 0.25, 1)
+deck_under_color = Color(0.24, 0.19, 0.2, 1)
+ramps = Array[ExtResource("6_ramp")]([SubResource("Ramp_gap")])
 """
 with open(os.path.join(out, "dungeon_depths.tres"), "w", newline="\n") as f:
-    f.write(TRES % (6 + len(subs), "\n".join(subs), ", ".join(branch_ids), ", ".join(haz_ids), ", ".join(pad_ids), v2(items), v2(cps), f32(cp_hw), SPP, CURB,
-                    v3(open_edges), OPEN_EDGE_REACH, SINK_TIME, RESPAWN_SPEED_FRAC, RESPAWN_IMMUNITY, RESPAWN_BACK_OFF, PAD_BOOST_TIME))
+    f.write(TRES % (7 + len(subs), "\n".join(subs), ", ".join(branch_ids), ", ".join(haz_ids), ", ".join(pad_ids), v2(items), v2(cps), f32(cp_hw), SPP, CURB,
+                    v3(open_edges), OPEN_EDGE_REACH, SINK_TIME, RESPAWN_SPEED_FRAC, RESPAWN_IMMUNITY, RESPAWN_BACK_OFF, PAD_BOOST_TIME,
+                    f32(cp_h), f32(cp_bank)))
 
 THEME = """[gd_resource type="Resource" script_class="TrackTheme" load_steps=2 format=3]
 
@@ -691,6 +776,10 @@ THEME = """[gd_resource type="Resource" script_class="TrackTheme" load_steps=2 f
 [resource]
 script = ExtResource("1_theme")
 style = &"dungeon"
+scenery_road_margin = 0.15
+scenery_clear_height = 2.5
+scenery_flat_height = 0.3
+scenery_max_nudge = 3.0
 sky_top_color = Color(0.07, 0.05, 0.08, 1)
 sky_horizon_color = Color(0.16, 0.1, 0.1, 1)
 ground_horizon_color = Color(0.16, 0.1, 0.1, 1)

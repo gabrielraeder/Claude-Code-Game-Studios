@@ -103,6 +103,12 @@ extends Resource
 ## the road) belongs to that road and is raised with it (walls, posts, banners, arches along a
 ## raised road); farther props (houses, trees) stay on the ground.
 @export var scenery_attach_reach: float = 3.0
+## Story 008 part 4: a prop raised with its road by more than this (meters) whose centre is beyond
+## the road's deck edge stands on a plinth down to the ground (TrackData.deck_under_color), so it
+## never floats beside a raised road.
+@export var scenery_plinth_min_lift: float = 0.3
+## Margin (meters) added around the props' footprint for that plinth, and its smallest side.
+@export var scenery_plinth_margin: float = 0.3
 
 @export_group("Round 3: dungeon world and anchors")
 ## Fog (Dungeon Depths: purple-brown). Off by default.

@@ -26,6 +26,19 @@ const PINCH_MAX_WIDTH: float = 10.0
 const MAX_WIDTH_SLOPE: float = 0.35
 ## A kart sinking again this soon after a respawn counts as a respawn loop.
 const RESPAWN_LOOP_WINDOW: float = 3.0
+## Bots as the race uses them (story 005).
+const BOT_SET_PATH: String = "res://assets/data/ai/bot_set.tres"
+## Story 008 part 4 (height checks): the documented limits of the generated tracks
+## (tools/elevation_profile.py GRADE_MAX and BANK_MAX): the genre keeps slopes moderate.
+const MAX_GRADE: float = 0.12
+const MAX_BANK_DEG: float = 15.0
+## A grounded kart may sit at most this far below the road surface (meters).
+const MIN_CLEARANCE: float = -0.05
+## Two overlapping road surfaces closer than this in height (meters) are one level (a junction);
+## farther apart but nearer than TrackData.level_separation, one deck cuts through the other.
+const JUNCTION_TOLERANCE: float = 0.35
+## Spacing (meters) of the road samples of the static height checks.
+const HEIGHT_PROBE_STEP: float = 2.0
 
 var _fails: int = 0
 var _stats: VehicleStats
@@ -38,6 +51,15 @@ var _dungeon: bool = false
 var _only: String = ""
 ## --quick: stop after the shortcut runs (tuning aid).
 var _quick: bool = false
+# Story 008 part 4: height results gathered over every driven run (autopilot lines and the bot).
+var _h_runs: int = 0
+var _h_min_clear: float = INF
+var _h_min_at: String = ""
+var _h_jumps: int = 0
+var _h_land_off: int = 0
+var _h_land_off_at: String = ""
+var _h_progress_violations: int = 0
+var _h_rejected: int = 0
 var _trace: bool = false
 var _trace_from: float = 0.0
 
@@ -123,6 +145,7 @@ func _init() -> void:
 	_check_pads(main_run, main_avg)
 	_check_corners_and_lap(main_avg)
 	_check_shortcut_savings(savings)
+	_check_height()
 	print("== %s ==" % ("ALL PASS" if _fails == 0 else "%d FAILED" % _fails))
 	quit(1 if _fails > 0 else 0)
 
@@ -283,7 +306,7 @@ func _check_grid() -> void:
 func _run_laps(opt: Dictionary) -> Dictionary:
 	var track: TrackModel = opt.get("track", _track)
 	var sim := KartSim.new(_stats)
-	var driver: AutopilotDriver = BotDriver.new() if opt.get("bot", false) else AutopilotDriver.new()
+	var driver: AutopilotDriver = _make_bot() if opt.get("bot", false) else AutopilotDriver.new()
 	driver.shortcut_id = StringName(opt.get("shortcut", ""))
 	driver.allow_drift = opt.get("drift", true)
 	driver.blind_entrance = opt.get("blind", 0.0)
@@ -318,6 +341,16 @@ func _run_laps(opt: Dictionary) -> Dictionary:
 		if not ok:
 			run.bad_respawns += 1)
 	laps.lap_started.connect(func(_l: int) -> void: run.laps_started += 1)
+	var label: String = "bot" if opt.get("bot", false) else ("autopilot " + String(opt.get("shortcut", "main")))
+	var collect: bool = not opt.has("dunk_s") and not opt.has("track")
+	sim.landed.connect(func(_air: float, _impact: float) -> void:
+		if not collect or sim.is_sinking():
+			return
+		_h_jumps += 1
+		var lq: TrackModel.Query = track.query(sim.position, -1, sim.height)
+		if not lq.on_deck or track.in_hazard(sim.position, lq, sim.speed, sim.height):
+			_h_land_off += 1
+			_h_land_off_at = "%s s=%.1f" % [label, sim.track_s])
 	sim.reset_to(track, track.length - _data.start_distance_behind_line, 0.0)
 	laps.reset(sim.track_s)
 	var prev_s: float = sim.track_s
@@ -348,6 +381,16 @@ func _run_laps(opt: Dictionary) -> Dictionary:
 		run.max_speed = maxf(run.max_speed, sim.speed)
 		if not sim.is_sinking():
 			run.max_excess = maxf(run.max_excess, track.excess_at(sim.position))
+		if collect and sim.grounded and not sim.is_sinking():
+			var hq: TrackModel.Query = track.query(sim.position, -1, sim.height)
+			var clear: float = sim.height - (hq.height if hq.on_deck else hq.support)
+			if clear < MIN_CLEARANCE and _trace:
+				print("       under t=%.2f %s s=%.1f path=%d q.path=%d h=%.3f surf=%.3f vy=%.2f slope=%.3f lat=%.2f speed=%.1f" % [
+						state.t, label, sim.track_s, sim.track_path, hq.path, sim.height, hq.height, sim.vertical_velocity,
+						hq.slope, hq.lateral, sim.speed])
+			if clear < _h_min_clear:
+				_h_min_clear = clear
+				_h_min_at = "%s s=%.1f road %d" % [label, sim.track_s, hq.path]
 		if sim.track_path >= 0:
 			run.ticks_on_branch += 1
 		var q: TrackModel.Query = track.query(sim.position, -1)
@@ -355,12 +398,31 @@ func _run_laps(opt: Dictionary) -> Dictionary:
 		run.limit = q.wall_offset
 		if _trace and laps.lap == 1 and int(state.t * 60.0) % 10 == 0 and sim.track_s > _trace_from and sim.track_s < _trace_from + 140.0:
 			print("       trace t=%.2f s=%.1f path=%d lat=%.2f half=%.2f speed=%.1f boost=%.2f drift=%s" % [state.t, sim.track_s, sim.track_path, q.lateral, q.half_width, sim.speed, sim.boost_time, str(sim.drifting)])
+	if collect:
+		_h_runs += 1
+		_h_progress_violations += int(run.jump_violations)
+		_h_rejected += laps.rejected_crossings
 	run.finished = laps.is_finished
 	run.times = laps.lap_times
 	run.rejected = laps.rejected_crossings
 	run.max_lateral_ratio_abs = max_lat
 	run.total = laps.total_time() if laps.is_finished else INF
 	return run
+
+
+# A BotDriver built like Main builds one (story 005): BotDriver.create with the bot set and a
+# context for a lone bot (no rivals, first place, no item, no threat).
+func _make_bot() -> BotDriver:
+	var set: BotSet = load(BOT_SET_PATH) as BotSet
+	if set == null:
+		set = BotSet.new()
+	var ctx := BotContext.new()
+	ctx.racers_fn = func() -> Array: return []
+	ctx.progress_fn = func(_id: int) -> float: return 0.0
+	ctx.place_fn = func(_id: int) -> int: return 1
+	ctx.held_fn = func(_id: int) -> StringName: return &""
+	ctx.threat_fn = func(_id: int) -> float: return INF
+	return BotDriver.create(set, 1, ctx, _data.lap_count, 0)
 
 
 # ---------------------------------------------------------------- (10) lane split
@@ -760,3 +822,82 @@ func _gate_probe(bi: int, u_gap: float, speed: float, boosting: bool) -> Diction
 			res.crossed = true
 			break
 	return res
+
+
+# ---------------------------------------------------------------- (16) height (story 008 part 4)
+# Driven: grounded karts never below the road over every lap driven above (autopilot lines and the
+# bot); every jump lands on a road deck (not off the road, not in a hazard); progress stays
+# continuous and checkpoints in order (a crossover never mixes levels). Static: grades and banks
+# within the documented limits; every road sample queried at its own height finds its own level;
+# no deck cuts through another (overlapping roads are one level, a junction, or at least
+# level_separation apart, a crossover).
+func _check_height() -> void:
+	_check_ok("(16) grounded karts never below the road surface (min clearance >= %.2f m)" % MIN_CLEARANCE,
+			_h_min_clear >= MIN_CLEARANCE,
+			"%d runs, min clearance %.3f m (%s)" % [_h_runs, _h_min_clear, _h_min_at])
+	_check_ok("(16) every jump lands on the road", _h_land_off == 0,
+			"%d landings over those runs, %d off the road or in a hazard%s" % [_h_jumps, _h_land_off,
+					(" (last " + _h_land_off_at + ")") if _h_land_off > 0 else ""])
+	_check_ok("(16) progress continuous and checkpoints in order on every run (levels never mixed)",
+			_h_progress_violations == 0 and _h_rejected == 0,
+			"track_s jumps %d, refused line crossings %d" % [_h_progress_violations, _h_rejected])
+	var roads: Array[TrackModel.Path] = [_track.main]
+	roads.append_array(_track.branches)
+	var worst_grade: float = 0.0
+	var worst_grade_at: String = ""
+	var worst_bank: float = 0.0
+	var worst_bank_at: String = ""
+	for path in roads:
+		for i in path.points.size():
+			if absf(path.slope[i]) > absf(worst_grade):
+				worst_grade = path.slope[i]
+				worst_grade_at = "road %d at %.0f m" % [path.index, path.cumulative[mini(i, path.cumulative.size() - 1)]]
+			if absf(path.bank[i]) > absf(worst_bank):
+				worst_bank = path.bank[i]
+				worst_bank_at = "road %d at %.0f m" % [path.index, path.cumulative[mini(i, path.cumulative.size() - 1)]]
+	_check_ok("(16) grades within %.0f %% and banks within %.0f degrees" % [MAX_GRADE * 100.0, MAX_BANK_DEG],
+			absf(worst_grade) <= MAX_GRADE + 0.0005 and rad_to_deg(absf(worst_bank)) <= MAX_BANK_DEG + 0.05,
+			"max grade %.1f %% (%s), max bank %.1f deg (%s)" % [worst_grade * 100.0, worst_grade_at,
+					rad_to_deg(worst_bank), worst_bank_at])
+	var samples: int = 0
+	var mixed: int = 0
+	var mixed_at: String = ""
+	var cut: int = 0
+	var cut_at: String = ""
+	var crossings: int = 0
+	var sep: float = _data.level_separation
+	for path in roads:
+		var d: float = 0.0
+		while d < path.length:
+			var stv: Vector2 = path.seg_t_at(d)
+			var c: Vector2 = path.point_at(d)
+			var t: Vector2 = path.tangent_at(d)
+			var nn: Vector2 = Vector2(-t.y, t.x)
+			var half: float = path.half_at(int(stv.x), stv.y)
+			for lat in [0.0, half * 0.9, -half * 0.9]:
+				var p: Vector2 = c + nn * lat
+				var y: float = path.surface_y(int(stv.x), stv.y, lat)
+				samples += 1
+				var q: TrackModel.Query = _track.query(p, -1, y)
+				if absf(q.height - q.ramp_rise - y) > JUNCTION_TOLERANCE:
+					mixed += 1
+					mixed_at = "road %d at %.0f m lat %.1f: own %.2f, query %.2f (road %d)" % [path.index, d, lat, y, q.height, q.path]
+				for other in roads:
+					if other == path or not other.bounds.has_point(p):
+						continue
+					var h: TrackModel.Hit = other.nearest_filtered(p, y - sep, y + sep)
+					var below: TrackModel.Hit = other.nearest_filtered(p, -INF, y - sep)
+					if below != null and below.excess <= 0.0:
+						crossings += 1
+					if h == null or h.excess > 0.0:
+						continue
+					var oy: float = other.surface_y(h.seg, h.t, float(h.side) * h.dist)
+					if absf(oy - y) > JUNCTION_TOLERANCE:
+						cut += 1
+						cut_at = "road %d at %.0f m vs road %d: %.2f vs %.2f" % [path.index, d, other.index, y, oy]
+			d += HEIGHT_PROBE_STEP
+	_check_ok("(16) a query at a road's own height finds that level (stacked roads never mixed)", mixed == 0,
+			"%d samples, %d found another level%s" % [samples, mixed, (" (last " + mixed_at + ")") if mixed > 0 else ""])
+	_check_ok("(16) no road deck cuts through another (overlaps are junctions at one level or crossovers)", cut == 0,
+			"%d samples, %d cuts, %d samples over a road below (crossovers)%s" % [samples, cut, crossings,
+					(" (last " + cut_at + ")") if cut > 0 else ""])

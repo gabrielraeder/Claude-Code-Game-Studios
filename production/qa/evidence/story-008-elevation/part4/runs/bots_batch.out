@@ -1,0 +1,46 @@
+rm: cannot remove '/dev/null': Operation not permitted
+[castle_circuit-1] bots finished: 11/11  first 117.87  last 122.73  spread 4.1% of winner
+[castle_circuit-1] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[castle_circuit-1] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[castle_circuit-1]   per location: {}
+[castle_circuit-1]   SEED 2582146545; karts sinking again within 5 s: 0
+[castle_circuit-2] bots finished: 11/11  first 114.60  last 124.80  spread 8.9% of winner
+[castle_circuit-2] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[castle_circuit-2] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[castle_circuit-2]   per location: {}
+[castle_circuit-2]   SEED 3369284633; karts sinking again within 5 s: 0
+[castle_circuit-3] bots finished: 11/11  first 116.53  last 124.07  spread 6.5% of winner
+[castle_circuit-3] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[castle_circuit-3] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[castle_circuit-3]   per location: {}
+[castle_circuit-3]   SEED 438398687; karts sinking again within 5 s: 0
+[castle_circuit-4] bots finished: 11/11  first 116.13  last 124.87  spread 7.5% of winner
+[castle_circuit-4] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[castle_circuit-4] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[castle_circuit-4]   per location: {}
+[castle_circuit-4]   SEED 1794345523; karts sinking again within 5 s: 0
+[castle_circuit-5] bots finished: 11/11  first 116.53  last 124.53  spread 6.9% of winner
+[castle_circuit-5] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[castle_circuit-5] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[castle_circuit-5]   per location: {}
+[castle_circuit-5]   SEED 3315666389; karts sinking again within 5 s: 0
+[dungeon_depths-1] bots finished: 11/11  first 113.53  last 124.73  spread 9.9% of winner
+[dungeon_depths-1] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[dungeon_depths-1] SINKS: 1 total, 0 self-caused (no bump and no hit in the last second)
+[dungeon_depths-1]   per location: {'lava_gap@880': 1}
+[dungeon_depths-1]   SEED 1794345523; karts sinking again within 5 s: 0
+[dungeon_depths-2] bots finished: 11/11  first 117.33  last 126.40  spread 7.7% of winner
+[dungeon_depths-2] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[dungeon_depths-2] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[dungeon_depths-2]   per location: {}
+[dungeon_depths-2]   SEED 1589040811; karts sinking again within 5 s: 0
+[dungeon_depths-3] bots finished: 11/11  first 116.47  last 127.40  spread 9.4% of winner
+[dungeon_depths-3] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[dungeon_depths-3] SINKS: 1 total, 0 self-caused (no bump and no hit in the last second)
+[dungeon_depths-3]   per location: {'lava_gap@880': 1}
+[dungeon_depths-3]   SEED 460589024; karts sinking again within 5 s: 0
+[dungeon_depths-4] bots finished: 11/11  first 117.20  last 127.73  spread 9.0% of winner
+[dungeon_depths-4] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[dungeon_depths-4] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[dungeon_depths-4]   per location: {}
+[dungeon_depths-4]   SEED 371668189; karts sinking again within 5 s: 0

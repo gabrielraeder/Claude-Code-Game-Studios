@@ -89,6 +89,11 @@ extends Resource
 @export var deck_thickness: float = 0.6
 ## Color of the deck underside and edge faces.
 @export var deck_under_color: Color = Color(0.36, 0.33, 0.31)
+## Raised road (main road and branches) whose centerline is at most this many meters above the
+## ground is drawn SOLID: each edge gets a side face down to the ground (an embankment, a rampart
+## wall, a rock ledge) instead of an open deck on columns. Where another road passes under it, the
+## deck is always open (underside and columns). 0 = never solid (open decks, as in story 008 part 1).
+@export var solid_below: float = 0.0
 
 @export_group("Jumps and falls (story 008)")
 ## Jump ramps on the roads. See TrackRamp.
