@@ -1,0 +1,254 @@
+[gd_resource type="Resource" script_class="AudioSet" load_steps=49 format=3]
+
+[ext_resource type="Script" path="res://src/audio/audio_set.gd" id="1_set"]
+[ext_resource type="Script" path="res://src/audio/audio_event_def.gd" id="2_def"]
+[ext_resource type="AudioStream" path="res://assets/audio/boost.wav" id="s_boost"]
+[ext_resource type="AudioStream" path="res://assets/audio/bump.wav" id="s_bump"]
+[ext_resource type="AudioStream" path="res://assets/audio/drift_loop.wav" id="s_drift_loop"]
+[ext_resource type="AudioStream" path="res://assets/audio/engine_loop.wav" id="s_engine_loop"]
+[ext_resource type="AudioStream" path="res://assets/audio/falcon_screech.wav" id="s_falcon_screech"]
+[ext_resource type="AudioStream" path="res://assets/audio/finish.wav" id="s_finish"]
+[ext_resource type="AudioStream" path="res://assets/audio/horn_go.wav" id="s_horn_go"]
+[ext_resource type="AudioStream" path="res://assets/audio/item_hit.wav" id="s_item_hit"]
+[ext_resource type="AudioStream" path="res://assets/audio/item_horn.wav" id="s_item_horn"]
+[ext_resource type="AudioStream" path="res://assets/audio/item_pickup.wav" id="s_item_pickup"]
+[ext_resource type="AudioStream" path="res://assets/audio/lap.wav" id="s_lap"]
+[ext_resource type="AudioStream" path="res://assets/audio/lava_sizzle.wav" id="s_lava_sizzle"]
+[ext_resource type="AudioStream" path="res://assets/audio/music_loop.wav" id="s_music_loop"]
+[ext_resource type="AudioStream" path="res://assets/audio/shield_break.wav" id="s_shield_break"]
+[ext_resource type="AudioStream" path="res://assets/audio/shield_up.wav" id="s_shield_up"]
+[ext_resource type="AudioStream" path="res://assets/audio/spill_splash.wav" id="s_spill_splash"]
+[ext_resource type="AudioStream" path="res://assets/audio/spin.wav" id="s_spin"]
+[ext_resource type="AudioStream" path="res://assets/audio/splash.wav" id="s_splash"]
+[ext_resource type="AudioStream" path="res://assets/audio/stone_launch.wav" id="s_stone_launch"]
+[ext_resource type="AudioStream" path="res://assets/audio/ui_accept.wav" id="s_ui_accept"]
+[ext_resource type="AudioStream" path="res://assets/audio/ui_back.wav" id="s_ui_back"]
+[ext_resource type="AudioStream" path="res://assets/audio/ui_move.wav" id="s_ui_move"]
+[ext_resource type="AudioStream" path="res://assets/audio/wall.wav" id="s_wall"]
+
+[sub_resource type="Resource" id="ev_boost"]
+script = ExtResource("2_def")
+event = &"boost"
+stream = ExtResource("s_boost")
+volume_db = -4.0
+pitch_min = 0.95
+pitch_max = 1.05
+max_voices = 3
+min_interval_s = 0.2
+
+[sub_resource type="Resource" id="ev_bump"]
+script = ExtResource("2_def")
+event = &"bump"
+stream = ExtResource("s_bump")
+volume_db = -3.0
+pitch_min = 0.9
+pitch_max = 1.1
+max_voices = 4
+min_interval_s = 0.12
+
+[sub_resource type="Resource" id="ev_wall"]
+script = ExtResource("2_def")
+event = &"wall"
+stream = ExtResource("s_wall")
+volume_db = -5.0
+pitch_min = 0.9
+pitch_max = 1.1
+max_voices = 3
+min_interval_s = 0.15
+
+[sub_resource type="Resource" id="ev_spin"]
+script = ExtResource("2_def")
+event = &"spin"
+stream = ExtResource("s_spin")
+volume_db = -5.0
+pitch_min = 0.95
+pitch_max = 1.05
+max_voices = 3
+min_interval_s = 0.3
+
+[sub_resource type="Resource" id="ev_item_pickup"]
+script = ExtResource("2_def")
+event = &"item_pickup"
+stream = ExtResource("s_item_pickup")
+volume_db = -4.0
+pitch_min = 0.98
+pitch_max = 1.02
+max_voices = 2
+min_interval_s = 0.1
+
+[sub_resource type="Resource" id="ev_item_horn"]
+script = ExtResource("2_def")
+event = &"item_horn"
+stream = ExtResource("s_item_horn")
+volume_db = -5.0
+pitch_min = 0.95
+pitch_max = 1.05
+max_voices = 2
+min_interval_s = 0.3
+
+[sub_resource type="Resource" id="ev_horn_go"]
+script = ExtResource("2_def")
+event = &"horn_go"
+stream = ExtResource("s_horn_go")
+volume_db = -3.0
+pitch_min = 1.0
+pitch_max = 1.0
+max_voices = 1
+min_interval_s = 0.5
+
+[sub_resource type="Resource" id="ev_countdown"]
+script = ExtResource("2_def")
+event = &"countdown"
+stream = ExtResource("s_item_horn")
+volume_db = -3.0
+pitch_min = 0.9
+pitch_max = 0.9
+max_voices = 1
+min_interval_s = 0.5
+
+[sub_resource type="Resource" id="ev_countdown_go"]
+script = ExtResource("2_def")
+event = &"countdown_go"
+stream = ExtResource("s_horn_go")
+volume_db = -3.0
+pitch_min = 1.0
+pitch_max = 1.0
+max_voices = 1
+min_interval_s = 0.5
+
+[sub_resource type="Resource" id="ev_stone_launch"]
+script = ExtResource("2_def")
+event = &"stone_launch"
+stream = ExtResource("s_stone_launch")
+volume_db = -4.0
+pitch_min = 0.95
+pitch_max = 1.05
+max_voices = 3
+min_interval_s = 0.15
+
+[sub_resource type="Resource" id="ev_spill_splash"]
+script = ExtResource("2_def")
+event = &"spill_splash"
+stream = ExtResource("s_spill_splash")
+volume_db = -5.0
+pitch_min = 0.9
+pitch_max = 1.1
+max_voices = 3
+min_interval_s = 0.15
+
+[sub_resource type="Resource" id="ev_falcon_screech"]
+script = ExtResource("2_def")
+event = &"falcon_screech"
+stream = ExtResource("s_falcon_screech")
+volume_db = -6.0
+pitch_min = 0.95
+pitch_max = 1.05
+max_voices = 2
+min_interval_s = 0.5
+
+[sub_resource type="Resource" id="ev_shield_up"]
+script = ExtResource("2_def")
+event = &"shield_up"
+stream = ExtResource("s_shield_up")
+volume_db = -5.0
+pitch_min = 1.0
+pitch_max = 1.0
+max_voices = 2
+min_interval_s = 0.3
+
+[sub_resource type="Resource" id="ev_shield_break"]
+script = ExtResource("2_def")
+event = &"shield_break"
+stream = ExtResource("s_shield_break")
+volume_db = -4.0
+pitch_min = 0.95
+pitch_max = 1.05
+max_voices = 2
+min_interval_s = 0.3
+
+[sub_resource type="Resource" id="ev_item_hit"]
+script = ExtResource("2_def")
+event = &"item_hit"
+stream = ExtResource("s_item_hit")
+volume_db = -3.0
+pitch_min = 0.92
+pitch_max = 1.08
+max_voices = 4
+min_interval_s = 0.12
+
+[sub_resource type="Resource" id="ev_splash"]
+script = ExtResource("2_def")
+event = &"splash"
+stream = ExtResource("s_splash")
+volume_db = -4.0
+pitch_min = 0.9
+pitch_max = 1.1
+max_voices = 3
+min_interval_s = 0.3
+
+[sub_resource type="Resource" id="ev_lava_sizzle"]
+script = ExtResource("2_def")
+event = &"lava_sizzle"
+stream = ExtResource("s_lava_sizzle")
+volume_db = -6.0
+pitch_min = 0.95
+pitch_max = 1.05
+max_voices = 2
+min_interval_s = 0.4
+
+[sub_resource type="Resource" id="ev_lap"]
+script = ExtResource("2_def")
+event = &"lap"
+stream = ExtResource("s_lap")
+volume_db = -3.0
+pitch_min = 1.0
+pitch_max = 1.0
+max_voices = 1
+min_interval_s = 0.5
+
+[sub_resource type="Resource" id="ev_finish"]
+script = ExtResource("2_def")
+event = &"finish"
+stream = ExtResource("s_finish")
+volume_db = -2.0
+pitch_min = 1.0
+pitch_max = 1.0
+max_voices = 1
+min_interval_s = 0.5
+
+[sub_resource type="Resource" id="ev_ui_move"]
+script = ExtResource("2_def")
+event = &"ui_move"
+stream = ExtResource("s_ui_move")
+volume_db = -8.0
+pitch_min = 1.0
+pitch_max = 1.0
+max_voices = 2
+min_interval_s = 0.03
+
+[sub_resource type="Resource" id="ev_ui_accept"]
+script = ExtResource("2_def")
+event = &"ui_accept"
+stream = ExtResource("s_ui_accept")
+volume_db = -6.0
+pitch_min = 1.0
+pitch_max = 1.0
+max_voices = 2
+min_interval_s = 0.05
+
+[sub_resource type="Resource" id="ev_ui_back"]
+script = ExtResource("2_def")
+event = &"ui_back"
+stream = ExtResource("s_ui_back")
+volume_db = -6.0
+pitch_min = 1.0
+pitch_max = 1.0
+max_voices = 2
+min_interval_s = 0.05
+
+[resource]
+script = ExtResource("1_set")
+events = Array[ExtResource("2_def")]([SubResource("ev_boost"), SubResource("ev_bump"), SubResource("ev_wall"), SubResource("ev_spin"), SubResource("ev_item_pickup"), SubResource("ev_item_horn"), SubResource("ev_horn_go"), SubResource("ev_countdown"), SubResource("ev_countdown_go"), SubResource("ev_stone_launch"), SubResource("ev_spill_splash"), SubResource("ev_falcon_screech"), SubResource("ev_shield_up"), SubResource("ev_shield_break"), SubResource("ev_item_hit"), SubResource("ev_splash"), SubResource("ev_lava_sizzle"), SubResource("ev_lap"), SubResource("ev_finish"), SubResource("ev_ui_move"), SubResource("ev_ui_accept"), SubResource("ev_ui_back")])
+engine_stream = ExtResource("s_engine_loop")
+drift_stream = ExtResource("s_drift_loop")
+music_stream = ExtResource("s_music_loop")

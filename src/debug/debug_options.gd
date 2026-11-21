@@ -17,6 +17,8 @@ extends RefCounted
 ##   --racer=N            the local kart's dog, 0..7 (default 0, the mascot); works for host and clients
 ##   --vehicle=cart|bike  the local kart's vehicle (also 0/1); works for host and clients
 ##   --lineup=DIR         build a line-up of all 8 dogs on both vehicles, save pictures into DIR, quit
+##   --ui-shot=NAME      photograph a menu screen with sample data into --shots=, then quit
+##   --auto-ui=host|join:ADDR  click through menu and lobby by script (--auto-pick=R,V --auto-track= --auto-bots= --auto-laps= --auto-races=)
 ##   --dunk-at=S          the autopilot steers off the open moat edge once from distance S
 ##                        (pictures of the sinking kart and of its respawn)
 
@@ -47,6 +49,18 @@ var racer: int = -1
 var vehicle: String = ""
 ## Folder for the line-up pictures (--lineup=), "" = off.
 var lineup_dir: String = ""
+## Menu screen to photograph with sample data, then quit (--ui-shot=menu|lobby|lobby-client|results|results-client|results-solo|pause; needs --shots=).
+var ui_shot: String = ""
+## Scripted menu presses (--auto-ui=host or --auto-ui=join:ADDRESS): opens the main menu and clicks through it.
+var auto_ui: String = ""
+## Racer,vehicle indices the scripted lobby picks by pressing the cycle rows (--auto-pick=3,1), "" = keep.
+var auto_pick: String = ""
+## Track id, bot count and laps the scripted host sets in the lobby (--auto-track= --auto-bots= --auto-laps=).
+var auto_track: String = ""
+var auto_bots: int = -1
+var auto_laps: int = 0
+## Races the scripted flow plays (the first and rematches) before it quits (--auto-races=, default 2).
+var auto_races: int = 2
 ## Item the local kart starts with and keeps getting refilled with (--give-item=horn|stone|spill|falcon|shield).
 var give_item: String = ""
 ## Seconds between automatic item uses by the autopilot (--item-interval=), 0 = off.
@@ -92,6 +106,20 @@ static func parse(args: PackedStringArray) -> DebugOptions:
 			o.vehicle = a.substr("--vehicle=".length())
 		elif a.begins_with("--lineup="):
 			o.lineup_dir = a.substr("--lineup=".length())
+		elif a.begins_with("--ui-shot="):
+			o.ui_shot = a.substr("--ui-shot=".length())
+		elif a.begins_with("--auto-ui="):
+			o.auto_ui = a.substr("--auto-ui=".length())
+		elif a.begins_with("--auto-pick="):
+			o.auto_pick = a.substr("--auto-pick=".length())
+		elif a.begins_with("--auto-track="):
+			o.auto_track = a.substr("--auto-track=".length())
+		elif a.begins_with("--auto-bots="):
+			o.auto_bots = a.substr("--auto-bots=".length()).to_int()
+		elif a.begins_with("--auto-laps="):
+			o.auto_laps = a.substr("--auto-laps=".length()).to_int()
+		elif a.begins_with("--auto-races="):
+			o.auto_races = a.substr("--auto-races=".length()).to_int()
 		elif a == "--park":
 			o.park = true
 		elif a == "--ram":

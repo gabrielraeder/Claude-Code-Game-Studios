@@ -52,7 +52,7 @@ var _laps: LapCounter
 var _start: StartSequence
 var _camera: ChaseCamera
 var _hud: RaceHud
-var _menu: PauseMenu
+var _ui: RaceFlowUi
 var _net: NetSession
 var _net_stats: NetStats = NetStats.new()
 var _ranking: RaceRanking
@@ -95,6 +95,21 @@ var _peer_loadouts: Dictionary = {}
 ## Host: a start was requested but a client's loadout is still missing (see NetConfig.loadout_wait).
 var _begin_pending: bool = false
 var _begin_requested_ms: int = -1
+## Menu-driven online flow (lobby screen, results screen); false for the --host / --join command line paths.
+var _ui_flow: bool = false
+## Results screens are shown (not for the --autopilot / --host / --join command line paths).
+var _results_enabled: bool = false
+var _results_open: bool = false
+var _solo_results_timer: float = 0.0
+## Lobby state: the host's own copy (host) or the last one received (client).
+var _lobby: LobbyState = LobbyState.new()
+## Host: ready marks clients reported, by peer id.
+var _peer_ready: Dictionary = {}
+## Loadout (x racer, y vehicle) of every kart of the current race, by kart id (for the results).
+var _kart_loadouts: Dictionary = {}
+## What the local kart's stats and visual are built for (a lobby pick may differ until the race starts).
+var _built_loadout: Vector2i = Vector2i.ZERO
+var _joining_address: String = ""
 
 
 ## The 3-2-1 countdown and start result (read by the HUD and the debug harness).
@@ -172,14 +187,10 @@ func _ready() -> void:
 	add_child(_camera)
 	_hud = RaceHud.new()
 	add_child(_hud)
-	_menu = PauseMenu.new()
-	add_child(_menu)
-	_menu.resume_requested.connect(_resume)
-	_menu.restart_requested.connect(_restart)
-	_menu.quit_requested.connect(func() -> void: get_tree().quit())
-	_menu.menu_requested.connect(_back_to_menu)
-	_menu.host_requested.connect(_on_menu_host)
-	_menu.join_requested.connect(_on_menu_join)
+	_ui = RaceFlowUi.new()
+	add_child(_ui)
+	_ui.setup(_racer_set, _vehicle_set, net_config.kart_colors, net_config.max_racers)
+	_wire_ui()
 	_net = NetSession.new()
 	_net.name = &"NetSession"
 	add_child(_net)
@@ -194,6 +205,9 @@ func _ready() -> void:
 	_net.race_start_received.connect(_on_race_start_received)
 	_net.state_received.connect(_on_state_received)
 	_net.loadout_received.connect(_on_loadout_received)
+	_net.lobby_state_received.connect(_on_lobby_state_received)
+	_net.lobby_pick_received.connect(_on_lobby_pick_received)
+	_net.race_results_received.connect(_on_race_results_received)
 	_net.pong_received.connect(_on_pong)
 	_net.bump_received.connect(_on_bump_received)
 	_laps.finished.connect(func(total: float) -> void: race_finished.emit(total))
@@ -228,6 +242,15 @@ func _ready() -> void:
 	if _options.time_scale > 0.0:
 		Engine.time_scale = _options.time_scale
 	_cli_net = _net_opts.host or _net_opts.join != ""
+	_results_enabled = not _cli_net and (not _options.autopilot or _options.auto_ui != "")
+	_built_loadout = _my_loadout
+	if _options.ui_shot != "":
+		_run_ui_shot()
+		return
+	if _options.auto_ui != "":
+		var auto := AutoUiDriver.new()
+		add_child(auto)
+		auto.setup(_options, _ui)
 	if _options.overview_shot:
 		_run_overview_shot()
 		return
@@ -240,15 +263,15 @@ func _ready() -> void:
 			_begin_hosting(_net_opts.players)
 		else:
 			_begin_joining(_net_opts.join)
-	elif _options.autopilot:
+	elif _options.autopilot and _options.auto_ui == "":
 		get_tree().paused = false
 	else:
-		_open_menu("Dogworks Racing: Kennel Kingdom", true)
+		_show_main_menu("")
 
 
-## True while the start or pause menu is showing.
+## True while the main menu, lobby, results or pause menu is showing.
 func menu_is_open() -> bool:
-	return _menu.is_open()
+	return _ui.any_open()
 
 
 func _physics_process(dt: float) -> void:
@@ -264,8 +287,9 @@ func _physics_process(dt: float) -> void:
 
 func _process(delta: float) -> void:
 	_perf_sample()
-	if _begin_pending and _mode == Mode.HOST_LOBBY:
+	if _begin_pending and (_mode == Mode.HOST_LOBBY or _results_open):
 		_host_begin_race()
+	_solo_results_tick(delta)
 	if _mode == Mode.HOST_LOBBY and _want_players > 0 \
 			and _net.peer_ids().size() + 1 >= _want_players:
 		_lobby_timer += delta
@@ -287,12 +311,12 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _mode == Mode.SOLO and _laps.is_finished and (event.is_action_pressed(InputActions.RESTART) \
+	if _mode == Mode.SOLO and _laps.is_finished and not _ui.any_open() and (event.is_action_pressed(InputActions.RESTART) \
 			or event.is_action_pressed(&"ui_accept")):
 		# Finish screen: Start / A / Enter restarts. No restart key during a race.
 		_restart()
-	elif event.is_action_pressed(InputActions.PAUSE) and not _menu.is_open():
-		_open_menu("Paused", false)
+	elif event.is_action_pressed(InputActions.PAUSE) and not _ui.any_open():
+		_open_pause()
 
 
 # ---------------------------------------------------------------- ticking
@@ -519,31 +543,65 @@ func _finish_check(dt: float) -> void:
 			or _over_time > net_config.finish_timeout
 	if done and not _summary_printed:
 		_print_summary()
+	if done and _results_enabled and not _results_open and _net.is_host():
+		_publish_results()
 	if done and _options.quit_after_race:
 		get_tree().quit()
 
 
 # ---------------------------------------------------------------- menu and lobby flow
 
-func _open_menu(title: String, start_screen: bool) -> void:
+# Connects the screens' signals to the flow below.
+func _wire_ui() -> void:
+	_ui.pause.resume_requested.connect(_resume)
+	_ui.pause.restart_requested.connect(_restart)
+	_ui.pause.quit_requested.connect(func() -> void: get_tree().quit())
+	_ui.pause.menu_requested.connect(_back_to_menu)
+	_ui.menu.solo_requested.connect(_start_solo)
+	_ui.menu.host_requested.connect(_on_menu_host)
+	_ui.menu.join_requested.connect(_on_menu_join)
+	_ui.menu.quit_requested.connect(func() -> void: get_tree().quit())
+	_ui.lobby.pick_changed.connect(_on_lobby_pick_changed)
+	_ui.lobby.ready_toggled.connect(_on_lobby_ready_toggled)
+	_ui.lobby.track_stepped.connect(_on_track_stepped)
+	_ui.lobby.bots_stepped.connect(_on_bots_stepped)
+	_ui.lobby.laps_stepped.connect(_on_laps_stepped)
+	_ui.lobby.start_requested.connect(_on_lobby_start)
+	_ui.lobby.leave_requested.connect(func() -> void: _leave_network(""))
+	_ui.results.rematch_requested.connect(_on_rematch)
+	_ui.results.lobby_requested.connect(_on_back_to_lobby)
+	_ui.results.restart_requested.connect(_restart)
+	_ui.results.menu_requested.connect(_back_to_menu)
+
+
+# The start screen (offline, paused behind it). [param message] shows under the panels.
+func _show_main_menu(message: String) -> void:
+	get_tree().paused = true
+	_ui.show_menu(message)
+
+
+func _open_pause() -> void:
 	if _mode == Mode.SOLO:
 		get_tree().paused = true
-	_menu.open(title, start_screen)
-	_menu.set_restart_visible(_mode == Mode.SOLO)
+	_ui.pause.open_pause(_mode == Mode.SOLO)
 
 
 func _resume() -> void:
-	if _mode == Mode.HOST_LOBBY:
-		_host_begin_race()
-		return
-	_menu.close()
+	_ui.pause.close()
 	get_tree().paused = false
 
 
 func _restart() -> void:
 	if _mode != Mode.SOLO:
 		return
-	_menu.close()
+	_ui.close_all()
+	get_tree().paused = false
+	_reset_race()
+	_camera.snap()
+
+
+func _start_solo() -> void:
+	_ui.close_all()
 	get_tree().paused = false
 	_reset_race()
 	_camera.snap()
@@ -555,7 +613,7 @@ func _back_to_menu() -> void:
 		get_tree().paused = false
 		_reset_race()
 		_camera.snap()
-		_open_menu("Dogworks Racing: Kennel Kingdom", true)
+		_show_main_menu("")
 	else:
 		_leave_network("")
 
@@ -565,6 +623,9 @@ func _on_menu_host() -> void:
 
 
 func _on_menu_join(address: String) -> void:
+	if _mode == Mode.CLIENT_LOBBY:
+		_net.close()  # still connecting to an earlier address: try this one instead
+		_mode = Mode.SOLO
 	_begin_joining(address)
 
 
@@ -579,9 +640,21 @@ func _begin_hosting(want_players: int) -> void:
 	_mode = Mode.HOST_LOBBY
 	_lobby_timer = 0.0
 	_hud.set_lobby(true)
-	_menu.set_net_buttons_visible(false)
-	_menu.set_primary_button("Start race", true)
-	_refresh_host_text()
+	if _cli_net:
+		_refresh_host_text()
+		return
+	_ui_flow = true
+	_peer_ready.clear()
+	_lobby = LobbyState.new()
+	_lobby.version = KartWire.VERSION
+	_lobby.track = String(track_data.track_id)
+	_lobby.bots = _net_opts.bots if _net_opts.bots >= 0 else net_config.default_bots
+	_lobby.laps = _net_opts.laps if _net_opts.laps > 0 else track_data.lap_count
+	_ui.lobby.reset_ready()
+	_ui.lobby.set_pick(_my_loadout.x, _my_loadout.y)
+	_ui.lobby.set_info(_ui.theme_data.t("lobby_hosting", [net_config.port]))
+	_ui.show_lobby()
+	_publish_lobby()
 
 
 func _begin_joining(address: String) -> void:
@@ -591,9 +664,12 @@ func _begin_joining(address: String) -> void:
 		return
 	_mode = Mode.CLIENT_LOBBY
 	_hud.set_lobby(true)
-	_menu.set_net_buttons_visible(false)
-	_menu.set_primary_button("Start", false)
-	_show_lobby_text("Connecting to %s ..." % address)
+	if _cli_net:
+		_show_lobby_text("Connecting to %s ..." % address)
+		return
+	_ui_flow = true
+	_joining_address = address
+	_ui.menu.set_status(_ui.theme_data.t("menu_connecting", [address]))
 
 
 func _refresh_host_text() -> void:
@@ -604,14 +680,19 @@ func _refresh_host_text() -> void:
 	_show_lobby_text(text)
 
 
+# A message for the command line paths (HUD banner) or, from the menu, under the main menu panels.
 func _show_lobby_text(text: String) -> void:
 	_hud.set_banner(text)
-	_menu.set_status(text)
+	if _ui.menu.is_open():
+		_ui.menu.set_status(text)
 
 
 func _on_connected_to_host() -> void:
 	_show_lobby_text("Connected. Waiting for the host to start.")
 	_net.send_loadout(_my_loadout.x, _my_loadout.y)
+	if _ui_flow:
+		_net.send_lobby_pick(_my_loadout.x, _my_loadout.y, false)
+		RecentHosts.remember(_ui.theme_data.recent_file, _joining_address, _ui.theme_data.default_address, _ui.theme_data.recent_max)
 
 
 # Host: remembers what a client chose (values are clamped, a bad message never crashes).
@@ -626,15 +707,22 @@ func _on_peer_joined(id: int) -> void:
 	if not _net.is_host():
 		return
 	if _mode == Mode.HOST_LOBBY:
-		_refresh_host_text()
+		if _ui_flow:
+			_publish_lobby()
+		else:
+			_refresh_host_text()
 	else:
 		_net.kick(id)
 
 
 func _on_peer_left(id: int) -> void:
 	_peer_loadouts.erase(id)
+	_peer_ready.erase(id)
 	if _mode == Mode.HOST_LOBBY:
-		_refresh_host_text()
+		if _ui_flow:
+			_publish_lobby()
+		else:
+			_refresh_host_text()
 		return
 	if _mode != Mode.NET_RACE:
 		return
@@ -655,6 +743,9 @@ func _on_peer_left(id: int) -> void:
 func _leave_network(message: String) -> void:
 	print("[net] leaving network: %s" % message)
 	_peer_loadouts.clear()
+	_peer_ready.clear()
+	_ui_flow = false
+	_results_open = false
 	_begin_pending = false
 	_begin_requested_ms = -1
 	if _mode == Mode.NET_RACE and not _summary_printed:
@@ -674,8 +765,7 @@ func _leave_network(message: String) -> void:
 	_laps.lap_target = _laps_for_race()
 	_reset_race()
 	_camera.snap()
-	_open_menu("Dogworks Racing: Kennel Kingdom", true)
-	_menu.set_status(message)
+	_show_main_menu(message)
 
 
 # ---------------------------------------------------------------- starting a networked race
@@ -704,6 +794,8 @@ func _host_begin_race() -> void:
 		slots.append([next_id, p, "Player %d" % (next_id + 1), false])
 		next_id += 1
 	var bots: int = _net_opts.bots if _net_opts.bots >= 0 else net_config.default_bots
+	if _ui_flow:
+		bots = _lobby.bots
 	bots = clampi(bots, 0, net_config.max_racers - slots.size())
 	for b in bots:
 		slots.append([next_id, 1, _bot_set.bot_name(b), true])
@@ -741,7 +833,7 @@ func _debug_race_seed() -> int:
 
 
 func _on_race_start_received(info: Dictionary) -> void:
-	if _net.is_host() or _mode == Mode.NET_RACE:
+	if _net.is_host() or (_mode == Mode.NET_RACE and not _results_open):
 		return
 	if int(info.get("version", -1)) != KartWire.VERSION:
 		_leave_network("The host runs a different network version.")
@@ -762,6 +854,8 @@ func _apply_race_start(info: Dictionary) -> void:
 	var slots: Array = info.slots
 	var loadouts: Dictionary = info.get("loadouts", {})
 	var ids: Array[int] = []
+	_kart_loadouts.clear()
+	_results_open = false
 	_laps.lap_target = laps_n
 	for slot: Array in slots:
 		var kart_id: int = slot[0]
@@ -772,6 +866,7 @@ func _apply_race_start(info: Dictionary) -> void:
 		var lateral: float = net_config.grid_lateral * (1.0 if kart_id % 2 == 0 else -1.0)
 		ids.append(kart_id)
 		var lo: Vector2i = _loadout_of(loadouts, kart_id, is_bot, int(info.get("seed", 0)))
+		_kart_loadouts[kart_id] = lo
 		print("[loadout] kart=%d peer=%d bot=%s racer=%d vehicle=%s" % [kart_id, peer, str(is_bot),
 				lo.x, _vehicle_set.vehicle_at(lo.y).vehicle_id])
 		if not is_bot and peer == my_id:
@@ -784,6 +879,8 @@ func _apply_race_start(info: Dictionary) -> void:
 				push_warning("The host set this kart's loadout to racer %d vehicle %d (asked for %d/%d); using the host's." % [
 						lo.x, lo.y, _my_loadout.x, _my_loadout.y])
 				_my_loadout = lo
+			if lo != _built_loadout:
+				_built_loadout = lo
 				_sim.stats = _stats_for(lo.y, kart_id)
 				_local.visual.queue_free()
 				_local.visual = _make_visual(_sim, lo.x, kart_id)
@@ -836,7 +933,7 @@ func _apply_race_start(info: Dictionary) -> void:
 	_mode = Mode.NET_RACE
 	_hud.set_lobby(false)
 	_hud.set_banner("")
-	_menu.close()
+	_ui.close_all()
 	get_tree().paused = false
 	_camera.snap()
 	if _options.grid_shot:
@@ -940,6 +1037,8 @@ func _make_visual(sim: KartSim, racer: int, kart_id: int) -> KartVisual:
 
 
 func _laps_for_race() -> int:
+	if _ui_flow and _mode != Mode.SOLO:
+		return _lobby.laps
 	return _net_opts.laps if _net_opts.laps > 0 else track_data.lap_count
 
 
@@ -1046,6 +1145,8 @@ func _reset_race() -> void:
 	_laps.reset(_sim.track_s)
 	_input.clear()
 	race_time = 0.0
+	_results_open = false
+	_solo_results_timer = 0.0
 	_start.begin(_sim.stats)
 	if _items != null:
 		_items.reset(_track, 0)
@@ -1125,6 +1226,196 @@ func _build_world() -> void:
 	scenery.build(_track)
 
 
+# ---------------------------------------------------------------- lobby and results flow (menu-driven online)
+
+# Host: rebuilds the roster from the connected peers and the saved picks, clamps the bots to the
+# free places, shows it and sends it to every client.
+func _publish_lobby() -> void:
+	var peers: Array[int] = _net.peer_ids()
+	peers.sort()
+	_lobby.version = KartWire.VERSION
+	_lobby.entries.clear()
+	_lobby.entries.append(LobbyState.make_entry(LobbyState.HOST_PEER, _my_loadout.x, _my_loadout.y, true))
+	for p in peers:
+		var lo: Vector2i = _peer_loadouts.get(p, Vector2i.ZERO)
+		_lobby.entries.append(LobbyState.make_entry(p, lo.x, lo.y, bool(_peer_ready.get(p, false))))
+	_lobby.bots = clampi(_lobby.bots, 0, _lobby.max_bots(net_config.max_racers))
+	_ui.lobby.show_state(_lobby, LobbyState.HOST_PEER, true)
+	_net.send_lobby_state(_lobby.to_dict())
+	print("[lobby] host roster: %d humans, %d bots, track %s, %d laps | %s" % [_lobby.humans(), _lobby.bots,
+			_lobby.track, _lobby.laps, _roster_text(_lobby)])
+
+
+# "peer:racer/vehicle/ready" per human, the same text on every PC when the roster is the same.
+func _roster_text(state: LobbyState) -> String:
+	var parts: PackedStringArray = PackedStringArray()
+	for e in state.entries:
+		parts.append("%d:r%d/v%d/%s" % [int(e.peer), int(e.racer), int(e.vehicle), "ready" if bool(e.ready) else "wait"])
+	return " ".join(parts)
+
+
+# This PC changed its own pick in the lobby.
+func _on_lobby_pick_changed(racer: int, vehicle: int) -> void:
+	_my_loadout = Vector2i(racer, vehicle)
+	if _net.is_host():
+		_publish_lobby()
+	else:
+		_net.send_lobby_pick(racer, vehicle, _ui.lobby.is_ready_local())
+		_net.send_loadout(racer, vehicle)
+
+
+func _on_lobby_ready_toggled(is_ready: bool) -> void:
+	_net.send_lobby_pick(_my_loadout.x, _my_loadout.y, is_ready)
+
+
+# Host: a client's pick or ready mark.
+func _on_lobby_pick_received(peer_id: int, racer: int, vehicle: int, is_ready: bool) -> void:
+	_on_loadout_received(peer_id, racer, vehicle)
+	_peer_ready[peer_id] = is_ready
+	print("[lobby] peer %d picked racer %d vehicle %d ready=%s" % [peer_id, racer, vehicle, str(is_ready)])
+	if _mode == Mode.HOST_LOBBY and _ui_flow:
+		_publish_lobby()
+
+
+# Client: the host's lobby (also the way back to the lobby after the results).
+func _on_lobby_state_received(d: Dictionary) -> void:
+	if _net.is_host() or _cli_net:
+		return
+	var state: LobbyState = LobbyState.from_dict(d)
+	if state.version != KartWire.VERSION:
+		_leave_network("The host runs a different network version.")
+		return
+	if _mode == Mode.NET_RACE:
+		if not _results_open:
+			return
+		_enter_client_lobby()
+	elif _mode != Mode.CLIENT_LOBBY:
+		return
+	_lobby = state
+	if not _ui.lobby.is_open():
+		_ui.lobby.reset_ready()
+		_ui.lobby.set_pick(_my_loadout.x, _my_loadout.y)
+		_ui.lobby.set_info(_ui.theme_data.t("lobby_joined", [_joining_address]))
+		_ui.show_lobby()
+	_ui.lobby.show_state(_lobby, _net.my_id(), false)
+	print("[lobby] client %d sees: %d humans, %d bots, track %s, %d laps | %s" % [_net.my_id(), state.humans(),
+			state.bots, state.track, state.laps, _roster_text(state)])
+
+
+func _enter_client_lobby() -> void:
+	_results_open = false
+	_clear_others()
+	_laps.lap_target = _lobby.laps
+	_reset_race()
+	_camera.snap()
+	_mode = Mode.CLIENT_LOBBY
+	_hud.set_lobby(true)
+	_hud.set_banner("")
+	_hud.show_place(0, 0)
+	_hud.set_net_info("")
+	_ui.lobby.reset_ready()
+
+
+func _on_track_stepped(direction: int) -> void:
+	var ids: PackedStringArray = _ui.theme_data.lobby_tracks
+	if ids.is_empty():
+		return
+	var i: int = posmod(ids.find(_lobby.track) + direction, ids.size())
+	_lobby.track = ids[i]
+	if not _ensure_track(_lobby.track):
+		push_warning("Lobby track '%s' failed to load." % _lobby.track)
+	_publish_lobby()
+
+
+func _on_bots_stepped(direction: int) -> void:
+	_lobby.bots = clampi(_lobby.bots + direction, 0, _lobby.max_bots(net_config.max_racers))
+	_publish_lobby()
+
+
+func _on_laps_stepped(direction: int) -> void:
+	_lobby.laps = clampi(_lobby.laps + direction, _ui.theme_data.laps_min, _ui.theme_data.laps_max)
+	_publish_lobby()
+
+
+func _on_lobby_start() -> void:
+	if _mode == Mode.HOST_LOBBY and _lobby.all_ready():
+		_host_begin_race()
+
+
+# Host: same setup and loadouts again, one press.
+func _on_rematch() -> void:
+	if not _net.is_host():
+		return
+	print("[lobby] rematch requested")
+	_ui.results.close()
+	_results_open = false
+	_host_begin_race()
+
+
+# Host: back to the lobby with every client not ready again.
+func _on_back_to_lobby() -> void:
+	if not _net.is_host():
+		return
+	_results_open = false
+	_clear_others()
+	_laps.lap_target = _lobby.laps
+	_reset_race()
+	_camera.snap()
+	_mode = Mode.HOST_LOBBY
+	_hud.set_lobby(true)
+	_hud.set_banner("")
+	_hud.show_place(0, 0)
+	_hud.set_net_info("")
+	_peer_ready.clear()
+	_ui.lobby.reset_ready()
+	_ui.lobby.set_pick(_my_loadout.x, _my_loadout.y)
+	_ui.show_lobby()
+	_publish_lobby()
+
+
+# Host: the results from the host's race state (ranking and every kart's finish data), sent to clients.
+func _publish_results() -> void:
+	var entries: Array = []
+	for place in range(1, _ranking.count() + 1):
+		var id: int = _ranking.id_at_place(place)
+		var r: Racer = _by_id.get(id)
+		if r == null:
+			continue
+		var lo: Vector2i = _kart_loadouts.get(id, Vector2i.ZERO)
+		entries.append({"place": place, "kart_id": id, "name": r.display_name, "racer": lo.x, "vehicle": lo.y,
+				"time": r.finish_time() if r.is_finished() else -1.0, "bot": r.is_bot})
+	_results_open = true
+	_net.send_race_results(entries)
+	_show_results(entries, ResultsScreen.Viewer.HOST)
+
+
+func _on_race_results_received(entries: Array) -> void:
+	if _net.is_host() or _mode != Mode.NET_RACE or not _results_enabled:
+		return
+	_results_open = true
+	_show_results(entries, ResultsScreen.Viewer.CLIENT)
+
+
+func _show_results(entries: Array, viewer: ResultsScreen.Viewer) -> void:
+	for e: Dictionary in entries:
+		print("[results] role=%s place=%d kart=%d name=%s racer=%d vehicle=%d time=%.2f" % [_role(), int(e.place),
+				int(e.kart_id), str(e.name), int(e.racer), int(e.vehicle), float(e.time)])
+	_ui.show_results(entries, _local.kart_id, viewer)
+
+
+# Solo: a moment after the finish line, the results of the one-kart race.
+func _solo_results_tick(delta: float) -> void:
+	if not _results_enabled or _mode != Mode.SOLO or _results_open or not _laps.is_finished or _ui.any_open():
+		return
+	_solo_results_timer += delta
+	if _solo_results_timer < _ui.theme_data.solo_results_delay:
+		return
+	_results_open = true
+	var entry: Dictionary = {"place": 1, "kart_id": _local.kart_id, "name": _ui.theme_data.t("player_name", [1]),
+			"racer": _built_loadout.x, "vehicle": _built_loadout.y, "time": _laps.finish_race_time, "bot": false}
+	_show_results([entry], ResultsScreen.Viewer.SOLO)
+
+
 # ---------------------------------------------------------------- debug cameras and shots
 
 func _debug_save(shot_name: String) -> void:
@@ -1139,7 +1430,7 @@ func _debug_save(shot_name: String) -> void:
 # Debug (--overview-shot): a straight-down orthographic view of the whole track, saved once.
 func _run_overview_shot() -> void:
 	get_tree().paused = false
-	_menu.close()
+	_ui.close_all()
 	_hud.hide()
 	for node in _world.get_children():  # no fog in the top-down picture
 		if node is WorldEnvironment:
@@ -1159,10 +1450,19 @@ func _run_overview_shot() -> void:
 	get_tree().quit()
 
 
+# Debug (--ui-shot=NAME): one menu screen with sample data, pictures into --shots=, then quit.
+func _run_ui_shot() -> void:
+	get_tree().paused = false
+	_hud.hide()
+	var runner := UiShotRunner.new()
+	add_child(runner)
+	runner.run(_options.ui_shot, _options.shots_dir, _ui, _racer_set, _vehicle_set, net_config)
+
+
 # Debug (--lineup=DIR): no race; a line-up of all dogs on both vehicles, pictures into DIR, quit.
 func _run_lineup() -> void:
 	get_tree().paused = false
-	_menu.close()
+	_ui.close_all()
 	_hud.hide()
 	_world.queue_free()
 	_local.visual.hide()

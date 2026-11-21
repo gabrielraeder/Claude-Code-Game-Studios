@@ -1,0 +1,109 @@
+[gd_resource type="Resource" script_class="UiTheme" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/ui_theme.gd" id="1_ui"]
+
+[resource]
+script = ExtResource("1_ui")
+parchment = Color(0.9529, 0.9020, 0.7686, 1)
+parchment_dark = Color(0.8902, 0.8275, 0.6588, 1)
+ink = Color(0.1647, 0.1176, 0.1490, 1)
+ink_soft = Color(0.3569, 0.2902, 0.3216, 1)
+primary = Color(0.9098, 0.2706, 0.1725, 1)
+primary_dark = Color(0.7216, 0.2000, 0.1176, 1)
+disabled = Color(0.7216, 0.6824, 0.5882, 1)
+focus_ring = Color(0.9608, 0.7725, 0.2588, 1)
+place_first = Color(0.9608, 0.7725, 0.2588, 1)
+place_second = Color(0.7843, 0.8275, 0.8784, 1)
+place_third = Color(0.7882, 0.5412, 0.2941, 1)
+place_other = Color(0.9529, 0.9020, 0.7686, 1)
+ready_color = Color(0.1804, 0.4902, 0.3098, 1)
+not_ready_color = Color(0.6039, 0.2314, 0.1686, 1)
+backdrop = Color(0.1, 0.07, 0.1, 0.92)
+dim = Color(0.1, 0.07, 0.1, 0.62)
+base_height = 720.0
+title_font = 46
+heading_font = 30
+body_font = 22
+small_font = 18
+button_font = 26
+button_min = Vector2(300, 52)
+small_button_min = Vector2(300, 38)
+cycle_height = 44.0
+row_height = 30.0
+panel_margin = 18
+border_width = 4
+focus_width = 5
+corner_radius = 8
+gap = 14
+preview_size = Vector2i(400, 160)
+preview_spin = 30.0
+screen_layer = 10
+recent_max = 5
+default_address = "127.0.0.1"
+recent_file = "user://recent_hosts.json"
+lobby_tracks = PackedStringArray("castle_circuit", "dungeon_depths")
+laps_min = 1
+laps_max = 9
+solo_results_delay = 1.5
+auto_ui_step = 0.6
+texts = {
+"title": "Dogworks Racing: Kennel Kingdom",
+"menu_play_heading": "Play",
+"menu_host": "Host",
+"menu_solo": "Solo race",
+"menu_controls": "Controls",
+"menu_quit": "Quit",
+"menu_join_heading": "Join a host",
+"menu_join": "Join",
+"menu_ip_placeholder": "Host IP (Tailscale 100.x or LAN)",
+"menu_recent": "Recent hosts",
+"menu_connecting": "Connecting to %s ...",
+"menu_hint": "Up / Down and Enter, or D-pad and A, to choose.",
+"lobby_title": "Lobby",
+"lobby_hosting": "Hosting on UDP %d. Friends join with your IP address.",
+"lobby_joined": "Connected to %s",
+"lobby_roster": "Racers in the lobby",
+"lobby_setup": "Race setup (host)",
+"lobby_pick": "Your racer",
+"lobby_total": "%d human(s) + %d bot(s) = %d of %d racers",
+"lobby_racer_info": "%s the %s, riding the %s",
+"cycle_racer": "Racer",
+"cycle_vehicle": "Vehicle",
+"cycle_track": "Track",
+"cycle_bots": "Bots",
+"cycle_laps": "Laps",
+"lobby_start": "Start race",
+"lobby_ready": "Ready",
+"lobby_unready": "Ready (press to cancel)",
+"lobby_leave": "Leave",
+"lobby_wait_players": "Waiting for %d player(s) to get ready.",
+"lobby_all_ready": "Everyone is ready.",
+"lobby_wait_host": "Waiting for the host to start.",
+"lobby_get_ready": "Pick your racer, then press Ready.",
+"col_player": "Player",
+"col_role": "Role",
+"col_racer": "Racer",
+"col_vehicle": "Vehicle",
+"col_status": "Status",
+"col_place": "Place",
+"col_time": "Time",
+"player_name": "Player %d",
+"role_host": "Host",
+"role_you": "You",
+"status_ready": "Ready",
+"status_not_ready": "Not ready",
+"results_title": "Race results",
+"results_dnf": "DNF",
+"results_you": "(you)",
+"results_wait_host": "Waiting for the host",
+"results_rematch": "Rematch",
+"results_lobby": "Back to lobby",
+"results_leave": "Leave",
+"results_restart": "Restart",
+"results_menu": "Menu",
+"pause_title": "Paused",
+"pause_resume": "Resume",
+"pause_restart": "Restart",
+"pause_menu": "Back to menu",
+"pause_quit": "Quit"
+}

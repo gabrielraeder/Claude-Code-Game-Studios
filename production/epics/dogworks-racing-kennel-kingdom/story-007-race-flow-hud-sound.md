@@ -1,13 +1,13 @@
 # Story 007: Race flow, HUD and basic sound
 
 > **Epic**: Dogworks Racing: Kennel Kingdom
-> **Status**: Ready
+> **Status**: In Progress
 > **Layer**: Presentation
 > **Type**: UI
 > **Estimate**: L
 > **Build step**: core
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: —
+> **Last Updated**: 2026-11-20
 
 ## Context
 

@@ -27,6 +27,12 @@ signal race_start_received(info: Dictionary)
 signal state_received(kart_id: int, t: float, d: PackedFloat32Array)
 ## Host side: a client told us its loadout (racer and vehicle index, story 006).
 signal loadout_received(peer_id: int, racer: int, vehicle: int)
+## Client side: the host sent the lobby state (a LobbyState.to_dict()).
+signal lobby_state_received(state: Dictionary)
+## Host side: a client changed its pick or ready mark in the lobby.
+signal lobby_pick_received(peer_id: int, racer: int, vehicle: int, is_ready: bool)
+## Client side: the host sent the race results (one dictionary per racer, best place first).
+signal race_results_received(entries: Array)
 ## A pong arrived: host race clock, whether the host is racing, and the round trip in seconds.
 ## Another PC bumped [param kart_id] (owned here) with [param from_kart]'s kart.
 signal bump_received(kart_id: int, from_kart: int, impulse: Vector2, strength: float)
@@ -158,6 +164,27 @@ func send_loadout(racer: int, vehicle: int) -> void:
 	if not _active or _is_host_flag:
 		return
 	_send(func() -> void: rpc_loadout.rpc_id(1, racer, vehicle), true, false, 1)
+
+
+## Host to everyone: the lobby state (reliable, KartWire.VERSION 6).
+func send_lobby_state(state: Dictionary) -> void:
+	if not _active:
+		return
+	_send(func() -> void: rpc_lobby_state.rpc(state), true, false)
+
+
+## Client to host: this PC's racer, vehicle and ready mark in the lobby (reliable).
+func send_lobby_pick(racer: int, vehicle: int, is_ready: bool) -> void:
+	if not _active or _is_host_flag:
+		return
+	_send(func() -> void: rpc_lobby_pick.rpc_id(1, racer, vehicle, is_ready), true, false, 1)
+
+
+## Host to everyone: the final results of the race (reliable, KartWire.VERSION 6).
+func send_race_results(entries: Array) -> void:
+	if not _active:
+		return
+	_send(func() -> void: rpc_race_results.rpc(entries), true, false)
 
 
 ## Tells [param to_peer], the owner of [param kart_id], that [param from_kart] bumped it.
@@ -301,6 +328,22 @@ func rpc_state(kart_id: int, t: float, d: PackedFloat32Array) -> void:
 func rpc_loadout(racer: int, vehicle: int) -> void:
 	if multiplayer.is_server():
 		loadout_received.emit(multiplayer.get_remote_sender_id(), racer, vehicle)
+
+
+@rpc("authority", "call_remote", "reliable")
+func rpc_lobby_state(state: Dictionary) -> void:
+	lobby_state_received.emit(state)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_lobby_pick(racer: int, vehicle: int, is_ready: bool) -> void:
+	if multiplayer.is_server():
+		lobby_pick_received.emit(multiplayer.get_remote_sender_id(), racer, vehicle, is_ready)
+
+
+@rpc("authority", "call_remote", "reliable")
+func rpc_race_results(entries: Array) -> void:
+	race_results_received.emit(entries)
 
 
 @rpc("any_peer", "call_remote", "reliable")

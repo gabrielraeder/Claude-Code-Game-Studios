@@ -6,7 +6,8 @@ extends RefCounted
 ## Bumped when the meaning of an existing field or of a message changes.
 ## 4 (story 006): the race start info carries each kart's loadout, and clients send theirs.
 ## 5 (bugfix 2026-11-20): box take carries wants_item; box taken with item -1 = broken, no item.
-const VERSION: int = 5
+## 6 (story 007 part 1): lobby messages (state, pick) and the race results message.
+const VERSION: int = 6
 const X: int = 0
 const Z: int = 1
 const VX: int = 2
