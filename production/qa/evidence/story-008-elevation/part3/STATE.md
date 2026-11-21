@@ -1,0 +1,31 @@
+# Story 008 part 3 state (everything height-aware)
+- [ ] started 2026-11-21; reading files
+- PLAN/choices: TrackModel item_box_height/normal, pad_paths/pad_heights, hazard_heights, on_surface(p,q,y), hazard_index(p,q,speed,y), hazard_below, pad_at(p,y); TrackData hazard_sink_margin .3, pad_height_tolerance 2, gate_height; TrackHazard.surface_height; ItemSet.box_height_tolerance 2
+- [x] TrackModel/TrackData/TrackHazard/ItemSet fields written (not parsed)
+- [x] KartSim: hazard check before fall (any time, height-gated), no fall respawn over hazard_below, pad_at(height)
+- NEXT: item_manager boxes (height pickup, visuals tilt), spill tilt, effects y; then track_mesh pads/hazard y; camera; scenery
+- [x] item_manager boxes (_box_reach planar+height, cached pos/y/up, tilted spin), items tilt (ai.up), puff/flame at kart height; track_mesh pads/start line y_hint, hazard y
+- [x] scenery: theme scenery_attach_reach 3; _road_lift (props within reach raised to road surface y); RoadGrid level filter via TrackModel.blocks_level; TrackModel.excess_at_level/max_surface_height; flat tracks keep the old code path (_top_road<=0)
+- NEXT: audit tool height-aware, camera, parse
+- [x] audit tool height-aware (_top, excess_at_level); camera _clamp_height (floor_under + camera_min_clearance 1.2, deck_above - camera_ceiling_margin .5, smoothing 10) + TrackModel.floor_under/deck_above; VehicleVisualStats 3 fields
+- band hypothesis: jump_air band = ramp top stripe (color_b) under the camera, lip edge horizontal -> verify with new shot
+- NEXT: parse check all changed
+- [x] 12 changed .gd PARSE OK (after --import); removed unused gate_height
+- [x] grid: KartSim.reset_to queries with y_hint=height_at(distance) (level of the grid slot); laps/checkpoints use track_s, already level-resolved by the y_hint query (part 2) -> verify in logs
+- [x] test_elevation.tres: +7 boxes (bank s388.6 +-4, plateau 480, lower 1237.2 lat 0/4, bridge 1437.1 lat 0/-4), pads (slope 1300, under bridge 1237.2 lat -3, bank 395 lat 3), water_ledge (x319-348 z-122..-205 beside ledge open edge), water_under_bridge (x-141..-118 z-282..-258, beside lower road, under the bridge)
+- NEXT: probe tool for level tests (boxes/pads/hazard) headless; then runs
+- [x] tools/level_probe.gd (debug tool) runs/level_probe.log: lower road lat0 takes box 9 only (planar rule would also take bridge boxes 11,12); bridge lat0 takes 11 only (planar: 9,10,11); bridge passes 0.22 m over lower pad 1 -> no fire, lower kart lat-3 fires it h0; hill pad (moved to s=110, straight climb) fires h1.58; bank pad fires h4.38; bank box 7 taken h4.2; bridge over water_under_bridge: no sink; off ledge -> [sink] kind=water h0.21 (not fall), respawn h5.00
+- NEXT: scenery audit x3, bot race elev, castle/dungeon regressions, item_net, shots, fps
+- [x] scenery audit: castle 0 on road, dungeon 0 on road, guard report IDENTICAL to bugfix-2026-11-20/scenery-audit-after.txt; test_elevation 0 pieces (no style) 0; test_elevation dressed in castle theme (--theme=, new audit option): 2383 pieces, 0 on road (banners 1 moved 2 left out, moat_posts 15 left out, village_house 10 moved 1 left out)
+- [x] bot race test_elevation QUIT=180 SCALE=4 11 2 0: 11/11 finished 130.53-144.13, 0 ERROR, 0 stuck, 0 sinks (0 self-caused), host laps 63.13/63.60; runs/bots_elev
+- [x] castle regression (QUIT=60 SCALE=4 11 1 1): 10/10 bots 38.33-43.00, host lap 38.27 (= parts 1,2), 0 stuck, 0 sinks, 0 ERROR host+client; runs/castle_reg
+- [x] dungeon regression (QUIT=60 SCALE=4 11 1 1): 10/10 bots 39.20-44.67, host lap 38.07, 0 stuck, 0 sinks (lava gap crossed), 0 ERROR; runs/dungeon_reg
+- [x] item_net_test castle 1: host vs client1 IDENTICAL (20 hits), host vs client2 IDENTICAL (20 hits); runs/item_net
+- NEXT: shots (scratchpad shots3.sh), open each; band check; fps
+- [x] shots run (shots3.sh): jump_air has NO band now (opened); added ChaseCamera debug_* counters + harness [camera] line; parse ok
+- NEXT: fps windowed run (also gives [camera] clearance), open remaining shots
+- [!] fps run 1 (runs/fps_elev): n=98 min 49 median 60 mean 59.9; ONE hitch frame 248.6 ms at race_time 22 (no item event); camera raw min clearance 1.74, 0 clamp frames; 11/11 bots, 0 sinks, 0 ERROR. Rerunning (runs/fps_elev2)
+- [x] fps run 2 (runs/fps_elev2): n=98 min 59 median 60 mean 60.0, worst frame 51.3 ms (t=10); 11/11 bots, 0 sinks, 0 ERROR; camera raw min clearance 1.74 (no clamp needed in a lap)
+- [x] shots opened: shots_drive/jump_air (no band; water beside ledge), at_s375 (bank: 2 boxes at their bank heights, tilted pad on the bank), at_s095 (pad on the hill climb, ahead), at_s1226 (camera on lower road under the bridge: deck, pillars, boxes 9/10 + pad 1 under it, water beside; no clipping), at_s1426 (bridge boxes 11/12 on the deck), shots_side/side_s1437 (bridge box on top, lower boxes + pad under it, water beside), side_s389 (unusable: camera on the low side of the bank sees the deck edge only), shots_grid2/countdown (kart on the grid at the start line). Nothing found wrong to fix.
+- grid shot: --grid-shot without --autopilot only saved menu.png (shots_grid/); shots_grid2 with --autopilot saved countdown/start_go but no grid.png (debug grid camera not saved there)
+- ALL DONE -> report

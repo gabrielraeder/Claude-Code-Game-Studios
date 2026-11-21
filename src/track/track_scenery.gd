@@ -36,9 +36,15 @@ class RoadGrid extends RefCounted:
 	var reach: float = 4.0
 	var paths: Array[TrackModel.Path] = []
 	var cells: Dictionary = {}
+	## Story 008 part 3: the track (for TrackModel.blocks_level) and the kart band heights.
+	var track: TrackModel
+	var clear: float = 2.5
+	var flat: float = 0.3
 
 	## Indexes the main road and every branch of [param track].
-	func build(track: TrackModel, cell_m: float, reach_m: float) -> void:
+	func build(track_model: TrackModel, cell_m: float, reach_m: float) -> void:
+		var track_ref: TrackModel = track_model
+		track = track_ref
 		cell = cell_m
 		reach = reach_m
 		paths = [track.main]
@@ -62,8 +68,11 @@ class RoadGrid extends RefCounted:
 
 	## Smallest excess over a road wall at [param p] (like TrackModel.excess_at; < 0 = inside a
 	## corridor), capped at reach. [param away][0] receives the unit direction from the nearest
-	## road centreline to [param p].
-	func excess(p: Vector2, away: Array) -> float:
+	## road centreline to [param p]. Story 008 part 3: only road segments that a piece spanning
+	## [param y_lo]..[param y_hi] is in the way of count (TrackModel.blocks_level; the default
+	## range counts every road, as before).
+	func excess(p: Vector2, away: Array, y_lo: float = -INF, y_hi: float = INF) -> float:
+		var leveled: bool = y_lo > -INF or y_hi < INF
 		var key := Vector2i(floori(p.x / cell), floori(p.y / cell))
 		if not cells.has(key):
 			return reach
@@ -81,6 +90,8 @@ class RoadGrid extends RefCounted:
 			var l2: float = ab.length_squared()
 			var t: float = clampf((p - a).dot(ab) / l2, 0.0, 1.0) if l2 > 0.0 else 0.0
 			var d: float = p.distance_squared_to(a + ab * t)
+			if d < best_d[code.x] and leveled and not track.blocks_level(path.height_at(code.y, t), y_lo, y_hi, clear, flat):
+				continue
 			if d < best_d[code.x]:
 				best_d[code.x] = d
 				best_seg[code.x] = code.y
@@ -101,6 +112,27 @@ class RoadGrid extends RefCounted:
 				away[0] = dir.normalized() if dir.length_squared() > 0.0001 else Vector2(-ab.y, ab.x).normalized() * float(side)
 		return out
 
+	## Story 008 part 3: (excess over the nearest road's wall, that road's surface height at its
+	## nearest point) for [param p], any level. x = reach when no road is near.
+	func nearest_surface(p: Vector2) -> Vector2:
+		var key := Vector2i(floori(p.x / cell), floori(p.y / cell))
+		if not cells.has(key):
+			return Vector2(reach, 0.0)
+		var out := Vector2(reach, 0.0)
+		for code: Vector2i in cells[key]:
+			var path: TrackModel.Path = paths[code.x]
+			var a: Vector2 = path.points[code.y]
+			var ab: Vector2 = path.points[(code.y + 1) % path.points.size()] - a
+			var l2: float = ab.length_squared()
+			var t: float = clampf((p - a).dot(ab) / l2, 0.0, 1.0) if l2 > 0.0 else 0.0
+			var off: Vector2 = p - (a + ab * t)
+			var side: int = 1 if off.dot(Vector2(-ab.y, ab.x)) >= 0.0 else -1
+			var e: float = off.length() - path.wall_at(code.y, t, side)
+			if e < out.x:
+				var lat: float = off.dot(Vector2(-ab.y, ab.x).normalized()) if l2 > 0.0 else 0.0
+				out = Vector2(e, path.surface_y(code.y, t, lat))
+		return out
+
 var _track: TrackModel
 var _th: TrackTheme
 ## kind -> [Array[Transform3D], Array[Color], Array[String] of prop tags]
@@ -119,6 +151,9 @@ var _group_open: bool = false
 var _group: Array = []
 # Road guard counts per prop tag: props checked, moved away from the road, left out.
 var _guard_props: Dictionary = {}
+# Highest road surface of the track (story 008 part 3); 0 on a flat track, where the guard works
+# exactly as before.
+var _top_road: float = 0.0
 var _guard_moved: Dictionary = {}
 var _guard_dropped: Dictionary = {}
 var _guard_shrunk: Dictionary = {}
@@ -138,6 +173,9 @@ func build(track: TrackModel) -> void:
 		_faces[kind] = (_meshes[kind] as Mesh).get_faces()
 	_grid = RoadGrid.new()
 	_grid.build(track, GUARD_CELL, GUARD_REACH)
+	_grid.clear = _th.scenery_clear_height
+	_grid.flat = _th.scenery_flat_height
+	_top_road = track.max_surface_height()
 	if _th.style == &"castle":
 		_build_castle()
 	elif _th.style == &"dungeon":
@@ -188,7 +226,7 @@ func _place(pieces: Array) -> void:
 	if pieces.is_empty():
 		return
 	_guard_props[_tag] = int(_guard_props.get(_tag, 0)) + 1
-	var shift := Vector3.ZERO
+	var shift := Vector3(0.0, _road_lift(pieces), 0.0)
 	var moved: float = 0.0
 	for attempt in 4:
 		var away: Array = [Vector2.ZERO]
@@ -207,6 +245,21 @@ func _place(pieces: Array) -> void:
 		var dir: Vector2 = away[0]
 		shift += Vector3(dir.x, 0.0, dir.y) * step
 	_guard_dropped[_tag] = int(_guard_dropped.get(_tag, 0)) + 1
+
+
+# Story 008 part 3: how high a prop is raised. A prop whose pieces' centre is over a road or within
+# TrackTheme.scenery_attach_reach of its wall belongs to that road (walls, posts, banners, arches)
+# and stands on its surface height there; farther props stay on the ground (0). 0 on a flat track.
+func _road_lift(pieces: Array) -> float:
+	if _top_road <= 0.0:
+		return 0.0
+	var c := Vector2.ZERO
+	for pc in pieces:
+		var o: Vector3 = (pc[1] as Transform3D).origin
+		c += Vector2(o.x, o.z)
+	c /= float(pieces.size())
+	var near: Vector2 = _grid.nearest_surface(c)
+	return maxf(near.y, 0.0) if near.x <= _th.scenery_attach_reach else 0.0
 
 
 # True when [param pieces] would pass the road guard where they are (no move).
@@ -232,12 +285,16 @@ func _pieces_clearance(pieces: Array, shift: Vector3, away: Array) -> float:
 # scenery_clear_height (its unit mesh cut to that band; every unit mesh is convex). INF when the
 # piece is flat (top <= scenery_flat_height), entirely above the karts or under the ground.
 func _piece_clearance(kind: String, xf: Transform3D, away: Array) -> float:
-	var top_y: float = _th.scenery_clear_height - 0.01
+	# Story 008 part 3: the band reaches up to kart height over the highest road; each road then
+	# counts only when the piece is at its level (RoadGrid.excess with the piece's height range).
+	var leveled: bool = _top_road > 0.0
+	var top_y: float = _th.scenery_clear_height - 0.01 + _top_road
 	var o: Vector3 = xf.origin
 	var bound: float = GUARD_UNIT_RADIUS * maxf(xf.basis.x.length(), maxf(xf.basis.y.length(), xf.basis.z.length()))
 	if o.y + bound <= 0.0 or o.y - bound >= top_y:
 		return INF
-	var centre: float = _grid.excess(Vector2(o.x, o.z), away)
+	var centre: float = _grid.excess(Vector2(o.x, o.z), away, o.y - bound, o.y + bound) if leveled \
+			else _grid.excess(Vector2(o.x, o.z), away)
 	if centre > bound + _th.scenery_road_margin:
 		return centre
 	var faces: PackedVector3Array = _faces[kind]
@@ -247,7 +304,10 @@ func _piece_clearance(kind: String, xf: Transform3D, away: Array) -> float:
 	for k in faces.size():
 		world[k] = xf * faces[k]
 		y_hi = maxf(y_hi, world[k].y)
-	if y_hi <= _th.scenery_flat_height:
+	var y_lo: float = INF
+	for k in world.size():
+		y_lo = minf(y_lo, world[k].y)
+	if y_hi <= _th.scenery_flat_height and not leveled:
 		return INF
 	var band := PackedVector2Array()
 	for k in range(0, world.size() - 2, 3):
@@ -263,7 +323,8 @@ func _piece_clearance(kind: String, xf: Transform3D, away: Array) -> float:
 		var n: int = maxi(1, ceili(a.distance_to(b) / GUARD_STEP))
 		for j in n:
 			var probe: Array = [Vector2.ZERO]
-			var e: float = _grid.excess(a.lerp(b, float(j) / float(n)), probe)
+			var e: float = _grid.excess(a.lerp(b, float(j) / float(n)), probe, y_lo, y_hi) if leveled \
+					else _grid.excess(a.lerp(b, float(j) / float(n)), probe)
 			if e < worst:
 				worst = e
 				away[0] = probe[0]

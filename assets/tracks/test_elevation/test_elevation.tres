@@ -1,13 +1,39 @@
-[gd_resource type="Resource" script_class="TrackData" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="TrackData" load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://src/test_track/track_data.gd" id="1_track"]
 [ext_resource type="Script" path="res://src/track/track_ramp.gd" id="2_ramp"]
+[ext_resource type="Script" path="res://src/track/track_pad.gd" id="3_pad"]
+[ext_resource type="Script" path="res://src/track/track_hazard.gd" id="4_hazard"]
 
 [sub_resource type="Resource" id="Ramp_east"]
 script = ExtResource("2_ramp")
 distance = 508.0
 length = 9.0
 lip_height = 1.6
+
+[sub_resource type="Resource" id="Pad_slope"]
+script = ExtResource("3_pad")
+distance = 110.0
+
+[sub_resource type="Resource" id="Pad_under_bridge"]
+script = ExtResource("3_pad")
+distance = 1237.2
+lateral = -3.0
+
+[sub_resource type="Resource" id="Pad_bank"]
+script = ExtResource("3_pad")
+distance = 395.0
+lateral = 3.0
+
+[sub_resource type="Resource" id="Water_under_bridge"]
+script = ExtResource("4_hazard")
+id = &"water_under_bridge"
+polygon = PackedVector2Array(-141, -282, -118, -282, -118, -258, -141, -258)
+
+[sub_resource type="Resource" id="Water_ledge"]
+script = ExtResource("4_hazard")
+id = &"water_ledge"
+polygon = PackedVector2Array(319, -122, 348, -122, 348, -205, 319, -205)
 
 [resource]
 script = ExtResource("1_track")
@@ -22,6 +48,8 @@ curb_width = 1.2
 lap_count = 3
 start_distance_behind_line = 6.0
 query_window = 14
-item_box_spots = PackedVector2Array(150, -3, 150, 3, 700, -3, 700, 3, 1200, -3, 1200, 3)
+item_box_spots = PackedVector2Array(150, -3, 150, 3, 700, -3, 700, 3, 1200, -3, 1200, 3, 388.6, -4, 388.6, 4, 480, 0, 1237.2, 0, 1237.2, 4, 1437.1, 0, 1437.1, -4)
 open_edges = PackedVector3Array(455, 562, 1)
 ramps = Array[ExtResource("2_ramp")]([SubResource("Ramp_east")])
+boost_pads = Array[ExtResource("3_pad")]([SubResource("Pad_slope"), SubResource("Pad_under_bridge"), SubResource("Pad_bank")])
+hazards = Array[ExtResource("4_hazard")]([SubResource("Water_ledge"), SubResource("Water_under_bridge")])

@@ -39,6 +39,9 @@ class ActiveItem extends RefCounted:
 	var lateral: float = 0.0
 	## Height (Y) of the item: the road surface it lies or travels on (story 008).
 	var y: float = 0.0
+	## Unit normal of the road surface under the item (story 008 part 3): a stone and the spill
+	## slick lie on it, on a slope or a bank. A falcon flies upright (Vector3.UP).
+	var up: Vector3 = Vector3.UP
 	var dead: bool = false
 	var node: Node3D
 	var ring: Node3D
@@ -73,6 +76,10 @@ var _net: NetSession
 var _seed: int = 0
 var _time: float = 0.0
 var _box_free_at: PackedFloat32Array = PackedFloat32Array()
+# Story 008 part 3: each box's ground point, road height and surface normal (cached at reset).
+var _box_pos: PackedVector2Array = PackedVector2Array()
+var _box_y: PackedFloat32Array = PackedFloat32Array()
+var _box_up: Array[Vector3] = []
 # Race time the local kart last asked the host for this box (client), -1 = not asked. Cleared
 # when the box is taken or respawns; a request the host refused is repeated after box_ask_retry.
 var _box_asked: PackedFloat32Array = PackedFloat32Array()
@@ -160,6 +167,13 @@ func reset(track: TrackModel, seed_value: int) -> void:
 	_box_asked = PackedFloat32Array()
 	_box_asked.resize(_box_free_at.size())
 	_box_asked.fill(-1.0)
+	_box_pos = PackedVector2Array()
+	_box_y = PackedFloat32Array()
+	_box_up = []
+	for i in _box_free_at.size():
+		_box_pos.append(track.item_box_position(i))
+		_box_y.append(track.item_box_height(i))
+		_box_up.append(track.item_box_normal(i))
 	_build_boxes()
 
 
@@ -319,7 +333,7 @@ func _update_bots() -> void:
 			slot.granted = -1
 		var r2: float = _set.box_pickup_radius * _set.box_pickup_radius
 		for i in _box_free_at.size():
-			if _box_free_at[i] < 0.0 and _track.item_box_position(i).distance_squared_to(r.sim.position) <= r2:
+			if _box_free_at[i] < 0.0 and _box_reach(i, r.sim, r2):
 				_grant(i, r.kart_id, slot.held < 0 and slot.granted < 0)
 		var btn: bool = r.input.item
 		if btn and not slot.prev_btn and slot.held >= 0:
@@ -342,7 +356,7 @@ func _check_boxes() -> void:
 			continue
 		for i in _box_free_at.size():
 			var key := Vector2i(r.kart_id, i)
-			var inside: bool = _track.item_box_position(i).distance_squared_to(r.sim.position) <= r2
+			var inside: bool = _box_reach(i, r.sim, r2)
 			var up: bool = _box_free_at[i] < 0.0
 			if inside and not _box_inside.has(key):
 				_box_inside[key] = up
@@ -357,12 +371,19 @@ func _check_boxes() -> void:
 					_log("SEEN box=%d kart=%d (while inside)" % [i, r.kart_id])
 
 
+# True when [param sim] touches box [param i]: within the pickup radius ([param r2] squared) on
+# the ground plane and within ItemSet.box_height_tolerance of the box's road height (story 008
+# part 3: a kart under a bridge or flying over a box does not take it).
+func _box_reach(i: int, sim: KartSim, r2: float) -> bool:
+	return _box_pos[i].distance_squared_to(sim.position) <= r2 			and absf(sim.height - _box_y[i]) <= _set.box_height_tolerance
+
+
 func _try_pickup(local: Racer) -> void:
 	var r2: float = _set.box_pickup_radius * _set.box_pickup_radius
 	for i in _box_free_at.size():
 		if _box_free_at[i] >= 0.0 or (_box_asked[i] >= 0.0 and _time - _box_asked[i] < _set.box_ask_retry):
 			continue
-		if _track.item_box_position(i).distance_squared_to(local.sim.position) > r2:
+		if not _box_reach(i, local.sim, r2):
 			continue
 		var wants: bool = held < 0 and _roulette_end < 0.0
 		_box_asked[i] = _time
@@ -496,6 +517,8 @@ func _spawn(seq: int, idx: int, owner_id: int, t: float, pos: Vector2, dir: Vect
 	var owner_r: Racer = _racer_by_id(owner_id)
 	var q0: TrackModel.Query = _track.query(pos, -1, owner_r.sim.height if owner_r != null else NAN)
 	ai.y = q0.height
+	if def.id != &"falcon":
+		ai.up = q0.surface_normal
 	if def.id == &"falcon":
 		ai.s = q0.s
 		ai.lateral = q0.lateral
@@ -529,6 +552,7 @@ func _step_item(ai: ActiveItem, dt: float) -> void:
 			ai.pos += ai.dir * def.speed * dt
 			var q: TrackModel.Query = _track.query(ai.pos, -1, ai.y)
 			ai.y = q.height
+			ai.up = q.surface_normal
 			var limit: float = q.wall_offset - def.radius
 			if absf(q.lateral) > limit:
 				var n: Vector2 = q.normal * signf(q.lateral)
@@ -757,16 +781,18 @@ func _sync_visuals() -> void:
 	if _box_mm != null:
 		var mm: MultiMesh = _box_mm.multimesh
 		for i in _box_free_at.size():
-			var p: Vector2 = _track.item_box_position(i)
+			var p: Vector2 = _box_pos[i]
 			var visible_box: bool = _box_free_at[i] < 0.0
 			var sz: float = _box_size if visible_box else 0.0001
 			var bob: float = sin(_time * 2.2 + float(i)) * 0.18
-			var basis := Basis(Vector3.UP, _time * 1.6 + float(i))
-			var origin := Vector3(p.x, _box_size * 1.0 + bob, p.y)
+			# Story 008 part 3: the box floats over its road point and spins about the surface normal
+			# (tilted with a slope or a bank).
+			var tilt := Basis(_tilt_to(_box_up[i]))
+			var basis: Basis = tilt * Basis(Vector3.UP, _time * 1.6 + float(i))
+			var origin: Vector3 = Vector3(p.x, _box_y[i], p.y) + _box_up[i] * (_box_size * 1.0 + bob)
 			mm.set_instance_transform(i * 3, Transform3D(basis.scaled(Vector3(sz, sz, sz)), origin))
 			if i < _crests.size():
-				_crests[i].position = origin
-				_crests[i].rotation.y = _time * 1.6 + float(i)
+				_crests[i].transform = Transform3D(basis, origin)
 				_crests[i].visible = visible_box
 			var slab: float = sz * 1.04
 			mm.set_instance_transform(i * 3 + 1, Transform3D(basis.scaled(Vector3(slab, slab, sz * 0.2)), origin))
@@ -774,8 +800,9 @@ func _sync_visuals() -> void:
 	for ai in _active:
 		if ai.node == null:
 			continue
-		ai.node.position = Vector3(ai.pos.x, ai.y + ITEM_Y, ai.pos.y)
-		ai.node.rotation.y = atan2(-ai.dir.x, -ai.dir.y)
+		# On the road surface (its slope and bank), ITEM_Y above it along the surface normal.
+		ai.node.transform = Transform3D(Basis(_tilt_to(ai.up)) * Basis(Vector3.UP, atan2(-ai.dir.x, -ai.dir.y)),
+				Vector3(ai.pos.x, ai.y, ai.pos.y) + ai.up * ITEM_Y)
 		if ai.ring != null:
 			var tr: Racer = _racer_by_id(ai.target_id)
 			if tr != null:
@@ -839,7 +866,7 @@ func _sync_effects() -> void:
 		if _time >= float(p.until):
 			n.queue_free()
 			continue
-		n.position = Vector3(r.sim.position.x, 2.0, r.sim.position.y)
+		n.position = Vector3(r.sim.position.x, r.sim.height + 2.0, r.sim.position.y)
 		n.rotation.y = _time * 8.0
 		keep.append(p)
 	_puffs = keep
@@ -859,7 +886,7 @@ func _sync_effects() -> void:
 		if burning:
 			var fn: Node3D = _flames[r.kart_id]
 			var back: Vector2 = r.sim.position - r.sim.forward() * 2.4
-			fn.position = Vector3(back.x, 0.55, back.y)
+			fn.position = Vector3(back.x, r.sim.height + 0.55, back.y)
 			fn.rotation = Vector3(-PI * 0.5, r.sim.yaw, 0.0)
 			fn.scale = Vector3.ONE * (0.8 + 0.3 * sin(_time * 40.0))
 
@@ -875,3 +902,10 @@ func _log_spins() -> void:
 		elif prev > 0.0 and now <= 0.0:
 			_log("SPINEND kart=%d dur=%.2f" % [r.kart_id, _time - float(_spin_start.get(r.kart_id, _time))])
 		_spin_prev[r.kart_id] = now
+
+
+# Rotation that turns the world up axis onto the unit vector [param up] (a surface normal).
+static func _tilt_to(up: Vector3) -> Quaternion:
+	if up.is_equal_approx(Vector3.UP) or up.length_squared() < 0.0001:
+		return Quaternion.IDENTITY
+	return Quaternion(Vector3.UP, up.normalized())

@@ -28,6 +28,17 @@ var _vs: VehicleVisualStats
 var _smoothed_position: Vector3 = Vector3.ZERO
 # Current camera roll in radians (follows the road bank a little).
 var _roll: float = 0.0
+# Story 008 part 3: smoothed camera height limits from the surface (floor) and a deck above
+# (ceiling); NAN until first set.
+var _floor_y: float = NAN
+var _ceil_y: float = NAN
+## Debug counters (story 008 part 3, read by DebugHarness): lowest height of the follow position
+## above the surface under it before the clamp, frames the floor or the ceiling moved it, and the
+## lowest final height above the surface.
+var debug_min_raw_clearance: float = INF
+var debug_min_clearance: float = INF
+var debug_floor_frames: int = 0
+var debug_ceiling_frames: int = 0
 
 
 ## Sets the kart to follow and snaps the camera behind it.
@@ -42,6 +53,9 @@ func snap() -> void:
 	if _target == null:
 		return
 	_smoothed_position = _desired_position(_target.position, _target.forward(), _target.height)
+	_floor_y = NAN
+	_ceil_y = NAN
+	_clamp_height(_target.height, 0.0)
 	fov = _vs.camera_base_fov
 	_roll = _bank_roll_target()
 	_apply(_target.position, _target.forward(), _target.height)
@@ -60,6 +74,7 @@ func _process(delta: float) -> void:
 	_smoothed_position = _smoothed_position.lerp(_desired_position(pos, fwd, height),
 			1.0 - exp(-_vs.camera_position_smoothing * delta))
 	_keep_inside_corridor(pos)
+	_clamp_height(height, delta)
 	_roll = lerpf(_roll, _bank_roll_target(), 1.0 - exp(-_vs.camera_bank_roll_smoothing * delta))
 	_apply(pos, fwd, height)
 	var speed_frac: float = clampf(_target.speed / _target.stats.max_speed, 0.0, 1.4)
@@ -103,6 +118,39 @@ func _keep_inside_corridor(kart: Vector2) -> void:
 	if safe < 1.0:
 		var p: Vector2 = kart.lerp(cam, safe)
 		_smoothed_position = Vector3(p.x, _smoothed_position.y, p.y)
+
+
+# Story 008 part 3: keeps the camera above the road or ground under it (camera_min_clearance) and
+# under the deck of a road passing over it (camera_ceiling_margin below its underside), so it
+# never goes under a road that climbs behind the kart nor into a bridge at a crossover. The limits
+# ease in at camera_clamp_smoothing; the surface itself is a hard floor at once. Kept clear of a
+# ceiling first only when both cannot hold (the floor wins: never under the road).
+func _clamp_height(kart_height: float, delta: float) -> void:
+	if track == null:
+		return
+	var cam: Vector2 = Vector2(_smoothed_position.x, _smoothed_position.z)
+	var surface: float = track.floor_under(cam, kart_height)
+	var floor_target: float = surface + _vs.camera_min_clearance
+	var ceil_target: float = track.deck_above(cam, kart_height, WALL_MARGIN) - _vs.camera_ceiling_margin
+	var k: float = 1.0 if delta <= 0.0 else 1.0 - exp(-_vs.camera_clamp_smoothing * delta)
+	_floor_y = floor_target if is_nan(_floor_y) else lerpf(_floor_y, floor_target, k)
+	if is_inf(ceil_target):
+		_ceil_y = INF
+	elif is_nan(_ceil_y) or is_inf(_ceil_y):
+		_ceil_y = maxf(ceil_target, _smoothed_position.y) if delta > 0.0 else ceil_target
+	else:
+		_ceil_y = lerpf(_ceil_y, ceil_target, k)
+	var y: float = _smoothed_position.y
+	debug_min_raw_clearance = minf(debug_min_raw_clearance, y - surface)
+	if y > _ceil_y:
+		y = _ceil_y
+		debug_ceiling_frames += 1
+	if y < _floor_y:
+		y = _floor_y
+		debug_floor_frames += 1
+	y = maxf(y, surface + 0.3)
+	debug_min_clearance = minf(debug_min_clearance, y - surface)
+	_smoothed_position.y = y
 
 
 # On a branch (the passage, the bridge, a lane) only that road counts, so the camera never

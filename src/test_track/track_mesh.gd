@@ -54,7 +54,8 @@ func build(track: TrackModel) -> void:
 	lava.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var any_lava: bool = false
 	for i in track.hazard_polygons.size():
-		var y: float = DECK_Y + 0.05 if track.hazard_gates[i] > 0.0 else WATER_Y  # the lava gap lies on the deck
+		# Story 008 part 3: each hazard surface has its own height (TrackHazard.surface_height).
+		var y: float = track.hazard_heights[i] + (DECK_Y + 0.05 if track.hazard_gates[i] > 0.0 else WATER_Y)  # the lava gap lies on the deck
 		if track.hazard_kinds[i] == &"lava":
 			any_lava = _fill_polygon(lava, track.hazard_polygons[i], th.lava_core_color, y) or any_lava
 			continue
@@ -145,6 +146,7 @@ func _start_line(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
 	var t0: Vector2 = track.tangent_at(0.0)
 	var n0: Vector2 = track.normal_at(0.0)
 	var cell_w: float = 2.0 * half / START_LINE_CELLS
+	var y0: float = track.height_at(0.0)
 	for r in START_LINE_ROWS:
 		for c in START_LINE_CELLS:
 			var w0: float = -half + c * cell_w
@@ -156,8 +158,8 @@ func _start_line(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
 			var c1: Vector2 = p0 + n0 * w1 + t0 * d0
 			var c2: Vector2 = p0 + n0 * w1 + t0 * d1
 			var c3: Vector2 = p0 + n0 * w0 + t0 * d1
-			_quadh(st, c0, c1, c2, c3, PackedFloat32Array([_road_y(track, c0), _road_y(track, c1),
-					_road_y(track, c2), _road_y(track, c3)]), 0.02, col)
+			_quadh(st, c0, c1, c2, c3, PackedFloat32Array([_road_y(track, c0, y0), _road_y(track, c1, y0),
+					_road_y(track, c2, y0), _road_y(track, c3, y0)]), 0.02, col)
 
 
 func _branch_road(st: SurfaceTool, track: TrackModel, bi: int) -> void:
@@ -184,12 +186,15 @@ func _pads(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
 		var t: Vector2 = track.pad_dirs[i]
 		var n: Vector2 = Vector2(-t.y, t.x)
 		var h: Vector2 = track.pad_halves[i]
+		# Story 008 part 3: the pad follows the road's slope and bank at its own level (the hint
+		# keeps a pad under or on a bridge on its road, not the one above or below).
+		var yh: float = track.pad_heights[i]
 		var q0: Vector2 = c - t * h.x + n * h.y
 		var q1: Vector2 = c - t * h.x - n * h.y
 		var q2: Vector2 = c + t * h.x - n * h.y
 		var q3: Vector2 = c + t * h.x + n * h.y
-		_quadh(st, q0, q1, q2, q3, PackedFloat32Array([_road_y(track, q0), _road_y(track, q1),
-				_road_y(track, q2), _road_y(track, q3)]), PAD_Y, th.pad_color_a)
+		_quadh(st, q0, q1, q2, q3, PackedFloat32Array([_road_y(track, q0, yh), _road_y(track, q1, yh),
+				_road_y(track, q2, yh), _road_y(track, q3, yh)]), PAD_Y, th.pad_color_a)
 		for k in 2:
 			var base: Vector2 = c + t * (h.x * (-0.55 + 0.6 * k))
 			var tip: Vector2 = base + t * h.x * 0.45
@@ -197,7 +202,7 @@ func _pads(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
 			st.set_color(th.pad_color_b)
 			st.set_normal(Vector3.UP)
 			for v in [base + n * w, tip, base + n * w * 0.4 + t * 0.6, base - n * w, base - n * w * 0.4 + t * 0.6, tip]:
-				st.add_vertex(_v3(v, _road_y(track, v) + PAD_Y + 0.01))
+				st.add_vertex(_v3(v, _road_y(track, v, yh) + PAD_Y + 0.01))
 
 
 func _main_walls(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
@@ -356,9 +361,10 @@ func _quadh(st: SurfaceTool, a: Vector2, b: Vector2, c: Vector2, d: Vector2, ys:
 	st.add_vertex(vd)
 
 
-# Road surface height under [param p] on whichever road is nearest (0 on a flat track).
-func _road_y(track: TrackModel, p: Vector2) -> float:
-	return track.query(p, -1).height
+# Road surface height under [param p] on whichever road is nearest (0 on a flat track). With
+# [param y_hint] the road at that level is used where roads cross (story 008).
+func _road_y(track: TrackModel, p: Vector2, y_hint: float = NAN) -> float:
+	return track.query(p, -1, y_hint).height
 
 
 # Square support columns under raised main road, from the ground up to just below the surface.

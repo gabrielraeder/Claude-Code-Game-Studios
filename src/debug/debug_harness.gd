@@ -229,6 +229,10 @@ func _on_race_finished(_total: float) -> void:
 		await get_tree().create_timer(0.5).timeout
 		_save_shot("finish")
 	_write_log()
+	var cam: ChaseCamera = _main.get("_camera") as ChaseCamera
+	if cam != null:
+		print("[camera] min height over the surface under it: raw %.2f final %.2f; floor clamp frames %d, ceiling clamp frames %d" % [
+				cam.debug_min_raw_clearance, cam.debug_min_clearance, cam.debug_floor_frames, cam.debug_ceiling_frames])
 	print("[debug] finished: laps %s boosts %s start_boost %d max_speed %.2f cap %.2f" % [
 		str(_laps.lap_times), str(_boosts), _start_level, _max_speed,
 		_sim.stats.max_speed * _sim.stats.boost_speed_mult])

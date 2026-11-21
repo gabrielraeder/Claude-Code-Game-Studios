@@ -99,6 +99,10 @@ extends Resource
 ## Farthest (m) a prop that reaches over the road is moved away from it; one that still does not
 ## fit is left out.
 @export var scenery_max_nudge: float = 3.0
+## Story 008 part 3: a prop whose centre is within this many meters outside a road's wall (or over
+## the road) belongs to that road and is raised with it (walls, posts, banners, arches along a
+## raised road); farther props (houses, trees) stay on the ground.
+@export var scenery_attach_reach: float = 3.0
 
 @export_group("Round 3: dungeon world and anchors")
 ## Fog (Dungeon Depths: purple-brown). Off by default.

@@ -14,6 +14,11 @@ extends SceneTree
 ##   FLAT       top at or below FLAT_TOP: drive-over surface detail (rail sleepers), listed only
 ##   OVERHEAD   bottom at or above KART_BAND.y: above the karts (arch tops, beams), counted only
 ## --tag=NAME prints every piece of one prop tag with its smallest excess (positive = clear).
+## --theme=res://...tres dresses the track in another theme first (story 008 part 3: the castle
+## props on the raised test_elevation track, to check the guard and the prop lift at height).
+## Story 008 part 3: on a track with raised roads the kart band is taken over each road's own
+## surface (TrackModel.blocks_level): a piece under a bridge deck but above the karts of the road
+## below is clear, one through the deck is ON ROAD. A flat track is checked exactly as before.
 
 ## Kart height band in meters (bottom, top) the audit checks.
 const KART_BAND: Vector2 = Vector2(0.0, 2.0)
@@ -25,8 +30,12 @@ const SAMPLE_STEP: float = 0.25
 const FAR_SLACK: float = 1.0
 
 var _track: TrackModel
+# Highest road surface of the track being audited (0 = flat: the original test).
+var _top: float = 0.0
 ## --tag=NAME: also print every piece with that prop tag and its smallest corridor excess.
 var _show_tag: String = ""
+## --theme=PATH: theme resource to use instead of the track's own.
+var _theme_path: String = ""
 
 
 func _init() -> void:
@@ -36,6 +45,8 @@ func _init() -> void:
 			ids = [a.substr("--track=".length())]
 		elif a.begins_with("--tag="):
 			_show_tag = a.substr("--tag=".length())
+		elif a.begins_with("--theme="):
+			_theme_path = a.substr("--theme=".length())
 	var total_on: int = 0
 	for id in ids:
 		total_on += _audit(String(id))
@@ -48,7 +59,11 @@ func _audit(id: String) -> int:
 	if data == null:
 		print("== %s: could not load" % id)
 		return 0
+	if _theme_path != "":
+		data = data.duplicate()
+		data.theme = load(_theme_path)
 	_track = TrackModel.new(data)
+	_top = _track.max_surface_height()
 	var scenery := TrackScenery.new()
 	scenery.audit_mode = true
 	var t0: int = Time.get_ticks_msec()
@@ -115,17 +130,17 @@ func _check(id: String, tag: String, kind: String, index: int, xf: Transform3D, 
 		for e in 3:
 			_clip(world[k + e], world[k + (e + 1) % 3], band_pts)
 	if band_pts.is_empty():
-		if y_lo >= KART_BAND.y and _overlap(all_pts).x < 0.0:
+		if y_lo >= KART_BAND.y + _top and _overlap(all_pts, -INF, INF).x < 0.0:
 			var o: Array = overhead.get(tag, [0, INF])
 			overhead[tag] = [int(o[0]) + 1, minf(float(o[1]), y_lo)]
 		return
-	var hit: Vector3 = _overlap(band_pts)
+	var hit: Vector3 = _overlap(band_pts, y_lo, y_hi)
 	if tag == _show_tag:
 		print("   [tag] %s %s#%d pos=(%.1f, %.1f) y=%.2f..%.2f min_excess=%.2f" % [tag, kind, index, hit.y, hit.z, y_lo, y_hi, hit.x])
 	if hit.x >= 0.0:
 		return
 	var c: Vector2 = Vector2(hit.y, hit.z)
-	var q: TrackModel.Query = _track.query(c, -1)
+	var q: TrackModel.Query = _track.query(c, -1, NAN if _top <= 0.0 else y_lo)
 	var road: String = "main" if q.path == TrackModel.MAIN_PATH else String(_track.data.branches[q.path].id)
 	var size: float = 0.0
 	for p in band_pts:
@@ -133,7 +148,7 @@ func _check(id: String, tag: String, kind: String, index: int, xf: Transform3D, 
 	var line: String = "%s s=%.1f road=%s tag=%s kind=%s#%d pos=(%.1f, %.1f) y=%.2f..%.2f size=%.1fm into_road=%.2fm%s" % [
 		id, q.s, road, tag, kind, index, c.x, c.y, maxf(y_lo, KART_BAND.x), minf(y_hi, KART_BAND.y), size, -hit.x,
 		" in_hazard" if _track.in_hazard_area(c) else ""]
-	if y_hi <= FLAT_TOP:
+	if y_hi <= FLAT_TOP + (q.height if _top > 0.0 else 0.0):
 		flat.append(line)
 	else:
 		on_road.append(line)
@@ -145,11 +160,11 @@ func _clip(a: Vector3, b: Vector3, out: PackedVector2Array) -> void:
 	var t1: float = 1.0
 	var dy: float = b.y - a.y
 	if absf(dy) < 0.000001:
-		if a.y < KART_BAND.x or a.y > KART_BAND.y:
+		if a.y < KART_BAND.x or a.y > KART_BAND.y + _top:
 			return
 	else:
 		var ta: float = (KART_BAND.x - a.y) / dy
-		var tb: float = (KART_BAND.y - a.y) / dy
+		var tb: float = (KART_BAND.y + _top - a.y) / dy
 		t0 = maxf(t0, minf(ta, tb))
 		t1 = minf(t1, maxf(ta, tb))
 		if t0 > t1:
@@ -162,7 +177,8 @@ func _clip(a: Vector3, b: Vector3, out: PackedVector2Array) -> void:
 
 # Smallest corridor excess over the footprint (convex hull of [param pts], boundary sampled every
 # SAMPLE_STEP m, plus its centre): x = excess (< 0 = overlaps the drivable area), y/z = centre.
-func _overlap(pts: PackedVector2Array) -> Vector3:
+# On a raised track only roads the piece (heights [param y_lo]..[param y_hi]) is in the way of count.
+func _overlap(pts: PackedVector2Array, y_lo: float, y_hi: float) -> Vector3:
 	var hull: PackedVector2Array = Geometry2D.convex_hull(pts)
 	var c := Vector2.ZERO
 	for p in hull:
@@ -171,7 +187,7 @@ func _overlap(pts: PackedVector2Array) -> Vector3:
 	var radius: float = 0.0
 	for p in hull:
 		radius = maxf(radius, c.distance_to(p))
-	var worst: float = _track.excess_at(c)
+	var worst: float = _excess(c, y_lo, y_hi)
 	if worst > radius + FAR_SLACK:
 		return Vector3(worst, c.x, c.y)
 	for k in hull.size():
@@ -179,5 +195,13 @@ func _overlap(pts: PackedVector2Array) -> Vector3:
 		var b: Vector2 = hull[(k + 1) % hull.size()]
 		var n: int = maxi(1, ceili(a.distance_to(b) / SAMPLE_STEP))
 		for j in n + 1:
-			worst = minf(worst, _track.excess_at(a.lerp(b, float(j) / float(n))))
+			worst = minf(worst, _excess(a.lerp(b, float(j) / float(n)), y_lo, y_hi))
 	return Vector3(worst, c.x, c.y)
+
+
+# Corridor excess at [param p]: every road on a flat track (the original test), only the roads at
+# the piece's level on a raised one (drive-over detail included, it is sorted into FLAT later).
+func _excess(p: Vector2, y_lo: float, y_hi: float) -> float:
+	if _top <= 0.0 or y_lo == -INF:
+		return _track.excess_at(p)
+	return _track.excess_at_level(p, y_lo, y_hi, KART_BAND.y, -1000.0)

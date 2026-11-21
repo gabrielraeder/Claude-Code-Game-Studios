@@ -121,6 +121,13 @@ extends Resource
 @export var camera_bank_roll_max_deg: float = 4.0
 ## Rate (1/s) at which the camera roll follows its target.
 @export var camera_bank_roll_smoothing: float = 4.0
+## Story 008 part 3: the chase camera stays at least this many meters above the road (or ground)
+## under it, so it never dips under a road that climbs behind the kart.
+@export var camera_min_clearance: float = 1.2
+## ... and this many meters below the underside of a road deck above it (a bridge over the kart).
+@export var camera_ceiling_margin: float = 0.5
+## Rate (1/s) at which the camera eases onto those limits (a hard floor still applies at once).
+@export var camera_clamp_smoothing: float = 10.0
 
 @export_group("Air (story 008)")
 ## Landing squash: the body is flattened by up to this share of its height (0.25 = 25 %) ...

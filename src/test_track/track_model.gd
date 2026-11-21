@@ -314,10 +314,15 @@ var hazard_bounds: Array[Rect2] = []
 ## Per hazard: TrackHazard.min_cross_speed (0 = ordinary) and kind (water, lava).
 var hazard_gates: PackedFloat32Array = PackedFloat32Array()
 var hazard_kinds: Array[StringName] = []
+## Surface height (Y) of each hazard (TrackHazard.surface_height; story 008 part 3).
+var hazard_heights: PackedFloat32Array = PackedFloat32Array()
 ## Boost pads: center, unit direction along the road, half length and half width.
 var pad_centers: PackedVector2Array = PackedVector2Array()
 var pad_dirs: PackedVector2Array = PackedVector2Array()
 var pad_halves: PackedVector2Array = PackedVector2Array()
+## Road the pad lies on (MAIN_PATH or a branch index) and the road height at its center (story 008).
+var pad_paths: PackedInt32Array = PackedInt32Array()
+var pad_heights: PackedFloat32Array = PackedFloat32Array()
 ## Jump ramps (data.ramps, story 008): road index, start along that road, length, lip height,
 ## lateral center and half width (0 = the whole road with curbs).
 var ramp_paths: PackedInt32Array = PackedInt32Array()
@@ -389,15 +394,7 @@ func _init(track_data: TrackData) -> void:
 		hazard_bounds.append(r)
 		hazard_gates.append(hz.min_cross_speed)
 		hazard_kinds.append(hz.kind)
-	for pad in data.boost_pads:
-		if pad == null:
-			continue
-		var bi: int = -1 if pad.road == &"" else branch_index(pad.road)
-		var path: Path = main if bi < 0 else branches[bi]
-		var t: Vector2 = path.tangent_at(pad.distance)
-		pad_centers.append(path.point_at(pad.distance) + Vector2(-t.y, t.x) * pad.lateral)
-		pad_dirs.append(t)
-		pad_halves.append(Vector2(pad.length * 0.5, pad.width * 0.5))
+		hazard_heights.append(hz.surface_height)
 	for rp in data.ramps:
 		if rp == null or rp.length <= 0.0:
 			continue
@@ -414,6 +411,18 @@ func _init(track_data: TrackData) -> void:
 			var rb: Path = branches[ri]
 			ramp_lip_s.append(rb.s_in + (rp.distance + rp.length) / rb.length * (rb.s_out - rb.s_in))
 
+	for pad in data.boost_pads:
+		if pad == null:
+			continue
+		var bi: int = -1 if pad.road == &"" else branch_index(pad.road)
+		var path: Path = main if bi < 0 else branches[bi]
+		var t: Vector2 = path.tangent_at(pad.distance)
+		pad_centers.append(path.point_at(pad.distance) + Vector2(-t.y, t.x) * pad.lateral)
+		pad_dirs.append(t)
+		pad_halves.append(Vector2(pad.length * 0.5, pad.width * 0.5))
+		pad_paths.append(bi if bi >= 0 else MAIN_PATH)
+		var pst: Vector2 = path.seg_t_at(pad.distance)
+		pad_heights.append(path.surface_y(int(pst.x), pst.y, pad.lateral) + _ramp_rise(bi if bi >= 0 else MAIN_PATH, pad.distance, pad.lateral).x)
 
 # Wall offsets per main sample: half width + curb, plus the open-edge reach on open stretches.
 func _main_walls() -> void:
@@ -679,6 +688,81 @@ func road_below(p: Vector2, y: float, margin: float) -> bool:
 	return false
 
 
+## Story 008 part 3 (scenery guard and audit): true when a piece spanning heights
+## [param y_lo]..[param y_hi] is in the way of a road whose surface is at [param h]. It is when it
+## reaches below h + [param clear] (kart height over that road) and its top is above
+## h + [param flat] (drive-over detail) on a road near the ground, or above the deck's underside
+## (h - deck_thickness) on a raised road: a prop through a bridge deck is in the way, one under the
+## deck and above the karts of the road below is not.
+func blocks_level(h: float, y_lo: float, y_hi: float, clear: float, flat: float) -> bool:
+	if y_lo >= h + clear:
+		return false
+	if h - data.ground_y >= data.pillar_min_height:
+		return y_hi > h - data.deck_thickness
+	return y_hi > h + flat
+
+
+## Like [method excess_at], but only roads that a piece spanning heights [param y_lo]..[param y_hi]
+## is in the way of count (see [method blocks_level]; centreline heights). INF when none does.
+func excess_at_level(p: Vector2, y_lo: float, y_hi: float, clear: float, flat: float) -> float:
+	var best: float = INF
+	var roads: Array[Path] = [main]
+	roads.append_array(branches)
+	var raised: float = data.ground_y + data.pillar_min_height
+	for path in roads:
+		# Ground-level roads (centreline below `raised`) and raised ones have different bands.
+		var lo_a: float = y_lo - clear
+		var bands: Array[Vector2] = [Vector2(lo_a, minf(raised, y_hi - flat)),
+				Vector2(maxf(lo_a, raised), y_hi + data.deck_thickness)]
+		for band in bands:
+			if band.x > band.y:
+				continue
+			var h: Hit = path.nearest_filtered(p, band.x, band.y)
+			if h != null:
+				best = minf(best, h.excess)
+	return best
+
+
+## Highest road surface point of the track (meters; about 0 on a flat track).
+func max_surface_height() -> float:
+	var top: float = 0.0
+	var roads: Array[Path] = [main]
+	roads.append_array(branches)
+	for path in roads:
+		for i in path.points.size():
+			top = maxf(top, path.y[i] + (path.half[i] + path.curb) * absf(tan(path.bank[i])))
+	return top
+
+
+## Story 008 part 3 (chase camera): height of whatever is under a point at [param p] seen from
+## [param y_ref] (the followed kart's height): the road surface at that level when [param p] is
+## on its deck, else the highest deck under it no higher than level_separation above y_ref, else
+## the ground.
+func floor_under(p: Vector2, y_ref: float) -> float:
+	var q: Query = query(p, -1, y_ref)
+	return maxf(q.support, data.ground_y)
+
+
+## Story 008 part 3 (chase camera): underside height (surface - deck_thickness) of the lowest road
+## deck over [param p] that is more than level_separation above [param y_ref] and whose corridor
+## (plus [param margin]) contains p; INF when none (open sky).
+func deck_above(p: Vector2, y_ref: float, margin: float) -> float:
+	var best: float = INF
+	var roads: Array[Path] = [main]
+	roads.append_array(branches)
+	for path in roads:
+		if not path.bounds.has_point(p):
+			continue
+		var h: Hit = path.nearest_filtered(p, y_ref + data.level_separation, INF)
+		if h == null or h.excess > margin:
+			continue
+		var a: Vector2 = path.points[h.seg]
+		var b: Vector2 = path.points[(h.seg + 1) % path.points.size()]
+		var lat: float = (p - a.lerp(b, h.t)).dot(Vector2(-(b - a).y, (b - a).x).normalized()) if a != b else 0.0
+		best = minf(best, path.surface_y(h.seg, h.t, lat) - data.deck_thickness)
+	return best
+
+
 ## Smallest (distance to a centerline - that road's wall offset) over all roads; <= 0 means
 ## [param p] is inside the union of corridors.
 func excess_at(p: Vector2) -> float:
@@ -811,6 +895,22 @@ func item_box_position(i: int) -> Vector2:
 	return point_at(spot.x) + normal_at(spot.x) * spot.y
 
 
+## Road surface height (Y) at item-box spot [param i]: the main road at the spot's distance and
+## sideways offset, with its bank and any ramp (story 008 part 3). The spot is on the main loop,
+## so where the loop crosses itself it is the level of that stretch, not the road above or below.
+func item_box_height(i: int) -> float:
+	var spot: Vector2 = data.item_box_spots[i]
+	var st: Vector2 = main.seg_t_at(spot.x)
+	return main.surface_y(int(st.x), st.y, spot.y) + _ramp_rise(MAIN_PATH, fposmod(spot.x, length), spot.y).x
+
+
+## Unit surface normal of the main road at item-box spot [param i] (its slope and bank).
+func item_box_normal(i: int) -> Vector3:
+	var spot: Vector2 = data.item_box_spots[i]
+	var st: Vector2 = main.seg_t_at(spot.x)
+	return surface_normal_of(main.tangent_at(spot.x), main.slope_at(int(st.x), st.y), main.bank_at(int(st.x), st.y))
+
+
 ## Half road width of the main road at main-loop distance [param s].
 func half_width_at(s: float) -> float:
 	var st: Vector2 = main.seg_t_at(s)
@@ -848,56 +948,77 @@ func in_hazard_area(p: Vector2) -> bool:
 
 
 ## True when [param p] is on the drawn surface (road plus curb) of any road. [param q], the
-## point's own query if known, is checked first.
-func on_surface(p: Vector2, q: Query = null) -> bool:
+## point's own query if known, is checked first. With a height [param y] (story 008) only a road
+## whose surface there is within data.level_separation of it counts: a bridge high above a kart
+## in the water does not hold it up. NAN = any height (flat behavior).
+func on_surface(p: Vector2, q: Query = null, y: float = NAN) -> bool:
+	var leveled: bool = not is_nan(y)
 	if q != null:
 		var own: Path = path_of(q.path)
-		if q.distance <= q.half_width + own.curb:
+		if q.distance <= q.half_width + own.curb and (not leveled or absf(q.height - y) <= data.level_separation):
 			return true
 	var roads: Array[Path] = [main]
 	roads.append_array(branches)
 	for path in roads:
-		if q != null and path.index == q.path:
+		if q != null and path.index == q.path and not leveled:
 			continue
 		if not path.bounds.has_point(p):
 			continue
-		var h: Hit = path.nearest(p, -1, 0)
-		if h.dist <= path.half_at(h.seg, h.t) + path.curb:
+		var h: Hit = path.nearest(p, -1, 0) if not leveled else path.nearest_filtered(p, y - data.level_separation, y + data.level_separation)
+		if h != null and h.dist <= path.half_at(h.seg, h.t) + path.curb:
 			return true
 	return false
 
 
 ## True when a kart center at [param p] is in a hazard: inside an outline and on no road. A
 ## speed-gated hazard (min_cross_speed > 0) counts even over a road deck, but not while
-## [param speed] reaches its threshold.
-func in_hazard(p: Vector2, q: Query = null, speed: float = 0.0) -> bool:
-	return hazard_index(p, q, speed) >= 0
+## [param speed] reaches its threshold. [param y]: see [method hazard_index].
+func in_hazard(p: Vector2, q: Query = null, speed: float = 0.0, y: float = NAN) -> bool:
+	return hazard_index(p, q, speed, y) >= 0
 
 
-## Index of the hazard that [param p] is in (see [method in_hazard]), or -1.
-func hazard_index(p: Vector2, q: Query = null, speed: float = 0.0) -> int:
+## Index of the hazard that [param p] is in (see [method in_hazard]), or -1. With the kart's
+## height [param y] (story 008 part 3) a hazard counts only when the kart is at or below its
+## surface (TrackHazard.surface_height + data.hazard_sink_margin): a kart on a bridge or flying
+## over the water is safe, one that falls into it sinks; and only a road at the kart's level
+## keeps it out. NAN = no height test (flat behavior, the sound and track tools).
+func hazard_index(p: Vector2, q: Query = null, speed: float = 0.0, y: float = NAN) -> int:
 	var surface: int = -1  # lazily: 0 off the road, 1 on a road
 	for i in hazard_polygons.size():
 		if not hazard_bounds[i].has_point(p) or not Geometry2D.is_point_in_polygon(p, hazard_polygons[i]):
+			continue
+		if not is_nan(y) and y > hazard_heights[i] + data.hazard_sink_margin:
 			continue
 		if hazard_gates[i] > 0.0:
 			if speed < hazard_gates[i]:
 				return i
 			continue
 		if surface < 0:
-			surface = 1 if on_surface(p, q) else 0
+			surface = 1 if on_surface(p, q, y) else 0
 		if surface == 0:
 			return i
 	return -1
 
 
-## Index of the boost pad under [param p], or -1.
-func pad_at(p: Vector2) -> int:
+## True when [param p] is inside a hazard outline whose surface is below [param y] (a kart in the
+## air over water that has not reached it yet: it falls in rather than being caught by the fall
+## respawn). Story 008 part 3.
+func hazard_below(p: Vector2, y: float) -> bool:
+	for i in hazard_polygons.size():
+		if hazard_bounds[i].has_point(p) and Geometry2D.is_point_in_polygon(p, hazard_polygons[i]) 				and y > hazard_heights[i] + data.hazard_sink_margin:
+			return true
+	return false
+
+
+## Index of the boost pad under [param p], or -1. With a height [param y] (story 008 part 3) a pad
+## counts only for a kart on its level (within data.pad_height_tolerance of the road height at the
+## pad's center), not one on a bridge above it or a road below it. NAN = no height test.
+func pad_at(p: Vector2, y: float = NAN) -> int:
 	for i in pad_centers.size():
 		var d: Vector2 = p - pad_centers[i]
 		var t: Vector2 = pad_dirs[i]
 		var hl: Vector2 = pad_halves[i]
-		if absf(d.dot(t)) <= hl.x and absf(d.cross(t)) <= hl.y:
+		if absf(d.dot(t)) <= hl.x and absf(d.cross(t)) <= hl.y 				and (is_nan(y) or absf(y - pad_heights[i]) <= data.pad_height_tolerance):
 			return i
 	return -1
 

@@ -204,7 +204,9 @@ func reset_to(track: TrackModel, distance: float, lateral_offset: float) -> void
 	_trick_pending = false
 	_off_deck_air = 0.0
 	hazard_kind = &"water"
-	var q: TrackModel.Query = track.query(position, -1)
+	# Story 008 part 3: the grid slot is on the road at the start's own level (a crossover near the
+	# start never puts the kart on the other road).
+	var q: TrackModel.Query = track.query(position, -1, track.height_at(distance))
 	_segment_hint = q.segment
 	track_s = q.s
 	track_path = q.path
@@ -623,23 +625,27 @@ func _constrain_to_track(dt: float, track: TrackModel) -> void:
 	track_s = track.limit_progress(track_s, q.s, position.distance_to(_prev_position))
 	_ride_surface(dt, q)
 	road_half_width = q.half_width
-	if _fell_off(dt, q, track):
-		return
-	if not grounded:
-		return  # no hazard, safe point or pad while flying
+	# Story 008 part 3: a hazard has a surface height. The kart sinks only at or below it (also
+	# when it falls in from a raised road), never on a bridge or in the air above it; over a
+	# hazard it is not caught by the fall respawn, it keeps falling until it reaches the surface.
 	if track.has_hazards():
-		var hz: int = track.hazard_index(position, q, speed)
+		var hz: int = track.hazard_index(position, q, speed, height)
 		if hz >= 0:
 			hazard_kind = track.hazard_kinds[hz]
 			_gate_sink = track.hazard_gates[hz] > 0.0
 			_start_sinking(track)
 			return
+	var over_hazard: bool = not q.on_deck and track.has_hazards() and track.hazard_below(position, height)
+	if not over_hazard and _fell_off(dt, q, track):
+		return
+	if not grounded:
+		return  # no safe point or pad while flying
 	if absf(lateral) <= q.half_width:
 		_safe_path = q.path
 		_safe_along = q.along
 		if q.path == TrackModel.MAIN_PATH:
 			_main_safe_along = q.along
-	var pad: int = track.pad_at(position)
+	var pad: int = track.pad_at(position, height)
 	if pad >= 0:
 		boost_time = maxf(boost_time, track.data.boost_pad_time)
 		if not _on_pad:

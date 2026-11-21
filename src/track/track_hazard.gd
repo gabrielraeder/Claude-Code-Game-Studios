@@ -16,3 +16,7 @@ extends Resource
 ## flat stand-in for a jump; story 008 turns it into a real one). A kart below it sinks and is
 ## put back on the MAIN road at the last safe point. 0 = an ordinary hazard (off-road only).
 @export var min_cross_speed: float = 0.0
+## Height (Y, meters) of the hazard's surface (story 008 part 3). A kart over the area sinks only
+## when it is at or below it (plus TrackData.hazard_sink_margin): water under a raised road is
+## safe to drive over and deadly to fall into. 0 = ground level (every flat track).
+@export var surface_height: float = 0.0

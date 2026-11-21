@@ -1,0 +1,30 @@
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+   1 Careful           68.73  68.2                       0(0.0)       0       0      0.9488 72.0
+   2 Wide Wanderer     71.60  70.6                       0(0.0)       0       0      0.9701 62.5
+   3 Shortcut Hunter   67.92  67.1                       0(0.0)       0       0      0.9747 60.0
+   4 Apex Ace          67.33  66.0                       0(0.0)       0       0      0.9851 58.8
+   5 Outside Swinger   71.00  70.0                       0(0.0)       0       0      0.9730 58.6
+   6 Item Hoarder      69.48  68.2                       0(0.0)       0       0      0.9640 57.7
+   7 Steady Eddie      72.00  70.8                       0(0.0)       0       0      0.9479 57.2
+   8 Hothead           70.03  68.0                       0(0.0)       0       0      0.9891 56.7
+   9 Careful           70.88  69.3                       0(0.0)       0       0      0.9571 56.6
+  10 Wide Wanderer     70.83  68.8                       0(0.0)       0       0      0.9741 56.2
+  11 Shortcut Hunter   71.35  69.4                       0(0.0)       0       0      0.9831 55.7
+
+bots finished: 11/11  first 67.33  last 72.00  spread 6.9% of winner
+bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+
+SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+  per personality: {}
+  per location: {}
+  SEED 1400589847; karts sinking again within 5 s: 0
+  shortcuts skipped because crowded: 0
+
+shortcut enters by name/branch:
+
+host autopilot: [debug] finished: laps [63.6166666666643] boosts [6, 1, 1] start_boost 3 max_speed 35.10 cap 35.10
+[net-summary] role=host peer=1 place=1 finish=64.27 karts=12 | rtt_avg=0ms rtt_max=0ms view_delay=100ms | snaps/s=0.0 | extrap=0.0% | pred_err avg=0.000m max=0.000m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=0.0 kb_in/s=0.0
+
+bot item use: {'spill': 3, 'shield': 2, 'horn': 1, 'falcon': 1}
+hits by bot items: {('spill', 'hit'): 3}
+items used per bot: {'Careful': 1, 'Wide Wanderer': 1, 'Shortcut Hunter': 1, 'Item Hoarder': 1}

@@ -18,6 +18,9 @@ extends Resource
 ## Seconds before a client repeats a box request the host did not answer with a taken (the box
 ## was not free on the host yet, e.g. a respawn a few ms apart). Bugfix 2026-11-20.
 @export var box_ask_retry: float = 1.0
+## A kart takes a box only within this many meters of the box's road height (story 008 part 3):
+## one under a bridge or flying over it does not take a box on the bridge.
+@export var box_height_tolerance: float = 2.0
 @export var kart_hit_radius: float = 1.0
 ## Items act only on karts at a similar height (story 008): a kart more than this many meters
 ## above or below an item (one under a bridge, one in the air) is not hit by it.

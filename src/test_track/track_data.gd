@@ -105,3 +105,11 @@ extends Resource
 ## Seconds between falling off the track and being put back on the road (the kart keeps falling
 ## meanwhile). The respawn itself uses respawn_back_off, respawn_speed_frac, respawn_immunity_time.
 @export var fall_respawn_delay: float = 0.8
+
+@export_group("Height-aware track objects (story 008 part 3)")
+## A kart sinks in a hazard only when its height is at most the hazard's surface_height plus this
+## (meters): one on a bridge or in the air over the water stays dry until it falls in.
+@export var hazard_sink_margin: float = 0.3
+## A boost pad fires only for a grounded kart within this many meters (height) of the road at the
+## pad's center: not for one on a bridge above it or a road below it.
+@export var pad_height_tolerance: float = 2.0
