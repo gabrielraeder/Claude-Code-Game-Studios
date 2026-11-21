@@ -33,6 +33,9 @@ extends Resource
 ## Meters a kart must lead the one shown ahead of it (for the whole debounce time) before
 ## positions swap, so karts running side by side do not flip places on network noise.
 @export var rank_pass_margin: float = 1.0
+## Seconds the host waits for every client's racer and vehicle choice before starting without
+## it (that client then gets the default racer and cart). Story 006.
+@export var loadout_wait: float = 3.0
 ## Seconds the host waits after the last needed player joined before starting.
 @export var start_delay: float = 1.5
 ## Bots the host adds when --bots is not given.

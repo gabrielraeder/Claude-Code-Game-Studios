@@ -1,0 +1,15 @@
+[dungeon_depths-1] bots finished: 11/11  first 115.13  last 128.67  spread 11.8% of winner
+[dungeon_depths-1] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[dungeon_depths-1] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[dungeon_depths-1]   per location: {}
+[dungeon_depths-1]   SEED 2888946714; karts sinking again within 5 s: 0
+[dungeon_depths-2] bots finished: 11/11  first 117.73  last 126.20  spread 7.2% of winner
+[dungeon_depths-2] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[dungeon_depths-2] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[dungeon_depths-2]   per location: {}
+[dungeon_depths-2]   SEED 3185804293; karts sinking again within 5 s: 0
+[dungeon_depths-3] bots finished: 11/11  first 114.00  last 127.33  spread 11.7% of winner
+[dungeon_depths-3] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[dungeon_depths-3] SINKS: 1 total, 0 self-caused (no bump and no hit in the last second)
+[dungeon_depths-3]   per location: {'lava_gap@860': 1}
+[dungeon_depths-3]   SEED 1373465124; karts sinking again within 5 s: 0

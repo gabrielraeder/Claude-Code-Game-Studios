@@ -8,6 +8,8 @@ extends Resource
 ## resource usable; the shipped values live in the .tres files.
 
 @export var display_name: String = "Vehicle"
+## Short id used by --vehicle= and VehicleSet.index_of ("cart", "bike").
+@export var vehicle_id: StringName = &"cart"
 
 @export_group("Speed")
 ## Top speed in m/s without a boost.

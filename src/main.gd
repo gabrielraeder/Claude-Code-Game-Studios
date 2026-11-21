@@ -12,7 +12,7 @@ signal race_finished(total_time: float)
 ## Where this PC is in the online flow. SOLO is the default offline path.
 enum Mode { SOLO, HOST_LOBBY, CLIENT_LOBBY, NET_RACE }
 
-## Handling data for the vehicles.
+## Handling data of the default vehicle (the armored cart); the full list is VEHICLE_SET_PATH.
 @export var vehicle_stats: VehicleStats
 ## Track to race on.
 @export var track_data: TrackData
@@ -70,6 +70,12 @@ var _log_accum: float = 0.0
 var _log_file: FileAccess
 var _bw_out: float = 0.0
 var _bw_in: float = 0.0
+# Per-second performance window for the netlog (story 006 perf pass): worst real frame time and
+# worst process / physics times seen since the last log row.
+var _perf_last_us: int = 0
+var _perf_frame_max_us: int = 0
+var _perf_proc_max_ms: float = 0.0
+var _perf_phys_max_ms: float = 0.0
 var _items: ItemManager
 
 ## Item data (story 004): five items, odds table, box timings.
@@ -77,6 +83,18 @@ const ITEM_SET_PATH: String = "res://assets/data/items/item_set.tres"
 ## Bot AI data (story 005): personalities, names, rubber band, traffic, stuck and item tuning.
 const BOT_SET_PATH: String = "res://assets/data/ai/bot_set.tres"
 var _bot_set: BotSet
+## Vehicles (cart, bike) and the eight dogs (story 006), plus the pennant look.
+const VEHICLE_SET_PATH: String = "res://assets/data/vehicles/vehicle_set.tres"
+const RACER_SET_PATH: String = "res://assets/data/racers/racer_set.tres"
+var _vehicle_set: VehicleSet
+var _racer_set: RacerSet
+## This PC's choice: x = racer index, y = vehicle index (from --racer= and --vehicle= until the pick screen).
+var _my_loadout: Vector2i = Vector2i.ZERO
+## Host: loadouts clients reported, by peer id.
+var _peer_loadouts: Dictionary = {}
+## Host: a start was requested but a client's loadout is still missing (see NetConfig.loadout_wait).
+var _begin_pending: bool = false
+var _begin_requested_ms: int = -1
 
 
 ## The 3-2-1 countdown and start result (read by the HUD and the debug harness).
@@ -121,8 +139,9 @@ func _ready() -> void:
 	_track = TrackModel.new(track_data)
 	if _camera != null:
 		_camera.track = _track
+	_load_rosters()
 	_local = Racer.new()
-	_local.sim = KartSim.new(vehicle_stats)
+	_local.sim = KartSim.new(_stats_for(_my_loadout.y, 0))
 	_local.laps = LapCounter.new(_laps_for_race(), _track.length, _track.checkpoint_s)
 	if _options.ram:
 		var ram := RamDriver.new()
@@ -147,7 +166,7 @@ func _ready() -> void:
 	_ranking = RaceRanking.new(net_config.rank_debounce, net_config.rank_pass_margin)
 	_ranking.lead_changed.connect(func(new_leader: int, _old: int) -> void: _lead_seq.append(new_leader))
 	_build_world()
-	_local.visual = _make_visual(_sim)
+	_local.visual = _make_visual(_sim, _my_loadout.x, 0)
 	_camera = ChaseCamera.new()
 	_camera.far = 1500.0
 	add_child(_camera)
@@ -174,6 +193,7 @@ func _ready() -> void:
 	_net.host_lost.connect(func() -> void: _leave_network("Lost the connection to the host."))
 	_net.race_start_received.connect(_on_race_start_received)
 	_net.state_received.connect(_on_state_received)
+	_net.loadout_received.connect(_on_loadout_received)
 	_net.pong_received.connect(_on_pong)
 	_net.bump_received.connect(_on_bump_received)
 	_laps.finished.connect(func(total: float) -> void: race_finished.emit(total))
@@ -193,6 +213,7 @@ func _ready() -> void:
 		push_warning(_bot_set.validate())
 	_items.debug_give = -2 if _options.give_item == "all" else (item_set.index_of(StringName(_options.give_item)) if _options.give_item != "" else -1)
 	_items.auto_interval = _options.item_interval if _options.autopilot else 0.0
+	_items.debug_box_check = _options.autopilot
 	if "--bot-labels" in args or "--bot-shots=" in " ".join(args) or "--bot-cam=" in " ".join(args):
 		var bd := BotDebug.new()
 		add_child(bd)
@@ -209,6 +230,9 @@ func _ready() -> void:
 	_cli_net = _net_opts.host or _net_opts.join != ""
 	if _options.overview_shot:
 		_run_overview_shot()
+		return
+	if _options.lineup_dir != "":
+		_run_lineup()
 		return
 	if _cli_net:
 		get_tree().paused = false
@@ -239,6 +263,9 @@ func _physics_process(dt: float) -> void:
 
 
 func _process(delta: float) -> void:
+	_perf_sample()
+	if _begin_pending and _mode == Mode.HOST_LOBBY:
+		_host_begin_race()
 	if _mode == Mode.HOST_LOBBY and _want_players > 0 \
 			and _net.peer_ids().size() + 1 >= _want_players:
 		_lobby_timer += delta
@@ -542,6 +569,8 @@ func _on_menu_join(address: String) -> void:
 
 
 func _begin_hosting(want_players: int) -> void:
+	_begin_pending = false
+	_begin_requested_ms = -1
 	_want_players = want_players
 	var err: Error = _net.host()
 	if err != OK:
@@ -582,6 +611,15 @@ func _show_lobby_text(text: String) -> void:
 
 func _on_connected_to_host() -> void:
 	_show_lobby_text("Connected. Waiting for the host to start.")
+	_net.send_loadout(_my_loadout.x, _my_loadout.y)
+
+
+# Host: remembers what a client chose (values are clamped, a bad message never crashes).
+func _on_loadout_received(peer_id: int, racer: int, vehicle: int) -> void:
+	var lo := Vector2i(clampi(racer, 0, maxi(_racer_set.count() - 1, 0)),
+			clampi(vehicle, 0, maxi(_vehicle_set.count() - 1, 0)))
+	_peer_loadouts[peer_id] = lo
+	print("[loadout] peer %d chose racer %d vehicle %d" % [peer_id, lo.x, lo.y])
 
 
 func _on_peer_joined(id: int) -> void:
@@ -594,6 +632,7 @@ func _on_peer_joined(id: int) -> void:
 
 
 func _on_peer_left(id: int) -> void:
+	_peer_loadouts.erase(id)
 	if _mode == Mode.HOST_LOBBY:
 		_refresh_host_text()
 		return
@@ -615,6 +654,9 @@ func _on_peer_left(id: int) -> void:
 # Back to the offline start menu (host lost, connect failed, version mismatch).
 func _leave_network(message: String) -> void:
 	print("[net] leaving network: %s" % message)
+	_peer_loadouts.clear()
+	_begin_pending = false
+	_begin_requested_ms = -1
 	if _mode == Mode.NET_RACE and not _summary_printed:
 		_print_summary()
 	_print_bump_summary()
@@ -641,6 +683,21 @@ func _leave_network(message: String) -> void:
 func _host_begin_race() -> void:
 	var peers: Array[int] = _net.peer_ids()
 	peers.sort()
+	# Every client's racer/vehicle choice must be here before the start info is built, or that
+	# client would be shown with defaults on the other PCs; after the wait it starts without it.
+	if _begin_requested_ms < 0:
+		_begin_requested_ms = Time.get_ticks_msec()
+	var missing: Array[int] = []
+	for p in peers:
+		if not _peer_loadouts.has(p):
+			missing.append(p)
+	if not missing.is_empty() and float(Time.get_ticks_msec() - _begin_requested_ms) < net_config.loadout_wait * 1000.0:
+		_begin_pending = true
+		return
+	if not missing.is_empty():
+		push_warning("No loadout from peer(s) %s after %.1f s; they get the default racer and cart." % [str(missing), net_config.loadout_wait])
+	_begin_pending = false
+	_begin_requested_ms = -1
 	var slots: Array = [[0, 1, "Player 1", false]]
 	var next_id: int = 1
 	for p in peers:
@@ -651,13 +708,25 @@ func _host_begin_race() -> void:
 	for b in bots:
 		slots.append([next_id, 1, _bot_set.bot_name(b), true])
 		next_id += 1
+	var race_seed: int = _debug_race_seed()
+	var loadouts: Dictionary = {}
+	for slot: Array in slots:
+		var id: int = slot[0]
+		if slot[3]:
+			loadouts[id] = [_racer_set.default_bot_racer(id), _vehicle_set.bot_vehicle(race_seed, id)]
+		elif slot[1] == 1:
+			loadouts[id] = [_my_loadout.x, _my_loadout.y]
+		else:
+			var lo: Vector2i = _peer_loadouts.get(slot[1], Vector2i.ZERO)
+			loadouts[id] = [lo.x, lo.y]
 	var info: Dictionary = {
 		"version": KartWire.VERSION,
+		"loadouts": loadouts,
 		"slots": slots,
 		"laps": _laps_for_race(),
 		"track": String(track_data.track_id),
-		"host_time": -vehicle_stats.start_countdown_time,
-		"seed": _debug_race_seed(),
+		"host_time": -_sim.stats.start_countdown_time,
+		"seed": race_seed,
 	}
 	_net.broadcast_race_start(info)
 	_apply_race_start(info)
@@ -686,10 +755,12 @@ func _on_race_start_received(info: Dictionary) -> void:
 
 # Builds every racer from the host's slot list and starts the synced countdown.
 func _apply_race_start(info: Dictionary) -> void:
+	var build_start_us: int = Time.get_ticks_usec()
 	_clear_others()
 	var my_id: int = _net.my_id()
 	var laps_n: int = int(info.laps)
 	var slots: Array = info.slots
+	var loadouts: Dictionary = info.get("loadouts", {})
 	var ids: Array[int] = []
 	_laps.lap_target = laps_n
 	for slot: Array in slots:
@@ -700,17 +771,29 @@ func _apply_race_start(info: Dictionary) -> void:
 				- float(kart_id / 2) * net_config.grid_row_spacing
 		var lateral: float = net_config.grid_lateral * (1.0 if kart_id % 2 == 0 else -1.0)
 		ids.append(kart_id)
+		var lo: Vector2i = _loadout_of(loadouts, kart_id, is_bot, int(info.get("seed", 0)))
+		print("[loadout] kart=%d peer=%d bot=%s racer=%d vehicle=%s" % [kart_id, peer, str(is_bot),
+				lo.x, _vehicle_set.vehicle_at(lo.y).vehicle_id])
 		if not is_bot and peer == my_id:
 			_local.kart_id = kart_id
 			_local.owner_peer = peer
 			_local.display_name = slot[2]
 			_local.dropped = false
-			# Same color for this kart on every PC: its slot's palette color.
-			_local.visual.set_paint(_stats_for(kart_id).paint_color)
+			# The host's start info is the truth for every PC: take its loadout for this kart.
+			if lo != _my_loadout:
+				push_warning("The host set this kart's loadout to racer %d vehicle %d (asked for %d/%d); using the host's." % [
+						lo.x, lo.y, _my_loadout.x, _my_loadout.y])
+				_my_loadout = lo
+				_sim.stats = _stats_for(lo.y, kart_id)
+				_local.visual.queue_free()
+				_local.visual = _make_visual(_sim, lo.x, kart_id)
+				_camera.follow(_sim)
+			# Same color and pennant for this kart on every PC: its slot's palette entry.
+			_local.visual.apply_identity(_slot_of(kart_id), _slot_color(kart_id))
 			_sim.reset_to(_track, dist, lateral)
 			_laps.reset(_sim.track_s)
 			_input.clear()
-			_start.begin(vehicle_stats)
+			_start.begin(_sim.stats)
 			_by_id[kart_id] = _local
 			continue
 		var r := Racer.new()
@@ -718,7 +801,7 @@ func _apply_race_start(info: Dictionary) -> void:
 		r.owner_peer = peer
 		r.display_name = slot[2]
 		r.is_bot = is_bot
-		var stats: VehicleStats = _stats_for(kart_id)
+		var stats: VehicleStats = _stats_for(lo.y, kart_id)
 		if is_bot and _net.is_host():
 			r.owned = true
 			r.sim = KartSim.new(stats)
@@ -733,7 +816,7 @@ func _apply_race_start(info: Dictionary) -> void:
 			r.sim = r.remote
 			r.remote.reset_to(_track, dist, lateral)
 			r.remote.clear_snapshots()
-		r.visual = _make_visual(r.sim)
+		r.visual = _make_visual(r.sim, lo.x, kart_id)
 		_racers.append(r)
 		_by_id[kart_id] = r
 	_ranking.reset(ids)
@@ -758,6 +841,7 @@ func _apply_race_start(info: Dictionary) -> void:
 	_camera.snap()
 	if _options.grid_shot:
 		_place_grid_camera()
+	print("[net] built %d karts in %.1f ms" % [slots.size(), float(Time.get_ticks_usec() - build_start_us) / 1000.0])
 	print("[net] race start: %d karts, %d laps, role=%s peer=%d kart=%d" % [
 			slots.size(), laps_n, _role(), my_id, _local.kart_id])
 
@@ -780,22 +864,78 @@ func _clear_others() -> void:
 		if r != _local and r.visual != null:
 			r.visual.queue_free()
 	_racers = [_local]
-	_local.visual.set_paint(vehicle_stats.paint_color)
+	_local.visual.apply_identity(_slot_of(_local.kart_id), _slot_color(_local.kart_id))
 	_by_id.clear()
 	_by_id[_local.kart_id] = _local
 
 
-func _stats_for(kart_id: int) -> VehicleStats:
-	var s: VehicleStats = vehicle_stats.duplicate()
-	if not net_config.kart_colors.is_empty():
-		s.paint_color = net_config.kart_colors[kart_id % net_config.kart_colors.size()]
+# Loads the vehicle and racer sets (story 006) and reads this PC's --racer= / --vehicle= choice.
+func _load_rosters() -> void:
+	_vehicle_set = load(VEHICLE_SET_PATH) as VehicleSet
+	if _vehicle_set == null or _vehicle_set.count() == 0:
+		push_error("Vehicle set missing: %s" % VEHICLE_SET_PATH)
+		_vehicle_set = VehicleSet.new()
+		_vehicle_set.vehicles.append(vehicle_stats)
+	_racer_set = load(RACER_SET_PATH) as RacerSet
+	if _racer_set == null or _racer_set.count() == 0:
+		push_error("Racer set missing: %s" % RACER_SET_PATH)
+		_racer_set = RacerSet.new()
+		_racer_set.racers.append(RacerDef.new())
+	var racer: int = 0
+	if _options.racer >= 0:
+		if _racer_set.is_valid_index(_options.racer):
+			racer = _options.racer
+		else:
+			push_warning("--racer=%d is not a racer (0..%d); using 0." % [_options.racer, _racer_set.count() - 1])
+	var vehicle: int = 0
+	if _options.vehicle != "":
+		vehicle = _vehicle_set.index_of(_options.vehicle)
+		if vehicle < 0:
+			push_warning("--vehicle=%s is not a vehicle; using the cart." % _options.vehicle)
+			vehicle = 0
+	_my_loadout = Vector2i(racer, vehicle)
+	Pennant.prewarm(_racer_set.pennant, net_config.kart_colors)
+	KartVisual.prewarm(_vehicle_set, _racer_set)
+
+
+# The loadout of [param kart_id] from the host's start info. A missing or bad entry falls back to
+# the defaults: a bot gets kart_id % racers and a seed-picked vehicle, a human the mascot and cart.
+func _loadout_of(loadouts: Dictionary, kart_id: int, is_bot: bool, race_seed: int) -> Vector2i:
+	var entry: Variant = loadouts.get(kart_id)
+	if entry is Array and (entry as Array).size() >= 2:
+		var r: int = int((entry as Array)[0])
+		var v: int = int((entry as Array)[1])
+		if _racer_set.is_valid_index(r) and v >= 0 and v < _vehicle_set.count():
+			return Vector2i(r, v)
+	if is_bot:
+		return Vector2i(_racer_set.default_bot_racer(kart_id), _vehicle_set.bot_vehicle(race_seed, kart_id))
+	return Vector2i.ZERO
+
+
+# Identity slot of a kart (12 slots, one per kart id) and its palette color.
+func _slot_of(kart_id: int) -> int:
+	return kart_id % maxi(net_config.kart_colors.size(), 1)
+
+
+func _slot_color(kart_id: int) -> Color:
+	if net_config.kart_colors.is_empty():
+		return Color.WHITE
+	return net_config.kart_colors[_slot_of(kart_id)]
+
+
+# A private copy of vehicle [param vehicle]'s stats for one kart (the bot driver scales max_speed),
+# painted with the kart's slot color.
+func _stats_for(vehicle: int, kart_id: int) -> VehicleStats:
+	var s: VehicleStats = _vehicle_set.vehicle_at(vehicle).duplicate()
+	s.paint_color = _slot_color(kart_id)
 	return s
 
 
-func _make_visual(sim: KartSim) -> KartVisual:
+func _make_visual(sim: KartSim, racer: int, kart_id: int) -> KartVisual:
 	var v := KartVisual.new()
 	add_child(v)
-	v.bind(sim)
+	v.bind(sim, _racer_set.racer_at(racer), _racer_set.pennant, _slot_of(kart_id))
+	v.apply_identity(_slot_of(kart_id), _slot_color(kart_id))
 	return v
 
 
@@ -840,7 +980,17 @@ func _open_log() -> void:
 	if _log_file == null:
 		printerr("[net] cannot open netlog ", _net_opts.netlog_path)
 		return
-	_log_file.store_line("wall_time,role,peer,race_time,rtt_ms,lag_ms,jitter_ms,loss_pct,snaps_per_s,extrap_pct,pred_err_avg_m,pred_err_max_m,view_delay_ms,kb_out,kb_in,fps")
+	_log_file.store_line("wall_time,role,peer,race_time,rtt_ms,lag_ms,jitter_ms,loss_pct,snaps_per_s,extrap_pct,pred_err_avg_m,pred_err_max_m,view_delay_ms,kb_out,kb_in,fps,draw_calls,objects,primitives,frame_max_ms,proc_max_ms,phys_max_ms,visual_us")
+
+
+# Tracks the worst frame of the current netlog window (an average fps hides one long frame).
+func _perf_sample() -> void:
+	var now_us: int = Time.get_ticks_usec()
+	if _perf_last_us > 0:
+		_perf_frame_max_us = maxi(_perf_frame_max_us, now_us - _perf_last_us)
+	_perf_last_us = now_us
+	_perf_proc_max_ms = maxf(_perf_proc_max_ms, Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0)
+	_perf_phys_max_ms = maxf(_perf_phys_max_ms, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0)
 
 
 func _net_log_tick(dt: float) -> void:
@@ -854,13 +1004,21 @@ func _net_log_tick(dt: float) -> void:
 	_bw_in += bw.y
 	_net_stats.race_seconds += 1
 	if _log_file != null:
-		_log_file.store_line("%.1f,%s,%d,%.2f,%d,%d,%d,%d,%d,%.1f,%.3f,%.3f,%d,%.1f,%.1f,%d" % [
+		_log_file.store_line("%.1f,%s,%d,%.2f,%d,%d,%d,%d,%d,%.1f,%.3f,%.3f,%d,%.1f,%.1f,%d,%d,%d,%d,%.1f,%.2f,%.2f,%d" % [
 				Time.get_unix_time_from_system(), _role(), _net.my_id(), race_time,
 				int(_net_stats.rtt * 1000.0), int(_net_opts.lag_ms), int(_net_opts.jitter_ms),
 				int(_net_opts.loss_pct), w.snaps, w.extrap_pct, w.err_avg, w.err_max,
 				int(_net_stats.view_delay * 1000.0), bw.x / 1024.0, bw.y / 1024.0,
-				int(Engine.get_frames_per_second())])
+				int(Engine.get_frames_per_second()),
+					int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)),
+					int(Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME)),
+					int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)),
+					_perf_frame_max_us / 1000.0, _perf_proc_max_ms, _perf_phys_max_ms,
+					KartVisual.take_cost_usec()])
 		_log_file.flush()
+	_perf_frame_max_us = 0
+	_perf_proc_max_ms = 0.0
+	_perf_phys_max_ms = 0.0
 
 
 func _print_summary() -> void:
@@ -888,7 +1046,7 @@ func _reset_race() -> void:
 	_laps.reset(_sim.track_s)
 	_input.clear()
 	race_time = 0.0
-	_start.begin(vehicle_stats)
+	_start.begin(_sim.stats)
 	if _items != null:
 		_items.reset(_track, 0)
 
@@ -999,6 +1157,18 @@ func _run_overview_shot() -> void:
 	await get_tree().create_timer(1.5).timeout
 	_debug_save("overview")
 	get_tree().quit()
+
+
+# Debug (--lineup=DIR): no race; a line-up of all dogs on both vehicles, pictures into DIR, quit.
+func _run_lineup() -> void:
+	get_tree().paused = false
+	_menu.close()
+	_hud.hide()
+	_world.queue_free()
+	_local.visual.hide()
+	var showcase := LineupShowcase.new()
+	add_child(showcase)
+	showcase.run(_vehicle_set, _racer_set, net_config, _options.lineup_dir)
 
 
 # Debug (--grid-shot): a fixed camera above and behind the start grid.

@@ -85,6 +85,21 @@ extends Resource
 @export var zone_keep: Vector2 = Vector2.ZERO
 @export var zone_gardens: Vector2 = Vector2.ZERO
 
+@export_group("Scenery road clearance")
+## Meters every scenery prop footprint (its half extent, not just its centre) keeps clear of the
+## drivable area: inside the walls of the main road and of every branch. Karts collide only with
+## road walls, so a prop that reaches over that line is driven through (bugfix 2026-11-20).
+@export var scenery_road_margin: float = 0.15
+## Pieces whose bottom is at or above this height (m) are over the karts (arch tops, beams,
+## awnings, signs) and may hang over the road.
+@export var scenery_clear_height: float = 2.5
+## Pieces whose top is at or below this height (m) are drive-over surface detail (rail sleepers,
+## low curb stones) and may lie on the road.
+@export var scenery_flat_height: float = 0.3
+## Farthest (m) a prop that reaches over the road is moved away from it; one that still does not
+## fit is left out.
+@export var scenery_max_nudge: float = 3.0
+
 @export_group("Round 3: dungeon world and anchors")
 ## Fog (Dungeon Depths: purple-brown). Off by default.
 @export var fog_enabled: bool = false

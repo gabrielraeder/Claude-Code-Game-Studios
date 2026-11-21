@@ -63,5 +63,6 @@ box_respawn = 5.0
 roulette_time = 1.0
 roulette_tick = 0.08
 box_pickup_radius = 2.2
+box_ask_retry = 1.0
 kart_hit_radius = 1.0
 hit_slowdown_profile = 0

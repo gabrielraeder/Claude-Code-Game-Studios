@@ -25,6 +25,8 @@ signal host_lost
 signal race_start_received(info: Dictionary)
 ## A kart state update arrived.
 signal state_received(kart_id: int, t: float, d: PackedFloat32Array)
+## Host side: a client told us its loadout (racer and vehicle index, story 006).
+signal loadout_received(peer_id: int, racer: int, vehicle: int)
 ## A pong arrived: host race clock, whether the host is racing, and the round trip in seconds.
 ## Another PC bumped [param kart_id] (owned here) with [param from_kart]'s kart.
 signal bump_received(kart_id: int, from_kart: int, impulse: Vector2, strength: float)
@@ -33,7 +35,7 @@ signal pong_received(host_race_time: float, host_active: bool, rtt_sample: float
 
 ## Returns the host's race clock (float). Set by Main.
 ## Item messages (story 004): all reliable.
-signal box_take_received(box: int, kart_id: int)
+signal box_take_received(box: int, kart_id: int, wants_item: bool)
 signal box_taken_received(box: int, kart_id: int, t: float, item: int)
 signal item_spawn_received(seq: int, item: int, owner_id: int, t: float, pos: Vector2, dir: Vector2, target: int)
 signal item_hit_received(seq: int, victim: int, blocked: bool, t: float)
@@ -151,6 +153,13 @@ func send_state(kart_id: int, t: float, d: PackedFloat32Array) -> void:
 	_send(func() -> void: rpc_state.rpc(kart_id, t, d), false, true)
 
 
+## Client to host: this PC's racer and vehicle choice (reliable, story 006).
+func send_loadout(racer: int, vehicle: int) -> void:
+	if not _active or _is_host_flag:
+		return
+	_send(func() -> void: rpc_loadout.rpc_id(1, racer, vehicle), true, false, 1)
+
+
 ## Tells [param to_peer], the owner of [param kart_id], that [param from_kart] bumped it.
 func send_bump(to_peer: int, kart_id: int, from_kart: int, impulse: Vector2, strength: float) -> void:
 	if not _active:
@@ -159,14 +168,17 @@ func send_bump(to_peer: int, kart_id: int, from_kart: int, impulse: Vector2, str
 			true, false, to_peer)
 
 
-## Client to host: "my kart touched item box [param box]" (reliable). The host decides.
-func send_box_take(box: int, kart_id: int) -> void:
+## Client to host: "my kart drove through item box [param box]" (reliable). The host decides.
+## [param wants_item] is false when the kart already holds an item or its roulette spins: the
+## box only breaks. Changed in KartWire.VERSION 5.
+func send_box_take(box: int, kart_id: int, wants_item: bool) -> void:
 	if not _active:
 		return
-	_send(func() -> void: rpc_box_take.rpc_id(1, box, kart_id), true, false, 1)
+	_send(func() -> void: rpc_box_take.rpc_id(1, box, kart_id, wants_item), true, false, 1)
 
 
 ## Host to everyone: kart [param kart_id] got [param item] from [param box] at race time [param t].
+## [param item] -1 = the box broke and gave nothing (KartWire.VERSION 5).
 func send_box_taken(box: int, kart_id: int, t: float, item: int) -> void:
 	if not _active:
 		return
@@ -286,14 +298,20 @@ func rpc_state(kart_id: int, t: float, d: PackedFloat32Array) -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
+func rpc_loadout(racer: int, vehicle: int) -> void:
+	if multiplayer.is_server():
+		loadout_received.emit(multiplayer.get_remote_sender_id(), racer, vehicle)
+
+
+@rpc("any_peer", "call_remote", "reliable")
 func rpc_bump(kart_id: int, from_kart: int, ix: float, iz: float, strength: float) -> void:
 	bump_received.emit(kart_id, from_kart, Vector2(ix, iz), strength)
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func rpc_box_take(box: int, kart_id: int) -> void:
+func rpc_box_take(box: int, kart_id: int, wants_item: bool) -> void:
 	if multiplayer.is_server():
-		box_take_received.emit(box, kart_id)
+		box_take_received.emit(box, kart_id, wants_item)
 
 
 @rpc("any_peer", "call_remote", "reliable")

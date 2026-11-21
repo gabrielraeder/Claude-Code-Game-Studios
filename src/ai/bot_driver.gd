@@ -199,12 +199,12 @@ func _drive(input: KartInput, sim: KartSim, track: TrackModel, dt: float) -> voi
 	input.throttle = 1.0
 	input.steer = clampf(diff * _set.steer_gain, -1.0, 1.0)
 	input.drift = false
-	if _trace and _race_t < _calm_until and _race_t >= _trace_next:
+	if _trace and (_race_t < _calm_until or open_side != 0.0) and _race_t >= _trace_next:
 		_trace_next = _race_t + 0.1
 		var tq: TrackModel.Query = track.query(target, -1)
-		print("[bot-trace] kart=%d t=%.2f path=%d s=%.1f lat=%.2f speed=%.1f yaw_err=%.2f steer=%.2f route_branch=%d target_path=%d target_s=%.1f target_lat=%.2f _lat=%.2f" % [
+		print("[bot-trace] kart=%d t=%.2f path=%d s=%.1f lat=%.2f speed=%.1f yaw_err=%.2f steer=%.2f route_branch=%d target_path=%d target_s=%.1f target_lat=%.2f _lat=%.2f drift=%s boost=%.2f spin=%.2f" % [
 				kart_id, _race_t, sim.track_path, sim.track_s, sim.lateral, sim.speed, diff, input.steer,
-				route_branch, tq.path, tq.s, tq.lateral, _lat])
+				route_branch, tq.path, tq.s, tq.lateral, _lat, str(sim.drifting), sim.boost_time, sim.spin_time])
 
 	if _stuck_test == 1 and _race_t >= 3.0:
 		_pin_against_wall(sim, track)
@@ -459,6 +459,8 @@ func _drive_drift(input: KartInput, sim: KartSim, track: TrackModel, diff: float
 	if not sim.drifting:
 		_drifting_intent = false
 		if _near_open_entry(track, sim):
+			return
+		if open_side != 0.0 and not _set.open_edge_allow_drift_start:
 			return
 		if _corner_state == 1 and not open_abort and aturn > p.drift_start_turn \
 				and sim.speed > sim.stats.drift_min_speed + _set.drift_speed_margin \

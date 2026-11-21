@@ -2,8 +2,10 @@ class_name ItemManager
 extends Node3D
 ## Item boxes, the held item, and the five items (story 004). One per PC, owned by Main.
 ## Everything is injected: no autoloads. Rules:
-##  - A kart that touches a free box asks the host (reliable); the host's first request wins,
-##    rolls the item with the race seed and announces it to everyone (box hidden, respawn).
+##  - Any kart that drives through a free box breaks it: its PC asks the host (reliable), the
+##    host's first request wins and announces it to everyone (box hidden on every PC, respawn).
+##    Only a kart with no item and no roulette gets an item (rolled with the race seed); a kart
+##    already holding one just breaks the box (announced with item -1).
 ##  - The firer announces every item use (reliable). Each PC simulates the item locally from
 ##    that message. No per-frame item traffic.
 ##  - Only the PC that owns a possible victim (the host for bots) tests contact, decides the
@@ -43,6 +45,9 @@ class ActiveItem extends RefCounted:
 var debug_give: int = -1
 ## Debug: seconds between automatic uses by the autopilot (--item-interval), 0 = off.
 var auto_interval: float = 0.0
+## Debug: log every kart driving through a box (SEEN = the box vanished while the kart was in
+## it, PASSED_FREE = the kart left and the box stayed up). Main sets it for --autopilot runs.
+var debug_box_check: bool = false
 ## Item index held by the local kart, -1 = none.
 var held: int = -1
 ## Hits decided or received this race (debug log lines, for the cross-PC comparison).
@@ -61,6 +66,9 @@ var _net: NetSession
 var _seed: int = 0
 var _time: float = 0.0
 var _box_free_at: PackedFloat32Array = PackedFloat32Array()
+# Race time the local kart last asked the host for this box (client), -1 = not asked. Cleared
+# when the box is taken or respawns; a request the host refused is repeated after box_ask_retry.
+var _box_asked: PackedFloat32Array = PackedFloat32Array()
 var _taken_count: int = 0
 var _pending_box: int = -1
 var _roulette_end: float = -1.0
@@ -83,6 +91,7 @@ var _spin_start: Dictionary = {}
 var _slick_seen: Dictionary = {}
 var _flames: Dictionary = {}
 var _bots: Dictionary = {}
+var _box_inside: Dictionary = {}
 
 
 ## Wires the manager. [param racers_fn] returns Array[Racer], [param local_fn] the local Racer,
@@ -125,6 +134,7 @@ func reset(track: TrackModel, seed_value: int) -> void:
 		(f as Node3D).queue_free()
 	_flames.clear()
 	_bots.clear()
+	_box_inside.clear()
 	_auto_timer = 0.0
 	_next_seq = 1
 	_early_hits.clear()
@@ -140,6 +150,9 @@ func reset(track: TrackModel, seed_value: int) -> void:
 	_box_free_at = PackedFloat32Array()
 	_box_free_at.resize(track.data.item_box_spots.size())
 	_box_free_at.fill(-1.0)
+	_box_asked = PackedFloat32Array()
+	_box_asked.resize(_box_free_at.size())
+	_box_asked.fill(-1.0)
 	_build_boxes()
 
 
@@ -150,11 +163,13 @@ func update(dt: float, race_time: float) -> void:
 	for i in _box_free_at.size():
 		if _box_free_at[i] >= 0.0 and _time >= _box_free_at[i]:
 			_box_free_at[i] = -1.0
+			_box_asked[i] = -1.0
 	if _time > 0.0 and not local.is_finished() and not local.dropped:
-		if held < 0 and _roulette_end < 0.0:
-			_try_pickup(local)
+		_try_pickup(local)
 		_handle_use(local, dt)
 	_update_bots()
+	if debug_box_check and _time > 0.0:
+		_check_boxes()
 	_update_roulette()
 	for ai in _active:
 		_step_item(ai, dt)
@@ -277,8 +292,9 @@ func _is_host() -> bool:
 	return not _is_online() or _net == null or _net.is_host()
 
 
-# Host-owned bots: take boxes they drive into, hold the item after the roulette time, and use
-# it when their driver presses the item input. Hits and spawns use the same messages as the player's.
+# Host-owned bots: break every box they drive through (an item only when they hold none), hold
+# the item after the roulette time, and use it when their driver presses the item input. Hits and
+# spawns use the same messages as the player's.
 func _update_bots() -> void:
 	if _time <= 0.0:
 		return
@@ -293,12 +309,10 @@ func _update_bots() -> void:
 		if slot.granted >= 0 and _time >= slot.ready_at:
 			slot.held = slot.granted
 			slot.granted = -1
-		if slot.held < 0 and slot.granted < 0:
-			var r2: float = _set.box_pickup_radius * _set.box_pickup_radius
-			for i in _box_free_at.size():
-				if _box_free_at[i] < 0.0 and _track.item_box_position(i).distance_squared_to(r.sim.position) <= r2:
-					_grant(i, r.kart_id)
-					break
+		var r2: float = _set.box_pickup_radius * _set.box_pickup_radius
+		for i in _box_free_at.size():
+			if _box_free_at[i] < 0.0 and _track.item_box_position(i).distance_squared_to(r.sim.position) <= r2:
+				_grant(i, r.kart_id, slot.held < 0 and slot.granted < 0)
 		var btn: bool = r.input.item
 		if btn and not slot.prev_btn and slot.held >= 0:
 			var idx: int = slot.held
@@ -307,36 +321,72 @@ func _update_bots() -> void:
 		slot.prev_btn = btn
 
 
+# The local kart breaks every free box it drives through. It wants an item only when it holds
+# none and no roulette spins; otherwise the box just breaks. A client asks once per box.
+# Debug (debug_box_check): every kart on this PC, owned or remote, that drives through a box
+# must see it vanish. SEEN = it vanished on the approach (within 0.6 s) or while the kart was
+# inside; PASSED_FREE = the kart left and the box was still up. The test radius is 80 % of the
+# pickup radius, so a remote kart drawn a little off its owner's path does not report a false miss.
+func _check_boxes() -> void:
+	var r2: float = pow(_set.box_pickup_radius * 0.8, 2.0)
+	for r: Racer in _racers_fn.call():
+		if r.dropped or r.is_finished():
+			continue
+		for i in _box_free_at.size():
+			var key := Vector2i(r.kart_id, i)
+			var inside: bool = _track.item_box_position(i).distance_squared_to(r.sim.position) <= r2
+			var up: bool = _box_free_at[i] < 0.0
+			if inside and not _box_inside.has(key):
+				_box_inside[key] = up
+				if not up and _box_free_at[i] - _set.box_respawn >= _time - 0.6:
+					_log("SEEN box=%d kart=%d (on approach)" % [i, r.kart_id])
+			elif not inside and _box_inside.has(key):
+				var was_free: bool = _box_inside[key]
+				_box_inside.erase(key)
+				if up:
+					_log("PASSED_FREE box=%d kart=%d" % [i, r.kart_id])
+				elif was_free:
+					_log("SEEN box=%d kart=%d (while inside)" % [i, r.kart_id])
+
+
 func _try_pickup(local: Racer) -> void:
 	var r2: float = _set.box_pickup_radius * _set.box_pickup_radius
 	for i in _box_free_at.size():
-		if _box_free_at[i] >= 0.0:
+		if _box_free_at[i] >= 0.0 or (_box_asked[i] >= 0.0 and _time - _box_asked[i] < _set.box_ask_retry):
 			continue
-		if _track.item_box_position(i).distance_squared_to(local.sim.position) <= r2:
+		if _track.item_box_position(i).distance_squared_to(local.sim.position) > r2:
+			continue
+		var wants: bool = held < 0 and _roulette_end < 0.0
+		_box_asked[i] = _time
+		if wants:
 			item_event.emit(&"roulette", "box=%d owner=%d" % [i, local.kart_id])
 			_pending_box = i
 			_roulette_end = _time + _set.roulette_time
 			_granted = -1
-			if _is_host():
-				_grant(i, local.kart_id)
-			elif _net != null:
-				_net.send_box_take(i, local.kart_id)
-			return
+		else:
+			item_event.emit(&"box_break", "box=%d owner=%d" % [i, local.kart_id])
+		if _is_host():
+			_grant(i, local.kart_id, wants)
+		elif _net != null:
+			_net.send_box_take(i, local.kart_id, wants)
 
 
-func _on_box_take(box: int, kart_id: int) -> void:
+func _on_box_take(box: int, kart_id: int, wants_item: bool) -> void:
 	if _is_online() and _is_host():
-		_grant(box, kart_id)
+		_grant(box, kart_id, wants_item)
 
 
-# Host (or solo): first request for a free box wins; the loser gets nothing.
-func _grant(box: int, kart_id: int) -> void:
+# Host (or solo): first request for a free box wins; the loser gets nothing. The box breaks
+# either way; [param wants_item] false (the kart holds an item) announces item -1.
+func _grant(box: int, kart_id: int, wants_item: bool) -> void:
 	if box < 0 or box >= _box_free_at.size() or _box_free_at[box] >= 0.0:
 		return
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash([_seed, box, _taken_count])
-	_taken_count += 1
-	var item: int = _set.roll(int(_place_fn.call(kart_id)), rng)
+	var item: int = -1
+	if wants_item:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash([_seed, box, _taken_count])
+		_taken_count += 1
+		item = _set.roll(int(_place_fn.call(kart_id)), rng)
 	if _is_online() and _net != null:
 		_net.send_box_taken(box, kart_id, _time, item)
 	_apply_taken(box, kart_id, _time, item)
@@ -350,23 +400,27 @@ func _on_box_taken(box: int, kart_id: int, t: float, item: int) -> void:
 func _apply_taken(box: int, kart_id: int, t: float, item: int) -> void:
 	if box < 0 or box >= _box_free_at.size():
 		return
+	if item >= _set.items.size():
+		item = -1
 	_box_free_at[box] = t + _set.box_respawn
+	_box_asked[box] = -1.0
 	var local: Racer = _local_fn.call()
-	if _bots.has(kart_id):
+	if item >= 0 and _bots.has(kart_id):
 		var slot: BotSlot = _bots[kart_id]
 		slot.granted = item
 		slot.ready_at = t + _set.roulette_time
 	if kart_id == local.kart_id:
-		if _roulette_end >= 0.0 and _pending_box == box:
-			_granted = item
-		elif held < 0 and _roulette_end < 0.0:
-			held = item
+		if item >= 0:
+			if _roulette_end >= 0.0 and _pending_box == box:
+				_granted = item
+			elif held < 0 and _roulette_end < 0.0:
+				held = item
 	elif _pending_box == box and _roulette_end >= 0.0:
 		_roulette_end = -1.0
 		_pending_box = -1
 		_granted = -1
 		_log("LOST box %d to kart %d" % [box, kart_id])
-	_log("BOX %d kart=%d item=%s" % [box, kart_id, _set.items[item].id])
+	_log("BOX %d kart=%d item=%s at=%.2f" % [box, kart_id, _set.items[item].id if item >= 0 else &"none", t])
 
 
 func _update_roulette() -> void:

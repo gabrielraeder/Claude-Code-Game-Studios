@@ -15,6 +15,9 @@ extends Resource
 @export var roulette_tick: float = 0.08
 ## Radius of a kart for picking up boxes and for item contact tests.
 @export var box_pickup_radius: float = 2.2
+## Seconds before a client repeats a box request the host did not answer with a taken (the box
+## was not free on the host yet, e.g. a respawn a few ms apart). Bugfix 2026-11-20.
+@export var box_ask_retry: float = 1.0
 @export var kart_hit_radius: float = 1.0
 ## Hit slowdown profile index (story 001 data) applied after a hit.
 @export var hit_slowdown_profile: int = 0

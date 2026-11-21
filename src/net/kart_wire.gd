@@ -4,7 +4,9 @@ extends RefCounted
 ## Receivers accept arrays at least FIELD_COUNT long, so later versions may append fields.
 
 ## Bumped when the meaning of an existing field or of a message changes.
-const VERSION: int = 3
+## 4 (story 006): the race start info carries each kart's loadout, and clients send theirs.
+## 5 (bugfix 2026-11-20): box take carries wants_item; box taken with item -1 = broken, no item.
+const VERSION: int = 5
 const X: int = 0
 const Z: int = 1
 const VX: int = 2

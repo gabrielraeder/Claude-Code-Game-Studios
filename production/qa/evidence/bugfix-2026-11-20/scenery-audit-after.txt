@@ -1,0 +1,196 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+== Castle Circuit (castle_circuit): 1872 scenery pieces, built and checked in 8333 ms
+-- pieces per tag: banners=182, start_arch=4, tourney=578, tourney_lists=60, moat_and_gate=12, curtain_wall=62, moat_posts=16, village_house=279, village_barrels=66, village_stall=36, village_well=3, keep=23, keep_dummies=73, gardens=317, gardens_trebuchet=11, passage=7, tourney_pennants=143
+-- TrackScenery road guard: tourney: 34 props, 3 moved, 0 shrunk, 0 left out; moat_and_gate: 10 props, 2 moved, 0 shrunk, 0 left out; village_house: 44 props, 20 moved, 0 shrunk, 0 left out; village_barrels: 22 props, 7 moved, 0 shrunk, 0 left out; gardens: 163 props, 13 moved, 0 shrunk, 2 left out; gardens_trebuchet: 2 props, 1 moved, 0 shrunk, 0 left out; passage: 2 props, 1 moved, 0 shrunk, 0 left out
+-- ON ROAD at kart height (y 0.0..2.0 m): 0
+-- FLAT surface detail over the road (top <= 0.30 m, drive-over): 16
+   castle_circuit s=174.7 road=main tag=moat_posts kind=box#466 pos=(23.2, 115.5) y=0.00..0.27 size=1.0m into_road=5.91m in_hazard
+   castle_circuit s=181.8 road=main tag=moat_posts kind=box#467 pos=(20.6, 120.1) y=0.00..0.27 size=1.0m into_road=5.90m in_hazard
+   castle_circuit s=188.9 road=main tag=moat_posts kind=box#468 pos=(19.1, 125.1) y=0.00..0.27 size=1.0m into_road=5.91m in_hazard
+   castle_circuit s=195.6 road=main tag=moat_posts kind=box#469 pos=(18.7, 130.2) y=0.00..0.27 size=1.0m into_road=5.90m in_hazard
+   castle_circuit s=202.8 road=main tag=moat_posts kind=box#470 pos=(19.5, 135.4) y=0.00..0.27 size=1.0m into_road=5.91m in_hazard
+   castle_circuit s=209.5 road=main tag=moat_posts kind=box#471 pos=(21.3, 140.2) y=0.00..0.27 size=1.0m into_road=5.91m in_hazard
+   castle_circuit s=216.7 road=main tag=moat_posts kind=box#472 pos=(24.3, 144.6) y=0.00..0.27 size=1.0m into_road=5.90m in_hazard
+   castle_circuit s=223.5 road=main tag=moat_posts kind=box#473 pos=(28.1, 148.2) y=0.00..0.27 size=1.0m into_road=5.91m in_hazard
+   castle_circuit s=230.6 road=main tag=moat_posts kind=box#474 pos=(32.6, 150.8) y=0.00..0.27 size=1.0m into_road=5.90m in_hazard
+   castle_circuit s=237.8 road=main tag=moat_posts kind=box#475 pos=(37.6, 152.4) y=0.00..0.27 size=1.0m into_road=5.91m in_hazard
+   castle_circuit s=244.5 road=main tag=moat_posts kind=box#476 pos=(42.8, 152.7) y=0.00..0.27 size=1.0m into_road=5.90m in_hazard
+   castle_circuit s=251.7 road=main tag=moat_posts kind=box#477 pos=(48.0, 152.0) y=0.00..0.27 size=1.0m into_road=5.90m in_hazard
+   castle_circuit s=258.7 road=main tag=moat_posts kind=box#478 pos=(54.4, 150.1) y=0.00..0.27 size=1.0m into_road=5.90m in_hazard
+   castle_circuit s=265.7 road=main tag=moat_posts kind=box#479 pos=(61.2, 148.1) y=0.00..0.27 size=1.0m into_road=5.90m in_hazard
+   castle_circuit s=272.7 road=main tag=moat_posts kind=box#480 pos=(67.9, 146.1) y=0.00..0.27 size=1.0m into_road=5.90m in_hazard
+   castle_circuit s=279.6 road=main tag=moat_posts kind=box#481 pos=(74.6, 144.1) y=0.00..0.27 size=1.0m into_road=5.90m in_hazard
+-- OVERHEAD over the road (bottom >= 2.0 m), per tag: count, lowest bottom
+   banners: 1, lowest 2.80 m
+   start_arch: 2, lowest 5.70 m
+   tourney: 5, lowest 6.10 m
+   moat_and_gate: 10, lowest 5.70 m
+   village_house: 45, lowest 3.00 m
+   passage: 3, lowest 2.50 m
+== Dungeon Depths (dungeon_depths): 1111 scenery pieces, built and checked in 6540 ms
+-- pieces per tag: dungeon_torches=417, cellar=154, pillar_hall=48, cavern_rocks=15, mine=73, mine_crusher=6, mine_carts=84, mine_rail=150, forge=156, cavern=6
+-- TrackScenery road guard: cellar: 56 props, 4 moved, 0 shrunk, 1 left out; pillar_hall: 12 props, 12 moved, 0 shrunk, 0 left out; cavern: 6 props, 3 moved, 0 shrunk, 0 left out; cavern_rocks: 14 props, 1 moved, 0 shrunk, 1 left out; mine: 75 props, 0 moved, 0 shrunk, 2 left out
+-- ON ROAD at kart height (y 0.0..2.0 m): 0
+-- FLAT surface detail over the road (top <= 0.30 m, drive-over): 150
+   dungeon_depths s=487.3 road=main tag=mine_rail kind=box#344 pos=(-52.6, 359.8) y=0.07..0.17 size=5.4m into_road=7.40m
+   dungeon_depths s=487.4 road=main tag=mine_rail kind=box#345 pos=(-52.9, 360.1) y=0.14..0.26 size=2.0m into_road=6.55m
+   dungeon_depths s=487.4 road=main tag=mine_rail kind=box#346 pos=(-51.9, 358.6) y=0.14..0.26 size=2.0m into_road=6.55m
+   dungeon_depths s=488.9 road=main tag=mine_rail kind=box#347 pos=(-53.8, 358.8) y=0.07..0.17 size=5.4m into_road=7.29m
+   dungeon_depths s=489.0 road=main tag=mine_rail kind=box#348 pos=(-54.2, 359.1) y=0.14..0.26 size=2.0m into_road=6.56m
+   dungeon_depths s=489.0 road=main tag=mine_rail kind=box#349 pos=(-53.2, 357.7) y=0.14..0.26 size=2.0m into_road=6.55m
+   dungeon_depths s=490.5 road=main tag=mine_rail kind=box#350 pos=(-55.1, 357.9) y=0.07..0.17 size=5.4m into_road=7.39m
+   dungeon_depths s=490.6 road=main tag=mine_rail kind=box#351 pos=(-55.5, 358.2) y=0.14..0.26 size=2.0m into_road=6.57m
+   dungeon_depths s=490.6 road=main tag=mine_rail kind=box#352 pos=(-54.4, 356.7) y=0.14..0.26 size=2.0m into_road=6.54m
+   dungeon_depths s=492.1 road=main tag=mine_rail kind=box#353 pos=(-56.4, 356.9) y=0.07..0.17 size=5.4m into_road=7.32m
+   dungeon_depths s=492.2 road=main tag=mine_rail kind=box#354 pos=(-56.8, 357.2) y=0.14..0.26 size=2.0m into_road=6.60m
+   dungeon_depths s=492.2 road=main tag=mine_rail kind=box#355 pos=(-55.7, 355.8) y=0.14..0.26 size=2.0m into_road=6.53m
+   dungeon_depths s=493.7 road=main tag=mine_rail kind=box#356 pos=(-57.7, 355.9) y=0.07..0.17 size=5.4m into_road=7.34m
+   dungeon_depths s=493.8 road=main tag=mine_rail kind=box#357 pos=(-58.1, 356.2) y=0.14..0.26 size=2.0m into_road=6.61m
+   dungeon_depths s=493.8 road=main tag=mine_rail kind=box#358 pos=(-57.0, 354.8) y=0.14..0.26 size=2.0m into_road=6.50m
+   dungeon_depths s=495.3 road=main tag=mine_rail kind=box#359 pos=(-58.9, 354.9) y=0.07..0.17 size=5.4m into_road=7.33m
+   dungeon_depths s=495.4 road=main tag=mine_rail kind=box#360 pos=(-59.3, 355.2) y=0.14..0.26 size=2.0m into_road=6.60m
+   dungeon_depths s=495.4 road=main tag=mine_rail kind=box#361 pos=(-58.2, 353.8) y=0.14..0.26 size=2.0m into_road=6.52m
+   dungeon_depths s=496.9 road=main tag=mine_rail kind=box#362 pos=(-60.1, 353.8) y=0.07..0.17 size=5.4m into_road=7.38m
+   dungeon_depths s=497.0 road=main tag=mine_rail kind=box#363 pos=(-60.5, 354.1) y=0.14..0.26 size=2.0m into_road=6.59m
+   dungeon_depths s=497.1 road=main tag=mine_rail kind=box#364 pos=(-59.4, 352.8) y=0.14..0.26 size=2.0m into_road=6.56m
+   dungeon_depths s=498.4 road=main tag=mine_rail kind=box#365 pos=(-61.3, 352.8) y=0.07..0.17 size=5.4m into_road=7.34m
+   dungeon_depths s=498.5 road=main tag=mine_rail kind=box#366 pos=(-61.7, 353.0) y=0.14..0.26 size=2.0m into_road=6.55m
+   dungeon_depths s=498.8 road=main tag=mine_rail kind=box#367 pos=(-60.5, 351.7) y=0.14..0.26 size=2.0m into_road=6.78m
+   dungeon_depths s=499.9 road=main tag=mine_rail kind=box#368 pos=(-62.5, 351.7) y=0.07..0.17 size=5.4m into_road=7.40m
+   dungeon_depths s=500.0 road=main tag=mine_rail kind=box#369 pos=(-62.9, 352.0) y=0.14..0.26 size=2.0m into_road=6.37m
+   dungeon_depths s=500.4 road=main tag=mine_rail kind=box#370 pos=(-61.7, 350.6) y=0.14..0.26 size=2.0m into_road=7.20m
+   dungeon_depths s=501.4 road=main tag=mine_rail kind=box#371 pos=(-63.7, 350.6) y=0.07..0.17 size=5.4m into_road=7.39m
+   dungeon_depths s=501.4 road=main tag=mine_rail kind=box#372 pos=(-64.1, 350.9) y=0.14..0.26 size=2.0m into_road=6.02m
+   dungeon_depths s=501.9 road=main tag=mine_rail kind=box#373 pos=(-62.9, 349.6) y=0.14..0.26 size=2.0m into_road=7.39m
+   dungeon_depths s=502.8 road=main tag=mine_rail kind=box#374 pos=(-64.9, 349.6) y=0.07..0.17 size=5.4m into_road=7.39m
+   dungeon_depths s=502.7 road=main tag=mine_rail kind=box#375 pos=(-65.3, 349.8) y=0.14..0.26 size=2.0m into_road=5.52m
+   dungeon_depths s=503.4 road=main tag=mine_rail kind=box#376 pos=(-64.1, 348.5) y=0.14..0.26 size=2.0m into_road=7.18m
+   dungeon_depths s=504.1 road=main tag=mine_rail kind=box#377 pos=(-66.1, 348.5) y=0.07..0.17 size=5.4m into_road=7.29m
+   dungeon_depths s=504.0 road=main tag=mine_rail kind=box#378 pos=(-66.5, 348.8) y=0.14..0.26 size=2.0m into_road=4.90m
+   dungeon_depths s=504.7 road=main tag=mine_rail kind=box#379 pos=(-65.3, 347.4) y=0.14..0.26 size=2.0m into_road=6.51m
+   dungeon_depths s=505.2 road=main tag=mine_rail kind=box#380 pos=(-67.3, 347.4) y=0.07..0.17 size=5.4m into_road=6.39m
+   dungeon_depths s=505.1 road=main tag=mine_rail kind=box#381 pos=(-67.7, 347.7) y=0.14..0.26 size=2.0m into_road=4.16m
+   dungeon_depths s=505.9 road=main tag=mine_rail kind=box#382 pos=(-66.5, 346.4) y=0.14..0.26 size=2.0m into_road=5.70m
+   dungeon_depths s=506.3 road=main tag=mine_rail kind=box#383 pos=(-68.5, 346.4) y=0.07..0.17 size=5.4m into_road=5.39m
+   dungeon_depths s=506.1 road=main tag=mine_rail kind=box#384 pos=(-68.9, 346.6) y=0.14..0.26 size=2.0m into_road=3.33m
+   dungeon_depths s=506.9 road=main tag=mine_rail kind=box#385 pos=(-67.7, 345.3) y=0.14..0.26 size=2.0m into_road=4.80m
+   dungeon_depths s=507.2 road=main tag=mine_rail kind=box#386 pos=(-69.7, 345.3) y=0.07..0.17 size=5.4m into_road=4.30m
+   dungeon_depths s=507.0 road=main tag=mine_rail kind=box#387 pos=(-70.1, 345.6) y=0.14..0.26 size=2.0m into_road=2.40m
+   dungeon_depths s=507.9 road=main tag=mine_rail kind=box#388 pos=(-68.9, 344.2) y=0.14..0.26 size=2.0m into_road=3.80m
+   dungeon_depths s=528.0 road=mine_rail tag=mine_rail kind=box#389 pos=(-70.9, 344.2) y=0.07..0.17 size=5.4m into_road=3.16m
+   dungeon_depths s=528.2 road=mine_rail tag=mine_rail kind=box#390 pos=(-71.3, 344.5) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=509.0 road=main tag=mine_rail kind=box#391 pos=(-70.1, 343.2) y=0.14..0.26 size=2.0m into_road=2.73m
+   dungeon_depths s=530.7 road=mine_rail tag=mine_rail kind=box#392 pos=(-72.1, 343.2) y=0.07..0.17 size=5.4m into_road=2.53m
+   dungeon_depths s=530.9 road=mine_rail tag=mine_rail kind=box#393 pos=(-72.5, 343.4) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=530.9 road=mine_rail tag=mine_rail kind=box#394 pos=(-71.3, 342.1) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=533.3 road=mine_rail tag=mine_rail kind=box#395 pos=(-73.3, 342.1) y=0.07..0.17 size=5.4m into_road=2.65m
+   dungeon_depths s=533.6 road=mine_rail tag=mine_rail kind=box#396 pos=(-73.7, 342.4) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=533.6 road=mine_rail tag=mine_rail kind=box#397 pos=(-72.5, 341.0) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=536.0 road=mine_rail tag=mine_rail kind=box#398 pos=(-74.5, 341.0) y=0.07..0.17 size=5.4m into_road=2.53m
+   dungeon_depths s=536.2 road=mine_rail tag=mine_rail kind=box#399 pos=(-74.9, 341.3) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=536.2 road=mine_rail tag=mine_rail kind=box#400 pos=(-73.7, 340.0) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=538.7 road=mine_rail tag=mine_rail kind=box#401 pos=(-75.6, 340.0) y=0.07..0.17 size=5.4m into_road=2.65m
+   dungeon_depths s=538.9 road=mine_rail tag=mine_rail kind=box#402 pos=(-76.1, 340.2) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=538.9 road=mine_rail tag=mine_rail kind=box#403 pos=(-74.9, 338.9) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=541.4 road=mine_rail tag=mine_rail kind=box#404 pos=(-76.8, 338.9) y=0.07..0.17 size=5.4m into_road=2.53m
+   dungeon_depths s=541.6 road=mine_rail tag=mine_rail kind=box#405 pos=(-77.2, 339.2) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=541.6 road=mine_rail tag=mine_rail kind=box#406 pos=(-76.0, 337.8) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=544.0 road=mine_rail tag=mine_rail kind=box#407 pos=(-78.0, 337.9) y=0.07..0.17 size=5.4m into_road=2.65m
+   dungeon_depths s=544.2 road=mine_rail tag=mine_rail kind=box#408 pos=(-78.4, 338.1) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=544.2 road=mine_rail tag=mine_rail kind=box#409 pos=(-77.2, 336.8) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=546.7 road=mine_rail tag=mine_rail kind=box#410 pos=(-79.2, 336.8) y=0.07..0.17 size=5.4m into_road=2.53m
+   dungeon_depths s=546.9 road=mine_rail tag=mine_rail kind=box#411 pos=(-79.6, 337.0) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=546.9 road=mine_rail tag=mine_rail kind=box#412 pos=(-78.4, 335.7) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=549.4 road=mine_rail tag=mine_rail kind=box#413 pos=(-80.4, 335.7) y=0.07..0.17 size=5.4m into_road=2.53m
+   dungeon_depths s=549.6 road=mine_rail tag=mine_rail kind=box#414 pos=(-80.8, 336.0) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=549.6 road=mine_rail tag=mine_rail kind=box#415 pos=(-79.6, 334.6) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=552.0 road=mine_rail tag=mine_rail kind=box#416 pos=(-81.6, 334.7) y=0.07..0.17 size=5.4m into_road=2.65m
+   dungeon_depths s=552.3 road=mine_rail tag=mine_rail kind=box#417 pos=(-82.0, 334.9) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=552.3 road=mine_rail tag=mine_rail kind=box#418 pos=(-80.8, 333.6) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=554.7 road=mine_rail tag=mine_rail kind=box#419 pos=(-82.8, 333.6) y=0.07..0.17 size=5.4m into_road=2.65m
+   dungeon_depths s=554.9 road=mine_rail tag=mine_rail kind=box#420 pos=(-83.2, 333.8) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=554.9 road=mine_rail tag=mine_rail kind=box#421 pos=(-82.0, 332.5) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=557.4 road=mine_rail tag=mine_rail kind=box#422 pos=(-84.0, 332.5) y=0.07..0.17 size=5.4m into_road=2.65m
+   dungeon_depths s=557.6 road=mine_rail tag=mine_rail kind=box#423 pos=(-84.4, 332.8) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=557.6 road=mine_rail tag=mine_rail kind=box#424 pos=(-83.2, 331.4) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=560.0 road=mine_rail tag=mine_rail kind=box#425 pos=(-85.2, 331.5) y=0.07..0.17 size=5.4m into_road=2.65m
+   dungeon_depths s=560.3 road=mine_rail tag=mine_rail kind=box#426 pos=(-85.6, 331.7) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=560.3 road=mine_rail tag=mine_rail kind=box#427 pos=(-84.4, 330.4) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=562.7 road=mine_rail tag=mine_rail kind=box#428 pos=(-86.4, 330.4) y=0.07..0.17 size=5.4m into_road=2.53m
+   dungeon_depths s=562.9 road=mine_rail tag=mine_rail kind=box#429 pos=(-86.8, 330.6) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=562.9 road=mine_rail tag=mine_rail kind=box#430 pos=(-85.6, 329.3) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=565.4 road=mine_rail tag=mine_rail kind=box#431 pos=(-87.6, 329.3) y=0.07..0.17 size=5.4m into_road=2.53m
+   dungeon_depths s=565.6 road=mine_rail tag=mine_rail kind=box#432 pos=(-88.0, 329.6) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=565.6 road=mine_rail tag=mine_rail kind=box#433 pos=(-86.8, 328.2) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=568.0 road=mine_rail tag=mine_rail kind=box#434 pos=(-88.8, 328.3) y=0.07..0.17 size=5.4m into_road=2.65m
+   dungeon_depths s=568.3 road=mine_rail tag=mine_rail kind=box#435 pos=(-89.2, 328.5) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=568.3 road=mine_rail tag=mine_rail kind=box#436 pos=(-88.0, 327.2) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=570.7 road=mine_rail tag=mine_rail kind=box#437 pos=(-90.0, 327.2) y=0.07..0.17 size=5.4m into_road=2.53m
+   dungeon_depths s=570.9 road=mine_rail tag=mine_rail kind=box#438 pos=(-90.4, 327.4) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=570.9 road=mine_rail tag=mine_rail kind=box#439 pos=(-89.2, 326.1) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=573.4 road=mine_rail tag=mine_rail kind=box#440 pos=(-91.2, 326.1) y=0.07..0.17 size=5.4m into_road=2.65m
+   dungeon_depths s=573.6 road=mine_rail tag=mine_rail kind=box#441 pos=(-91.6, 326.4) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=573.6 road=mine_rail tag=mine_rail kind=box#442 pos=(-90.4, 325.0) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=576.0 road=mine_rail tag=mine_rail kind=box#443 pos=(-92.3, 325.1) y=0.07..0.17 size=5.4m into_road=2.65m
+   dungeon_depths s=576.3 road=mine_rail tag=mine_rail kind=box#444 pos=(-92.8, 325.3) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=576.3 road=mine_rail tag=mine_rail kind=box#445 pos=(-91.6, 324.0) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=578.7 road=mine_rail tag=mine_rail kind=box#446 pos=(-93.5, 324.0) y=0.07..0.17 size=5.4m into_road=2.53m
+   dungeon_depths s=578.9 road=mine_rail tag=mine_rail kind=box#447 pos=(-93.9, 324.2) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=578.9 road=mine_rail tag=mine_rail kind=box#448 pos=(-92.7, 322.9) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=581.4 road=mine_rail tag=mine_rail kind=box#449 pos=(-94.7, 322.9) y=0.07..0.17 size=5.4m into_road=3.16m
+   dungeon_depths s=581.6 road=mine_rail tag=mine_rail kind=box#450 pos=(-95.1, 323.2) y=0.14..0.26 size=2.0m into_road=1.80m
+   dungeon_depths s=600.5 road=main tag=mine_rail kind=box#451 pos=(-93.9, 321.8) y=0.14..0.26 size=2.0m into_road=2.73m
+   dungeon_depths s=602.1 road=main tag=mine_rail kind=box#452 pos=(-95.9, 321.9) y=0.07..0.17 size=5.4m into_road=4.31m
+   dungeon_depths s=602.5 road=main tag=mine_rail kind=box#453 pos=(-96.3, 322.1) y=0.14..0.26 size=2.0m into_road=2.41m
+   dungeon_depths s=601.6 road=main tag=mine_rail kind=box#454 pos=(-95.1, 320.8) y=0.14..0.26 size=2.0m into_road=3.81m
+   dungeon_depths s=603.0 road=main tag=mine_rail kind=box#455 pos=(-97.1, 320.8) y=0.07..0.17 size=5.4m into_road=5.39m
+   dungeon_depths s=603.3 road=main tag=mine_rail kind=box#456 pos=(-97.5, 321.0) y=0.14..0.26 size=2.0m into_road=3.33m
+   dungeon_depths s=602.6 road=main tag=mine_rail kind=box#457 pos=(-96.3, 319.7) y=0.14..0.26 size=2.0m into_road=4.81m
+   dungeon_depths s=604.1 road=main tag=mine_rail kind=box#458 pos=(-98.3, 319.7) y=0.07..0.17 size=5.4m into_road=6.40m
+   dungeon_depths s=604.4 road=main tag=mine_rail kind=box#459 pos=(-98.7, 320.0) y=0.14..0.26 size=2.0m into_road=4.16m
+   dungeon_depths s=603.6 road=main tag=mine_rail kind=box#460 pos=(-97.5, 318.6) y=0.14..0.26 size=2.0m into_road=5.71m
+   dungeon_depths s=605.3 road=main tag=mine_rail kind=box#461 pos=(-99.5, 318.7) y=0.07..0.17 size=5.4m into_road=7.30m
+   dungeon_depths s=605.5 road=main tag=mine_rail kind=box#462 pos=(-99.9, 318.9) y=0.14..0.26 size=2.0m into_road=4.89m
+   dungeon_depths s=604.9 road=main tag=mine_rail kind=box#463 pos=(-98.7, 317.6) y=0.14..0.26 size=2.0m into_road=6.51m
+   dungeon_depths s=606.5 road=main tag=mine_rail kind=box#464 pos=(-100.7, 317.6) y=0.07..0.17 size=5.4m into_road=7.36m
+   dungeon_depths s=606.8 road=main tag=mine_rail kind=box#465 pos=(-101.1, 317.8) y=0.14..0.26 size=2.0m into_road=5.51m
+   dungeon_depths s=606.2 road=main tag=mine_rail kind=box#466 pos=(-99.9, 316.5) y=0.14..0.26 size=2.0m into_road=7.19m
+   dungeon_depths s=607.9 road=main tag=mine_rail kind=box#467 pos=(-101.9, 316.5) y=0.07..0.17 size=5.4m into_road=7.39m
+   dungeon_depths s=608.2 road=main tag=mine_rail kind=box#468 pos=(-102.3, 316.8) y=0.14..0.26 size=2.0m into_road=6.01m
+   dungeon_depths s=607.6 road=main tag=mine_rail kind=box#469 pos=(-101.1, 315.4) y=0.14..0.26 size=2.0m into_road=7.39m
+   dungeon_depths s=609.4 road=main tag=mine_rail kind=box#470 pos=(-103.1, 315.5) y=0.07..0.17 size=5.4m into_road=7.40m
+   dungeon_depths s=609.6 road=main tag=mine_rail kind=box#471 pos=(-103.5, 315.7) y=0.14..0.26 size=2.0m into_road=6.36m
+   dungeon_depths s=609.2 road=main tag=mine_rail kind=box#472 pos=(-102.3, 314.4) y=0.14..0.26 size=2.0m into_road=7.19m
+   dungeon_depths s=610.9 road=main tag=mine_rail kind=box#473 pos=(-104.3, 314.4) y=0.07..0.17 size=5.4m into_road=7.32m
+   dungeon_depths s=611.1 road=main tag=mine_rail kind=box#474 pos=(-104.7, 314.6) y=0.14..0.26 size=2.0m into_road=6.54m
+   dungeon_depths s=610.9 road=main tag=mine_rail kind=box#475 pos=(-103.5, 313.3) y=0.14..0.26 size=2.0m into_road=6.80m
+   dungeon_depths s=612.5 road=main tag=mine_rail kind=box#476 pos=(-105.5, 313.3) y=0.07..0.17 size=5.4m into_road=7.32m
+   dungeon_depths s=612.6 road=main tag=mine_rail kind=box#477 pos=(-105.9, 313.6) y=0.14..0.26 size=2.0m into_road=6.61m
+   dungeon_depths s=612.5 road=main tag=mine_rail kind=box#478 pos=(-104.7, 312.2) y=0.14..0.26 size=2.0m into_road=6.57m
+   dungeon_depths s=614.0 road=main tag=mine_rail kind=box#479 pos=(-106.7, 312.2) y=0.07..0.17 size=5.4m into_road=7.31m
+   dungeon_depths s=614.2 road=main tag=mine_rail kind=box#480 pos=(-107.1, 312.5) y=0.14..0.26 size=2.0m into_road=6.64m
+   dungeon_depths s=614.2 road=main tag=mine_rail kind=box#481 pos=(-105.8, 311.2) y=0.14..0.26 size=2.0m into_road=6.50m
+   dungeon_depths s=615.6 road=main tag=mine_rail kind=box#482 pos=(-107.8, 311.1) y=0.07..0.17 size=5.4m into_road=7.32m
+   dungeon_depths s=615.7 road=main tag=mine_rail kind=box#483 pos=(-108.2, 311.3) y=0.14..0.26 size=2.0m into_road=6.65m
+   dungeon_depths s=615.8 road=main tag=mine_rail kind=box#484 pos=(-107.0, 310.1) y=0.14..0.26 size=2.0m into_road=6.49m
+   dungeon_depths s=617.2 road=main tag=mine_rail kind=box#485 pos=(-108.9, 310.0) y=0.07..0.17 size=5.4m into_road=7.38m
+   dungeon_depths s=617.3 road=main tag=mine_rail kind=box#486 pos=(-109.4, 310.2) y=0.14..0.26 size=2.0m into_road=6.61m
+   dungeon_depths s=617.4 road=main tag=mine_rail kind=box#487 pos=(-108.1, 308.9) y=0.14..0.26 size=2.0m into_road=6.55m
+   dungeon_depths s=618.8 road=main tag=mine_rail kind=box#488 pos=(-110.0, 308.8) y=0.07..0.17 size=5.4m into_road=7.29m
+   dungeon_depths s=619.0 road=main tag=mine_rail kind=box#489 pos=(-110.5, 309.0) y=0.14..0.26 size=2.0m into_road=6.56m
+   dungeon_depths s=619.0 road=main tag=mine_rail kind=box#490 pos=(-109.2, 307.8) y=0.14..0.26 size=2.0m into_road=6.56m
+   dungeon_depths s=620.4 road=main tag=mine_rail kind=box#491 pos=(-111.1, 307.6) y=0.07..0.17 size=5.4m into_road=7.28m
+   dungeon_depths s=620.6 road=main tag=mine_rail kind=box#492 pos=(-111.6, 307.8) y=0.14..0.26 size=2.0m into_road=6.55m
+   dungeon_depths s=620.6 road=main tag=mine_rail kind=box#493 pos=(-110.2, 306.6) y=0.14..0.26 size=2.0m into_road=6.55m
+-- OVERHEAD over the road (bottom >= 2.0 m), per tag: count, lowest bottom
+   cellar: 40, lowest 3.60 m
+   cavern_rocks: 1, lowest 21.75 m
+   mine: 25, lowest 2.99 m
+== Test Loop (test_loop): 0 scenery pieces, built and checked in 2 ms
+-- pieces per tag: 
+-- TrackScenery road guard: nothing moved, shrunk or left out
+-- ON ROAD at kart height (y 0.0..2.0 m): 0
+-- FLAT surface detail over the road (top <= 0.30 m, drive-over): 0
+-- OVERHEAD over the road (bottom >= 2.0 m), per tag: count, lowest bottom
+== TOTAL on-road scenery pieces at kart height: 0

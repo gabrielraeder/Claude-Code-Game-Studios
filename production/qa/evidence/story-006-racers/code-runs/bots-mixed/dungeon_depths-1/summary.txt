@@ -1,0 +1,41 @@
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+   1 Careful          123.80  41.3 39.3 42.6             0(0.0)       7       0      0.9616 78.9
+   2 Wide Wanderer    121.40  39.6 40.5 40.5             0(0.0)       5       0      0.9648 66.3
+   3 Shortcut Hunter  120.00  40.3 38.9 39.4             0(0.0)       8       0      0.9838 69.7
+   4 Apex Ace         119.40  40.3 39.9 38.2             0(0.0)       8       0      0.9893 68.3
+   5 Outside Swinger  122.87  41.5 40.7 39.7             0(0.0)       4       0      0.9781 61.0
+   6 Item Hoarder     119.73  39.1 39.9 39.5             0(0.0)       7       0      0.9620 64.8
+   7 Steady Eddie     125.67  42.9 42.1 39.4             0(0.0)       2       0      0.9545 58.0
+   8 Hothead          119.13  39.7 39.0 38.9             0(0.0)       6       0      0.9803 61.4
+   9 Careful          119.67  39.0 39.3 39.7             0(0.0)       6       0      0.9627 62.8
+  10 Wide Wanderer    123.40  43.1 41.7 36.9             0(0.0)       4       0      0.9785 58.5
+  11 Shortcut Hunter  120.00  41.1 39.0 38.2             0(0.0)       7       0      0.9860 62.6
+
+bots finished: 11/11  first 119.13  last 125.67  spread 5.5% of winner
+bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+
+SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+  per personality: {}
+  per location: {}
+  SEED 1019239097; karts sinking again within 5 s: 0
+  shortcuts skipped because crowded: 0
+
+shortcut enters by name/branch:
+  Careful         planned {'hall_left': 4, 'hall_right': 1, 'mine_rail': 2, 'lava_gap': 3} entered {'hall_right': 1, 'mine_rail': 2, 'hall_left': 2, 'lava_gap': 2} missed {}
+  Wide Wanderer   planned {'hall_right': 3, 'lava_gap': 1, 'hall_left': 2, 'mine_rail': 2} entered {'hall_left': 1, 'mine_rail': 2, 'hall_right': 2} missed {}
+  Shortcut Hunter planned {'hall_right': 4, 'mine_rail': 5, 'lava_gap': 4, 'hall_left': 1} entered {'hall_left': 2, 'mine_rail': 3, 'lava_gap': 2, 'hall_right': 1} missed {}
+  Apex Ace        planned {'hall_left': 4, 'mine_rail': 4, 'hall_right': 1, 'lava_gap': 2} entered {'hall_left': 2, 'mine_rail': 3, 'hall_right': 1, 'lava_gap': 2} missed {}
+  Outside Swinger planned {'hall_right': 3, 'mine_rail': 3, 'lava_gap': 2, 'hall_left': 2} entered {'hall_left': 2, 'hall_right': 1, 'mine_rail': 1} missed {}
+  Item Hoarder    planned {'hall_left': 3, 'mine_rail': 5, 'lava_gap': 2, 'hall_right': 2} entered {'hall_left': 2, 'mine_rail': 3, 'lava_gap': 1, 'hall_right': 1} missed {}
+  Steady Eddie    planned {'hall_right': 2, 'hall_left': 1, 'lava_gap': 2, 'mine_rail': 1} entered {'hall_left': 1, 'lava_gap': 1} missed {}
+  Hothead         planned {'hall_left': 3, 'mine_rail': 5, 'hall_right': 2, 'lava_gap': 1} entered {'hall_left': 2, 'mine_rail': 3, 'hall_right': 1} missed {}
+  Careful         planned {'hall_right': 2, 'lava_gap': 4, 'hall_left': 2, 'mine_rail': 2} entered {'hall_left': 2, 'mine_rail': 1, 'lava_gap': 3} missed {}
+  Wide Wanderer   planned {'hall_right': 2, 'mine_rail': 2, 'lava_gap': 2, 'hall_left': 1} entered {'hall_right': 2, 'mine_rail': 1, 'lava_gap': 1} missed {}
+  Shortcut Hunter planned {'hall_right': 3, 'mine_rail': 5, 'hall_left': 2, 'lava_gap': 1} entered {'hall_left': 2, 'mine_rail': 3, 'hall_right': 1, 'lava_gap': 1} missed {}
+
+host autopilot: [debug] finished: laps [38.2666666666669, 37.7333333333339, 38.1333333333312] boosts [19, 0, 0] start_boost 3 max_speed 35.10 cap 35.10
+[net-summary] role=host peer=1 place=1 finish=114.67 karts=12 | rtt_avg=0ms rtt_max=0ms view_delay=100ms | snaps/s=0.0 | extrap=0.0% | pred_err avg=0.000m max=0.000m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=0.0 kb_in/s=0.0
+
+bot item use: {'shield': 6, 'horn': 8, 'falcon': 4, 'stone': 6, 'spill': 1}
+hits by bot items: {('falcon', 'hit'): 3, ('stone', 'blocked'): 1, ('stone', 'hit'): 2, ('spill', 'hit'): 1}
+items used per bot: {'Careful': 2, 'Wide Wanderer': 3, 'Apex Ace': 3, 'Item Hoarder': 3, 'Steady Eddie': 4, 'Hothead': 4}

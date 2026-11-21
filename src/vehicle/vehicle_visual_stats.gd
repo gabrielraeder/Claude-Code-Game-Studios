@@ -44,6 +44,37 @@ extends Resource
 @export var dark_color: Color = Color(0.12, 0.12, 0.14)
 @export var skin_color: Color = Color(0.95, 0.85, 0.7)
 
+@export_group("Model (story 006)")
+## glb of the vehicle (root "Vehicle", children "Seat" and "PennantMount", wheels named
+## Wheel_FL/FR/RL/RR or Wheel_F/Wheel_R). Empty or missing = the box-and-sphere placeholder.
+@export var model_path: String = ""
+## Added to the Seat node position (meters): nudges the dog up, down or back.
+@export var seat_offset: Vector3 = Vector3.ZERO
+## Uniform scale of the dog model on this vehicle.
+@export var dog_scale: float = 1.0
+## Rider pitch in degrees (positive leans forward, over the handlebars).
+@export var rider_pitch_deg: float = 0.0
+## Extra rider roll into a turn at full lateral acceleration, in degrees (on top of the body lean).
+@export var rider_lean_deg: float = 4.0
+## Pennant pole length = this times the height of vehicle and rider (so it is always tallest).
+@export var pennant_height_mult: float = 1.2
+## Pennant pole base when the model has no "PennantMount" (and in the placeholder body).
+@export var pennant_mount_fallback: Vector3 = Vector3(0, 0.75, 1.0)
+## Degrees the front wheel(s) turn at full steer (looks only).
+@export var front_steer_deg: float = 14.0
+## Dog head bob: height in meters, rate in rad/s (scaled by speed).
+@export var head_bob_amount: float = 0.025
+@export var head_bob_rate: float = 16.0
+## Ears stream back this many degrees while boosting.
+@export var ear_boost_deg: float = 28.0
+## Ears flop this many degrees (back and forth) during a spin-out, at ear_flop_rate rad/s.
+@export var ear_spin_flop_deg: float = 35.0
+@export var ear_flop_rate: float = 24.0
+## Rate (1/s) the ears follow their target.
+@export var ear_smoothing: float = 12.0
+## Model nodes that cast no shadow (small parts: the shadow pass draws every part again).
+@export var no_shadow_parts: PackedStringArray = PackedStringArray(["Ear_L", "Ear_R", "Tail", "Handlebar", "Prow"])
+
 @export_group("Sparks and flame")
 ## Spark sphere radius and position (x is mirrored left/right).
 @export var spark_radius: float = 0.14

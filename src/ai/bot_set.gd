@@ -46,7 +46,10 @@ extends Resource
 ## many meters from the centerline toward that edge.
 @export var open_edge_keep: float = 0.0
 ## A drift is released when this far (meters) from the centerline toward an open edge.
-@export var open_edge_drift_abort: float = 2.5
+@export var open_edge_drift_abort: float = 1.0
+## False = no drift starts while an unwalled edge is near (a drift slides toward the outside of the
+## corner and its release boost carries the kart over the edge; story 006 bike/cart sinks at the Castle moat).
+@export var open_edge_allow_drift_start: bool = false
 ## The open edge counts from this many meters before and until this many meters after the kart.
 @export var open_edge_behind: float = 10.0
 @export var open_edge_ahead: float = 45.0

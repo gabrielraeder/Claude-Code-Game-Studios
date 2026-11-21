@@ -14,6 +14,9 @@ extends RefCounted
 ##   --overview-shot      one top-down picture of the whole track into --shots=, then quit
 ##   --grid-shot          fixed camera above the start grid (picture during the countdown)
 ##   --shot-s=A,B,C       pictures when the kart first passes these main-loop distances
+##   --racer=N            the local kart's dog, 0..7 (default 0, the mascot); works for host and clients
+##   --vehicle=cart|bike  the local kart's vehicle (also 0/1); works for host and clients
+##   --lineup=DIR         build a line-up of all 8 dogs on both vehicles, save pictures into DIR, quit
 ##   --dunk-at=S          the autopilot steers off the open moat edge once from distance S
 ##                        (pictures of the sinking kart and of its respawn)
 
@@ -38,6 +41,12 @@ var grid_shot: bool = false
 var shot_s: PackedFloat32Array = PackedFloat32Array()
 ## Main-loop distance where the autopilot drives into the moat once (--dunk-at=), -1 = off.
 var dunk_s: float = -1.0
+## Racer index from --racer= (-1 = not given, the mascot).
+var racer: int = -1
+## Vehicle token from --vehicle= ("" = not given, the cart): an id or an index.
+var vehicle: String = ""
+## Folder for the line-up pictures (--lineup=), "" = off.
+var lineup_dir: String = ""
 ## Item the local kart starts with and keeps getting refilled with (--give-item=horn|stone|spill|falcon|shield).
 var give_item: String = ""
 ## Seconds between automatic item uses by the autopilot (--item-interval=), 0 = off.
@@ -73,6 +82,16 @@ static func parse(args: PackedStringArray) -> DebugOptions:
 			o.give_item = a.substr("--give-item=".length())
 		elif a.begins_with("--item-interval="):
 			o.item_interval = a.substr("--item-interval=".length()).to_float()
+		elif a.begins_with("--racer="):
+			var racer_text: String = a.substr("--racer=".length())
+			if racer_text.is_valid_int():
+				o.racer = racer_text.to_int()
+			else:
+				push_warning("--racer=%s is not a number; using the mascot." % racer_text)
+		elif a.begins_with("--vehicle="):
+			o.vehicle = a.substr("--vehicle=".length())
+		elif a.begins_with("--lineup="):
+			o.lineup_dir = a.substr("--lineup=".length())
 		elif a == "--park":
 			o.park = true
 		elif a == "--ram":

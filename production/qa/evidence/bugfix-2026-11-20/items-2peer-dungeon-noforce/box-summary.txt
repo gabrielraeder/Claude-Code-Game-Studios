@@ -1,0 +1,3 @@
+client1.log: box_events=12 with_item=5 broken_no_item=7 karts=[0, 2, 3, 4, 5] seen=18 PASSED_FREE=0 errors=0
+host.log: box_events=12 with_item=5 broken_no_item=7 karts=[0, 2, 3, 4, 5] seen=18 PASSED_FREE=0 errors=0
+cross-PC BOX lists (box, kart, item, at): IDENTICAL {'client1.log': 12, 'host.log': 12}

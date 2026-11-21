@@ -1,0 +1,144 @@
+[gd_resource type="Resource" script_class="VehicleStats" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/vehicle/vehicle_stats.gd" id="1_stats"]
+
+[ext_resource type="Script" path="res://src/vehicle/hit_slowdown_profile.gd" id="2_hsp"]
+[ext_resource type="Script" path="res://src/vehicle/vehicle_visual_stats.gd" id="3_vis"]
+
+[sub_resource type="Resource" id="Resource_light"]
+script = ExtResource("2_hsp")
+duration = 0.4
+min_speed_frac = 0.42
+decel_frac = 0.85
+
+[sub_resource type="Resource" id="Resource_medium"]
+script = ExtResource("2_hsp")
+duration = 0.45
+min_speed_frac = 0.28
+decel_frac = 1.25
+
+[sub_resource type="Resource" id="Resource_heavy"]
+script = ExtResource("2_hsp")
+duration = 0.8
+min_speed_frac = 0.2
+decel_frac = 1.6
+
+[sub_resource type="Resource" id="Resource_visual"]
+script = ExtResource("3_vis")
+hop_duration = 0.4
+hop_height = 0.35
+drift_body_yaw_min_deg = 10.0
+drift_body_yaw_default_deg = 16.0
+drift_body_yaw_max_deg = 22.0
+tilt_smoothing = 5.0
+spin_speed = 14.0
+lean_long_norm = 20.0
+lean_lat_norm = 30.0
+lean_pitch_max_deg = 6.0
+lean_roll_max_deg = 14.0
+wheel_radius = 0.35
+wheel_width = 0.3
+wheel_offset_x = 0.0
+wheel_front_z = -0.7
+wheel_rear_z = 0.75
+dark_color = Color(0.12, 0.12, 0.14, 1)
+skin_color = Color(0.95, 0.85, 0.7, 1)
+spark_radius = 0.14
+spark_offset = Vector3(0.25, 0.25, 0.95)
+spark_pulse_rate = 30.0
+spark_pulse_amount = 0.2
+spark_tier_growth = 0.2
+flame_radius = 0.35
+flame_length = 1.4
+flame_color = Color(1, 0.55, 0.1, 1)
+flame_position = Vector3(0, 0.6, 1.6)
+flame_pulse_rate = 50.0
+flame_pulse_amount = 0.3
+camera_distance = 6.0
+camera_height = 2.7
+camera_look_ahead = 4.0
+camera_look_height = 1.0
+camera_position_smoothing = 11.0
+camera_base_fov = 68.0
+camera_speed_fov_gain = 10.0
+camera_boost_fov_gain = 6.0
+camera_fov_smoothing = 5.0
+model_path = "res://assets/vehicles/veh_bike_war.glb"
+seat_offset = Vector3(0, 0, 0)
+dog_scale = 1.0
+rider_pitch_deg = 14.0
+rider_lean_deg = 10.0
+pennant_height_mult = 1.2
+pennant_mount_fallback = Vector3(0, 1.3, 1.1)
+front_steer_deg = 22.0
+head_bob_amount = 0.025
+head_bob_rate = 16.0
+ear_boost_deg = 28.0
+ear_spin_flop_deg = 35.0
+ear_flop_rate = 24.0
+ear_smoothing = 12.0
+
+[resource]
+script = ExtResource("1_stats")
+display_name = "War Bike"
+vehicle_id = &"bike"
+max_speed = 24.96
+accel = 18.2
+brake = 34.0
+reverse_max = 8.0
+coast_drag = 5.0
+reverse_accel_frac = 0.6
+overspeed_decel = 18.0
+turn_rate = 2.75
+full_steer_speed = 5.0
+high_speed_steer_damp = 0.2
+grip = 9.0
+drift_grip = 2.9
+drift_min_speed = 12.0
+drift_start_steer = 0.3
+drift_end_speed_frac = 0.7
+drift_yaw_base = 1.6
+drift_yaw_range = 0.95
+drift_charge_steer_bonus = 0.9
+drift_tier_times = PackedFloat32Array(0.7, 1.5, 2.4)
+drift_boost_times = PackedFloat32Array(0.0, 0.7, 1.1, 1.6)
+boost_speed_mult = 1.35
+boost_accel_mult = 3.0
+spin_time = 1.25
+spin_drag = 2.5
+radius = 0.85
+bump_knockback = 1.9
+bump_half_length = 0.65
+bump_radius = 0.6
+bump_push_mult = 0.7
+bump_speed_loss = 0.4
+bump_full_impact_speed = 10.0
+bump_restitution = 0.7
+bump_cooldown = 0.3
+bump_knock_max = 22.0
+bump_knock_decay = 6.0
+wall_hit_cooldown = 0.5
+wall_friction_drag = 0.8
+wall_scrape_min_angle = 10.0
+wall_scrape_max_angle = 40.0
+wall_scrape_friction_mult = 0.45
+wall_impact_threshold_angle = 25.0
+wall_impact_min_angle = 15.0
+wall_impact_max_angle = 85.0
+wall_impact_max_speed_loss = 0.7
+wall_impact_slide_time = 0.25
+wall_slide_grip = 2.2
+wall_turnback_min_rate = 30.0
+wall_turnback_max_rate = 90.0
+hit_slowdown_profiles = Array[ExtResource("2_hsp")]([SubResource("Resource_light"), SubResource("Resource_medium"), SubResource("Resource_heavy")])
+hit_immunity_time = 0.6
+start_countdown_time = 3.0
+start_perfect_window = 0.15
+start_good_window = 0.35
+start_ok_window = 0.6
+start_stall_time = 1.0
+start_boost_times = PackedFloat32Array(0.0, 1.4, 1.7, 2.0)
+start_message_time = 1.5
+visual = SubResource("Resource_visual")
+paint_color = Color(0.95, 0.2, 0.2, 1)
+spark_colors = PackedColorArray(1, 1, 1, 0.6, 0.3, 0.7, 1, 1, 1, 0.6, 0.1, 1, 0.8, 0.3, 1, 1)

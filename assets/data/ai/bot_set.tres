@@ -163,4 +163,6 @@ dodge_scale = 1.3
 script = ExtResource("1_set")
 personalities = Array[ExtResource("2_per")]([SubResource("p_hothead"), SubResource("p_careful"), SubResource("p_wide_wanderer"), SubResource("p_shortcut_hunter"), SubResource("p_apex_ace"), SubResource("p_outside_swinger"), SubResource("p_item_hoarder"), SubResource("p_steady_eddie")])
 bot_names = PackedStringArray("Sir Woofington", "Dame Biscuit", "Lord Fetchmore", "Baron Von Bark", "Lady Pawsalot", "Sir Lancelick", "Squire Fetch", "Duke Droolsworth", "Dame Waggington", "Sir Gnawain", "Earl of Growl", "Sir Pawcival", "Dame Barkley", "Lord Snoutley", "Sir Chewbert", "Baroness Bone")
+open_edge_drift_abort = 1.0
+open_edge_allow_drift_start = false
 branch_factor = {&"lane_split": 1.0, &"drawbridge": 0.8, &"secret_passage": 1.0, &"mine_rail": 1.0, &"lava_gap": 0.7}

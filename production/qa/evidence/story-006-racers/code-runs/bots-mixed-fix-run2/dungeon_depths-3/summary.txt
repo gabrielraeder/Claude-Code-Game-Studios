@@ -1,0 +1,16 @@
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+
+SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+  per personality: {}
+  per location: {}
+  SEED ?; karts sinking again within 5 s: 0
+  shortcuts skipped because crowded: 0
+
+shortcut enters by name/branch:
+
+host autopilot: [debug] finished: laps [37.6000000000002, 38.1333333333339, 37.7999999999979] boosts [20, 0, 0] start_boost 3 max_speed 35.10 cap 35.10
+
+bot item use: {}
+hits by bot items: {}
+items used per bot: {}

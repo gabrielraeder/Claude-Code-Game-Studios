@@ -63,10 +63,25 @@ camera_base_fov = 68.0
 camera_speed_fov_gain = 10.0
 camera_boost_fov_gain = 6.0
 camera_fov_smoothing = 5.0
+model_path = "res://assets/vehicles/veh_cart_armored.glb"
+seat_offset = Vector3(0, 0, 0)
+dog_scale = 1.0
+rider_pitch_deg = 0.0
+rider_lean_deg = 4.0
+pennant_height_mult = 1.45
+pennant_mount_fallback = Vector3(0, 0.75, 1.0)
+front_steer_deg = 14.0
+head_bob_amount = 0.025
+head_bob_rate = 16.0
+ear_boost_deg = 28.0
+ear_spin_flop_deg = 35.0
+ear_flop_rate = 24.0
+ear_smoothing = 12.0
 
 [resource]
 script = ExtResource("1_stats")
 display_name = "Armored Cart"
+vehicle_id = &"cart"
 max_speed = 26.0
 accel = 14.0
 brake = 32.0

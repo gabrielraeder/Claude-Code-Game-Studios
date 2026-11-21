@@ -5,6 +5,10 @@
 [resource]
 script = ExtResource("1_theme")
 style = &"castle"
+scenery_road_margin = 0.15
+scenery_clear_height = 2.5
+scenery_flat_height = 0.3
+scenery_max_nudge = 3.0
 ground_color = Color(0.36, 0.56, 0.26, 1)
 ground_size = 1400.0
 road_color = Color(0.5, 0.46, 0.4, 1)

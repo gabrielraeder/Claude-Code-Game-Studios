@@ -1,0 +1,12 @@
+[dungeon_depths-1] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[dungeon_depths-1] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[dungeon_depths-1]   per location: {}
+[dungeon_depths-1]   SEED ?; karts sinking again within 5 s: 0
+[dungeon_depths-2] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[dungeon_depths-2] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[dungeon_depths-2]   per location: {}
+[dungeon_depths-2]   SEED ?; karts sinking again within 5 s: 0
+[dungeon_depths-3] bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+[dungeon_depths-3] SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+[dungeon_depths-3]   per location: {}
+[dungeon_depths-3]   SEED ?; karts sinking again within 5 s: 0

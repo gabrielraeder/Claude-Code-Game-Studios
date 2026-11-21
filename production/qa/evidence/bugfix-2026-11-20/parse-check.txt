@@ -1,0 +1,8 @@
+src/track/track_scenery.gd exit=0
+src/track/track_theme.gd exit=0
+tools/scenery_road_audit.gd exit=0
+src/items/item_manager.gd exit=0
+src/items/item_set.gd exit=0
+src/net/net_session.gd exit=0
+src/net/kart_wire.gd exit=0
+src/main.gd exit=0
