@@ -61,10 +61,16 @@
 
 ## Files
 
-- `src/ui/` (menu, lobby, HUD, results, controls menu)
-- `src/input/` (saving and loading custom bindings)
-- `src/audio/`, `assets/audio/`
-- `production/qa/evidence/story-007-*.png` (one screenshot per screen) and `story-007-ui-evidence.md`
+- `src/ui/` (new: ui_theme, ui_screen, main_menu, lobby_screen, lobby_state, results_screen, race_flow_ui, cycle_row, kart_preview, recent_hosts, controls_menu, binding_text; rewritten: race_hud with minimap, pause_menu)
+- `assets/data/ui/ui_theme.tres` (all UI and HUD sizes, colours and texts)
+- `src/audio/` (new: audio_set, audio_event_def, audio_director, race_sound), `assets/data/audio/audio_set.tres`, `assets/audio/*.wav` (23 synthesised sounds)
+- `src/input/input_actions.gd` (mute action, rebindable list), `src/input/input_bindings.gd` (new: save, load, swap)
+- `src/net/net_session.gd` (lobby, results, spectate and version-check messages), `src/net/net_handshake.gd` (new), `src/net/kart_wire.gd` (VERSION 8), `src/net/net_config.gd`, `assets/data/net/net_config.tres` (auth_timeout), `src/net/net_options.gd`
+- `src/items/item_manager.gd` (sound_cue signal, icon id)
+- `src/main.gd` (flow, lobby, results, spectators, audio and HUD wiring)
+- `src/debug/debug_options.gd`, `src/debug/ui_shot_runner.gd`, `src/debug/auto_ui_driver.gd` (new: screen shots and scripted UI runs)
+- `tools/synth_audio.py`, `tools/audio_check.gd`, `tools/controls_check.gd`, `tools/controls_capture_check.gd`
+- `production/qa/evidence/story-007-ui-evidence.md`, `production/qa/evidence/story-007-race-flow/`
 
 ---
 
