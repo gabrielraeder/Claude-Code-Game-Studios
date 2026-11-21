@@ -53,5 +53,5 @@ Built in five parts. Each part has a `STATE.md` with every step under `productio
 
 ## Sign-off (Visual/Feel)
 
-- [ ] Approved: look (elevation, banks, ramps, the barbican spiral and gate deck read well)
+- [x] Approved: look (elevation, banks, ramps, the barbican spiral and gate deck read well), 2026-11-21
 - [ ] Approved: feel (banks, jumps and the spiral drive well)
