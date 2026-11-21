@@ -1,0 +1,39 @@
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+   2 Wide Wanderer     42.17  41.2                       0(0.0)       2       0      0.9583 78.5
+   3 Shortcut Hunter   41.92  41.0                       0(0.0)       1       1      0.9658 65.7
+   4 Apex Ace          43.67  42.5                       0(0.0)       1       0      0.9816 62.1
+   5 Outside Swinger   42.42  41.3                       0(0.0)       1       0      0.9627 59.5
+   6 Item Hoarder      43.80  42.4                       0(0.0)       1       1      0.9597 59.1
+   7 Steady Eddie      43.08  41.8                       0(0.0)       1       0      0.9367 56.9
+   8 Hothead           41.03  39.4                       0(0.0)       2       0      0.9722 55.9
+   9 Careful           44.03  42.4                       0(0.0)       0       0      0.9524 53.7
+  10 Wide Wanderer     42.92  41.1                       0(0.0)       2       0      0.9650 54.9
+  11 Shortcut Hunter   44.37  42.5                       0(0.0)       1       1      0.9782 53.5
+
+bots finished: 10/10  first 41.03  last 44.37  spread 8.1% of winner
+bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+
+SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+  per personality: {}
+  per location: {}
+  SEED 4203187590; karts sinking again within 5 s: 0
+  shortcuts skipped because crowded: 4
+
+shortcut enters by name/branch:
+  Wide Wanderer   planned {'drawbridge': 2, 'secret_passage': 3, 'village_lane': 1} entered {'village_lane': 1, 'secret_passage': 1} missed {}
+  Shortcut Hunter planned {'village_lane': 3, 'drawbridge': 3, 'secret_passage': 3} entered {'village_lane': 1} missed {'secret_passage': 1}
+  Apex Ace        planned {'drawbridge': 2, 'village_lane': 2, 'secret_passage': 1} entered {'village_lane': 1} missed {}
+  Outside Swinger planned {'village_lane': 2, 'secret_passage': 1, 'drawbridge': 1} entered {'village_lane': 1} missed {}
+  Item Hoarder    planned {'village_lane': 2, 'secret_passage': 2, 'drawbridge': 1} entered {'village_lane': 1} missed {'secret_passage': 1}
+  Steady Eddie    planned {'drawbridge': 1, 'secret_passage': 1} entered {'secret_passage': 1} missed {}
+  Hothead         planned {'drawbridge': 1, 'secret_passage': 3, 'village_lane': 1} entered {'village_lane': 1, 'secret_passage': 1} missed {}
+  Careful         planned {'drawbridge': 3, 'secret_passage': 1} entered {} missed {}
+  Wide Wanderer   planned {'village_lane': 3, 'secret_passage': 3, 'drawbridge': 2} entered {'village_lane': 1, 'secret_passage': 1} missed {}
+  Shortcut Hunter planned {'village_lane': 3, 'secret_passage': 3, 'drawbridge': 1} entered {'village_lane': 1} missed {'secret_passage': 1}
+
+host autopilot: [debug] finished: laps [38.8166666666657] boosts [7, 0, 0] start_boost 3 max_speed 35.10 cap 35.10
+[net-summary] role=host peer=1 place=1 finish=39.48 karts=12 | rtt_avg=0ms rtt_max=0ms view_delay=50ms | snaps/s=30.1 | extrap=0.0% | pred_err avg=0.036m max=10.866m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=36.5 kb_in/s=3.7
+
+bot item use: {'spill': 2, 'falcon': 1, 'horn': 1}
+hits by bot items: {('spill', 'hit'): 2}
+items used per bot: {'Shortcut Hunter': 2, 'Outside Swinger': 1, 'Careful': 1}

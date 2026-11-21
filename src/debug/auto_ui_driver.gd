@@ -12,6 +12,7 @@ extends Node
 var _options: DebugOptions
 var _ui: RaceFlowUi
 var _is_host: bool = false
+var _is_solo: bool = false
 var _address: String = ""
 var _timer: float = 0.0
 var _stage: String = "menu"
@@ -29,6 +30,9 @@ func setup(options: DebugOptions, ui: RaceFlowUi) -> void:
 	_step = ui.theme_data.auto_ui_step
 	if options.auto_ui.begins_with("join:"):
 		_address = options.auto_ui.substr("join:".length())
+	elif options.auto_ui == "solo":
+		_is_host = true
+		_is_solo = true
 	else:
 		_is_host = true
 
@@ -41,7 +45,9 @@ func _process(delta: float) -> void:
 	match _stage:
 		"menu":
 			if _ui.menu.is_open():
-				if _is_host:
+				if _is_solo:
+					_ui.menu.solo_button().pressed.emit()
+				elif _is_host:
 					_ui.menu.host_button().pressed.emit()
 				else:
 					_ui.menu.ip_edit().text = _address
@@ -63,6 +69,7 @@ func _process(delta: float) -> void:
 			_ui.lobby.action_button().pressed.emit()
 			_stage = "race"
 		"start":
+			_shot("setup")
 			var state: LobbyState = _ui.lobby.state()
 			if state.humans() >= _expected_humans() and state.all_ready():
 				_ui.lobby.action_button().pressed.emit()
@@ -73,6 +80,7 @@ func _process(delta: float) -> void:
 				print("[auto-ui] results %d of %d shown" % [_races_seen, _options.auto_races])
 				_stage = "results"
 		"results":
+			_shot("results_%d" % _races_seen)
 			if _races_seen >= _options.auto_races:
 				print("[auto-ui] done")
 				get_tree().quit()
@@ -84,8 +92,19 @@ func _process(delta: float) -> void:
 				_timer = -_step * 4.0  # let the next race start before looking for its results
 
 
+# Saves the window to --shots=DIR as NAME_WxH.png (not headless).
+func _shot(shot_name: String) -> void:
+	if _options.shots_dir == "" or DisplayServer.get_name() == "headless":
+		return
+	DirAccess.make_dir_recursive_absolute(_options.shots_dir)
+	var size: Vector2i = Vector2i(get_viewport().get_visible_rect().size)
+	var path: String = "%s/auto_%s_%dx%d.png" % [_options.shots_dir, shot_name, size.x, size.y]
+	get_viewport().get_texture().get_image().save_png(path)
+	print("[auto-ui] screenshot %s" % path)
+
+
 func _expected_humans() -> int:
-	return 2
+	return 1 if _is_solo else 2
 
 
 # Presses the racer and vehicle rows until the wanted pick shows.

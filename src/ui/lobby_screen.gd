@@ -46,6 +46,13 @@ var _action_button: Button
 var _leave_button: Button
 var _status: Label
 var _info: Label
+var _offline: bool = false
+var _title_label: Label
+var _setup_heading: Label
+var _roster_panel: PanelContainer
+var _setup_panel: PanelContainer
+var _left: VBoxContainer
+var _right: VBoxContainer
 
 
 ## Builds the screen with the rosters it needs. [param colors] is the slot palette, [param max_racers] the race total.
@@ -55,6 +62,22 @@ func setup_lobby(theme_data: UiTheme, racers: RacerSet, vehicles: VehicleSet, co
 	_colors = colors
 	_max_racers = max_racers
 	setup(theme_data)
+
+
+## Offline mode (the solo setup): title "Solo race", no roster, no Ready; the race setup moves to
+## the left column and the buttons read Start and Back. The same signals are emitted.
+func set_offline(offline: bool) -> void:
+	_offline = offline
+	_title_label.text = ui.t("solo_title") if offline else ui.t("lobby_title")
+	_roster_panel.visible = not offline
+	_setup_heading.text = ui.t("solo_setup") if offline else ui.t("lobby_setup")
+	_setup_panel.reparent(_left if offline else _right, false)
+	if offline:
+		_left.move_child(_setup_panel, 0)
+	else:
+		_right.move_child(_setup_panel, 1)
+	_leave_button.text = ui.t("solo_back") if offline else ui.t("lobby_leave")
+	_info.text = ui.t("solo_info") if offline else ""
 
 
 ## Sets this PC's own pick without emitting (the starting values).
@@ -135,6 +158,7 @@ func _build(root: Control) -> void:
 	head.add_theme_constant_override(&"separation", 20)
 	page.add_child(head)
 	var banner: PanelContainer = _banner(ui.t("lobby_title"), ui.heading_font + 4)
+	_title_label = banner.get_child(0) as Label
 	head.add_child(banner)
 	_info = ui.label("", ui.body_font, ui.parchment)
 	_info.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -157,6 +181,9 @@ func _build(root: Control) -> void:
 	var roster_panel: PanelContainer = ui.panel(4, roster_out)
 	var rbox: VBoxContainer = roster_out[0]
 	left.add_child(roster_panel)
+	_roster_panel = roster_panel
+	_left = left
+	_right = right
 	rbox.add_child(ui.label(ui.t("lobby_roster"), ui.heading_font))
 	_roster_box = VBoxContainer.new()
 	_roster_box.add_theme_constant_override(&"separation", 2)
@@ -187,7 +214,9 @@ func _build(root: Control) -> void:
 	var setup_panel: PanelContainer = ui.panel(8, setup_out)
 	var sbox: VBoxContainer = setup_out[0]
 	right.add_child(setup_panel)
-	sbox.add_child(ui.label(ui.t("lobby_setup"), ui.heading_font))
+	_setup_panel = setup_panel
+	_setup_heading = ui.label(ui.t("lobby_setup"), ui.heading_font)
+	sbox.add_child(_setup_heading)
 	_track_row = _make_cycle(sbox, track_stepped)
 	var pair := HBoxContainer.new()
 	pair.add_theme_constant_override(&"separation", ui.gap)
@@ -272,7 +301,8 @@ func _refresh() -> void:
 		return
 	var my_index: int = _state.index_of_peer(_my_peer)
 	var slot: int = maxi(my_index, 0)
-	_rebuild_roster(my_index)
+	if not _offline:
+		_rebuild_roster(my_index)
 	var racer_def: RacerDef = _racers.racer_at(_racer)
 	var vehicle_def: VehicleStats = _vehicles.vehicle_at(_vehicle)
 	_racer_row.show_value(ui.t("cycle_racer"), racer_def.display_name)
@@ -293,7 +323,12 @@ func _refresh() -> void:
 	_total_label.text = ui.t("lobby_total", [_state.humans(), _state.bots, _state.humans() + _state.bots, _max_racers])
 	# Action button and status line.
 	var focus_list: Array[Control] = [_racer_row, _vehicle_row]
-	if _is_host:
+	if _offline:
+		focus_list.append_array([_track_row, _bots_row, _laps_row])
+		_action_button.text = ui.t("lobby_start")
+		_action_button.disabled = false
+		_status.text = ui.t("solo_total", [_state.bots, _state.bots + 1, _max_racers])
+	elif _is_host:
 		focus_list.append_array([_track_row, _bots_row, _laps_row])
 		var waiting: int = _state.waiting_count()
 		_action_button.text = ui.t("lobby_start")

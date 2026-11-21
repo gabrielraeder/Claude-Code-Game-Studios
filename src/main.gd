@@ -358,7 +358,7 @@ func _process(delta: float) -> void:
 				int(_net_stats.rtt * 1000.0), int(_net_stats.view_delay * 1000.0), _racers.size() - (1 if _spectating else 0)]
 		if _net.is_host() and not _spectators.is_empty():
 			net_line += "\n" + _ui.theme_data.t("spec_waiting_host", [_spectators.size()])
-		_hud.set_net_info(net_line)
+		_hud.set_net_info("" if _net.is_offline() else net_line)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -597,6 +597,13 @@ func _finish_check(dt: float) -> void:
 			humans_done = false
 	var done: bool = (humans_done and _over_time > net_config.finish_linger) \
 			or _over_time > net_config.finish_timeout
+	if _net.is_offline():
+		# Offline with bots: wait for every kart (up to the timeout), then a short moment.
+		var all_done: bool = true
+		for r in _racers:
+			if not r.dropped and not r.is_finished():
+				all_done = false
+		done = (all_done and _over_time > _ui.theme_data.solo_results_delay) or _over_time > net_config.finish_timeout
 	if done and not _summary_printed:
 		_print_summary()
 	if done and _results_enabled and not _results_open and _net.is_host():
@@ -700,9 +707,10 @@ func _show_main_menu(message: String) -> void:
 
 
 func _open_pause() -> void:
-	if _mode == Mode.SOLO:
+	var offline: bool = _mode == Mode.SOLO or _net.is_offline()
+	if offline:
 		get_tree().paused = true
-	_ui.pause.open_pause(_mode == Mode.SOLO)
+	_ui.pause.open_pause(offline)
 
 
 func _resume() -> void:
@@ -711,6 +719,13 @@ func _resume() -> void:
 
 
 func _restart() -> void:
+	if _net.is_offline():
+		# Offline race with bots: same setup again through the host path.
+		_ui.close_all()
+		get_tree().paused = false
+		_results_open = false
+		_host_begin_race()
+		return
 	if _mode != Mode.SOLO:
 		return
 	_ui.close_all()
@@ -719,11 +734,27 @@ func _restart() -> void:
 	_camera.snap()
 
 
+# "Solo race": the setup screen (track, bots, laps, racer, vehicle), then a race through the host code
+# path on an offline session (OfflineMultiplayerPeer: no socket, the bots run as on a host).
 func _start_solo() -> void:
-	_ui.close_all()
-	get_tree().paused = false
-	_reset_race()
-	_camera.snap()
+	_begin_pending = false
+	_begin_requested_ms = -1
+	_want_players = 0
+	_net.host_offline()
+	_mode = Mode.HOST_LOBBY
+	_lobby_timer = 0.0
+	_hud.set_lobby(true)
+	_ui_flow = true
+	_peer_ready.clear()
+	_lobby = LobbyState.new()
+	_lobby.version = KartWire.VERSION
+	_lobby.track = String(track_data.track_id)
+	_lobby.bots = _net_opts.bots if _net_opts.bots >= 0 else net_config.default_bots
+	_lobby.laps = _net_opts.laps if _net_opts.laps > 0 else track_data.lap_count
+	_ui.lobby.set_offline(true)
+	_ui.lobby.set_pick(_my_loadout.x, _my_loadout.y)
+	_ui.show_lobby()
+	_publish_lobby()
 
 
 # Back to the start screen: leaves an online race or lobby, or abandons a solo race.
@@ -770,6 +801,7 @@ func _begin_hosting(want_players: int) -> void:
 	_lobby.bots = _net_opts.bots if _net_opts.bots >= 0 else net_config.default_bots
 	_lobby.laps = _net_opts.laps if _net_opts.laps > 0 else track_data.lap_count
 	_ui.lobby.reset_ready()
+	_ui.lobby.set_offline(false)
 	_ui.lobby.set_pick(_my_loadout.x, _my_loadout.y)
 	_ui.lobby.set_info(_ui.theme_data.t("lobby_hosting", [net_config.port]))
 	_ui.show_lobby()
@@ -1446,6 +1478,7 @@ func _on_lobby_state_received(d: Dictionary) -> void:
 	_lobby = state
 	if not _ui.lobby.is_open():
 		_ui.lobby.reset_ready()
+		_ui.lobby.set_offline(false)
 		_ui.lobby.set_pick(_my_loadout.x, _my_loadout.y)
 		_ui.lobby.set_info(_ui.theme_data.t("lobby_joined", [_joining_address]))
 		_ui.show_lobby()
@@ -1539,7 +1572,7 @@ func _publish_results() -> void:
 	_results_open = true
 	_last_results = entries
 	_net.send_race_results(entries)
-	_show_results(entries, ResultsScreen.Viewer.HOST)
+	_show_results(entries, ResultsScreen.Viewer.SOLO if _net.is_offline() else ResultsScreen.Viewer.HOST)
 
 
 func _on_race_results_received(entries: Array) -> void:

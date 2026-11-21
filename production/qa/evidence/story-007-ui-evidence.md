@@ -12,6 +12,7 @@ Everything is in `production/qa/evidence/story-007-race-flow/`. It was built in 
 | Results | `part1/results_1280x720.png` | 12 rows; gold, silver and bronze badges; your row outlined; DNF; Rematch and Back to lobby |
 | Controls | `part3/shots/controls-swap_1920x1080.png` | Keyboard and Controller columns for the 8 actions, the "Drive: swapped with Drift" message, Reset to defaults |
 | Spectator | `part3/e2e/shots/spectate_2.png` | Standings column, the "Spectating: you join the next race" banner, the follow line, a ring on the minimap |
+| Solo race setup (added 2026-11-21 at the owner's request) | `solo/solo_1280x720.png`; real run results `solo/auto/auto_results_1_1280x720.png` | Offline setup: track, bots (0-11), laps, racer and vehicle preview; results of an 8-kart offline race with Restart and Menu |
 | Pause | `part1/pause_1280x720.png`, `part3/shots/pause_1280x720.png` | Resume, Restart (offline), Controls, Back to menu, Sound, Quit |
 
 Each screen was also captured at 1920x1080 (`*_1920x1080.png`).
@@ -20,6 +21,11 @@ Each screen was also captured at 1920x1080 (`*_1920x1080.png`).
 
 - `part1/e2e_host.log`, `part1/e2e_client.log`: a host and a client running as separate processes, driven through the real screens. The run goes menu, host, the client joins, the client picks racer 3 on the bike and gets ready, the host starts, then race, results, Rematch, a second race and its results. The client's pick reaches the host step by step; both PCs show the same roster and the same results. 0 ERROR on both.
 - `part3/e2e/`: a third PC joins 12 s into the race. It is not kicked: it watches, sees the results, and races the rematch. 0 ERROR on all 3.
+
+## Solo race with bots
+
+- `solo/auto_run.log`: a scripted windowed run goes menu, Solo race, setup (Dungeon, 7 bots, 1 lap), race, results, Restart, second race. 0 ERROR.
+- It runs offline (OfflineMultiplayerPeer): no network socket is opened and nothing is sent. Regressions in `solo/cli_*`: 0 ERROR, item hits identical on 3 PCs.
 
 ## Sound
 

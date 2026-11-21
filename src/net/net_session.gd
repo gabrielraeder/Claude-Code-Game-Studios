@@ -81,6 +81,7 @@ var _queue: Array[Dictionary] = []
 var _last_reliable_at: int = 0
 var _ping_timer: float = 0.0
 var _is_host_flag: bool = false
+var _offline: bool = false
 var _my_id: int = 1
 
 
@@ -106,6 +107,20 @@ func host() -> Error:
 	return OK
 
 
+## Starts an offline "host" (solo race with bots): the same host code path with peer id 1 and no
+## other peers, on an OfflineMultiplayerPeer. No socket is opened (no firewall prompt) and every
+## send is dropped. Returns OK.
+func host_offline() -> Error:
+	_open(OfflineMultiplayerPeer.new(), true)
+	_offline = true
+	return OK
+
+
+## True while the session is the offline host of [method host_offline].
+func is_offline() -> bool:
+	return _active and _offline
+
+
 ## Joins [param address] ("ip" or "ip:port"). Returns OK or an Error.
 func join(address: String) -> Error:
 	var port: int = _config.port
@@ -125,11 +140,18 @@ func join(address: String) -> Error:
 ## Closes the connection and drops queued messages.
 func close() -> void:
 	_active = false
+	_offline = false
 	_queue.clear()
 	_answered.clear()
 	if multiplayer.multiplayer_peer != null:
 		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = null
+
+
+func _exit_tree() -> void:
+	# Release the peer (an offline peer would otherwise be reported as a resource still in use).
+	if multiplayer != null and multiplayer.multiplayer_peer != null:
+		close()
 
 
 ## True while a host or client connection exists.
@@ -269,7 +291,7 @@ func pop_bandwidth() -> Vector2:
 			p.host.pop_statistic(ENetConnection.HOST_TOTAL_RECEIVED_DATA))
 
 
-func _open(peer: ENetMultiplayerPeer, as_host: bool) -> void:
+func _open(peer: MultiplayerPeer, as_host: bool) -> void:
 	_is_host_flag = as_host
 	_my_id = 1
 	_answered.clear()
@@ -397,6 +419,8 @@ func _is_connected() -> bool:
 
 # Every send goes through here so fake lag / jitter / loss apply to all of it.
 func _send(fn: Callable, reliable: bool, droppable: bool, to_peer: int = 0) -> void:
+	if _offline:
+		return  # nobody to send to
 	if droppable and loss_pct > 0.0 and randf() * 100.0 < loss_pct:
 		return
 	var delay: float = lag_ms + (randf() * jitter_ms if jitter_ms > 0.0 else 0.0)

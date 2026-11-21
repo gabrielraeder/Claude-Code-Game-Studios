@@ -47,6 +47,11 @@ laps_max = 9
 solo_results_delay = 1.5
 auto_ui_step = 0.6
 texts = {
+"solo_setup": "Race setup",
+"solo_title": "Solo race",
+"solo_back": "Back",
+"solo_info": "Offline: nobody can join, nothing is sent over the network.",
+"solo_total": "You + %d bot(s) = %d of %d racers",
 "title": "Dogworks Racing: Kennel Kingdom",
 "menu_play_heading": "Play",
 "menu_host": "Host",

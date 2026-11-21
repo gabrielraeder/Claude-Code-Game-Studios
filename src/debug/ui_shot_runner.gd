@@ -7,6 +7,7 @@ extends Node
 ## the controls screen saves nothing in this mode).
 
 const SETTLE_FRAMES: int = 30
+const SOLO_BOTS: int = 7
 const SAMPLE_HUMANS: int = 9
 const SAMPLE_BOTS: int = 3
 const SAMPLE_RESULTS: int = 12
@@ -31,6 +32,20 @@ func run(shot_name: String, dir: String, ui: RaceFlowUi, racers: RacerSet, vehic
 			ui.lobby.set_info(ui.theme_data.t("lobby_hosting", [config.port]))
 			ui.show_lobby()
 			ui.lobby.show_state(state, LobbyState.HOST_PEER if is_host else int(state.entries[2].peer), is_host)
+		"solo":
+			var st := LobbyState.new()
+			st.version = KartWire.VERSION
+			st.track = "dungeon_depths"
+			st.bots = SOLO_BOTS
+			st.laps = 1
+			st.entries.append(LobbyState.make_entry(LobbyState.HOST_PEER, 2, 1, true))
+			ui.lobby.set_offline(true)
+			ui.lobby.set_pick(2, 1)
+			ui.show_lobby()
+			ui.lobby.show_state(st, LobbyState.HOST_PEER, true)
+		"results-solo-bots":
+			var all_rows: Array = _sample_results(racers, vehicles, ui, false)
+			ui.show_results(all_rows.slice(0, SOLO_BOTS + 1), SAMPLE_MY_KART, ResultsScreen.Viewer.SOLO)
 		"results", "results-client", "results-solo":
 			var entries: Array = _sample_results(racers, vehicles, ui, shot_name == "results-solo")
 			var viewer: ResultsScreen.Viewer = ResultsScreen.Viewer.HOST

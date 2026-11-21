@@ -36,6 +36,11 @@ func host_button() -> Button:
 	return _host_button
 
 
+## The Solo race button (debug scripts press it).
+func solo_button() -> Button:
+	return _solo_button
+
+
 ## The Join button (debug scripts press it).
 func join_button() -> Button:
 	return _join_button
