@@ -57,9 +57,16 @@
 
 ## Files
 
-- `src/track/`, `src/test_track/` (height profile, stacked-road queries), `src/vehicle/kart_sim.gd` (vertical motion, jumps, respawn)
-- `assets/tracks/castle_circuit/`, `assets/tracks/dungeon_depths/`
-- `tools/track_check.gd`
+- `tools/gen_castle_circuit.py`, `tools/gen_dungeon_depths.py`, `tools/elevation_profile.py` (new) → `assets/tracks/castle_circuit/`, `assets/tracks/dungeon_depths/` (regenerated with heights, banks, ramps, the barbican spiral)
+- `assets/tracks/test_elevation/` (new verification track), `src/track/track_library.gd`
+- `src/test_track/track_data.gd`, `track_model.gd`, `track_mesh.gd`, `chase_camera.gd`, `material_prewarm.gd` (new)
+- `src/track/track_ramp.gd` (new), `track_branch.gd`, `track_hazard.gd`, `track_theme.gd`, `track_scenery.gd`
+- `src/vehicle/kart_sim.gd`, `vehicle_stats.gd`, `kart_visual.gd`, `vehicle_visual_stats.gd`; `assets/data/vehicles/armored_cart.tres`, `war_bike.tres`
+- `src/net/kart_wire.gd` (VERSION 9), `src/net/remote_kart.gd`
+- `src/items/item_manager.gd`, `item_set.gd`; `src/ai/bot_driver.gd`, `bot_set.gd`, `assets/data/ai/bot_set.tres`
+- `src/main.gd`, `src/debug/autopilot_driver.gd`, `debug_harness.gd`, `debug_options.gd`
+- `tools/track_check.gd` (height checks, bot mode fixed), `tools/scenery_road_audit.gd`, `tools/elevation_probe.gd`, `tools/level_probe.gd`, `tools/item_level_probe.gd` (new)
+- `production/qa/evidence/story-008-elevation-evidence.md`, `production/qa/evidence/story-008-elevation/`
 
 ---
 
