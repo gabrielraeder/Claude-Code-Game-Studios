@@ -33,6 +33,8 @@ var _last_shot_s: float = 0.0
 var _pad_shot_done: bool = false
 ## Most bump screenshots taken in one run.
 const MAX_BUMP_SHOTS: int = 3
+## Seconds after a timed-hazard hit (story 009) before its screenshot (the spin or the bump shows).
+const HAZARD_SHOT_DELAY: float = 0.3
 var _air_shots: int = 0
 var _height_file: FileAccess
 # Height summary (story 008): smallest clearance above the support while grounded and on a deck,
@@ -70,6 +72,11 @@ func setup(options: DebugOptions, main: Node, sim: KartSim, laps: LapCounter) ->
 			print("[air] FALL t=%.2f s=%.1f h=%.2f road=%.2f lat=%.1f falls=%d" % [_main.race_time, _sim.track_s,
 					_sim.height, _sim.road_height, _sim.lateral, _sim.fall_count])
 		_delayed_shot("fall_sink" if fall else "moat_sink", 0.25 if fall else 0.5))
+	# Story 009: a timed hazard spun the kart (barrel) or stopped it (portcullis).
+	_sim.mover_hit.connect(func(mi: int) -> void:
+		var hm: HazardManager = _main.get("hazards") as HazardManager
+		var id: String = String(hm.mover(mi).id) if hm != null else str(mi)
+		_delayed_shot("hazard_%s_t%03d" % [id, int(_main.race_time)], HAZARD_SHOT_DELAY))
 	_sim.respawned.connect(func() -> void:
 		var fall: bool = _sim.hazard_kind == KartSim.FALL_KIND
 		print("[air] RESPAWN t=%.2f s=%.1f h=%.2f immunity=%.2f speed=%.1f kind=%s" % [_main.race_time, _sim.track_s,

@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="TrackData" load_steps=19 format=3]
+[gd_resource type="Resource" script_class="TrackData" load_steps=23 format=3]
 
 [ext_resource type="Script" path="res://src/test_track/track_data.gd" id="1_data"]
 [ext_resource type="Script" path="res://src/track/track_branch.gd" id="2_branch"]
@@ -91,6 +91,122 @@ chain_anchor_beyond = 1.5
 sound_warn = &"drawbridge_up"
 sound_down = &"drawbridge_down"
 
+[sub_resource type="Resource" id="Mover_portcullis"]
+script = ExtResource("7_mover")
+id = &"portcullis"
+kind = &"gate"
+period = 20.00
+active_start = 3.50
+active_time = 5.50
+transition_time = 0.80
+phase = 0.00
+warning_lead = 1.50
+block_progress = 0.25
+out_of_phase_with = &"drawbridge_deck"
+path = &"secret_passage"
+path_from = 19.07
+path_to = 19.67
+hit_effect = &"stop"
+stop_rebound = 0.15
+visual = &"portcullis"
+deck_half_width = 2.25
+signal_along = 19.37
+signal_height = 3.2
+lift_height = 2.8
+grille_height = 2.6
+bar_spacing = 0.45
+bar_size = 0.12
+sound_warn = &"portcullis_warn"
+sound_down = &""
+sound_active = &"portcullis_slam"
+
+[sub_resource type="Resource" id="Mover_barrel_0"]
+script = ExtResource("7_mover")
+id = &"barrel_0"
+kind = &"barrel"
+period = 10.00
+active_start = 0.0
+active_time = 0.0
+transition_time = 0.0
+phase = 0.000
+warning_lead = 1.50
+path = &"main"
+path_from = 446.37
+path_to = 514.50
+speed = 9.00
+lane_offset = 2.60
+solid_lead = 0.75
+hit_radius = 1.4
+hit_height = 1.5
+min_free_gap = 3.0
+hit_effect = &"spin"
+hit_profile = 1
+visual = &"barrel"
+body_radius = 0.55
+body_length = 1.1
+appear_distance = 2.0
+sound_warn = &""
+sound_down = &""
+sound_active = &"barrel_roll"
+
+[sub_resource type="Resource" id="Mover_barrel_1"]
+script = ExtResource("7_mover")
+id = &"barrel_1"
+kind = &"barrel"
+period = 10.00
+active_start = 0.0
+active_time = 0.0
+transition_time = 0.0
+phase = 3.333
+warning_lead = 1.50
+path = &"main"
+path_from = 446.37
+path_to = 514.50
+speed = 9.00
+lane_offset = -2.60
+solid_lead = 0.75
+hit_radius = 1.4
+hit_height = 1.5
+min_free_gap = 3.0
+hit_effect = &"spin"
+hit_profile = 1
+visual = &"barrel"
+body_radius = 0.55
+body_length = 1.1
+appear_distance = 2.0
+sound_warn = &""
+sound_down = &""
+sound_active = &"barrel_roll"
+
+[sub_resource type="Resource" id="Mover_barrel_2"]
+script = ExtResource("7_mover")
+id = &"barrel_2"
+kind = &"barrel"
+period = 10.00
+active_start = 0.0
+active_time = 0.0
+transition_time = 0.0
+phase = 6.667
+warning_lead = 1.50
+path = &"main"
+path_from = 446.37
+path_to = 514.50
+speed = 9.00
+lane_offset = 0.00
+solid_lead = 0.75
+hit_radius = 1.4
+hit_height = 1.5
+min_free_gap = 3.0
+hit_effect = &"spin"
+hit_profile = 1
+visual = &"barrel"
+body_radius = 0.55
+body_length = 1.1
+appear_distance = 2.0
+sound_warn = &""
+sound_down = &""
+sound_active = &"barrel_roll"
+
 [sub_resource type="Resource" id="Hazard_moat"]
 script = ExtResource("4_hazard")
 id = &"moat"
@@ -158,7 +274,7 @@ theme = ExtResource("3_theme")
 branches = Array[ExtResource("2_branch")]([SubResource("Branch_lane"), SubResource("Branch_bridge"), SubResource("Branch_passage")])
 hazards = Array[ExtResource("4_hazard")]([SubResource("Hazard_moat"), SubResource("Hazard_edge"), SubResource("Hazard_bridge")])
 boost_pads = Array[ExtResource("5_pad")]([SubResource("Pad_0"), SubResource("Pad_1"), SubResource("Pad_2"), SubResource("Pad_3")])
-movers = Array[ExtResource("7_mover")]([SubResource("Mover_drawbridge")])
+movers = Array[ExtResource("7_mover")]([SubResource("Mover_drawbridge"), SubResource("Mover_portcullis"), SubResource("Mover_barrel_0"), SubResource("Mover_barrel_1"), SubResource("Mover_barrel_2")])
 checkpoint_count = 10
 item_box_spots = PackedVector2Array(250.000, -4.179, 250.000, -1.393, 250.000, 1.393, 250.000, 4.179, 568.541, -0.000, 568.541, -12.600, 711.373, -7.500, 711.373, -2.500, 711.373, 2.500, 711.373, 7.500)
 control_points = PackedVector2Array(9.000, 0.000, 14.000, 0.000, 19.000, 0.000, 24.000, 0.000, 29.000, 0.000, 33.997, 0.200, 38.932, 1.010, 43.727, 2.429, 48.308, 4.436, 52.602, 6.998, 56.544, 10.076, 60.070, 13.622, 63.127, 17.581, 65.665, 21.889, 67.646, 26.481, 69.039, 31.284, 69.821, 36.224, 69.981, 41.222, 69.516, 46.202, 68.434, 51.084, 66.750, 55.793, 64.492, 60.255, 61.695, 64.401, 58.503, 68.251, 55.283, 72.076, 52.062, 75.900, 48.842, 79.725, 45.602, 83.516, 42.248, 87.195, 38.769, 90.758, 35.171, 94.199, 31.457, 97.515, 27.640, 100.730, 23.804, 103.937, 20.047, 107.236, 16.802, 111.037, 14.204, 115.306, 12.318, 119.934, 11.193, 124.803, 10.857, 129.789, 11.320, 134.766, 12.568, 139.605, 14.570, 144.184, 17.276, 148.385, 20.616, 152.103, 24.505, 155.241, 28.844, 157.721, 33.522, 159.479, 38.420, 160.469, 43.414, 160.667, 48.375, 160.068, 53.205, 158.764, 58.006, 157.342, 62.807, 155.920, 67.608, 154.497, 72.409, 153.075, 77.210, 151.653, 82.011, 150.231, 86.848, 149.001, 91.813, 149.118, 96.503, 150.753, 100.465, 153.747, 103.319, 157.811, 104.789, 162.555, 105.362, 167.521, 105.928, 172.489, 106.494, 177.457, 107.060, 182.425, 107.634, 187.391, 109.108, 192.144, 111.972, 196.213, 115.946, 199.207, 120.649, 200.834, 125.624, 200.938, 130.390, 199.509, 134.486, 196.685, 137.517, 192.738, 139.189, 188.052, 139.341, 183.078, 137.957, 178.299, 135.171, 174.175, 131.254, 171.107, 126.583, 169.391, 121.611, 169.192, 116.765, 170.382, 111.971, 171.802, 107.177, 173.222, 102.383, 174.642, 97.589, 176.063, 92.795, 177.483, 88.001, 178.903, 83.207, 180.323, 78.413, 181.743, 73.658, 183.271, 69.296, 185.674, 65.585, 188.997, 62.718, 193.070, 60.827, 197.681, 59.315, 202.447, 57.793, 207.206, 55.666, 211.701, 52.657, 215.661, 48.897, 218.916, 44.547, 221.326, 39.774, 222.761, 34.645, 223.051, 29.301, 222.613, 23.968, 222.215, 18.870, 222.610, 14.053, 223.951, 9.259, 225.371, 4.465, 226.792, -0.329, 228.212, -5.123, 229.632, -9.918, 231.052, -14.712, 232.472, -19.506, 233.892, -24.300, 235.312, -29.094, 236.732, -33.888, 238.152, -38.644, 239.702, -43.103, 242.253, -47.346, 245.531, -51.602, 248.769, -56.093, 251.214, -60.916, 252.455, -65.890, 252.462, -70.711, 251.240, -75.082, 248.867, -78.732, 245.489, -81.438, 241.314, -83.669, 236.839, -85.900, 232.365, -88.131, 227.890, -90.362, 223.415, -92.593, 218.941, -94.824, 214.466, -97.055, 209.991, -99.286, 205.517, -101.517, 201.042, -103.748, 196.567, -105.979, 192.093, -108.210, 187.618, -110.441, 183.143, -112.672, 178.669, -114.901, 174.193, -116.272, 169.408, -116.002, 164.438, -114.121, 159.830, -110.835, 156.091, -106.507, 153.633, -101.613, 152.727, -96.691, 153.472, -92.285, 155.787, -88.863, 159.405, -85.889, 163.424, -82.778, 167.339, -78.939, 170.538, -74.492, 172.821, -69.907, 174.815, -65.403, 177.015, -61.412, 180.055, -58.133, 183.849, -55.159, 187.868, -52.171, 191.877, -48.466, 195.205, -43.921, 197.242, -38.972, 197.792, -34.091, 196.803, -29.745, 194.370, -25.992, 191.068, -22.334, 187.664, -19.075, 183.879, -16.294, 179.731, -14.029, 175.280, -12.314, 170.590, -11.174, 165.727, -10.625, 160.763, -10.674, 155.769, -11.322, 150.817, -12.435, 145.947, -13.585, 141.084, -14.734, 136.222, -15.884, 131.359, -16.990, 126.496, -17.957, 121.607, -18.778, 116.690, -19.454, 111.752, -19.984, 106.796, -20.366, 101.826, -20.602, 96.847, -20.690, 91.864, -20.630, 86.880, -20.423, 81.900, -20.069, 76.928, -19.568, 71.969, -18.985, 67.004, -18.402, 62.038, -17.819, 57.072, -17.235, 52.106, -17.255, 47.113, -18.593, 42.303, -21.157, 38.018, -24.764, 34.564, -29.156, 32.188, -34.008, 31.000, -38.932, 30.132, -43.856, 29.263, -48.780, 28.395, -53.689, 27.448, -58.149, 25.236, -61.552, 21.603, -63.469, 17.009, -63.657, 12.034, -62.093, 7.308, -58.974, 3.428, -54.695, 0.885, -49.796, -0.000, -44.792, -0.000, -39.787, -0.000, -34.782, -0.000, -29.778, -0.000, -24.773, -0.000, -19.768, -0.000, -14.764, -0.000, -9.759, -0.000, -4.754, -0.000, 0.250, 0.000, 5.250, 0.000)

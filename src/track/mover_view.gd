@@ -1,8 +1,10 @@
 class_name MoverView
 extends Node3D
-## Draws the timed moving hazards of a track (story 009): for a "gate" mover the movable deck that
+## Draws the timed moving hazards of a track (story 009): for a drawbridge the movable deck that
 ## rotates up on a hinge at the gatehouse end, its chains, and the gate posts with the signal
-## lantern (green = open, flashing amber = warning, red = raised). It only reads the HazardManager's
+## lantern (green = open, flashing amber = warning, red = raised); for a portcullis the iron grille
+## that drops in its stone frame, with the same lanterns on the frame; for a barrel the rolling
+## wooden barrel with iron bands, in its lane on the road surface. It only reads the HazardManager's
 ## time, so every PC draws the same state. Nodes are built once; each frame only transforms and the
 ## lantern color change.
 ## Implements production/epics/dogworks-racing-kennel-kingdom/story-009-moving-hazards.md.
@@ -33,8 +35,37 @@ class GateView extends RefCounted:
 	var chains: Array[MeshInstance3D] = []
 	var lantern_mat: Array[StandardMaterial3D] = []
 
+class PortcullisView extends RefCounted:
+	var mover: TrackMover
+	var base: Vector3 = Vector3.ZERO
+	var grille: Node3D
+	var lantern_mat: Array[StandardMaterial3D] = []
+
+class BarrelView extends RefCounted:
+	var mover: TrackMover
+	var body: Node3D
+
+## Radial segments of the barrel's cylinders (low poly).
+const BARREL_SEGMENTS: int = 10
+## Barrel shape relative to its radius / length (pure geometry of the model): end radius, iron band
+## width, band radius and positions along the barrel, the dark stave that shows the roll.
+const BARREL_END_SCALE: float = 0.85
+const BAND_WIDTH: float = 0.09
+const BAND_RADIUS_SCALE: float = 1.04
+const BAND_AT: PackedFloat32Array = [-0.36, 0.36]
+const STAVE_WIDTH: float = 0.16
+## Portcullis frame pillar thickness and lintel height in meters.
+const PILLAR_SIZE: float = 0.9
+const LINTEL_HEIGHT: float = 0.7
+## Horizontal bars of the grille.
+const GRILLE_RAILS: int = 4
+## Seconds ahead used to find a barrel's direction of travel.
+const HEADING_DT: float = 0.05
+
 var _hazards: HazardManager
 var _gates: Array[GateView] = []
+var _portcullises: Array[PortcullisView] = []
+var _barrels: Array[BarrelView] = []
 
 
 ## Builds the views for every gate mover of [param track]; [param hazards] supplies the state.
@@ -42,10 +73,16 @@ func setup(track: TrackModel, hazards: HazardManager) -> void:
 	_hazards = hazards
 	for i in hazards.count():
 		var m: TrackMover = hazards.mover(i)
+		if m.visual == &"barrel":
+			_build_barrel(m)
+			continue
 		if m.kind != &"gate" or hazards.path_index(i) < 0:
 			continue
-		_build_gate(track, i, m)
-	set_process(not _gates.is_empty())
+		if m.visual == &"portcullis":
+			_build_portcullis(track, m)
+		else:
+			_build_gate(track, i, m)
+	set_process(not _gates.is_empty() or not _portcullises.is_empty() or not _barrels.is_empty())
 
 
 func _process(_delta: float) -> void:
@@ -58,16 +95,158 @@ func _process(_delta: float) -> void:
 		for k in 2:
 			var side: float = 1.0 if k == 0 else -1.0
 			_place_chain(g.chains[k], tip + g.deck.basis * (g.lateral * side), g.anchor + g.lateral * side)
-		var phase: int = _hazards.phase_at(m, t)
-		var col: Color = m.color_open
-		if _hazards.is_active(m, t) or phase == HazardManager.Phase.RISING or phase == HazardManager.Phase.FALLING:
-			col = m.color_blocked
-		elif phase == HazardManager.Phase.WARNING:
-			var on: bool = fmod(t * m.warn_blink_hz, 1.0) < 0.5
-			col = m.color_warn if on else m.color_warn.darkened(0.7)
-		for mat in g.lantern_mat:
-			mat.albedo_color = col
-			mat.emission = col
+		_set_lanterns(m, t, g.lantern_mat)
+	for pv in _portcullises:
+		var pm: TrackMover = pv.mover
+		pv.grille.position = pv.base + Vector3.UP * (1.0 - _hazards.progress_at(pm, t)) * pm.lift_height
+		_set_lanterns(pm, t, pv.lantern_mat)
+	for bv in _barrels:
+		_place_barrel(bv, t)
+
+
+# Lantern color of a gate at time [param t]: red while blocked or moving, flashing amber during the
+# warning, green when open.
+func _set_lanterns(m: TrackMover, t: float, mats: Array[StandardMaterial3D]) -> void:
+	var phase: int = _hazards.phase_at(m, t)
+	var col: Color = m.color_open
+	if _hazards.is_active(m, t) or phase == HazardManager.Phase.RISING or phase == HazardManager.Phase.FALLING:
+		col = m.color_blocked
+	elif phase == HazardManager.Phase.WARNING:
+		var on: bool = fmod(t * m.warn_blink_hz, 1.0) < 0.5
+		col = m.color_warn if on else m.color_warn.darkened(0.7)
+	for mat in mats:
+		mat.albedo_color = col
+		mat.emission = col
+
+
+# A rolling barrel: hidden while idle; during its warning it rises at the top of its run until it
+# is solid and waits there; then it rolls on the road surface in its lane, turning about the axis across its
+# path by the distance rolled over its radius, and shrinks into the street at the end of its run.
+func _place_barrel(bv: BarrelView, t: float) -> void:
+	var m: TrackMover = bv.mover
+	var phase: int = _hazards.phase_at(m, t)
+	var d: float = _hazards.distance_at(m, t)
+	var grow: float = clampf((m.path_to - d) / maxf(m.appear_distance, HazardManager.EPSILON), 0.0, 1.0)
+	if phase == HazardManager.Phase.WARNING:
+		var since: float = m.warning_lead - _hazards.time_to_start(m, t)
+		grow = clampf(since / maxf(m.warning_lead - m.solid_lead, HazardManager.EPSILON), 0.0, 1.0)
+	bv.body.visible = (phase == HazardManager.Phase.ACTIVE or phase == HazardManager.Phase.WARNING) 			and grow > HazardManager.EPSILON
+	if not bv.body.visible:
+		return
+	var pose: Vector3 = _hazards.pose_at(m, t)
+	var ahead: Vector3 = _hazards.pose_at(m, t + HEADING_DT) - pose
+	var tang := Vector3(ahead.x, 0.0, ahead.z)
+	tang = tang.normalized() if tang.length_squared() > 0.0 else Vector3.FORWARD
+	# Rolling without slipping turns about UP x travel by distance / radius.
+	var axis: Vector3 = Vector3.UP.cross(tang).normalized()
+	# Local Y (the cylinder axis) across the road, local X along the travel.
+	var b0 := Basis(tang, axis, tang.cross(axis))
+	var roll: float = (d - m.path_from) / maxf(m.body_radius, HazardManager.EPSILON)
+	var b: Basis = Basis(axis, roll) * b0
+	bv.body.transform = Transform3D(b.scaled_local(Vector3.ONE * grow), pose + Vector3.UP * m.body_radius * grow)
+
+
+func _build_barrel(m: TrackMover) -> void:
+	var bv := BarrelView.new()
+	bv.mover = m
+	bv.body = Node3D.new()
+	add_child(bv.body)
+	var wood := _flat(m.body_color)
+	var iron := _flat(m.band_color)
+	bv.body.add_child(_cylinder(m.body_radius * BARREL_END_SCALE, m.body_length, wood, 0.0))
+	# The bulge: a wider short cylinder in the middle.
+	bv.body.add_child(_cylinder(m.body_radius, m.body_length * 0.5, wood, 0.0))
+	for at in BAND_AT:
+		bv.body.add_child(_cylinder(m.body_radius * BAND_RADIUS_SCALE, m.body_length * BAND_WIDTH, iron, m.body_length * at))
+	# A dark stave along the barrel shows it turning.
+	var stave := MeshInstance3D.new()
+	var sm := BoxMesh.new()
+	sm.size = Vector3(m.body_radius * STAVE_WIDTH * 2.0, m.body_length * 0.5, m.body_radius * STAVE_WIDTH * 0.5)
+	stave.mesh = sm
+	stave.material_override = _flat(m.body_color.darkened(0.45))
+	# On the bulge, sunk to half its thickness (a darker stave, not a plank sticking out).
+	stave.position = Vector3(0.0, 0.0, m.body_radius)
+	bv.body.add_child(stave)
+	bv.body.visible = false
+	_barrels.append(bv)
+
+
+func _cylinder(radius: float, length: float, mat: StandardMaterial3D, at: float) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = radius
+	cm.bottom_radius = radius
+	cm.height = length
+	cm.radial_segments = BARREL_SEGMENTS
+	cm.rings = 1
+	mi.mesh = cm
+	mi.material_override = mat
+	mi.position = Vector3.UP * at
+	return mi
+
+
+# The portcullis: two stone pillars beside the passage walls with a lintel above, the iron grille
+# between them (it slides up by lift_height), and a lantern on the approach face of each pillar.
+func _build_portcullis(track: TrackModel, m: TrackMover) -> void:
+	var bi: int = track.branch_index(m.path)
+	if bi < 0:
+		return
+	var road: TrackModel.Path = track.branches[bi]
+	var line: float = (m.path_from + m.path_to) * 0.5
+	var st: Vector2 = road.seg_t_at(line)
+	var p: Vector2 = road.point_at(line)
+	var tn: Vector2 = road.tangent_at(line)
+	var y: float = road.height_at(int(st.x), st.y)
+	var t3 := Vector3(tn.x, 0.0, tn.y)
+	var n3 := Vector3(-tn.y, 0.0, tn.x)
+	var basis := Basis(n3, Vector3.UP, n3.cross(Vector3.UP))
+	var half: float = road.wall_offset
+	var top: float = m.lift_height + m.grille_height + LINTEL_HEIGHT
+	var pv := PortcullisView.new()
+	pv.mover = m
+	pv.base = Vector3(p.x, y, p.y)
+	var stone := _flat(m.frame_color)
+	for side in [1.0, -1.0]:
+		var c: Vector3 = pv.base + n3 * side * (half + PILLAR_SIZE * 0.5)
+		_add_box(self, Transform3D(basis, c + Vector3.UP * top * 0.5), Vector3(PILLAR_SIZE, top, PILLAR_SIZE), stone)
+		var lamp := MeshInstance3D.new()
+		var lm := BoxMesh.new()
+		lm.size = Vector3(LANTERN_SIZE, LANTERN_SIZE, LANTERN_SIZE)
+		lamp.mesh = lm
+		var mat := StandardMaterial3D.new()
+		mat.emission_enabled = true
+		mat.emission_energy_multiplier = LANTERN_GLOW
+		mat.albedo_color = m.color_open
+		mat.emission = m.color_open
+		lamp.material_override = mat
+		lamp.position = c - t3 * (PILLAR_SIZE + LANTERN_SIZE) * 0.5 + Vector3.UP * m.signal_height
+		add_child(lamp)
+		pv.lantern_mat.append(mat)
+	_add_box(self, Transform3D(basis, pv.base + Vector3.UP * (top - LINTEL_HEIGHT * 0.5)),
+			Vector3((half + PILLAR_SIZE) * 2.0, LINTEL_HEIGHT, PILLAR_SIZE), stone)
+	pv.grille = Node3D.new()
+	pv.grille.position = pv.base
+	add_child(pv.grille)
+	var iron := _flat(m.grille_color)
+	var bars: int = maxi(int(half * 2.0 / maxf(m.bar_spacing, HazardManager.EPSILON)), 1)
+	for k in bars + 1:
+		var x: float = lerpf(-half, half, float(k) / float(bars))
+		_add_box(pv.grille, Transform3D(basis, n3 * x + Vector3.UP * m.grille_height * 0.5),
+				Vector3(m.bar_size, m.grille_height, m.bar_size), iron)
+	for k in GRILLE_RAILS:
+		var h: float = m.grille_height * (float(k) + 0.5) / float(GRILLE_RAILS)
+		_add_box(pv.grille, Transform3D(basis, Vector3.UP * h), Vector3(half * 2.0, m.bar_size, m.bar_size), iron)
+	_portcullises.append(pv)
+
+
+func _add_box(parent: Node3D, xf: Transform3D, size: Vector3, mat: StandardMaterial3D) -> void:
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = size
+	mi.mesh = bm
+	mi.material_override = mat
+	mi.transform = xf
+	parent.add_child(mi)
 
 
 func _build_gate(track: TrackModel, index: int, m: TrackMover) -> void:

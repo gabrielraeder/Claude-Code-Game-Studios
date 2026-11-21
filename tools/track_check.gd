@@ -1006,4 +1006,108 @@ func _check_movers() -> void:
 			_check_ok("(17) %s deck lies on its branch and inside it" % m.id,
 					hm.path_index(i) >= 0 and m.path_from >= 0.0 and m.path_to <= _track.branch_length(hm.path_index(i)) and m.path_from < m.path_to,
 					"deck %.1f..%.1f of %.1f m" % [m.path_from, m.path_to, _track.branch_length(maxi(hm.path_index(i), 0))])
+			if m.out_of_phase_with != &"":
+				_check_out_of_phase(hm, m, span)
+		if m.is_traveler():
+			var road: TrackModel.Path = _track.path_of(hm.path_index(i))
+			var worst_lane: float = 0.0
+			var d: float = m.path_from
+			while d <= m.path_to:
+				var st: Vector2 = road.seg_t_at(d)
+				worst_lane = maxf(worst_lane, absf(m.lane_offset) + m.body_radius - road.half_at(int(st.x), st.y))
+				d += 1.0
+			_check_ok("(17) %s rolls on its road, its body inside the road surface" % m.id,
+					m.path_from >= 0.0 and m.path_to <= road.length and m.path_from < m.path_to and worst_lane <= 0.0,
+					"run %.1f..%.1f of %.1f m, body out by %.2f m" % [m.path_from, m.path_to, road.length, worst_lane])
+	_check_travelers_leave_room(hm)
 	hm.free()
+
+
+## Seconds scanned for the barrel cross-sections, in periods of the longest traveler period.
+const TRAVELER_SCAN_PERIODS: float = 3.0
+
+# (17) Rolling bodies never close a road: at every sampled moment, at the cross-section of every
+# rolling body, the union of all bodies' hit circles (radius hit_radius) over the road surface leaves
+# a free gap at least min_free_gap wide (the main road is never fully blocked).
+func _check_travelers_leave_room(hm: HazardManager) -> void:
+	var idx: Array[int] = []
+	var longest: float = 0.0
+	for i in hm.count():
+		if hm.mover(i).is_traveler():
+			idx.append(i)
+			longest = maxf(longest, hm.mover(i).period)
+	if idx.is_empty():
+		return
+	var worst_gap: float = INF
+	var worst_at: String = ""
+	var bad: int = 0
+	var samples: int = 0
+	var t: float = 0.0
+	while t < maxf(longest, MOVER_SCAN_STEP) * TRAVELER_SCAN_PERIODS:
+		for a in idx:
+			var ma: TrackMover = hm.mover(a)
+			if not hm.is_active(ma, t):
+				continue
+			samples += 1
+			var pa: int = hm.path_index(a)
+			var road: TrackModel.Path = _track.path_of(pa)
+			var da: float = hm.distance_at(ma, t)
+			var st: Vector2 = road.seg_t_at(da)
+			var half: float = road.half_at(int(st.x), st.y)
+			var spans: Array[Vector2] = []
+			for b in idx:
+				var mb: TrackMover = hm.mover(b)
+				if hm.path_index(b) != pa or not hm.is_active(mb, t):
+					continue
+				var dd: float = absf(hm.distance_at(mb, t) - da)
+				if dd >= mb.hit_radius:
+					continue
+				var w: float = sqrt(mb.hit_radius * mb.hit_radius - dd * dd)
+				spans.append(Vector2(mb.lane_offset - w, mb.lane_offset + w))
+			spans.sort_custom(func(u: Vector2, v: Vector2) -> bool: return u.x < v.x)
+			var gap: float = 0.0
+			var edge: float = -half
+			for sp in spans:
+				gap = maxf(gap, sp.x - edge)
+				edge = maxf(edge, sp.y)
+			gap = maxf(gap, half - edge)
+			if gap < worst_gap:
+				worst_gap = gap
+				worst_at = "t=%.2f %s at %.1f m" % [t, ma.id, da]
+			if gap < ma.min_free_gap:
+				bad += 1
+		t += MOVER_SCAN_STEP
+	print("     (17) rolling bodies: %d cross-sections, narrowest free gap %.2f m (%s)" % [samples, worst_gap, worst_at])
+	_check_ok("(17) rolling bodies always leave a free lane (gap >= min_free_gap)", bad == 0,
+			"%d of %d cross-sections narrower" % [bad, samples])
+
+
+# (17) Two gates that must not be closed together (the drawbridge and the portcullis).
+func _check_out_of_phase(hm: HazardManager, m: TrackMover, span: float) -> void:
+	var oi: int = hm.index_of(m.out_of_phase_with)
+	if oi < 0:
+		_check_ok("(17) %s: out_of_phase_with %s exists" % [m.id, m.out_of_phase_with], false, "no such mover")
+		return
+	var o: TrackMover = hm.mover(oi)
+	var both: int = 0
+	var closest: float = INF
+	var last_a: float = -INF
+	var last_b: float = -INF
+	var t: float = 0.0
+	var scan: float = maxf(span, maxf(o.period, m.period) * TRAVELER_SCAN_PERIODS)
+	while t < scan:
+		var a: bool = hm.is_active(m, t)
+		var b: bool = hm.is_active(o, t)
+		if a and b:
+			both += 1
+		if a:
+			last_a = t
+			closest = minf(closest, t - last_b)
+		if b:
+			last_b = t
+			closest = minf(closest, t - last_a)
+		t += MOVER_SCAN_STEP
+	print("     (17) %s vs %s: closed together %.2f s, shortest time between one closing and the other %.2f s" % [
+			m.id, o.id, float(both) * MOVER_SCAN_STEP, closest])
+	_check_ok("(17) %s and %s are never closed at the same time" % [m.id, o.id], both == 0,
+			"%d samples with both closed" % both)

@@ -18,3 +18,6 @@ var time_fn: Callable
 ## (road_id: StringName, from_t: float, to_t: float) -> bool: true when the timed gate on that
 ## branch (the drawbridge) is blocked at any moment of the time range.
 var gate_blocked_fn: Callable
+## (path_index: int, from_along: float, to_along: float) -> PackedVector3Array: rolling bodies
+## (barrels) on that road between the two distances now, one (along, lane offset, hit radius) each.
+var travelers_fn: Callable

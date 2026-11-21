@@ -88,6 +88,24 @@ extends Resource
 @export var gate_eta_speed: float = 24.0
 @export var gate_margin: float = 0.9
 @export var gate_eta_error: float = 0.7
+## Rolling barrels (story 009): a bot looks this many meters ahead on the main road for a rolling
+## barrel, and moves to the nearest lane that keeps this much room (meters, beyond the barrel's hit
+## radius) from every barrel there, trying this many lanes across the road.
+@export var barrel_look: float = 35.0
+## ... and keeps counting a barrel up to this many meters behind its own center (alongside it).
+@export var barrel_behind: float = 3.0
+## While a barrel is in that window the bot steers at a point this many meters ahead (shorter than
+## its usual look-ahead) so it holds the chosen lane through the market S-bend.
+@export var barrel_steer_look: float = 14.0
+## Lane choice cost: distance from the kart's lateral plus this weight times the distance from its
+## wanted line (0 = nearest free lane to where the kart is).
+@export var barrel_line_weight: float = 0.3
+## A barrel this many meters ahead or less with the kart still in its lane: the bot lifts off.
+@export var barrel_lift_dist: float = 14.0
+## ... only above this speed (m/s); slower, it keeps the throttle (never stands behind a barrel).
+@export var barrel_lift_min_speed: float = 14.0
+@export var barrel_clear: float = 0.6
+@export var barrel_lane_samples: int = 9
 ## Per shortcut type (TrackBranch.type) factor on the personality's shortcut chance.
 @export var branch_factor: Dictionary = {}
 

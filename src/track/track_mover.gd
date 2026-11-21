@@ -46,20 +46,41 @@ extends Resource
 ## Height range (Y, meters) a kart must be in for a footprint hit.
 @export var footprint_y_min: float = -1.0
 @export var footprint_y_max: float = 4.0
-## Hit radius in meters around a moving body (barrel, cart).
+## A traveler (barrel) waits at path_from for warning_lead seconds before it rolls, rising out of
+## its cellar; it is solid (hits) only for the last solid_lead seconds of that wait, so a kart that
+## happens to be on the spot when it appears is not hit by surprise.
+@export var solid_lead: float = 0.75
+## Hit radius in meters around a moving body (barrel, cart): the body's radius plus a kart's.
 @export var hit_radius: float = 1.0
+## Sideways offset in meters of a traveling body (barrel, cart) from its road's centerline, on the
+## road's normal side (left positive, like TrackModel.Query.lateral): the body's lane.
+@export var lane_offset: float = 0.0
+## A kart is hit by a traveling body only when its height is within this many meters of the
+## body's road height (a road above or below is not hit).
+@export var hit_height: float = 1.5
+## Tools (tools/track_check.gd): a traveling body must always leave a free gap at least this wide
+## (meters) across the road it rolls on, so it never blocks the road completely.
+@export var min_free_gap: float = 3.0
+## Tools: id of another gate that must never be blocked at the same time as this one (two
+## shortcuts are not closed together). Empty = no such rule.
+@export var out_of_phase_with: StringName = &""
 
 @export_group("Hit")
-## What a hit does: "sink" (falls in the water and is put back on the main road) or "spin" (spin out
-## with a hit-slowdown profile, as an item hit).
+## What a hit does: "sink" (falls in the water and is put back on the main road), "spin" (spin out
+## with a hit-slowdown profile, as an item hit) or "stop" (a gate in an enclosed road, the
+## portcullis: the kart is stopped against it like a wall and bounced back).
 @export var hit_effect: StringName = &"sink"
 ## Index into VehicleStats.hit_slowdown_profiles for a "spin" hit.
 @export var hit_profile: int = 1
 ## Water or lava look/sound of a "sink" hit (TrackHazard kind).
 @export var sink_kind: StringName = &"water"
+## A "stop" hit: the kart is pushed back off the gate and rolls back at this share of the speed it
+## hit with (capped by its reverse top speed).
+@export_range(0.0, 1.0) var stop_rebound: float = 0.15
 
 @export_group("Look and sound")
-## Visual kind: drawbridge (deck on chains), later barrel, portcullis, burst, cart.
+## Visual kind: drawbridge (deck on chains), portcullis (an iron grille that drops in a stone
+## frame), barrel (a rolling wooden barrel with iron bands); later burst, cart.
 @export var visual: StringName = &"drawbridge"
 ## Angle in degrees the deck stands at when fully raised.
 @export var raised_angle_deg: float = 78.0
@@ -83,9 +104,36 @@ extends Resource
 ## hinge (toward the gatehouse), in meters.
 @export var chain_anchor_height: float = 6.0
 @export var chain_anchor_beyond: float = 1.5
-## Audio events (AudioSet.events) played at the start of the warning and when the deck is down.
+## Audio events (AudioSet.events) played at the start of the warning and when the deck is down
+## (back to idle). Empty = none.
 @export var sound_warn: StringName = &"drawbridge_up"
 @export var sound_down: StringName = &"drawbridge_down"
+## Audio event played when the mover becomes active (a barrel is released, a portcullis slams
+## down). Empty = none.
+@export var sound_active: StringName = &""
+
+@export_group("Portcullis look")
+## Height in meters the grille's bottom rises above the road when fully up (clear of the karts).
+@export var lift_height: float = 2.8
+## Height of the grille in meters; the frame's lintel sits above lift_height + grille_height.
+@export var grille_height: float = 2.6
+## Spacing of the grille's vertical bars and its bar thickness, meters.
+@export var bar_spacing: float = 0.45
+@export var bar_size: float = 0.12
+## Grille (iron) and frame (stone) colors.
+@export var grille_color: Color = Color(0.18, 0.18, 0.2)
+@export var frame_color: Color = Color(0.5, 0.49, 0.5)
+
+@export_group("Barrel look")
+## Barrel radius and length (along its roll axis) in meters.
+@export var body_radius: float = 0.55
+@export var body_length: float = 1.1
+## Wood and iron band colors.
+@export var body_color: Color = Color(0.52, 0.33, 0.17)
+@export var band_color: Color = Color(0.22, 0.22, 0.24)
+## The body shrinks over this many meters before the end of its run (into the cellar at the
+## bottom); at the top it grows during the warning until it is solid (see solid_lead).
+@export var appear_distance: float = 2.0
 
 
 ## First and last segment index (inclusive) of [param road] whose middle lies on the movable
@@ -106,6 +154,20 @@ func deck_segments(road: TrackModel.Path) -> Vector2i:
 func validate() -> String:
 	if period > 0.0 and active_time + transition_time > period:
 		return "mover %s: active_time + transition_time exceeds period" % id
-	if transition_time <= 0.0 and period > 0.0:
+	if transition_time <= 0.0 and period > 0.0 and speed <= 0.0:
 		return "mover %s: transition_time must be above 0" % id
+	if speed > 0.0 and solid_lead > warning_lead:
+		return "mover %s: solid_lead exceeds warning_lead" % id
+	if speed > 0.0 and period > 0.0 and (path_to - path_from) / speed + warning_lead > period:
+		return "mover %s: the run (%.2f s) and the warning exceed the period" % [id, (path_to - path_from) / speed]
 	return ""
+
+
+## True for a body that travels along its road (barrel, cart) rather than a gate or a footprint.
+func is_traveler() -> bool:
+	return speed > 0.0 and kind != &"gate"
+
+
+## Seconds a traveling body takes from path_from to path_to (0 when it does not travel).
+func travel_time() -> float:
+	return (path_to - path_from) / speed if is_traveler() else 0.0

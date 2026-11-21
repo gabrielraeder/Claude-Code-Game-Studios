@@ -173,7 +173,7 @@ func _branch_road(st: SurfaceTool, track: TrackModel, bi: int) -> void:
 	# Story 009: the movable deck of a gate (drawbridge) is drawn by MoverView, not here.
 	var deck: Vector2i = Vector2i(-1, -1)
 	for m in track.data.movers:
-		if m.kind == &"gate" and m.path == b.id:
+		if m.kind == &"gate" and m.visual == &"drawbridge" and m.path == b.id:
 			deck = m.deck_segments(path)
 	for i in pts.size() - 1:
 		if i >= deck.x and i <= deck.y and deck.x >= 0:

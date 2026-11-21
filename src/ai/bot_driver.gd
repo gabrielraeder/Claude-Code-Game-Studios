@@ -67,6 +67,9 @@ var _gate_branch: int = -1
 var _gate_speed: float = 0.0
 var _speed_checked: int = -1
 var _timing_checked: int = -1
+var _barrel_trace_next: float = 0.0
+var _barrel_near: bool = false
+var _barrel_conflict: bool = false
 var _calm_until: float = -1.0
 var _trace: bool = false
 var _trace_next: float = 0.0
@@ -164,6 +167,9 @@ func _drive(input: KartInput, sim: KartSim, track: TrackModel, dt: float) -> voi
 	if not _bump_hooked:
 		_bump_hooked = true
 		sim.kart_bumped.connect(func(_strength: float) -> void: _last_bump_t = _race_t)
+		sim.mover_hit.connect(func(mi: int) -> void:
+			print("[bot] HAZARD_HIT kart=%d name=%s mover=%d s=%.0f lat=%.1f speed=%.1f t=%.2f" % [
+					kart_id, personality.display_name, mi, sim.track_s, sim.lateral, sim.speed, _race_t]))
 	if sim.spin_time > _prev_spin:
 		_last_hit_t = _race_t
 	_prev_spin = sim.spin_time
@@ -218,6 +224,11 @@ func _drive(input: KartInput, sim: KartSim, track: TrackModel, dt: float) -> voi
 	var desired: float = _line_offset(track, sim, turn, turn_far, usable, route_branch, narrow)
 	_scan_traffic(sim, usable)
 	desired += _av_shift
+	desired = _barrel_lane(sim, desired, usable)
+	if _barrel_near:
+		# Steer at a nearer point so the kart is in the chosen lane where the barrel is (a far
+		# pursuit point cuts the inside of the market S-bend, into the barrel lanes).
+		look = minf(look, _set.barrel_steer_look)
 	var open_side: float = _open_edge_side(track, sim) if sim.track_path == TrackModel.MAIN_PATH else 0.0
 	var lim_neg: float = usable
 	var lim_pos: float = usable
@@ -271,12 +282,17 @@ func _drive(input: KartInput, sim: KartSim, track: TrackModel, dt: float) -> voi
 			input.brake = 1.0 if sim.speed > _set.open_entry_speed + 1.0 else 0.0
 		elif on_open != 2 and sim.speed > _set.open_deck_speed:
 			input.throttle = 0.0
-	elif _gate_on_route(track, sim) or calm:
+	elif _gate_on_route(track, sim) or calm or _barrel_near:
+		# No drift with a barrel near: a drifting kart cannot hold the free lane.
 		_drifting_intent = false
 	else:
 		_drive_drift(input, sim, track, diff, look, turn, open_side)
 	input.drift = _drifting_intent and on_open == 0
 
+	# A barrel close ahead in the kart's lane: lift (never brake) while the dodge clears it, but only
+	# while fast (a kart slowed by a hit must drive on, not stand behind the barrel).
+	if _barrel_conflict and sim.speed > _set.barrel_lift_min_speed:
+		input.throttle = 0.0
 	# Traffic: lift or brake when a slower kart is in the way and the dodge has not cleared it.
 	if _av_brake:
 		input.throttle = 0.0
@@ -474,6 +490,44 @@ func _gate_timing_ok(track: TrackModel, sim: KartSim, bi: int) -> bool:
 		if _ctx.gate_blocked_fn.call(id, t0, t1):
 			return false
 	return true
+
+
+# Story 009: a rolling barrel ahead on the main road within BotSet.barrel_look meters: aim for the
+# free lane nearest the wanted line (the wanted line itself when it is already clear of every barrel
+# by BotSet.barrel_clear). With no free lane the line is kept. Pure lateral choice, never a brake.
+func _barrel_lane(sim: KartSim, desired: float, usable: float) -> float:
+	_barrel_near = false
+	_barrel_conflict = false
+	if not _ctx.travelers_fn.is_valid() or sim.track_path != TrackModel.MAIN_PATH or usable <= 0.0:
+		return desired
+	var ahead: PackedVector3Array = _ctx.travelers_fn.call(TrackModel.MAIN_PATH, sim.track_s - _set.barrel_behind,
+			sim.track_s + _set.barrel_look)
+	if ahead.is_empty():
+		return desired
+	_barrel_near = true
+	for b in ahead:
+		if b.x > sim.track_s and b.x - sim.track_s < _set.barrel_lift_dist and absf(sim.lateral - b.y) < b.z + _set.barrel_clear:
+			_barrel_conflict = true
+	var n: int = maxi(_set.barrel_lane_samples, 2)
+	var best: float = desired
+	var best_cost: float = INF
+	for k in n + 1:
+		var x: float = clampf(desired, -usable, usable) if k == n else lerpf(-usable, usable, float(k) / float(n - 1))
+		var clear: bool = true
+		for b in ahead:
+			if absf(x - b.y) < b.z + _set.barrel_clear:
+				clear = false
+				break
+		# The free lane nearest where the kart is (least steering), then nearest the wanted line.
+		var cost: float = absf(x - sim.lateral) + absf(x - desired) * _set.barrel_line_weight
+		if clear and cost < best_cost:
+			best_cost = cost
+			best = x
+	if _trace and _race_t >= _barrel_trace_next:
+		_barrel_trace_next = _race_t + 0.1
+		print("[bot-barrel] kart=%d t=%.2f s=%.1f lat=%.2f usable=%.2f desired=%.2f chosen=%.2f _lat=%.2f lift=%d barrels=%s" % [
+				kart_id, _race_t, sim.track_s, sim.lateral, usable, desired, best, _lat, 1 if _barrel_conflict else 0, str(ahead)])
+	return best
 
 
 # ---------------------------------------------------------------- racing line

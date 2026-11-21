@@ -904,6 +904,106 @@ chain_anchor_beyond = 1.5
 sound_warn = &"drawbridge_up"
 sound_down = &"drawbridge_down"
 """ % (DRAW_PERIOD, DRAW_ACTIVE_START, DRAW_ACTIVE_TIME, DRAW_TRANSITION, DRAW_PHASE, DRAW_WARNING, DECK_FROM, DECK_TO, BRIDGE_HW, DECK_SIGNAL))
+# Portcullis (story 009 part 2): an iron grille across the secret passage, a little way in where
+# both passage walls are clear of the plaza, on the same 20 s cycle as the drawbridge but down while
+# the drawbridge is down, so the two shortcuts are never closed together. A kart is stopped
+# against it (a wall, not a sink: the passage is enclosed).
+PORT_CLEAR = float(os.environ.get("PORT_CLEAR", "1.0"))    # m the passage walls must be off the plaza
+PORT_INSET = float(os.environ.get("PORT_INSET", "2.0"))    # m further in from there
+PORT_THICK = 0.6                                           # m of road the grille covers
+PORT_PERIOD = float(os.environ.get("PORT_PERIOD", str(DRAW_PERIOD)))
+PORT_ACTIVE_START = float(os.environ.get("PORT_ACTIVE_START", "3.5"))
+PORT_ACTIVE_TIME = float(os.environ.get("PORT_ACTIVE_TIME", "5.5"))
+PORT_TRANSITION = float(os.environ.get("PORT_TRANSITION", "0.8"))
+PORT_WARNING = float(os.environ.get("PORT_WARNING", "1.5"))
+PORT_PHASE = float(os.environ.get("PORT_PHASE", "0.0"))
+_pcum = [0.0]
+for _i in range(1, len(passage_pts)):
+    _pcum.append(_pcum[-1] + ln(sub(passage_pts[_i], passage_pts[_i - 1])))
+_pex = [_main_excess(q) for q in passage_pts]
+PORT_FROM = next(_pcum[i] for i in range(len(passage_pts)) if _pex[i] > PASSAGE_HW + 0.4 + PORT_CLEAR) + PORT_INSET
+PORT_TO = PORT_FROM + PORT_THICK
+print("portcullis at %.1f..%.1f of %.1f m passage; cycle %.0f s, down %.1f..%.1f s (drawbridge up %.1f..%.1f s)" % (
+      PORT_FROM, PORT_TO, _pcum[-1], PORT_PERIOD, PORT_ACTIVE_START, PORT_ACTIVE_START + PORT_ACTIVE_TIME + PORT_TRANSITION,
+      DRAW_ACTIVE_START, DRAW_ACTIVE_START + DRAW_ACTIVE_TIME + DRAW_TRANSITION))
+subs.append("""[sub_resource type="Resource" id="Mover_portcullis"]
+script = ExtResource("7_mover")
+id = &"portcullis"
+kind = &"gate"
+period = %.2f
+active_start = %.2f
+active_time = %.2f
+transition_time = %.2f
+phase = %.2f
+warning_lead = %.2f
+block_progress = 0.25
+out_of_phase_with = &"drawbridge_deck"
+path = &"secret_passage"
+path_from = %.2f
+path_to = %.2f
+hit_effect = &"stop"
+stop_rebound = 0.15
+visual = &"portcullis"
+deck_half_width = %.2f
+signal_along = %.2f
+signal_height = 3.2
+lift_height = 2.8
+grille_height = 2.6
+bar_spacing = 0.45
+bar_size = 0.12
+sound_warn = &"portcullis_warn"
+sound_down = &""
+sound_active = &"portcullis_slam"
+""" % (PORT_PERIOD, PORT_ACTIVE_START, PORT_ACTIVE_TIME, PORT_TRANSITION, PORT_PHASE, PORT_WARNING, PORT_FROM, PORT_TO,
+       PASSAGE_HW, (PORT_FROM + PORT_TO) * 0.5))
+mover_ids = ['SubResource("Mover_drawbridge")', 'SubResource("Mover_portcullis")']
+# Rolling barrels (story 009 part 2): released from the cellars at the top of the market drop (the
+# end of the gatehouse deck, 7 m) they roll down the street to the lane split (4.5 m) in their own
+# lanes, staggered so only one crosses any spot at a time: the street always has free lanes.
+BARREL_COUNT = int(os.environ.get("BARREL_COUNT", "3"))          # 2..4
+BARREL_LANES = [float(v) for v in os.environ.get("BARREL_LANES", "2.6,-2.6,0.0,-1.3").split(",")]
+BARREL_PERIOD = float(os.environ.get("BARREL_PERIOD", "10.0"))
+BARREL_SPEED = float(os.environ.get("BARREL_SPEED", "9.0"))
+BARREL_WARNING = float(os.environ.get("BARREL_WARNING", "1.5"))  # s a barrel waits, seen, at the top
+BARREL_FROM = ts("gate_top", GATE_TOP_TO) - 1.0
+BARREL_TO = ts("split", 0.0) - 3.0
+assert 2 <= BARREL_COUNT <= 4
+assert (BARREL_TO - BARREL_FROM) / BARREL_SPEED + BARREL_WARNING <= BARREL_PERIOD
+print("barrels: %d on main s %.1f..%.1f (h %.2f -> %.2f), %.1f m/s, run %.2f s of a %.1f s cycle, lanes %s" % (
+      BARREL_COUNT, BARREL_FROM, BARREL_TO, main_h(BARREL_FROM), main_h(BARREL_TO), BARREL_SPEED,
+      (BARREL_TO - BARREL_FROM) / BARREL_SPEED, BARREL_PERIOD, BARREL_LANES[:BARREL_COUNT]))
+for _k in range(BARREL_COUNT):
+    mover_ids.append('SubResource("Mover_barrel_%d")' % _k)
+    subs.append("""[sub_resource type="Resource" id="Mover_barrel_%d"]
+script = ExtResource("7_mover")
+id = &"barrel_%d"
+kind = &"barrel"
+period = %.2f
+active_start = 0.0
+active_time = 0.0
+transition_time = 0.0
+phase = %.3f
+warning_lead = %.2f
+path = &"main"
+path_from = %.2f
+path_to = %.2f
+speed = %.2f
+lane_offset = %.2f
+solid_lead = 0.75
+hit_radius = 1.4
+hit_height = 1.5
+min_free_gap = 3.0
+hit_effect = &"spin"
+hit_profile = 1
+visual = &"barrel"
+body_radius = 0.55
+body_length = 1.1
+appear_distance = 2.0
+sound_warn = &""
+sound_down = &""
+sound_active = &"barrel_roll"
+""" % (_k, _k, BARREL_PERIOD, BARREL_PERIOD * _k / BARREL_COUNT, BARREL_WARNING, BARREL_FROM, BARREL_TO, BARREL_SPEED,
+       BARREL_LANES[_k % len(BARREL_LANES)]))
 subs.append("""[sub_resource type="Resource" id="Hazard_moat"]
 script = ExtResource("4_hazard")
 id = &"moat"
@@ -953,7 +1053,7 @@ theme = ExtResource("3_theme")
 branches = Array[ExtResource("2_branch")]([SubResource("Branch_lane"), SubResource("Branch_bridge"), SubResource("Branch_passage")])
 hazards = Array[ExtResource("4_hazard")]([SubResource("Hazard_moat"), SubResource("Hazard_edge"), SubResource("Hazard_bridge")])
 boost_pads = Array[ExtResource("5_pad")]([%s])
-movers = Array[ExtResource("7_mover")]([SubResource("Mover_drawbridge")])
+movers = Array[ExtResource("7_mover")]([%s])
 checkpoint_count = 10
 item_box_spots = %s
 control_points = %s
@@ -988,7 +1088,7 @@ color_b = Color(0.55, 0.32, 0.12, 1)
 side_color = Color(0.56, 0.55, 0.57, 1)
 """ % (ramp_s, RAMP_LEN, RAMP_LIP))
 with open(os.path.join(out, "castle_circuit.tres"), "w", newline="\n") as f:
-    f.write(TRES % (7 + len(subs), "\n".join(subs), ", ".join(pad_ids), v2(items), v2(cps), f32(cp_hw), SPP, CURB,
+    f.write(TRES % (7 + len(subs), "\n".join(subs), ", ".join(pad_ids), ", ".join(mover_ids), v2(items), v2(cps), f32(cp_hw), SPP, CURB,
                     v3([(open_s0, open_s1, open_side)]), OPEN_EDGE_REACH, SINK_TIME, RESPAWN_SPEED_FRAC,
                     RESPAWN_IMMUNITY, RESPAWN_BACK_OFF, PAD_BOOST_TIME, f32(cp_h), f32(cp_bank)))
 

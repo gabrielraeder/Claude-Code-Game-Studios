@@ -200,6 +200,8 @@ func _ready() -> void:
 	_local = Racer.new()
 	_local.sim = KartSim.new(_stats_for(_my_loadout.y, 0))
 	_local.sim.hazard_manager = _hazards
+	if _options.hazard_log:
+		_local.sim.mover_hit.connect(_on_local_mover_hit)
 	_local.laps = LapCounter.new(_laps_for_race(), _track.length, _track.checkpoint_s)
 	if _options.ram:
 		var ram := RamDriver.new()
@@ -336,6 +338,7 @@ func _physics_process(dt: float) -> void:
 	match _mode:
 		Mode.SOLO:
 			_hazards.update(race_time)
+			_hazard_trace()
 			if _tick_owned(_local, dt, false):
 				race_time += dt
 				_laps.update(_sim.track_s, race_time)
@@ -421,6 +424,7 @@ func _tick_owned(r: Racer, dt: float, synced: bool) -> bool:
 func _net_tick(dt: float) -> void:
 	race_time += dt
 	_hazards.update(race_time)
+	_hazard_trace()
 	var keys: Dictionary = {}
 	for r in _racers:
 		if r.dropped:
@@ -699,6 +703,32 @@ func _setup_hazards() -> void:
 	_hazards.setup(_track)
 
 
+## Debug (--hazard-log): seconds the local kart is traced after a hazard hit, and the trace step.
+const HAZARD_TRACE_TIME: float = 3.0
+const HAZARD_TRACE_STEP: float = 0.25
+var _hazard_trace_until: float = -1.0
+var _hazard_trace_next: float = 0.0
+
+
+func _on_local_mover_hit(mover_index: int) -> void:
+	var s: KartSim = _local.sim
+	print("[hazard] kart_hit kart=local mover=%s t=%.2f s=%.1f path=%d lat=%.2f speed_before=%.1f speed=%.1f spin=%.2f immune=%.2f" % [
+			_hazards.mover(mover_index).id, race_time, s.track_s, s.track_path, s.lateral, s.mover_hit_speed, s.speed, s.spin_time,
+			s.hit_immunity_time])
+	_hazard_trace_until = race_time + HAZARD_TRACE_TIME
+	_hazard_trace_next = race_time
+
+
+# Debug (--hazard-log): the local kart's speed and spin every HAZARD_TRACE_STEP after a hazard hit.
+func _hazard_trace() -> void:
+	if race_time > _hazard_trace_until or race_time < _hazard_trace_next:
+		return
+	_hazard_trace_next = race_time + HAZARD_TRACE_STEP
+	var s: KartSim = _local.sim
+	print("[hazard] kart_after t=%.2f s=%.1f path=%d lat=%.2f speed=%.1f spin=%.2f immune=%.2f" % [
+			race_time, s.track_s, s.track_path, s.lateral, s.speed, s.spin_time, s.hit_immunity_time])
+
+
 func _on_hazard_phase(mover_index: int, phase: int, position: Vector3) -> void:
 	var m: TrackMover = _hazards.mover(mover_index)
 	if _audio == null or race_time < 0.0:
@@ -707,6 +737,9 @@ func _on_hazard_phase(mover_index: int, phase: int, position: Vector3) -> void:
 		_audio.play_event(m.sound_warn, position)
 	elif phase == HazardManager.Phase.IDLE:
 		_audio.play_event(m.sound_down, position)
+	elif phase == HazardManager.Phase.ACTIVE or (phase == HazardManager.Phase.RISING and not m.is_traveler()):
+		# A barrel's release rumble; a portcullis's slam as it starts to drop.
+		_audio.play_event(m.sound_active, position)
 
 
 func _on_item_sound_cue(kind: StringName, kart_id: int) -> void:
@@ -1179,6 +1212,8 @@ func _bot_context() -> BotContext:
 	c.gate_blocked_fn = func(path_id: StringName, t0: float, t1: float) -> bool:
 		var gi: int = _hazards.gate_on_path(_track.branch_index(path_id))
 		return gi >= 0 and _hazards.blocked_between(_hazards.mover(gi), t0, t1)
+	c.travelers_fn = func(path_index: int, from_along: float, to_along: float) -> PackedVector3Array:
+		return _hazards.travelers_between(path_index, from_along, to_along, _hazards.time)
 	return c
 
 

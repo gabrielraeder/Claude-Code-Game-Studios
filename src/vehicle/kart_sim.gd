@@ -19,6 +19,8 @@ signal wall_bumped(hard: bool)
 signal kart_bumped(strength: float)
 ## Entered a hazard (moat water) and started sinking (story 003).
 signal sank()
+## A timed hazard (story 009) spun this kart out or stopped it (the mover's index).
+signal mover_hit(mover_index: int)
 ## Put back on the road after sinking (story 003).
 signal respawned()
 ## Drove onto a boost pad (story 003).
@@ -42,6 +44,12 @@ var stats: VehicleStats
 ## Timed moving hazards (story 009), injected by whoever owns this kart's simulation. The kart tests
 ## itself against them at the manager's time (victim decides). null = none (previews, tools).
 var hazard_manager: HazardManager = null
+## Number of spin-outs caused by a timed hazard (a rolling barrel), and stops against a closed
+## gate (the portcullis), for logs and the bot batch.
+var mover_spin_count: int = 0
+var mover_stop_count: int = 0
+## Speed (m/s) the kart had when a timed hazard last spun or stopped it (logs).
+var mover_hit_speed: float = 0.0
 
 var position: Vector2 = Vector2.ZERO
 var velocity: Vector2 = Vector2.ZERO
@@ -129,6 +137,9 @@ var _floor_drag_mult: float = 1.0
 var hazard_kind: StringName = &"water"
 # True when the sink was in a speed-gated hazard: the respawn then uses the main road.
 var _gate_sink: bool = false
+# Road and distance along it of the previous tick, for the side of a "stop" gate (story 009).
+var _stop_prev_path: int = -2
+var _stop_prev_along: float = 0.0
 ## Knock from kart bumps (m/s): moves the kart on top of its driving velocity and fades
 ## out (stats.bump_knock_decay), so grip cannot cancel a shove at once.
 var knock: Vector2 = Vector2.ZERO
@@ -640,8 +651,10 @@ func _constrain_to_track(dt: float, track: TrackModel) -> void:
 			_gate_sink = track.hazard_gates[hz] > 0.0
 			_start_sinking(track)
 			return
-	if hazard_manager != null and _mover_hit(track, q):
-		return
+	if hazard_manager != null:
+		if _mover_hit(track, q):
+			return
+		_mover_stop(q)
 	var over_hazard: bool = not q.on_deck and track.has_hazards() and track.hazard_below(position, height)
 	if not over_hazard and _fell_off(dt, q, track):
 		return
@@ -673,10 +686,44 @@ func _mover_hit(track: TrackModel, q: TrackModel.Query) -> bool:
 		_gate_sink = true
 		_start_sinking(track)
 		return true
-	if not is_hit_immune() and hit():
+	var before: float = speed
+	if m.hit_effect == &"spin" and not is_hit_immune() and hit():
+		mover_hit_speed = before
 		apply_hit_slowdown(m.hit_profile)
 		start_hit_immunity()
+		mover_spin_count += 1
+		mover_hit.emit(mi)
 	return false
+
+
+# Story 009: a "stop" gate (the portcullis) that is down acts as a wall across the road: the kart
+# is pushed back to its own side of the gate, the speed into it bounces back like a wall knock
+# (stats.bump_knockback), and it rolls back at the gate's stop_rebound share of its speed. A kart
+# that was already under the grille when it came down goes on to the side its center is on.
+func _mover_stop(q: TrackModel.Query) -> void:
+	var r: Vector3 = hazard_manager.stop_test(q.path, q.along, _stop_prev_path, _stop_prev_along, stats.radius,
+			hazard_manager.time)
+	if r.x >= 0.0:
+		var m: TrackMover = hazard_manager.mover(int(r.x))
+		var before: float = speed
+		position += q.tangent * (r.y - q.along)
+		var into_dir: Vector2 = q.tangent * -r.z
+		var into: float = velocity.dot(into_dir)
+		if into > 0.0:
+			velocity -= into_dir * into * stats.bump_knockback
+			var fwd_into: float = forward().dot(into_dir)
+			if speed * fwd_into > 0.0:
+				speed = -signf(speed) * minf(absf(speed) * m.stop_rebound, stats.reverse_max)
+			if _wall_cooldown <= 0.0:
+				_wall_cooldown = stats.wall_hit_cooldown
+				mover_stop_count += 1
+				mover_hit_speed = before
+				wall_bumped.emit(true)
+				mover_hit.emit(int(r.x))
+		_stop_prev_along = r.y
+	else:
+		_stop_prev_along = q.along
+	_stop_prev_path = q.path
 
 
 # Height follows the road through a damped spring with the surface's own vertical speed as
