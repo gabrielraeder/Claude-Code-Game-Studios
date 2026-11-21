@@ -82,7 +82,7 @@
   - Dungeon Depths: mine-cart rail and lava-gap jump. *(shortcut ideas guessed)*
   - Rich layouts and dense scenery, with elevation (hills, jumps, banking, a crossover) and moving hazards (a drawbridge on a timer, rolling barrels, gates) added in later stories. You said: "The track is a lot simple, should be way more complex", and to use Mario Kart, Sonic and other kart racers as examples.
 - [x] **Tougher bots:** better racing lines, item use and tuned rubber-banding.
-- [ ] **8 knight-dog racers** (the Dogworks mascot plus 7 originals of different breeds and colors) and 2 medieval vehicle types with pennants:
+- [x] **8 knight-dog racers** (the Dogworks mascot plus 7 originals of different breeds and colors) and 2 medieval vehicle types with pennants:
   - Armored cart: steady, with wide drifts, and barely knocked by bumps.
   - War-bike: faster acceleration and tighter drifts, but knocked harder. *(handling split guessed)*
 - [ ] **Race flow, HUD and basic sound:**

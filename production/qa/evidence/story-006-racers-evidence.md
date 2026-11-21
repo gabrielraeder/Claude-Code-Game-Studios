@@ -51,5 +51,5 @@ The owner played both on 2026-11-20: "um pouco diferente sim, no momento ok".
 
 ## Sign-off (Visual/Feel)
 
-- [ ] Approved: art (dogs, vehicles, pennants read at a glance from the chase camera)
-- [ ] Approved: feel (cart and bike drive differently)
+- [x] Approved: art (dogs, vehicles, pennants read at a glance from the chase camera), 2026-11-20, with a plan to improve design and graphics later (story 010)
+- [x] Approved: feel (cart and bike drive differently), 2026-11-20

@@ -1,7 +1,7 @@
 # Story 006: Eight knight-dog racers and two vehicles
 
 > **Epic**: Dogworks Racing: Kennel Kingdom
-> **Status**: In Progress
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Visual/Feel
 > **Estimate**: L
@@ -91,3 +91,17 @@
 
 - Depends on: `story-001-driving-and-drift.md`
 - Unlocks: `story-007-race-flow-hud-sound.md`
+
+## Completion Notes
+**Completed**: 2026-11-20
+**Criteria**: 8/9 passing (racer colours on the minimap: they read on the 12-kart grid; the minimap itself is built in story 007)
+**Deviations**: None. The item-box and on-road-scenery bug fixes (stories 003/004) were committed together with this story because they touch the same files; KartWire VERSION is now 5, so every PC needs this build.
+**Test Evidence**: production/qa/evidence/story-006-racers-evidence.md (screenshots, net, lap, bot and fps runs, sign-off ticked); waived test files at qa.level minimal
+**Reviewed by**: self, no independent review (engine check by godot-gdscript-specialist: findings fixed)
+
+## Calls beyond the design
+- Models are Blender-scripted .glb files; 8 racers named Sir Dogworks, Sunny, Bolt, Fern, Violet, Frost, Cinder, Skye with their breeds, colours and helmets · `tools/blender/`, `assets/characters/`, `assets/data/racers/racer_set.tres` · kept 2026-11-20 (owner plans to improve design and graphics later, story 010)
+- Cart pennant pole 1.45x vehicle height, flag yawed 55 deg, unlit flag · `assets/data/vehicles/armored_cart.tres`, `src/vehicle/pennant_style.gd` · kept 2026-11-20
+- War-bike: +30% accel, tighter turn and drift, drift charge 0.7/1.5/2.4 s, -4% top speed, knocked harder · `assets/data/vehicles/war_bike.tres` (reasons in `war_bike_notes.md`) · kept 2026-11-20
+- Bots: dog = slot % 8, vehicle drawn from the race seed; no drift start near an unwalled edge · `src/main.gd`, `assets/data/ai/bot_set.tres` · kept 2026-11-20
+- Host waits up to 3 s for each client's loadout; racer and vehicle chosen with --racer / --vehicle until story 007 · `assets/data/net/net_config.tres`, `src/debug/debug_options.gd` · kept 2026-11-20
