@@ -215,6 +215,8 @@ func _ready() -> void:
 			ap.shortcut_id = StringName(_options.shortcut)
 			ap.dunk_s = _options.dunk_s
 			ap.lane_window = _options.auto_lane
+			ap.cut_window = _options.auto_cut
+			ap.boost_at = _options.auto_boost
 			ap.trick_hops = not _options.no_trick
 			_local.driver = ap
 		else:
@@ -344,6 +346,8 @@ func _physics_process(dt: float) -> void:
 				race_time += dt
 				_laps.update(_sim.track_s, race_time)
 			_items.update(dt, race_time)
+			if _options.autopilot:
+				_log_surface(dt)
 		Mode.NET_RACE:
 			_net_tick(dt)
 
@@ -439,6 +443,7 @@ func _net_tick(dt: float) -> void:
 		else:
 			r.remote.update_view(race_time)
 			r.remote.sample_surface(_track)
+			r.remote.sample_surface_type(_track)
 		keys[r.kart_id] = _rank_key(r)
 	_ranking.update(dt, keys)
 	_resolve_kart_contacts()
@@ -455,6 +460,8 @@ func _net_tick(dt: float) -> void:
 	_net_log_tick(dt)
 	if _options.height_log == "every-tick":
 		_log_heights()  # debug (story 008): the 2-peer height comparison during jumps
+	if _options.autopilot:
+		_log_surface(dt)
 	_finish_check(dt)
 
 
@@ -1387,6 +1394,30 @@ func _net_log_tick(dt: float) -> void:
 
 # Debug (netlog runs): one "[height]" line per kart, so two PCs can be compared on the same
 # race-clock second. h is the kart's drawn height, road the track surface under its position.
+## Debug (autopilot runs): seconds between "[surface]" lines while the local kart is on a surface.
+const SURFACE_LOG_INTERVAL: float = 0.25
+var _surface_log_last: StringName = &"-"
+var _surface_log_t: float = 0.0
+
+
+# Debug (story 011): one "[surface]" line when the local kart's surface changes and every
+# SURFACE_LOG_INTERVAL seconds while it is on one: kind, the cap and the speed (m/s), boost time, drift.
+func _log_surface(dt: float) -> void:
+	if _sim == null or not _track.has_surfaces():
+		return
+	var kind: StringName = _sim.surface_effect.kind if _sim.surface_effect != null else &"none"
+	_surface_log_t += dt
+	if kind == _surface_log_last and (kind == &"none" or _surface_log_t < SURFACE_LOG_INTERVAL):
+		return
+	_surface_log_last = kind
+	_surface_log_t = 0.0
+	print("[surface] t=%.2f kind=%s zone=%s cap=%s speed=%.1f boost=%.2f drift=%d s=%.1f lat=%.1f grip_mult=%.2f" % [
+			race_time, kind, "on" if _sim.surface != null else "tail",
+			("%.1f" % _sim.surface_cap) if _sim.surface_cap < INF else "none", _sim.speed, _sim.boost_time,
+			1 if _sim.drifting else 0, _sim.track_s, _sim.lateral,
+			_sim.surface_effect.grip_mult if _sim.surface_effect != null else 1.0])
+
+
 func _log_heights() -> void:
 	for r in _racers:
 		var q: TrackModel.Query = _track.query(r.sim.position, -1, r.sim.height)

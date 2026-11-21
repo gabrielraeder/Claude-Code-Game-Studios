@@ -121,3 +121,17 @@ extends Resource
 ## A boost pad fires only for a grounded kart within this many meters (height) of the road at the
 ## pad's center: not for one on a bridge above it or a road below it.
 @export var pad_height_tolerance: float = 2.0
+
+@export_group("Surfaces (story 011)")
+## Surface zones (grass, sand, mud, rubble, shallows, slick). See TrackSurface.
+@export var surfaces: Array[TrackSurface] = []
+## Stretches of the main road with no wall on one side, where a kart can drive onto a zone. See TrackWallOpening.
+@export var wall_openings: Array[TrackWallOpening] = []
+## Table of surface kinds; null = the shipped assets/data/surfaces/surface_set.tres.
+@export var surface_set: SurfaceSet
+## A kart touches a zone only when its height is within this many meters of the zone's height.
+@export var surface_height_tolerance: float = 0.8
+## Cell size (meters) of the grid that indexes the zones for the per-tick lookup.
+@export var surface_cell_size: float = 16.0
+## A zone edge whose middle is within this many meters of the road curb counts as touching the road (no fence, the kart drives on and off there).
+@export var surface_edge_tolerance: float = 0.4

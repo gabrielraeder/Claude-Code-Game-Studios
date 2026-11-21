@@ -54,6 +54,12 @@ var _head_rest_y: float = 0.0
 var _ears: Array[Node3D] = []
 var _ear_rest: Array[float] = []
 var _ear_angle: float = 0.0
+# Story 011: the surface puff emitter of this kart (made when the kart first drives on a surface with an
+# effect) and the surface type it is set up for.
+var _fx: CPUParticles3D
+var _fx_type: SurfaceType
+## Where the puffs leave the kart, in its own frame (the karts face -Z, so the rear wheels are at +Z).
+const PUFF_ORIGIN: Vector3 = Vector3(0.0, 0.25, 0.9)
 
 
 ## Binds this visual to [param sim] and builds the meshes using its stats. [param racer] picks
@@ -256,10 +262,64 @@ func _process(delta: float) -> void:
 				+ _vs.spark_tier_growth * _sim.drift_tier
 		for sp in _sparks:
 			sp.scale = Vector3.ONE * pulse
+	_surface_fx()
+	if _sim.surface_effect != null and _sim.surface_effect.bump_height > 0.0 and _sim.grounded:
+		_body.position.y += absf(sin(_sim.surface_phase)) * _sim.surface_effect.bump_height
 	_flame.visible = _sim.boost_time > 0.0
 	if _flame.visible:
 		_flame.scale = Vector3(1, 1.0 + _vs.flame_pulse_amount * sin(_clock * _vs.flame_pulse_rate), 1)
 	_cost_usec += Time.get_ticks_usec() - t0
+
+
+# Story 011: dust, mud, gravel or splash puffs behind a kart driving on a surface (cosmetic; the
+# remote karts show theirs from the surface under their drawn position). One emitter per kart, its
+# particle count capped by the SurfaceSet.
+func _surface_fx() -> void:
+	var t: SurfaceType = _sim.surface_effect if _sim.grounded else null
+	if t != null and (t.effect == &"none" or t.puff_amount <= 0):
+		t = null
+	var active: bool = t != null and absf(_sim.speed) >= t.puff_min_speed and not _sim.is_sinking()
+	if t != null and t != _fx_type:
+		_configure_fx(t)
+	if _fx != null:
+		_fx.emitting = active and _fx_type == t
+
+
+func _configure_fx(t: SurfaceType) -> void:
+	_fx_type = t
+	if _fx == null:
+		_fx = CPUParticles3D.new()
+		_fx.local_coords = false
+		_fx.position = PUFF_ORIGIN
+		_fx.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+		_fx.emission_sphere_radius = 0.3
+		_fx.direction = Vector3(0, 1, 1)
+		_fx.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(_fx)
+	var cap: int = _sim.surface_set.puff_max_amount if _sim.surface_set != null else t.puff_amount
+	_fx.amount = maxi(mini(t.puff_amount, cap), 1)
+	_fx.lifetime = t.puff_lifetime
+	_fx.spread = t.puff_spread_deg
+	_fx.initial_velocity_min = t.puff_velocity * 0.6
+	_fx.initial_velocity_max = t.puff_velocity
+	_fx.gravity = Vector3(0, -t.puff_gravity, 0)
+	var ball := SphereMesh.new()
+	ball.radius = t.puff_size
+	ball.height = t.puff_size * 2.0
+	ball.radial_segments = 6
+	ball.rings = 3
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.vertex_color_use_as_albedo = true
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ball.material = mat
+	_fx.mesh = ball
+	var ramp := Gradient.new()
+	ramp.set_color(0, t.puff_color)
+	var end_col: Color = t.puff_color
+	end_col.a = 0.0
+	ramp.set_color(1, end_col)
+	_fx.color_ramp = ramp
 
 
 # Secondary motion (story 006), all small: wheel roll and front-wheel steer, rider lean,

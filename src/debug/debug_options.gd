@@ -28,6 +28,8 @@ extends RefCounted
 ##                        [air] lines for takeoffs, landings, tricks and falls (story 008)
 ##                        (--height-log=every-tick instead: a [height] line per kart per tick online)
 ##   --no-trick           the autopilot does not hop before ramp lips (no trick boosts)
+##   --auto-cut=S0:S1     the autopilot steers straight at the road point S1 once past S0 (a corner cut over
+##                        an off-road zone, story 011); --auto-boost=S:SECONDS gives it that much boost once at S
 ##   --auto-lane=S0:S1:LAT  the autopilot drives LAT meters off its line (left positive) while
 ##                        its main-loop distance is in S0..S1 (to drive into a lava burst, story 009)
 
@@ -63,6 +65,10 @@ var shot_s: PackedFloat32Array = PackedFloat32Array()
 var dunk_s: float = -1.0
 ## Autopilot lane window (--auto-lane=S0:S1:LAT): (s0, s1, lateral offset); s1 < s0 = off.
 var auto_lane: Vector3 = Vector3(0.0, -1.0, 0.0)
+## Autopilot corner cut (--auto-cut=S0:S1): from main-loop distance S0 steer straight at the road point S1.
+var auto_cut: Vector2 = Vector2(0.0, -1.0)
+## Autopilot boost (--auto-boost=S:SECONDS): once, at main-loop distance S, give the kart that much boost.
+var auto_boost: Vector2 = Vector2(-1.0, 0.0)
 ## Per-tick height CSV of the local kart (--height-log=PATH), "" = off.
 var height_log: String = ""
 ## Print one "[hazard]" line per race second (--hazard-log), so two PCs can be compared.
@@ -143,6 +149,14 @@ static func parse(args: PackedStringArray) -> DebugOptions:
 			var parts: PackedStringArray = a.substr("--auto-lane=".length()).split(":")
 			if parts.size() == 3:
 				o.auto_lane = Vector3(parts[0].to_float(), parts[1].to_float(), parts[2].to_float())
+		elif a.begins_with("--auto-cut="):
+			var cp: PackedStringArray = a.substr("--auto-cut=".length()).split(":")
+			if cp.size() == 2:
+				o.auto_cut = Vector2(cp[0].to_float(), cp[1].to_float())
+		elif a.begins_with("--auto-boost="):
+			var bp: PackedStringArray = a.substr("--auto-boost=".length()).split(":")
+			if bp.size() == 2:
+				o.auto_boost = Vector2(bp[0].to_float(), bp[1].to_float())
 		elif a.begins_with("--give-item="):
 			o.give_item = a.substr("--give-item=".length())
 		elif a.begins_with("--item-interval="):

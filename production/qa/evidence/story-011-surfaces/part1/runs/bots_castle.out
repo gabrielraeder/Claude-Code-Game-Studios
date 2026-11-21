@@ -1,0 +1,42 @@
+tools/bot_race_test.sh: line 33:  7646 Segmentation fault      "$GODOT" $([ "${HOST_WINDOWED:-0}" = 1 ] || echo --headless) --path . -- --host --port="$PORT" --players=$((CLIENTS + 1)) --bots="$BOTS" $DRV --quit-after="${QUIT:-300}" $SC "${COMMON[@]}" ${HOST_EXTRA:-} --netlog="$OUT/host.csv" > "$OUT/host.log" 2>&1
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+   2 Wide Wanderer     43.67  42.8                       0(0.0)       1       0      0.9544 91.2
+   3 Shortcut Hunter   41.80  40.9                       0(0.0)       1       0      0.9634 78.6
+   4 Apex Ace          44.13  43.0                       0(0.0)       1       0      0.9754 77.4
+   5 Outside Swinger   46.53  45.4                       0(0.0)       1       0      0.9689 72.7
+   6 Item Hoarder      46.60  45.3                       0(0.0)       1       0      0.9583 71.9
+   7 Steady Eddie      45.47  44.1                       0(0.0)       1       0      0.9338 73.5
+   8 Hothead           45.60  44.0                       0(0.0)       1       0      0.9739 72.2
+   9 Careful           44.60  43.0                       0(0.0)       0       0      0.9421 68.6
+  10 Wide Wanderer     44.13  42.2                       0(0.0)       2       0      0.9550 72.9
+  11 Shortcut Hunter     DNF                             0(0.0)       4       2      - -
+
+bots finished: 9/10  first 41.80  last 46.60  spread 11.5% of winner
+bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+
+SINKS: 3 total, 3 self-caused (no bump and no hit in the last second)
+  per personality: {'Shortcut Hunter': 3}
+  per location: {'drawbridge@240': 3}
+  kart 11 Shortcut Hunter s=252 path=drawbridge hazard=water speed=23.7 lat=-0.0 bump=0 hit=0 t=12.40
+  kart 11 Shortcut Hunter s=247 path=drawbridge hazard=water speed=22.2 lat=-0.0 bump=0 hit=0 t=16.47
+  kart 11 Shortcut Hunter s=246 path=drawbridge hazard=water speed=23.1 lat=0.0 bump=0 hit=0 t=20.47
+  SEED 2655655858; karts sinking again within 5 s: 2
+  shortcuts skipped because crowded: 4
+
+shortcut enters by name/branch:
+  Wide Wanderer   planned {'village_lane': 2, 'secret_passage': 2, 'drawbridge': 1} entered {'village_lane': 1} missed {}
+  Shortcut Hunter planned {'village_lane': 3, 'secret_passage': 3, 'drawbridge': 2} entered {'village_lane': 1} missed {}
+  Apex Ace        planned {'drawbridge': 3, 'secret_passage': 3, 'village_lane': 2} entered {'village_lane': 1} missed {}
+  Outside Swinger planned {'village_lane': 3, 'drawbridge': 1, 'secret_passage': 1} entered {'village_lane': 1} missed {}
+  Item Hoarder    planned {'village_lane': 3, 'drawbridge': 2, 'secret_passage': 2} entered {'village_lane': 1} missed {}
+  Steady Eddie    planned {'village_lane': 1, 'drawbridge': 1, 'secret_passage': 1} entered {'village_lane': 1} missed {}
+  Hothead         planned {'village_lane': 3, 'drawbridge': 2, 'secret_passage': 3} entered {'village_lane': 1} missed {}
+  Careful         planned {'village_lane': 2, 'secret_passage': 2} entered {} missed {}
+  Wide Wanderer   planned {'village_lane': 3, 'drawbridge': 3, 'secret_passage': 2} entered {'drawbridge': 1, 'village_lane': 1} missed {}
+  Shortcut Hunter planned {'village_lane': 2, 'drawbridge': 2, 'secret_passage': 2} entered {'drawbridge': 3, 'village_lane': 1} missed {'drawbridge': 1, 'secret_passage': 1}
+
+host autopilot: [debug] finished: laps [45.0666666666672] boosts [7, 1, 0] start_boost 3 max_speed 35.10 cap 35.10
+
+bot item use: {'horn': 2, 'stone': 2, 'spill': 3, 'shield': 1}
+hits by bot items: {('stone', 'hit'): 1, ('spill', 'hit'): 3}
+items used per bot: {'Shortcut Hunter': 2, 'Item Hoarder': 1, 'Careful': 1, 'Wide Wanderer': 1}

@@ -24,6 +24,13 @@ const GAP_MARGIN: float = 0.6
 const PILLAR_CLEARANCE: float = 0.8
 const PILLAR_SHIFT_STEP: float = 1.5
 ## A solid road's edge lower than this above the ground (meters) gets no side face (nothing to see).
+## Surface pattern layout (story 011), looks not tuning: a dash is this many times the mark size long,
+## an on-road highlight streak is slanted by this angle (rad) and drawn at this alpha, and only every
+## STREAK_EVERY-th cell of the pattern grid holds a dash.
+const STREAK_LENGTH_FACTOR: float = 5.0
+const STREAK_SLANT: float = 0.55
+const STREAK_ALPHA: float = 0.5
+const STREAK_EVERY: int = 3
 const SKIRT_MIN_HEIGHT: float = 0.05
 
 
@@ -45,6 +52,7 @@ func build(track: TrackModel) -> void:
 	var walls := SurfaceTool.new()
 	walls.begin(Mesh.PRIMITIVE_TRIANGLES)
 	_main_walls(walls, track, th)
+	_opening_fences(walls, track)
 	_pillars(walls, track)
 	for i in track.branches.size():
 		_branch_walls(walls, track, i)
@@ -65,6 +73,7 @@ func build(track: TrackModel) -> void:
 		any_water = _fill_polygon(water, track.hazard_polygons[i], th.water_color, y) or any_water
 	for i in track.branches.size():
 		any_water = _branch_fill(water, track, i) or any_water
+	_surface_zones(track)
 	if any_water:
 		add_child(_instance(water.commit()))
 	if any_lava:
@@ -607,3 +616,146 @@ func _inside_other_road(track: TrackModel, own: TrackModel.Path, p: Vector2, y: 
 func _v3(p: Vector2, y: float) -> Vector3:
 	return Vector3(p.x, y, p.y)
 
+
+# Story 011: a low fence along the outer edges of the surface zones (the edges that do not touch the
+# road, TrackModel.zone_fence_edges). The fence stands on the zone side of the edge's line.
+func _opening_fences(st: SurfaceTool, track: TrackModel) -> void:
+	var set: SurfaceSet = track.surface_set
+	if set == null:
+		return
+	var stripe: int = maxi(set.fence_stripe_segments, 1)
+	for zi in track.zone_polygons.size():
+		if not track.zone_fences[zi]:
+			continue
+		var poly: PackedVector2Array = track.zone_polygons[zi]
+		var clockwise: bool = Geometry2D.is_polygon_clockwise(poly)
+		var edges: PackedVector2Array = track.zone_fence_edges[zi]
+		var zh: float = track.zone_heights[zi]
+		for k in range(0, edges.size(), 2):
+			var a: Vector2 = edges[k]
+			var b: Vector2 = edges[k + 1]
+			var d: Vector2 = (b - a).normalized()
+			# Inward normal: to the right of the edge for a clockwise outline in (x, z), else to the left.
+			var inward: Vector2 = Vector2(-d.y, d.x) if clockwise else Vector2(d.y, -d.x)
+			var y0: float = zh + set.ground_lift
+			_block(st, a, b, inward, set.fence_thickness, y0, y0, set.fence_height,
+					set.fence_color_b if (k / 2 / stripe) % 2 == 1 else set.fence_color_a)
+
+
+# Story 011: draws every surface zone. An off-road zone is a flat-coloured ground with a low-contrast
+# pattern (speckle or wave stripes, art bible section 6); an on-road zone (slick) is a translucent
+# glossy overlay at the road's own height with slanted highlight streaks.
+func _surface_zones(track: TrackModel) -> void:
+	if not track.has_surfaces():
+		return
+	var set: SurfaceSet = track.surface_set
+	var ground := SurfaceTool.new()
+	ground.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var overlay := SurfaceTool.new()
+	overlay.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var any_ground: bool = false
+	var any_overlay: bool = false
+	for zi in track.zone_polygons.size():
+		var t: SurfaceType = track.zone_types[zi]
+		var poly: PackedVector2Array = track.zone_polygons[zi]
+		var tris: PackedInt32Array = Geometry2D.triangulate_polygon(poly)
+		if tris.is_empty():
+			push_warning("TrackMesh: surface zone %s could not be triangulated" % track.zone_ids[zi])
+			continue
+		var zh: float = track.zone_heights[zi]
+		var st: SurfaceTool = overlay if t.on_road else ground
+		var base_col: Color = t.ground_color
+		if t.on_road:
+			base_col.a = t.overlay_alpha
+			any_overlay = true
+		else:
+			any_ground = true
+		st.set_color(base_col)
+		st.set_normal(Vector3.UP)
+		for idx in tris:
+			var v: Vector2 = poly[idx]
+			st.add_vertex(_v3(v, _zone_y(track, t, v, zh) + (set.overlay_lift if t.on_road else set.ground_lift)))
+		if t.pattern == &"none" and not t.on_road:
+			continue
+		_zone_marks(st, track, set, t, poly, zh, zi)
+	if any_ground:
+		add_child(_instance(ground.commit()))
+	if any_overlay:
+		var mi := MeshInstance3D.new()
+		mi.mesh = overlay.commit()
+		var m := StandardMaterial3D.new()
+		m.vertex_color_use_as_albedo = true
+		m.vertex_color_is_srgb = true
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED
+		m.roughness = 1.0 - 0.9 * _max_gloss(track)
+		m.metallic_specular = 1.0
+		mi.material_override = m
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mi)
+
+
+func _max_gloss(track: TrackModel) -> float:
+	var g: float = 0.0
+	for t in track.zone_types:
+		if t.on_road:
+			g = maxf(g, t.gloss)
+	return g
+
+
+# Height of a zone's ground at [param v]: the zone height, or the road's own height for an overlay.
+func _zone_y(track: TrackModel, t: SurfaceType, v: Vector2, zone_h: float) -> float:
+	return _road_y(track, v, zone_h) if t.on_road else zone_h
+
+
+# Pattern marks of one zone: jittered dots (speckle) or dashes in rows (stripe; slanted streaks on an
+# on-road overlay). Positions come from an integer hash, so the picture is the same every run.
+func _zone_marks(st: SurfaceTool, track: TrackModel, set: SurfaceSet, t: SurfaceType, poly: PackedVector2Array,
+		zh: float, zi: int) -> void:
+	var r: Rect2 = track.zone_bounds[zi]
+	var cell: float = maxf(t.pattern_cell, 0.2)
+	var cols: int = int(ceil(r.size.x / cell))
+	var rows: int = int(ceil(r.size.y / cell))
+	var budget: int = set.pattern_max_marks
+	var col: Color = t.pattern_color
+	if t.on_road:
+		col.a = STREAK_ALPHA
+	var lift: float = (set.overlay_lift if t.on_road else set.ground_lift) + set.pattern_lift
+	var streak: bool = t.on_road or t.pattern == &"stripe"
+	for cz in rows:
+		for cx in cols:
+			if budget <= 0:
+				return
+			var jx: float = _hash01(cx, cz, zi * 2 + 1)
+			var jz: float = _hash01(cx, cz, zi * 2 + 2)
+			var c: Vector2 = r.position + Vector2((cx + jx) * cell, (cz + jz) * cell)
+			if streak and (cx + cz * 2) % STREAK_EVERY != 0:
+				continue  # dashes: only some cells
+			if not Geometry2D.is_point_in_polygon(c, poly):
+				continue
+			var half := Vector2(t.pattern_size, t.pattern_size)
+			var ang: float = _hash01(cx, cz, zi * 2 + 3) * TAU
+			if streak:
+				half = Vector2(t.pattern_size * STREAK_LENGTH_FACTOR, t.pattern_size * 0.5)
+				ang = STREAK_SLANT if t.on_road else 0.0
+			var ax: Vector2 = Vector2(cos(ang), sin(ang)) * half.x
+			var az: Vector2 = Vector2(-sin(ang), cos(ang)) * half.y
+			var q: PackedVector2Array = PackedVector2Array([c - ax - az, c + ax - az, c + ax + az, c - ax + az])
+			var ok: bool = true
+			for v in q:
+				if not Geometry2D.is_point_in_polygon(v, poly):
+					ok = false
+			if not ok:
+				continue
+			budget -= 1
+			st.set_color(col)
+			st.set_normal(Vector3.UP)
+			for k in [0, 1, 2, 0, 2, 3]:
+				st.add_vertex(_v3(q[k], _zone_y(track, t, q[k], zh) + lift))
+
+
+# Deterministic pseudo-random 0..1 from two cell indices and a salt (integer hash, not tuning).
+func _hash01(a: int, b: int, salt: int) -> float:
+	var h: int = (a * 73856093) ^ (b * 19349663) ^ (salt * 83492791)
+	h = (h ^ (h >> 13)) * 1274126177
+	return float((h ^ (h >> 16)) & 0xFFFF) / 65535.0

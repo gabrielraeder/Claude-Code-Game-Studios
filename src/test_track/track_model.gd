@@ -65,6 +65,9 @@ class Query extends RefCounted:
 	var support: float = 0.0
 	## Height the jump ramp under the point adds to the road (0 when not on a ramp).
 	var ramp_rise: float = 0.0
+	## True when the point is beside the main road where a wall opening has no wall (story 011): off the
+	## deck there, a kart is held by the surface zones (TrackModel.zone_escape) instead of the wall.
+	var in_opening: bool = false
 
 
 ## Nearest-point result on one road (internal).
@@ -105,6 +108,8 @@ class Path extends RefCounted:
 	## Wall offset at each point on the normal side (+) and the other side (-).
 	var wall_pos: PackedFloat32Array = PackedFloat32Array()
 	var wall_neg: PackedFloat32Array = PackedFloat32Array()
+	## Per sample: bit 1 = the normal side is in a wall opening, bit 2 = the other side (story 011).
+	var opening: PackedByteArray = PackedByteArray()
 	## Main-loop range this road covers (branches only).
 	var s_in: float = 0.0
 	var s_out: float = 0.0
@@ -333,6 +338,19 @@ var ramp_lat: PackedFloat32Array = PackedFloat32Array()
 var ramp_half: PackedFloat32Array = PackedFloat32Array()
 ## Main-loop distance of each ramp's lip (drivers that time a trick jump use it).
 var ramp_lip_s: PackedFloat32Array = PackedFloat32Array()
+## Surface kinds (TrackData.surface_set or the shipped set) and the zones (story 011): per zone its
+## polygon, bounding box, height and type; a grid maps a cell to the zones whose box touches it.
+var surface_set: SurfaceSet
+var zone_polygons: Array[PackedVector2Array] = []
+var zone_bounds: Array[Rect2] = []
+var zone_heights: PackedFloat32Array = PackedFloat32Array()
+var zone_types: Array[SurfaceType] = []
+var zone_ids: Array[StringName] = []
+## Per zone: the edges of its outline that get a fence (do not touch the road), as a flat list a0, b0, a1, b1...
+var zone_fence_edges: Array[PackedVector2Array] = []
+var zone_fences: Array[bool] = []
+var _zone_grid: Dictionary = {}
+var _zone_cell: float = 16.0
 var _switch_margin: float = 0.75
 var _keep_band: float = 1.5
 var _window: int = 14
@@ -424,12 +442,133 @@ func _init(track_data: TrackData) -> void:
 		var pst: Vector2 = path.seg_t_at(pad.distance)
 		pad_heights.append(path.surface_y(int(pst.x), pst.y, pad.lateral) + _ramp_rise(bi if bi >= 0 else MAIN_PATH, pad.distance, pad.lateral).x)
 
+	_build_zones()
+
+
+# Story 011: reads the surface zones into arrays and the cell grid used by surface_zone_at.
+func _build_zones() -> void:
+	if data.surfaces.is_empty():
+		return
+	surface_set = data.surface_set
+	if surface_set == null:
+		surface_set = load(SurfaceSet.DEFAULT_PATH) as SurfaceSet
+	_zone_cell = maxf(data.surface_cell_size, 1.0)
+	for z in data.surfaces:
+		if z == null or z.polygon.size() < 3:
+			continue
+		var t: SurfaceType = surface_set.type_of(z.kind) if surface_set != null else null
+		if t == null:
+			push_warning("TrackModel: surface zone '%s' has unknown kind '%s'" % [z.id, z.kind])
+			continue
+		var r := Rect2(z.polygon[0], Vector2.ZERO)
+		for v in z.polygon:
+			r = r.expand(v)
+		var zi: int = zone_polygons.size()
+		zone_polygons.append(z.polygon)
+		zone_bounds.append(r)
+		zone_heights.append(z.height)
+		zone_types.append(t)
+		zone_ids.append(z.id)
+		zone_fence_edges.append(_fence_edges(z))
+		zone_fences.append(z.fence and not t.on_road)
+		var c0: Vector2i = Vector2i((r.position / _zone_cell).floor())
+		var c1: Vector2i = Vector2i((r.end / _zone_cell).floor())
+		for cx in range(c0.x, c1.x + 1):
+			for cz in range(c0.y, c1.y + 1):
+				var key := Vector2i(cx, cz)
+				var list: PackedInt32Array = _zone_grid.get(key, PackedInt32Array())
+				list.append(zi)
+				_zone_grid[key] = list
+
+
+# Edges of zone [param z] that are its outer boundary: those whose middle is not at the road's curb.
+func _fence_edges(z: TrackSurface) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	var poly: PackedVector2Array = z.polygon
+	for i in poly.size():
+		var a: Vector2 = poly[i]
+		var b: Vector2 = poly[(i + 1) % poly.size()]
+		var h: Hit = main.nearest((a + b) * 0.5, -1, 0)
+		if h.dist > main.half_at(h.seg, h.t) + main.curb + data.surface_edge_tolerance:
+			out.append(a)
+			out.append(b)
+	return out
+
+
+## Keeps a kart off the road in a wall opening inside the surface zones (story 011). Returns
+## (outward.x, outward.y, push): push is how far (meters) to move the kart against [code]outward[/code]
+## (toward the wall) to be back inside by [param margin]; 0 = nothing to do. A kart in a zone is pushed
+## off the zone's fence edges; a kart outside every zone at its level is put back on the nearest zone edge.
+func zone_escape(p: Vector2, y: float, margin: float) -> Vector3:
+	var zi: int = surface_zone_at(p, y)
+	if zi >= 0:
+		var edges: PackedVector2Array = zone_fence_edges[zi]
+		var best_d: float = INF
+		var best_b: Vector2 = p
+		for k in range(0, edges.size(), 2):
+			var b: Vector2 = Geometry2D.get_closest_point_to_segment(p, edges[k], edges[k + 1])
+			var d: float = p.distance_to(b)
+			if d < best_d:
+				best_d = d
+				best_b = b
+		if best_d >= margin or best_d == INF:
+			return Vector3.ZERO
+		var out: Vector2 = (best_b - p).normalized() if best_d > 0.0001 else Vector2.ZERO
+		return Vector3(out.x, out.y, margin - best_d)
+	var near_d: float = INF
+	var near_b: Vector2 = p
+	for z in zone_polygons.size():
+		if zone_types[z].on_road or absf(y - zone_heights[z]) > data.surface_height_tolerance:
+			continue
+		var poly: PackedVector2Array = zone_polygons[z]
+		for k in poly.size():
+			var b2: Vector2 = Geometry2D.get_closest_point_to_segment(p, poly[k], poly[(k + 1) % poly.size()])
+			var d2: float = p.distance_to(b2)
+			if d2 < near_d:
+				near_d = d2
+				near_b = b2
+	if near_d == INF:
+		return Vector3.ZERO
+	var o: Vector2 = (p - near_b).normalized() if near_d > 0.0001 else Vector2.ZERO
+	return Vector3(o.x, o.y, near_d + margin)
+
+
+## True when the track has surface zones.
+func has_surfaces() -> bool:
+	return not zone_polygons.is_empty()
+
+
+## Index of the surface zone under [param p] for a kart at height [param y] (NAN = any height), or
+## -1. A zone counts only when [param y] is within TrackData.surface_height_tolerance of its height.
+## Grid lookup, then a point-in-polygon test of the few zones in the cell (the first zone listed wins).
+func surface_zone_at(p: Vector2, y: float = NAN) -> int:
+	if zone_polygons.is_empty():
+		return -1
+	var list: PackedInt32Array = _zone_grid.get(Vector2i((p / _zone_cell).floor()), PackedInt32Array())
+	for zi in list:
+		if not zone_bounds[zi].has_point(p):
+			continue
+		if not is_nan(y) and absf(y - zone_heights[zi]) > data.surface_height_tolerance:
+			continue
+		if Geometry2D.is_point_in_polygon(p, zone_polygons[zi]):
+			return zi
+	return -1
+
+
+## The SurfaceType under [param p] at height [param y], or null (plain road or ground).
+func surface_type_at(p: Vector2, y: float = NAN) -> SurfaceType:
+	var zi: int = surface_zone_at(p, y)
+	return zone_types[zi] if zi >= 0 else null
+
+
 # Wall offsets per main sample: half width + curb, plus the open-edge reach on open stretches.
 func _main_walls() -> void:
 	var m: int = main.points.size()
 	var acc: float = 0.0
 	main.wall_pos.resize(m)
 	main.wall_neg.resize(m)
+	main.opening.resize(m)
+	main.opening.fill(0)
 	for i in m:
 		var w: float = main.half[i] + data.curb_width
 		main.wall_pos[i] = w
@@ -440,6 +579,15 @@ func _main_walls() -> void:
 					main.wall_pos[i] = w + data.open_edge_reach
 				else:
 					main.wall_neg[i] = w + data.open_edge_reach
+		for o in data.wall_openings:
+			if o == null or acc < o.s_from or acc > o.s_to:
+				continue
+			# Story 011: no wall on that side here; the zones hold the kart (zone_escape).
+			if o.side > 0:
+				main.wall_pos[i] = maxf(main.wall_pos[i], w + o.depth)
+			else:
+				main.wall_neg[i] = maxf(main.wall_neg[i], w + o.depth)
+			main.opening[i] = main.opening[i] | (1 if o.side > 0 else 2)
 		acc += main.points[i].distance_to(main.points[(i + 1) % m])
 
 
@@ -544,6 +692,12 @@ func query(p: Vector2, hint: int, y_hint: float = NAN) -> Query:
 	var main_hit: Hit = null
 	if leveled and main_hint < 0:
 		main_hit = main.nearest_filtered(p, y_hint - sep, y_hint + sep)
+	if main_hit == null and leveled and not zone_polygons.is_empty():
+		# Story 011: on an off-road zone the whole main road is searched (at the kart's level), so a
+		# kart crossing a patch inside a hairpin switches to the other leg's corridor.
+		var zi: int = surface_zone_at(p, y_hint)
+		if zi >= 0 and not zone_types[zi].on_road:
+			main_hit = main.nearest_filtered(p, y_hint - sep, y_hint + sep)
 	if main_hit == null:
 		main_hit = main.nearest(p, main_hint, _window)
 	# Story 008 part 4: a kart on a branch that crosses over (or under) the main road must not be
@@ -651,6 +805,8 @@ func _to_query(p: Vector2, h: Hit, y_hint: float = NAN) -> Query:
 		q.slope_angle = atan(q.slope)
 	q.surface_normal = surface_normal_of(q.tangent, q.slope, q.bank)
 	q.on_deck = h.dist <= reach
+	if path.index == MAIN_PATH and not path.opening.is_empty():
+		q.in_opening = (path.opening[h.seg] & (1 if side > 0.0 else 2)) != 0
 	q.support = q.height if q.on_deck else _support_off_deck(p, path.index, q.height if is_nan(y_hint) else y_hint)
 	return q
 
@@ -678,6 +834,10 @@ func _ramp_rise(path_index: int, along: float, lateral: float) -> Vector2:
 # (data.ground_y).
 func _support_off_deck(p: Vector2, own: int, y_ref: float) -> float:
 	var best: float = data.ground_y
+	# Story 011: a surface zone at the kart's level holds it up at the zone's height.
+	var zi: int = surface_zone_at(p, y_ref)
+	if zi >= 0:
+		best = maxf(best, zone_heights[zi])
 	var roads: Array[Path] = [main]
 	roads.append_array(branches)
 	for path in roads:

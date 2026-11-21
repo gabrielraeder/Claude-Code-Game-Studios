@@ -121,6 +121,21 @@ var surface_normal: Vector3 = Vector3.UP
 ## Bank of the road under the kart in radians (positive = banked into a left turn).
 var surface_bank: float = 0.0
 
+## Surface under the kart this tick (story 011; null = plain road), and the type whose effect is in
+## force (the surface, or a slick's tail for SurfaceType.tail_time after leaving it).
+var surface: SurfaceType = null
+var surface_effect: SurfaceType = null
+## Speed cap (m/s) the surface sets right now; INF = none (no surface, or lifted by a boost).
+var surface_cap: float = INF
+## Distance phase (radians) of the bumpy-ground wobble, for the visual's bounce.
+var surface_phase: float = 0.0
+## Number of drifts a surface ended (logs).
+var surface_drift_ends: int = 0
+## The track's surface table (for the visual's particle cap); null on a track without surfaces.
+var surface_set: SurfaceSet = null
+var _tail_type: SurfaceType = null
+var _tail_time: float = 0.0
+
 var _prev_position: Vector2 = Vector2.ZERO
 var _prev_yaw: float = 0.0
 var _prev_height: float = 0.0
@@ -222,6 +237,12 @@ func reset_to(track: TrackModel, distance: float, lateral_offset: float) -> void
 	_prev_drift_btn = false
 	_trick_pending = false
 	_off_deck_air = 0.0
+	surface = null
+	surface_effect = null
+	surface_cap = INF
+	_tail_type = null
+	_tail_time = 0.0
+	surface_drift_ends = 0
 	hazard_kind = &"water"
 	# Story 008 part 3: the grid slot is on the road at the start's own level (a crossover near the
 	# start never puts the kart on the other road).
@@ -251,9 +272,19 @@ func can_drive() -> bool:
 
 ## Speed cap right now: max_speed, times the boost multiplier while boosting.
 func current_speed_cap() -> float:
+	var base: float = stats.max_speed / maxf(_floor_drag_mult, 1.0)
 	if boost_time > 0.0:
-		return stats.max_speed * stats.boost_speed_mult
-	return stats.max_speed / maxf(_floor_drag_mult, 1.0)
+		base = stats.max_speed * stats.boost_speed_mult
+	return minf(base, _surface_cap_now())
+
+
+# Story 011: the cap of the surface in force (max_speed times its share), or INF when there is none or
+# a boost lifts it (SurfaceType.boost_ignores).
+func _surface_cap_now() -> float:
+	var t: SurfaceType = surface_effect
+	if t == null or t.max_speed_frac >= 1.0 or (boost_time > 0.0 and t.boost_ignores):
+		return INF
+	return stats.max_speed * t.max_speed_frac
 
 
 ## Position blended between the last two ticks, for smooth rendering.
@@ -487,6 +518,7 @@ func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 		if sink_time <= 0.0:
 			_respawn(track)
 		return
+	_update_surface(dt, track)
 	var control: bool = can_drive()
 	var steer: float = input.steer if control else 0.0
 	var throttle: float = input.throttle if control and stall_time <= 0.0 else 0.0
@@ -500,8 +532,13 @@ func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 
 	# Drift: hold the button while steering at speed. The direction locks in. A drift starts on
 	# the ground only; one held into a jump carries on through the air.
+	var drift_ok: bool = surface_effect == null or surface_effect.drift_allowed
+	if drifting and not drift_ok:
+		# Story 011: this surface does not allow a drift: it ends without paying its boost.
+		surface_drift_ends += 1
+		_end_drift(false)
 	if not drifting and control and grounded and input.drift and absf(steer) > stats.drift_start_steer \
-			and speed > stats.drift_min_speed:
+			and speed > stats.drift_min_speed and drift_ok:
 		drifting = true
 		drift_dir = 1 if steer > 0.0 else -1
 		drift_time = 0.0
@@ -527,8 +564,14 @@ func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 		var low_speed: float = clampf(absf(speed) / stats.full_steer_speed, 0.0, 1.0)
 		var damp: float = 1.0 - stats.high_speed_steer_damp * clampf(speed / stats.max_speed, 0.0, 1.0)
 		yaw_rate = steer * stats.turn_rate * low_speed * damp * (1.0 if speed >= 0.0 else -1.0)
+		if surface_effect != null:
+			yaw_rate *= surface_effect.steer_mult
 	if grounded:
 		_ground_yaw_rate = yaw_rate
+		if surface_effect != null and surface_effect.bump_yaw > 0.0 and absf(speed) > EPSILON:
+			# Bumpy ground (rubble): a yaw wobble that follows the distance driven (no random numbers).
+			surface_phase += TAU * surface_effect.bump_cycles_per_m * absf(speed) * dt
+			yaw_rate += surface_effect.bump_yaw * sin(surface_phase)
 	yaw += yaw_rate * dt
 	accel_long = (speed - speed_before) / dt if dt > 0.0 else 0.0
 	accel_lat = yaw_rate * speed if grounded else 0.0
@@ -537,6 +580,8 @@ func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 		var grip: float = stats.drift_grip if drifting else stats.grip
 		if stats.bank_grip_gain > 0.0:
 			grip *= 1.0 + stats.bank_grip_gain * absf(sin(surface_bank))
+		if surface_effect != null:
+			grip *= surface_effect.grip_mult
 		if _wall_slide_time > 0.0:
 			grip = minf(grip, stats.wall_slide_grip)
 		velocity = velocity.lerp(forward() * speed, clampf(grip * dt, 0.0, 1.0))
@@ -586,7 +631,13 @@ func _update_speed(dt: float, throttle: float, brake: float) -> void:
 	if throttle <= 0.0 and brake <= 0.0 and not boosting:
 		speed = move_toward(speed, 0.0, stats.coast_drag * dt)
 	if speed > cap:
-		speed = move_toward(speed, cap, stats.overspeed_decel * dt)
+		# Above the surface's cap the speed eases down at the surface's own rate, never a snap.
+		var decel: float = stats.overspeed_decel
+		if surface_cap < INF and cap >= surface_cap:
+			decel = surface_effect.surface_decel
+		speed = move_toward(speed, cap, decel * dt)
+	if surface_effect != null and surface_effect.drag > 0.0 and not (boosting and surface_effect.boost_ignores):
+		speed *= exp(-surface_effect.drag * dt)
 	speed = maxf(speed, -stats.reverse_max)
 	if spin_time > 0.0:
 		speed *= exp(-stats.spin_drag * dt)
@@ -595,6 +646,37 @@ func _update_speed(dt: float, throttle: float, brake: float) -> void:
 		if speed > floor_speed:
 			speed = maxf(speed - _slow_profile.decel_frac * stats.max_speed * dt, floor_speed)
 		_slow_time = maxf(0.0, _slow_time - dt)
+
+
+# Story 011: looks up the surface under the kart (grid lookup, point in polygon), keeps a slick's
+# tail running after the kart leaves it, and sets the cap in force. A kart in the air keeps its last
+# surface.
+func _update_surface(dt: float, track: TrackModel) -> void:
+	if not track.has_surfaces():
+		return
+	surface_set = track.surface_set
+	if grounded:
+		surface = track.surface_type_at(position, height)
+	if surface != null:
+		if surface.tail_time > 0.0:
+			_tail_type = surface
+			_tail_time = surface.tail_time
+		surface_effect = surface
+	else:
+		_tail_time = maxf(_tail_time - dt, 0.0)
+		surface_effect = _tail_type if _tail_time > 0.0 else null
+		if _tail_time <= 0.0:
+			_tail_type = null
+	surface_cap = _surface_cap_now()
+
+
+## Reads the surface under the kart without simulating (karts drawn from network data: the visual
+## shows its puffs from the speed on the wire and this).
+func sample_surface_type(track: TrackModel) -> void:
+	if track.has_surfaces():
+		surface_set = track.surface_set
+		surface = track.surface_type_at(position, height)
+		surface_effect = surface
 
 
 func _end_drift(pay_boost: bool) -> void:
@@ -621,9 +703,18 @@ func _constrain_to_track(dt: float, track: TrackModel) -> void:
 	lateral = q.lateral
 	var limit: float = q.wall_offset - stats.radius
 	var touching: bool = false
+	var outward: Vector2 = Vector2.ZERO
+	var over: float = 0.0
 	if absf(lateral) > limit:
-		var outward: Vector2 = q.normal * signf(lateral)
-		position -= outward * (absf(lateral) - limit)
+		outward = q.normal * signf(lateral)
+		over = absf(lateral) - limit
+	elif q.in_opening and not q.on_deck and track.has_surfaces():
+		# Story 011: no wall here; the surface zones' outer edges hold the kart.
+		var e: Vector3 = track.zone_escape(position, height, stats.radius)
+		outward = Vector2(e.x, e.y)
+		over = e.z
+	if over > 0.0:
+		position -= outward * over
 		# A wall stops the part of a bump knock that drives into it.
 		knock -= outward * maxf(knock.dot(outward), 0.0)
 		var into_wall: float = velocity.dot(outward)

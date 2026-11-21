@@ -13,6 +13,8 @@ class KartMemo:
 	var spinning: bool = false
 	var sinking: bool = false
 	var boost_time: float = 0.0
+	var surface: SurfaceType = null
+	var next_repeat: float = 0.0
 
 var _director: AudioDirector
 var _set: AudioSet
@@ -96,6 +98,7 @@ func update(racers: Array[Racer], local: Racer, start: StartSequence, track: Tra
 			m.boost_time = sim.boost_time
 			_memo[r.kart_id] = m
 			continue
+		_surface_sound(r, m, is_local)
 		if spinning and not m.spinning:
 			_play_at(_set.spin_event, r, is_local)
 		if sinking and not m.sinking:
@@ -167,3 +170,19 @@ func _hazard_kind(r: Racer, track: TrackModel) -> StringName:
 		return r.sim.hazard_kind
 	var i: int = track.hazard_index(r.sim.position, null, 0.0)
 	return track.hazard_kinds[i] if i >= 0 else r.sim.hazard_kind
+
+
+# Story 011: the enter sound of a surface (the shallows splash) when a kart drives onto it, repeated
+# every SurfaceType.repeat_interval seconds while it keeps moving on it. Sound only.
+func _surface_sound(r: Racer, m: KartMemo, is_local: bool) -> void:
+	var sim: KartSim = r.sim
+	var t: SurfaceType = sim.surface if sim.grounded else null
+	var now: float = Time.get_ticks_msec() / 1000.0
+	if t != m.surface:
+		m.surface = t
+		if t != null and t.enter_event != &"" and absf(sim.speed) >= t.puff_min_speed:
+			_play_at(t.enter_event, r, is_local)
+			m.next_repeat = now + t.repeat_interval
+	elif t != null and t.enter_event != &"" and t.repeat_interval > 0.0 and now >= m.next_repeat 			and absf(sim.speed) >= t.puff_min_speed:
+		_play_at(t.enter_event, r, is_local)
+		m.next_repeat = now + t.repeat_interval

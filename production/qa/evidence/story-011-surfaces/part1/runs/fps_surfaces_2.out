@@ -1,0 +1,31 @@
+tools/bot_race_test.sh: line 33:  7964 Segmentation fault      "$GODOT" $([ "${HOST_WINDOWED:-0}" = 1 ] || echo --headless) --path . -- --host --port="$PORT" --players=$((CLIENTS + 1)) --bots="$BOTS" $DRV --quit-after="${QUIT:-300}" $SC "${COMMON[@]}" ${HOST_EXTRA:-} --netlog="$OUT/host.csv" > "$OUT/host.log" 2>&1
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+   1 Careful           27.67  27.1                       0(0.0)       0       0      0.9436 70.6
+   2 Wide Wanderer     26.73  25.9                       0(0.0)       0       0      0.9567 60.7
+   3 Shortcut Hunter   27.43  26.5                       0(0.0)       0       0      0.9683 59.6
+   4 Apex Ace          25.72  24.6                       0(0.0)       0       0      0.9753 57.7
+   5 Outside Swinger   27.72  26.6                       0(0.0)       0       0      0.9630 57.5
+   6 Item Hoarder      27.50  26.3                       0(0.0)       0       0      0.9541 57.0
+   7 Steady Eddie      29.17  27.8                       0(0.0)       0       0      0.9402 56.3
+   8 Hothead           27.88  24.9                       0(0.0)       0       0      0.9813 55.4
+   9 Careful           28.08  26.6                       0(0.0)       0       0      0.9484 55.5
+  10 Wide Wanderer     28.62  26.9                       0(0.0)       0       0      0.9642 55.2
+  11 Shortcut Hunter   27.02  25.3                       0(0.0)       0       0      0.9685 55.0
+
+bots finished: 11/11  first 25.72  last 29.17  spread 13.4% of winner
+bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+
+SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+  per personality: {}
+  per location: {}
+  SEED 1542456337; karts sinking again within 5 s: 0
+  shortcuts skipped because crowded: 0
+
+shortcut enters by name/branch:
+
+host autopilot: [debug] finished: laps [23.0166666666666] boosts [4, 0, 0] start_boost 3 max_speed 35.10 cap 35.10
+[net-summary] role=host peer=1 place=1 finish=23.62 karts=12 | rtt_avg=0ms rtt_max=0ms view_delay=100ms | snaps/s=0.0 | extrap=0.0% | pred_err avg=0.000m max=0.000m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=0.0 kb_in/s=0.0
+
+bot item use: {}
+hits by bot items: {}
+items used per bot: {}

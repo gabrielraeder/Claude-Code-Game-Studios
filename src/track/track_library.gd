@@ -11,6 +11,7 @@ const TRACKS: Dictionary = {
 	"dungeon_depths": "res://assets/tracks/dungeon_depths/dungeon_depths.tres",
 	"test_loop": "res://src/test_track/test_loop.tres",
 	"test_elevation": "res://assets/tracks/test_elevation/test_elevation.tres",
+	"test_surfaces": "res://assets/tracks/test_surfaces/test_surfaces.tres",
 }
 
 

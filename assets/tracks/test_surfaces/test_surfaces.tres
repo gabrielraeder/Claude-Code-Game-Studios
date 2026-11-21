@@ -1,0 +1,145 @@
+[gd_resource type="Resource" script_class="TrackData" load_steps=23 format=3]
+
+[ext_resource type="Script" path="res://src/test_track/track_data.gd" id="1_track"]
+[ext_resource type="Script" path="res://src/track/track_surface.gd" id="2_surf"]
+[ext_resource type="Script" path="res://src/track/track_wall_opening.gd" id="3_open"]
+[ext_resource type="Script" path="res://src/track/track_pad.gd" id="4_pad"]
+
+[sub_resource type="Resource" id="Z_0"]
+script = ExtResource("2_surf")
+id = &"grass_a"
+kind = &"grass"
+polygon = PackedVector2Array(44.000, -8.200, 84.000, -8.200, 84.000, -18.200, 44.000, -18.200)
+height = 0.0
+
+[sub_resource type="Resource" id="Z_1"]
+script = ExtResource("2_surf")
+id = &"sand_a"
+kind = &"sand"
+polygon = PackedVector2Array(94.000, -8.200, 134.000, -8.200, 134.000, -18.200, 94.000, -18.200)
+height = 0.0
+
+[sub_resource type="Resource" id="Z_2"]
+script = ExtResource("2_surf")
+id = &"shallows_a"
+kind = &"shallows"
+polygon = PackedVector2Array(144.000, -8.200, 199.000, -8.200, 199.000, -20.200, 144.000, -20.200)
+height = 0.0
+
+[sub_resource type="Resource" id="Z_3"]
+script = ExtResource("2_surf")
+id = &"mud_a"
+kind = &"mud"
+polygon = PackedVector2Array(44.000, 8.200, 84.000, 8.200, 84.000, 18.200, 44.000, 18.200)
+height = 0.0
+
+[sub_resource type="Resource" id="Z_4"]
+script = ExtResource("2_surf")
+id = &"rubble_a"
+kind = &"rubble"
+polygon = PackedVector2Array(94.000, 8.200, 134.000, 8.200, 134.000, 18.200, 94.000, 18.200)
+height = 0.0
+
+[sub_resource type="Resource" id="Z_5"]
+script = ExtResource("2_surf")
+id = &"mud_b"
+kind = &"mud"
+polygon = PackedVector2Array(206.000, 128.200, 166.000, 128.200, 166.000, 138.200, 206.000, 138.200)
+height = 0.0
+
+[sub_resource type="Resource" id="Z_6"]
+script = ExtResource("2_surf")
+id = &"grass_b"
+kind = &"grass"
+polygon = PackedVector2Array(136.000, 128.200, 96.000, 128.200, 96.000, 138.200, 136.000, 138.200)
+height = 0.0
+
+[sub_resource type="Resource" id="Z_7"]
+script = ExtResource("2_surf")
+id = &"corner_cut"
+kind = &"grass"
+polygon = PackedVector2Array(166.000, 8.200, 216.000, 8.200, 218.062, 8.335, 220.089, 8.738, 222.046, 9.403, 223.900, 10.317, 225.618, 11.465, 227.172, 12.828, 228.535, 14.382, 229.683, 16.100, 230.597, 17.954, 231.262, 19.911, 231.665, 21.938, 231.800, 24.000, 231.800, 74.000)
+height = 0.0
+
+[sub_resource type="Resource" id="Z_8"]
+script = ExtResource("2_surf")
+id = &"slick_a"
+kind = &"slick"
+polygon = PackedVector2Array(156.000, 114.000, 156.000, 126.000, 144.000, 126.000, 144.000, 114.000)
+height = 0.0
+
+[sub_resource type="Resource" id="O_0"]
+script = ExtResource("3_open")
+s_from = 20.000
+s_to = 60.000
+side = -1
+depth = 20.0
+
+[sub_resource type="Resource" id="O_1"]
+script = ExtResource("3_open")
+s_from = 70.000
+s_to = 110.000
+side = -1
+depth = 20.0
+
+[sub_resource type="Resource" id="O_2"]
+script = ExtResource("3_open")
+s_from = 120.000
+s_to = 175.000
+side = -1
+depth = 20.0
+
+[sub_resource type="Resource" id="O_3"]
+script = ExtResource("3_open")
+s_from = 20.000
+s_to = 60.000
+side = 1
+depth = 20.0
+
+[sub_resource type="Resource" id="O_4"]
+script = ExtResource("3_open")
+s_from = 70.000
+s_to = 110.000
+side = 1
+depth = 20.0
+
+[sub_resource type="Resource" id="O_5"]
+script = ExtResource("3_open")
+s_from = 349.398
+s_to = 389.398
+side = -1
+depth = 20.0
+
+[sub_resource type="Resource" id="O_6"]
+script = ExtResource("3_open")
+s_from = 419.398
+s_to = 459.398
+side = -1
+depth = 20.0
+
+[sub_resource type="Resource" id="O_7"]
+script = ExtResource("3_open")
+s_from = 142.000
+s_to = 279.699
+side = 1
+depth = 40.0
+
+[sub_resource type="Resource" id="Pad_a"]
+script = ExtResource("4_pad")
+distance = 150.0
+width = 6.0
+
+[resource]
+script = ExtResource("1_track")
+track_id = &"test_surfaces"
+display_name = "Test Surfaces"
+control_points = PackedVector2Array(24.000, 0.000, 29.053, 0.000, 34.105, 0.000, 39.158, 0.000, 44.211, 0.000, 49.263, 0.000, 54.316, 0.000, 59.368, 0.000, 64.421, 0.000, 69.474, 0.000, 74.526, 0.000, 79.579, 0.000, 84.632, 0.000, 89.684, 0.000, 94.737, 0.000, 99.789, 0.000, 104.842, 0.000, 109.895, 0.000, 114.947, 0.000, 120.000, 0.000, 125.053, 0.000, 130.105, 0.000, 135.158, 0.000, 140.211, 0.000, 145.263, 0.000, 150.316, 0.000, 155.368, 0.000, 160.421, 0.000, 165.474, 0.000, 170.526, 0.000, 175.579, 0.000, 180.632, 0.000, 185.684, 0.000, 190.737, 0.000, 195.789, 0.000, 200.842, 0.000, 205.895, 0.000, 210.947, 0.000, 216.000, 0.000, 220.682, 0.461, 225.184, 1.827, 229.334, 4.045, 232.971, 7.029, 235.955, 10.666, 238.173, 14.816, 239.539, 19.318, 240.000, 24.000, 240.000, 29.143, 240.000, 34.286, 240.000, 39.429, 240.000, 44.571, 240.000, 49.714, 240.000, 54.857, 240.000, 60.000, 240.000, 65.143, 240.000, 70.286, 240.000, 75.429, 240.000, 80.571, 240.000, 85.714, 240.000, 90.857, 240.000, 96.000, 239.539, 100.682, 238.173, 105.184, 235.955, 109.334, 232.971, 112.971, 229.334, 115.955, 225.184, 118.173, 220.682, 119.539, 216.000, 120.000, 210.947, 120.000, 205.895, 120.000, 200.842, 120.000, 195.789, 120.000, 190.737, 120.000, 185.684, 120.000, 180.632, 120.000, 175.579, 120.000, 170.526, 120.000, 165.474, 120.000, 160.421, 120.000, 155.368, 120.000, 150.316, 120.000, 145.263, 120.000, 140.211, 120.000, 135.158, 120.000, 130.105, 120.000, 125.053, 120.000, 120.000, 120.000, 114.947, 120.000, 109.895, 120.000, 104.842, 120.000, 99.789, 120.000, 94.737, 120.000, 89.684, 120.000, 84.632, 120.000, 79.579, 120.000, 74.526, 120.000, 69.474, 120.000, 64.421, 120.000, 59.368, 120.000, 54.316, 120.000, 49.263, 120.000, 44.211, 120.000, 39.158, 120.000, 34.105, 120.000, 29.053, 120.000, 24.000, 120.000, 19.318, 119.539, 14.816, 118.173, 10.666, 115.955, 7.029, 112.971, 4.045, 109.334, 1.827, 105.184, 0.461, 100.682, -0.000, 96.000, -0.000, 90.857, -0.000, 85.714, -0.000, 80.571, -0.000, 75.429, -0.000, 70.286, -0.000, 65.143, -0.000, 60.000, -0.000, 54.857, -0.000, 49.714, -0.000, 44.571, -0.000, 39.429, -0.000, 34.286, -0.000, 29.143, -0.000, 24.000, 0.461, 19.318, 1.827, 14.816, 4.045, 10.666, 7.029, 7.029, 10.666, 4.045, 14.816, 1.827, 19.318, 0.461)
+samples_per_segment = 4
+road_half_width = 7.0
+curb_width = 1.2
+lap_count = 3
+start_distance_behind_line = 6.0
+query_window = 14
+surfaces = Array[ExtResource("2_surf")]([SubResource("Z_0"), SubResource("Z_1"), SubResource("Z_2"), SubResource("Z_3"), SubResource("Z_4"), SubResource("Z_5"), SubResource("Z_6"), SubResource("Z_7"), SubResource("Z_8")])
+wall_openings = Array[ExtResource("3_open")]([SubResource("O_0"), SubResource("O_1"), SubResource("O_2"), SubResource("O_3"), SubResource("O_4"), SubResource("O_5"), SubResource("O_6"), SubResource("O_7")])
+boost_pads = Array[ExtResource("4_pad")]([SubResource("Pad_a")])

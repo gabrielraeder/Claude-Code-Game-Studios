@@ -50,6 +50,16 @@ var _dunked: bool = false
 ## Debug (--auto-lane=S0:S1:LAT): (s0, s1, lateral) drive LAT meters off the line (left positive)
 ## while its progress (main-loop distance, on a branch too) is between s0 and s1. s1 < s0 = off.
 var lane_window: Vector3 = Vector3(0.0, -1.0, 0.0)
+## Debug (--auto-cut=S0:S1, story 011): past main-loop distance S0 the target is the road point S1
+## (a straight cut across an off-road zone) until the kart is within CUT_DONE_DISTANCE of it. s1 < s0 = off.
+var cut_window: Vector2 = Vector2(0.0, -1.0)
+## Debug (--auto-boost=S:SECONDS): once, at main-loop distance S, the kart gets SECONDS of boost. S < 0 = off.
+var boost_at: Vector2 = Vector2(-1.0, 0.0)
+## Meters from the cut target at which the cut is over, and the shortest distance a boost cue is armed from.
+const CUT_DONE_DISTANCE: float = 8.0
+var _cutting: bool = false
+var _cut_done: bool = false
+var _boost_given: bool = false
 
 ## False makes a sloppy driver: full throttle, plain steering, never drifts (track check).
 var allow_drift: bool = true
@@ -101,6 +111,18 @@ func _drive_line(input: KartInput, sim: KartSim, track: TrackModel, _dt: float) 
 	if on_open > 0 or (sim.road_half_width > 0.0 and sim.road_half_width < NARROW_HALF_WIDTH):
 		look = OPEN_LOOK_BASE + maxf(sim.speed, 0.0) * OPEN_LOOK_PER_SPEED
 	var target: Vector2 = _route_point(track, sim, look)
+	if boost_at.x >= 0.0 and not _boost_given and sim.track_s >= boost_at.x and sim.track_s < boost_at.x + 40.0:
+		_boost_given = true
+		sim.boost_time = maxf(sim.boost_time, boost_at.y)
+	if cut_window.y >= cut_window.x and not _cut_done:
+		var goal: Vector2 = track.point_at(cut_window.y)
+		if not _cutting and sim.track_s >= cut_window.x and sim.track_s < cut_window.y:
+			_cutting = true
+		if _cutting:
+			target = goal
+			if sim.position.distance_to(goal) < CUT_DONE_DISTANCE:
+				_cutting = false
+				_cut_done = true
 	if lane_window.y >= lane_window.x and sim.track_s >= lane_window.x and sim.track_s <= lane_window.y:
 		var lt: Vector2 = _route_tangent(track, sim, look)
 		target += Vector2(-lt.y, lt.x) * lane_window.z
