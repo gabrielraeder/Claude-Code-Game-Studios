@@ -810,8 +810,33 @@ CODE_FILES=""
     | code_root_filter "$CODE_ROOT" \
     | grep -iE '\.(gd|cs|cpp|cc|hpp|h|c|py|js|ts|rs|java|kt|lua)$')
 if [ -n "$CODE_FILES" ]; then
+    # ADDED LINES ONLY, not whole files: a whole-file scan re-flags old code on
+    # every commit and flags resets (`speed = 0.0`), and a warning that always
+    # fires gets ignored. One `git diff --cached -U0` for all files (one process,
+    # not one per file) parsed by awk, which is POSIX on Windows Git Bash, Linux
+    # and macOS. Skipped: comment lines, `const` lines (named constants are the
+    # allowed form for non-tuning numbers), GDScript `@export` lines (a data
+    # Resource's field default IS the data-driven home of the value), and the
+    # values 0, 1 and -1 (resets,
+    # identities, signs). Typed GDScript (`var speed: float = 5.0`), `:=`, `=`
+    # and dict/JSON colons (`"speed": 5`) all count. The project rule this
+    # backs is .claude/rules/tuning-values.md where present (gameplay-code.md
+    # otherwise); the keyword list stays a heuristic.
     HARDCODED=$(printf '%s\n' "$CODE_FILES" | tr '\n' '\0' \
-        | xargs -0 grep -lE '(damage|health|speed|rate|chance|cost|duration)[[:space:]]*[:=][[:space:]]*[0-9]+' 2>/dev/null || true)
+        | xargs -0 git diff --cached -U0 --no-color -- 2>/dev/null \
+        | awk '
+            /^\+\+\+ / { f = $0; sub(/^\+\+\+ (b\/)?/, "", f); next }
+            /^\+/ {
+                l = substr($0, 2)
+                if (l ~ /^[[:space:]]*(#|\/\/)/) next
+                if (l ~ /^[[:space:]]*(static[[:space:]]+)?const[[:space:]]/) next
+                if (l ~ /^[[:space:]]*@export/) next
+                if (match(l, /(damage|health|speed|rate|chance|cost|duration)[A-Za-z0-9_]*"?[[:space:]]*(:[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*)?(:=|=|:)[[:space:]]*-?[0-9]+(\.[0-9]+)?/)) {
+                    v = substr(l, RSTART, RLENGTH); sub(/.*[:=][[:space:]]*/, "", v)
+                    if (v + 0 == 0 || v + 0 == 1 || v + 0 == -1) next
+                    print f
+                }
+            }' | sort -u || true)
     if [ -n "$HARDCODED" ]; then
         while IFS= read -r file; do
             [ -n "$file" ] && WARNINGS="$WARNINGS\nCODE: $file may contain hardcoded gameplay values. Use data files."
