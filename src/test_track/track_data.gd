@@ -44,8 +44,9 @@ extends Resource
 @export var hazards: Array[TrackHazard] = []
 ## Boost pads on the roads. See TrackPad.
 @export var boost_pads: Array[TrackPad] = []
-## Main-road edges with no wall, over a hazard: one (s_from, s_to, side) per stretch, where side
-## +1 is TrackModel's normal side and -1 the other. The kart can leave the road there.
+## Main-road edges with no wall: one (s_from, s_to, side) per stretch, where side +1 is
+## TrackModel's normal side and -1 the other. The kart can leave the road there: over a hazard it
+## sinks; over a drop (a raised road, story 008) it falls and is put back (fall_respawn_*).
 @export var open_edges: PackedVector3Array = PackedVector3Array()
 ## How far (meters) beyond the curb an open edge lets a kart go before the corridor clamps it.
 @export var open_edge_reach: float = 6.0
@@ -83,3 +84,24 @@ extends Resource
 @export var pillar_min_height: float = 1.0
 ## Color of the support columns.
 @export var pillar_color: Color = Color(0.45, 0.42, 0.4)
+## Thickness (meters) of a raised road deck: the underside and edge faces drawn under road that
+## is more than pillar_min_height above the ground, so a bridge reads as solid from below.
+@export var deck_thickness: float = 0.6
+## Color of the deck underside and edge faces.
+@export var deck_under_color: Color = Color(0.36, 0.33, 0.31)
+
+@export_group("Jumps and falls (story 008)")
+## Jump ramps on the roads. See TrackRamp.
+@export var ramps: Array[TrackRamp] = []
+## Roads stacked closer than this in height (meters) are told apart by height: a query with the
+## kart's height picks the road whose surface is within this of it (a bridge over a road), and
+## no support column of an upper road stands in a road this far below it.
+@export var level_separation: float = 3.0
+## A kart off the road (past an open edge over a drop) that is this many meters below the road
+## surface beside it has fallen off the track: it is put back like a hazard respawn.
+@export var fall_respawn_depth: float = 2.5
+## ... or that has been in the air off the road this many seconds.
+@export var fall_respawn_time: float = 1.2
+## Seconds between falling off the track and being put back on the road (the kart keeps falling
+## meanwhile). The respawn itself uses respawn_back_off, respawn_speed_frac, respawn_immunity_time.
+@export var fall_respawn_delay: float = 0.8

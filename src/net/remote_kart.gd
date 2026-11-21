@@ -129,7 +129,13 @@ func _apply_fields(d: PackedFloat32Array) -> void:
 	drift_dir = dir
 	drift_tier = int(d[KartWire.DRIFT_TIER])
 	speed = d[KartWire.SPEED]
-	vertical_velocity = d[KartWire.VY]
+	# A landing on the owner's PC shows as the vertical speed jumping up from a fall (story 008):
+	# replay it as a landing here so the visual squashes too.
+	var new_vy: float = d[KartWire.VY]
+	var detect: float = stats.visual.land_detect_speed
+	if vertical_velocity < -detect and new_vy - vertical_velocity > detect:
+		landed.emit(0.0, new_vy - vertical_velocity)
+	vertical_velocity = new_vy
 	boost_time = d[KartWire.BOOST_TIME]
 	spin_time = d[KartWire.SPIN_TIME]
 	last_steer = d[KartWire.LAST_STEER]

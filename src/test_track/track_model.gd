@@ -57,6 +57,14 @@ class Query extends RefCounted:
 	var surface_normal: Vector3 = Vector3.UP
 	## Slope angle along the road in radians (atan of [member slope]).
 	var slope_angle: float = 0.0
+	## True when the point is on that road's drawn surface (road plus curb); false past an open
+	## edge (story 008: over a drop the kart falls, see [member support]).
+	var on_deck: bool = true
+	## Height of whatever holds a kart up at the point: the road surface (with any ramp) when
+	## [member on_deck] or on another road's deck at a similar level, else TrackData.ground_y.
+	var support: float = 0.0
+	## Height the jump ramp under the point adds to the road (0 when not on a ramp).
+	var ramp_rise: float = 0.0
 
 
 ## Nearest-point result on one road (internal).
@@ -176,6 +184,41 @@ class Path extends RefCounted:
 		var reach: float = half_at(seg, t) + curb
 		return height_at(seg, t) + clampf(lateral, -reach, reach) * tan(bank_at(seg, t))
 
+	## Like [method nearest] over the whole road, but only segments whose centerline height at the
+	## nearest point lies in [y_lo, y_hi] count (stacked roads, story 008). Null when none does.
+	func nearest_filtered(p: Vector2, y_lo: float, y_hi: float) -> Hit:
+		var count: int = segment_count()
+		var n: int = points.size()
+		var best_i: int = -1
+		var best_t: float = 0.0
+		var best_d: float = INF
+		for i in count:
+			var a: Vector2 = points[i]
+			var ab: Vector2 = points[(i + 1) % n] - a
+			var l2: float = ab.length_squared()
+			var t: float = clampf((p - a).dot(ab) / l2, 0.0, 1.0) if l2 > 0.0 else 0.0
+			var d: float = p.distance_squared_to(a + ab * t)
+			if d >= best_d:
+				continue
+			var yc: float = height_at(i, t)
+			if yc < y_lo or yc > y_hi:
+				continue
+			best_d = d
+			best_i = i
+			best_t = t
+		if best_i < 0:
+			return null
+		var h := Hit.new()
+		h.path = self
+		h.seg = best_i
+		h.t = best_t
+		h.dist = sqrt(best_d)
+		var a2: Vector2 = points[best_i]
+		var ab2: Vector2 = points[(best_i + 1) % n] - a2
+		h.side = 1 if (p - (a2 + ab2 * best_t)).dot(Vector2(-ab2.y, ab2.x)) >= 0.0 else -1
+		h.excess = h.dist - wall_at(best_i, best_t, h.side)
+		return h
+
 	## Segment (x) and fraction (y) at distance [param dist] along the road.
 	func seg_t_at(dist: float) -> Vector2:
 		var sv: float = fposmod(dist, length) if closed else clampf(dist, 0.0, length)
@@ -275,6 +318,16 @@ var hazard_kinds: Array[StringName] = []
 var pad_centers: PackedVector2Array = PackedVector2Array()
 var pad_dirs: PackedVector2Array = PackedVector2Array()
 var pad_halves: PackedVector2Array = PackedVector2Array()
+## Jump ramps (data.ramps, story 008): road index, start along that road, length, lip height,
+## lateral center and half width (0 = the whole road with curbs).
+var ramp_paths: PackedInt32Array = PackedInt32Array()
+var ramp_from: PackedFloat32Array = PackedFloat32Array()
+var ramp_len: PackedFloat32Array = PackedFloat32Array()
+var ramp_lip: PackedFloat32Array = PackedFloat32Array()
+var ramp_lat: PackedFloat32Array = PackedFloat32Array()
+var ramp_half: PackedFloat32Array = PackedFloat32Array()
+## Main-loop distance of each ramp's lip (drivers that time a trick jump use it).
+var ramp_lip_s: PackedFloat32Array = PackedFloat32Array()
 var _switch_margin: float = 0.75
 var _keep_band: float = 1.5
 var _window: int = 14
@@ -345,6 +398,21 @@ func _init(track_data: TrackData) -> void:
 		pad_centers.append(path.point_at(pad.distance) + Vector2(-t.y, t.x) * pad.lateral)
 		pad_dirs.append(t)
 		pad_halves.append(Vector2(pad.length * 0.5, pad.width * 0.5))
+	for rp in data.ramps:
+		if rp == null or rp.length <= 0.0:
+			continue
+		var ri: int = -1 if rp.road == &"" else branch_index(rp.road)
+		ramp_paths.append(ri)
+		ramp_from.append(rp.distance)
+		ramp_len.append(rp.length)
+		ramp_lip.append(rp.lip_height)
+		ramp_lat.append(rp.lateral)
+		ramp_half.append(rp.half_width)
+		if ri < 0:
+			ramp_lip_s.append(fposmod(rp.distance + rp.length, length))
+		else:
+			var rb: Path = branches[ri]
+			ramp_lip_s.append(rb.s_in + (rp.distance + rp.length) / rb.length * (rb.s_out - rb.s_in))
 
 
 # Wall offsets per main sample: half width + curb, plus the open-edge reach on open stretches.
@@ -441,9 +509,13 @@ func _build_branch(index: int, b: TrackBranch) -> Path:
 ## search everywhere). The kart belongs to the road whose corridor it is inside; where
 ## corridors overlap it keeps its road unless another centerline is clearly closer. Outside
 ## every corridor the nearest corridor edge is used, so the union of corridors is the
-## drivable area. [param y_hint] is the caller's current height; it is reserved for crossovers
-## (part 2 of story 008: roads that overlap in XZ at different heights) and ignored for now.
-func query(p: Vector2, hint: int, _y_hint: float = NAN) -> Query:
+## drivable area. [param y_hint] is the caller's current height (story 008, crossovers): where
+## roads overlap in XZ at different heights, only roads (and parts of the main loop) whose
+## centerline is within data.level_separation of it are considered, so a kart on a bridge stays
+## on the bridge and one under it stays under it. NAN = no height known (nearest in XZ). A hinted
+## query searches the main loop only near the hint, which already keeps both levels of a
+## self-crossing loop apart.
+func query(p: Vector2, hint: int, y_hint: float = NAN) -> Query:
 	var cur_path: int = MAIN_PATH
 	var cur_seg: int = -1
 	if hint >= 0:
@@ -458,10 +530,23 @@ func query(p: Vector2, hint: int, _y_hint: float = NAN) -> Query:
 		main_hint = main.segment_at(bp.s_in + frac * (bp.s_out - bp.s_in))
 	else:
 		cur_path = MAIN_PATH
-	var hits: Array[Hit] = [main.nearest(p, main_hint, _window)]
+	var leveled: bool = not is_nan(y_hint)
+	var sep: float = data.level_separation
+	var main_hit: Hit = null
+	if leveled and main_hint < 0:
+		main_hit = main.nearest_filtered(p, y_hint - sep, y_hint + sep)
+	if main_hit == null:
+		main_hit = main.nearest(p, main_hint, _window)
+	var hits: Array[Hit] = [main_hit]
 	for bp in branches:
 		if bp.bounds.has_point(p):
-			hits.append(bp.nearest(p, -1, 0))
+			var bh: Hit = bp.nearest(p, -1, 0)
+			if leveled and bp.index != cur_path and absf(bp.height_at(bh.seg, bh.t) - y_hint) > sep:
+				var lh: Hit = bp.nearest_filtered(p, y_hint - sep, y_hint + sep)
+				if lh == null:
+					continue
+				bh = lh
+			hits.append(bh)
 	var cur: Hit = null
 	var best: Hit = null
 	for h in hits:
@@ -479,7 +564,7 @@ func query(p: Vector2, hint: int, _y_hint: float = NAN) -> Query:
 			best = cur
 	elif cur != null and best != cur and best.excess > 0.0 and cur.excess - best.excess <= _switch_margin:
 		best = cur
-	return _to_query(p, best)
+	return _to_query(p, best, y_hint)
 
 
 # Inside beats outside; among inside roads the nearest centerline wins; among outside roads
@@ -494,7 +579,7 @@ func _better(a: Hit, b: Hit) -> bool:
 	return a.excess < b.excess
 
 
-func _to_query(p: Vector2, h: Hit) -> Query:
+func _to_query(p: Vector2, h: Hit, y_hint: float = NAN) -> Query:
 	var path: Path = h.path
 	var n: int = path.points.size()
 	var a: Vector2 = path.points[h.seg]
@@ -529,8 +614,69 @@ func _to_query(p: Vector2, h: Hit) -> Query:
 	q.slope = path.slope_at(h.seg, h.t)
 	q.slope_angle = atan(q.slope)
 	q.height = path.height_at(h.seg, h.t) + lat_c * tan(q.bank)
+	var rise: Vector2 = _ramp_rise(path.index, along, q.lateral)
+	if rise != Vector2.ZERO:
+		q.ramp_rise = rise.x
+		q.height += rise.x
+		q.slope += rise.y
+		q.slope_angle = atan(q.slope)
 	q.surface_normal = surface_normal_of(q.tangent, q.slope, q.bank)
+	q.on_deck = h.dist <= reach
+	q.support = q.height if q.on_deck else _support_off_deck(p, path.index, q.height if is_nan(y_hint) else y_hint)
 	return q
+
+
+# Height (x) and slope (y, rise per meter) a ramp adds at [param along] meters on road
+# [param path_index], [param lateral] from its centerline; zero off every ramp. The wedge rises
+# linearly from its start to the lip and ends there (a step back down to the road).
+func _ramp_rise(path_index: int, along: float, lateral: float) -> Vector2:
+	for i in ramp_paths.size():
+		if ramp_paths[i] != path_index:
+			continue
+		var u: float = along - ramp_from[i]
+		if path_index == MAIN_PATH:
+			u = wrapf(u, -length * 0.5, length * 0.5)
+		if u < 0.0 or u >= ramp_len[i]:
+			continue
+		if ramp_half[i] > 0.0 and absf(lateral - ramp_lat[i]) > ramp_half[i]:
+			continue
+		return Vector2(ramp_lip[i] * u / ramp_len[i], ramp_lip[i] / ramp_len[i])
+	return Vector2.ZERO
+
+
+# What holds a kart up at [param p] off its own road's deck (past an open edge): another road's
+# deck under it no higher than level_separation above [param y_ref], else the world floor
+# (data.ground_y).
+func _support_off_deck(p: Vector2, own: int, y_ref: float) -> float:
+	var best: float = data.ground_y
+	var roads: Array[Path] = [main]
+	roads.append_array(branches)
+	for path in roads:
+		if path.index == own or not path.bounds.has_point(p):
+			continue
+		var h: Hit = path.nearest_filtered(p, -INF, y_ref + data.level_separation)
+		if h == null or h.dist > path.half_at(h.seg, h.t) + path.curb:
+			continue
+		var a: Vector2 = path.points[h.seg]
+		var b: Vector2 = path.points[(h.seg + 1) % path.points.size()]
+		var lat: float = (p - a.lerp(b, h.t)).dot(Vector2(-(b - a).y, (b - a).x).normalized()) if a != b else 0.0
+		best = maxf(best, path.surface_y(h.seg, h.t, lat))
+	return best
+
+
+## True when some road (or another part of the main loop) passes under [param p] at least
+## data.level_separation below [param y] and its corridor (wall offset plus [param margin])
+## contains [param p]. TrackMesh keeps bridge supports out of the road below with it.
+func road_below(p: Vector2, y: float, margin: float) -> bool:
+	var roads: Array[Path] = [main]
+	roads.append_array(branches)
+	for path in roads:
+		if not path.bounds.has_point(p):
+			continue
+		var h: Hit = path.nearest_filtered(p, -INF, y - data.level_separation)
+		if h != null and h.excess < margin:
+			return true
+	return false
 
 
 ## Smallest (distance to a centerline - that road's wall offset) over all roads; <= 0 means

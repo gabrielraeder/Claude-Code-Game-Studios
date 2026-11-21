@@ -201,6 +201,7 @@ func _ready() -> void:
 			var ap := AutopilotDriver.new()
 			ap.shortcut_id = StringName(_options.shortcut)
 			ap.dunk_s = _options.dunk_s
+			ap.trick_hops = not _options.no_trick
 			_local.driver = ap
 		else:
 			_local.driver = PlayerInputDriver.new()
@@ -433,6 +434,8 @@ func _net_tick(dt: float) -> void:
 			if r.owned and not r.dropped:
 				_net.send_state(r.kart_id, race_time, KartWire.pack(r.sim, r.laps))
 	_net_log_tick(dt)
+	if _options.height_log == "every-tick":
+		_log_heights()  # debug (story 008): the 2-peer height comparison during jumps
 	_finish_check(dt)
 
 
@@ -1308,8 +1311,10 @@ func _net_log_tick(dt: float) -> void:
 # race-clock second. h is the kart's drawn height, road the track surface under its position.
 func _log_heights() -> void:
 	for r in _racers:
-		print("[height] t=%.1f kart=%d owned=%d h=%.3f road=%.3f vy=%.2f" % [race_time, r.kart_id,
-				1 if r.owned else 0, r.sim.height, _track.query(r.sim.position, -1).height, r.sim.vertical_velocity])
+		var q: TrackModel.Query = _track.query(r.sim.position, -1, r.sim.height)
+		print("[height] t=%.3f kart=%d owned=%d h=%.3f road=%.3f vy=%.2f s=%.1f air=%d" % [race_time, r.kart_id,
+				1 if r.owned else 0, r.sim.height, q.support, r.sim.vertical_velocity, r.sim.track_s,
+				0 if r.sim.grounded else 1])
 
 
 func _print_summary() -> void:

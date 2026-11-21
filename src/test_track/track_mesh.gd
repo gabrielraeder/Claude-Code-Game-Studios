@@ -15,8 +15,14 @@ const DECK_Y: float = 0.04
 const WATER_Y: float = -0.03
 ## Height of boost pads above the road.
 const PAD_Y: float = 0.05
+## Lift (meters) of a ramp's top surface above the road, so its start does not z-fight the road.
+const RAMP_LIFT: float = 0.03
 ## Extra clearance (meters) between another corridor and a wall that is left out.
 const GAP_MARGIN: float = 0.6
+## Clearance (meters) a support column keeps from the corridor of a road passing under it, and
+## the step it slides along its own road to find a clear spot.
+const PILLAR_CLEARANCE: float = 0.8
+const PILLAR_SHIFT_STEP: float = 1.5
 
 
 ## Creates the meshes for [param track] as children of this node.
@@ -29,6 +35,8 @@ func build(track: TrackModel) -> void:
 	for i in track.branches.size():
 		_branch_road(road, track, i)
 	_pads(road, track, th)
+	_ramps(road, track)
+	_deck_underside(road, track)
 	add_child(_instance(road.commit()))
 
 	var walls := SurfaceTool.new()
@@ -365,8 +373,24 @@ func _pillars(st: SurfaceTool, track: TrackModel) -> void:
 		var top: float = path.height_at(int(stv.x), stv.y) - hw * absf(tan(path.bank_at(int(stv.x), stv.y))) - 0.03
 		if top - d.ground_y < d.pillar_min_height:
 			continue
+		# A column never stands in a road that passes under this one (story 008, crossovers): it
+		# slides along this road until it is clear of the lower road's corridor.
 		var c: Vector2 = path.point_at(s)
 		var t: Vector2 = path.tangent_at(s)
+		var placed: bool = not track.road_below(c, top, hw + PILLAR_CLEARANCE)
+		var shift: float = PILLAR_SHIFT_STEP
+		while not placed and shift <= d.pillar_spacing:
+			for sgn in [1.0, -1.0]:
+				var c2: Vector2 = path.point_at(s + shift * sgn)
+				if not placed and not track.road_below(c2, top, hw + PILLAR_CLEARANCE):
+					c = c2
+					t = path.tangent_at(s + shift * sgn)
+					var st2: Vector2 = path.seg_t_at(s + shift * sgn)
+					top = path.height_at(int(st2.x), st2.y) - hw * absf(tan(path.bank_at(int(st2.x), st2.y))) - 0.03
+					placed = true
+			shift += PILLAR_SHIFT_STEP
+		if not placed:
+			continue
 		var n: Vector2 = Vector2(-t.y, t.x)
 		st.set_color(d.pillar_color)
 		var dirs: Array[Vector2] = [t, n, -t, -n]
@@ -376,6 +400,99 @@ func _pillars(st: SurfaceTool, track: TrackModel) -> void:
 		st.set_normal(Vector3.UP)
 		_tri(st, _v3(c + t * hw + n * hw, top), _v3(c + t * hw - n * hw, top), _v3(c - t * hw - n * hw, top))
 		_tri(st, _v3(c + t * hw + n * hw, top), _v3(c - t * hw - n * hw, top), _v3(c - t * hw + n * hw, top))
+
+
+# Jump ramps (story 008): a striped wedge rising from the road to the lip, with side faces and a
+# vertical lip face, on the road surface (banked like it).
+func _ramps(st: SurfaceTool, track: TrackModel) -> void:
+	for i in track.ramp_paths.size():
+		var rp: TrackRamp = _ramp_data(track, i)
+		var path: TrackModel.Path = track.path_of(track.ramp_paths[i])
+		var steps: int = maxi(rp.stripes if rp != null else 6, 1)
+		var length: float = track.ramp_len[i]
+		var lip: float = track.ramp_lip[i]
+		var prev: Array = []
+		for k in steps + 1:
+			var u: float = length * float(k) / float(steps)
+			var d: float = track.ramp_from[i] + u
+			var c: Vector2 = path.point_at(d)
+			var tg: Vector2 = path.tangent_at(d)
+			var n: Vector2 = Vector2(-tg.y, tg.x)
+			var stv: Vector2 = path.seg_t_at(d)
+			var half: float = track.ramp_half[i]
+			if half <= 0.0:
+				half = path.half_at(int(stv.x), stv.y) + path.curb
+			var lat: float = track.ramp_lat[i]
+			var lp: Vector2 = c + n * (lat + half)
+			var ln: Vector2 = c + n * (lat - half)
+			var bp: float = path.surface_y(int(stv.x), stv.y, lat + half)
+			var bn: float = path.surface_y(int(stv.x), stv.y, lat - half)
+			var rise: float = lip * u / length + RAMP_LIFT
+			var cur: Array = [lp, ln, bp, bn, rise]
+			if not prev.is_empty():
+				var col: Color = (rp.color_a if k % 2 == 1 else rp.color_b) if rp != null else Color(0.85, 0.62, 0.2)
+				_quadh(st, prev[0], prev[1], ln, lp, PackedFloat32Array([prev[2] + prev[4], prev[3] + prev[4],
+						bn + rise, bp + rise]), 0.0, col)
+				var side: Color = rp.side_color if rp != null else Color(0.4, 0.26, 0.14)
+				st.set_color(side)
+				for e in [[prev[0], lp, prev[2], bp, n], [prev[1], ln, prev[3], bn, -n]]:
+					st.set_normal(_v3(e[4], 0.0))
+					_tri(st, _v3(e[0], e[2]), _v3(e[1], e[3]), _v3(e[1], e[3] + rise))
+					_tri(st, _v3(e[0], e[2]), _v3(e[1], e[3] + rise), _v3(e[0], e[2] + prev[4]))
+			if k == steps:
+				st.set_color(rp.side_color if rp != null else Color(0.4, 0.26, 0.14))
+				st.set_normal(_v3(tg, 0.0))
+				_tri(st, _v3(lp, bp), _v3(ln, bn), _v3(ln, bn + rise))
+				_tri(st, _v3(lp, bp), _v3(ln, bn + rise), _v3(lp, bp + rise))
+			prev = cur
+
+
+func _ramp_data(track: TrackModel, index: int) -> TrackRamp:
+	var k: int = 0
+	for rp in track.data.ramps:
+		if rp == null or rp.length <= 0.0:
+			continue
+		if k == index:
+			return rp
+		k += 1
+	return null
+
+
+# Underside and edge faces of raised main road (story 008): a bridge or a raised deck reads as a
+# solid slab data.deck_thickness thick from below and from the side, instead of a paper surface.
+func _deck_underside(st: SurfaceTool, track: TrackModel) -> void:
+	var d: TrackData = track.data
+	var path: TrackModel.Path = track.main
+	var pts: PackedVector2Array = path.points
+	var n: int = pts.size()
+	var normals: Array[Vector2] = _normals_of(pts, true)
+	var th: float = d.deck_thickness
+	if th <= 0.0:
+		return
+	for i in n:
+		var j: int = (i + 1) % n
+		if minf(path.y[i], path.y[j]) - d.ground_y < d.pillar_min_height:
+			continue
+		var wa: float = path.half[i] + path.curb
+		var wb: float = path.half[j] + path.curb
+		var ka: float = tan(path.bank[i])
+		var kb: float = tan(path.bank[j])
+		var a: Vector2 = pts[i]
+		var b: Vector2 = pts[j]
+		var pa: Vector2 = a + normals[i] * wa
+		var na: Vector2 = a - normals[i] * wa
+		var pb: Vector2 = b + normals[j] * wb
+		var nb: Vector2 = b - normals[j] * wb
+		var ypa: float = path.y[i] + wa * ka
+		var yna: float = path.y[i] - wa * ka
+		var ypb: float = path.y[j] + wb * kb
+		var ynb: float = path.y[j] - wb * kb
+		st.set_color(d.deck_under_color)
+		st.set_normal(Vector3.DOWN)
+		_tri(st, _v3(pa, ypa - th), _v3(pb, ypb - th), _v3(nb, ynb - th))
+		_tri(st, _v3(pa, ypa - th), _v3(nb, ynb - th), _v3(na, yna - th))
+		_vquad(st, pa, pb, ypa - th, ypb - th, th, normals[i])
+		_vquad(st, na, nb, yna - th, ynb - th, th, -normals[i])
 
 
 func _v3(p: Vector2, y: float) -> Vector3:

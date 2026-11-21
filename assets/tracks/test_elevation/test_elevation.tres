@@ -1,14 +1,21 @@
-[gd_resource type="Resource" script_class="TrackData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="TrackData" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://src/test_track/track_data.gd" id="1_track"]
+[ext_resource type="Script" path="res://src/track/track_ramp.gd" id="2_ramp"]
+
+[sub_resource type="Resource" id="Ramp_east"]
+script = ExtResource("2_ramp")
+distance = 508.0
+length = 9.0
+lip_height = 1.6
 
 [resource]
 script = ExtResource("1_track")
 track_id = &"test_elevation"
 display_name = "Test Elevation"
-control_points = PackedVector2Array(-60, 0, 10, 0, 70, 0, 130, 0, 190, 0, 235, 0, 280, -12, 305, -50, 310, -110, 310, -165, 310, -215, 310, -255, 310, -295, 302, -335, 275, -365, 230, -380, 180, -382, 125, -368, 70, -350, 15, -352, -40, -372, -95, -380, -145, -335, -155, -250, -150, -150, -140, -80, -110, -25)
-heights = PackedFloat32Array(0, 0, 3, 6, 3, 0.5, 2, 3, 3, 3, 3, 0.8, 3, 3, 3, 3, 3, 2.5, 2, 1.5, 1, 0.4, 0, 0, 0, 0, 0)
-banks = PackedFloat32Array(0, 0, 0, 0, 0, 0, 10, 18, 10, 0, 0, 0, 0, -5, -8, -8, -3, 6, 4, -6, -6, 0, 0, 0, 0, 0, 0)
+control_points = PackedVector2Array(-60, 0, 10, 0, 70, 0, 130, 0, 190, 0, 235, 0, 280, -12, 305, -50, 310, -110, 310, -165, 310, -215, 310, -255, 310, -295, 302, -335, 275, -365, 230, -380, 180, -382, 125, -368, 70, -350, 15, -352, -40, -372, -95, -380, -148, -340, -150, -300, -150, -270, -150, -240, -159, -219, -180, -210, -201, -219, -210, -240, -201, -261, -180, -270, -150, -270, -120, -270, -99, -261, -90, -240, -90, -190, -90, -130, -88, -70, -74, -24)
+heights = PackedFloat32Array(0, 0, 3, 6, 3, 0.5, 2, 3, 4, 5, 5, 0.8, 3, 3, 3, 3, 3, 2.5, 2, 1.5, 1, 0.4, 0, 0, 0, 1, 2, 3, 4, 5, 6, 6.8, 7, 6.8, 5.5, 4, 1.5, 0, 0, 0)
+banks = PackedFloat32Array(0, 0, 0, 0, 0, 0, 10, 18, 10, 0, 0, 0, 0, -5, -8, -8, -3, 6, 4, -6, -6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 samples_per_segment = 20
 road_half_width = 7.0
 curb_width = 1.2
@@ -16,3 +23,5 @@ lap_count = 3
 start_distance_behind_line = 6.0
 query_window = 14
 item_box_spots = PackedVector2Array(150, -3, 150, 3, 700, -3, 700, 3, 1200, -3, 1200, 3)
+open_edges = PackedVector3Array(455, 562, 1)
+ramps = Array[ExtResource("2_ramp")]([SubResource("Ramp_east")])

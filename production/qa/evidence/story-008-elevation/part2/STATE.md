@@ -1,0 +1,34 @@
+# Story 008 part 2 state (jumps, falls, crossover)
+- [ ] started 2026-11-21; reading files
+- [x] read: track_model, track_data, branch, kart_sim, main (contacts/net/shots), autopilot, harness, bot_driver, item_manager, remote_kart, wire, kart_visual
+- PLAN: TrackRamp res (wedge on a road, query adds height/slope); Query.on_deck/support (ground_y off-deck); KartSim airborne (takeoff when height-support > air_takeoff_gap, gravity, air yaw 3 rad/s2 max 1.5, planar kept), landed signal, trick (drift press within window before takeoff -> boost on landing); fall = start_sinking w/ hazard_kind fall (depth/time/off-road-ground) delay fall_respawn_delay; query y_hint level filter (TrackData.level_separation); KartSim.levels_apart in contacts/body_gap/bots/items (ai.y); test track: knot overpass on last leg, ramp + ledge(open_edges[0]) on east straight; --dunk-at reused for forced fall; --height-log CSV
+- [x] TrackRamp res, TrackData jump/fall/level fields, TrackModel ramps/on_deck/support/nearest_filtered/y_hint/road_below written (not parsed)
+- NEXT: VehicleStats air fields, KartSim air/landing/trick/fall
+- [x] VehicleStats air group; KartSim air/takeoff/land/trick/fall(FALL_KIND via _start_sinking)/levels_apart/y_hint queries/sample_surface floor -- PARSED OK (needs --import first for new class_name)
+- parse helper: scratchpad parse.sh (godot --headless --check-only --script)
+- NEXT: remote landed detect, KartVisual squash, items y, bots level filter, track_mesh ramps/underside/pillars, harness logs, autopilot trick, test track
+- parse helper now uses res://.claude/scripts/godot-parse-check.gd (coordinator)
+- [x] KartVisual landing squash (VehicleVisualStats land_*), RemoteKart landed replay from VY jump
+- [x] items: ItemSet.hit_height_tolerance, ActiveItem.y (spawn at owner level, stone/falcon follow surface w/ y_hint), hit test height filter, visuals at y
+- [x] bots: levels_apart filter in _scan_traffic/_kart_in_cone/_kart_behind; main _log_heights uses y_hint + s/air
+- [x] track_mesh ramps/_deck_underside/pillar slide clear of lower road; harness [air] logs + --height-log CSV + jump/fall shots; DebugOptions --height-log --no-trick; autopilot trick hop (drive->_drive_line wrapper)
+- [x] ALL 16 changed .gd PARSE OK (godot-parse-check.gd)
+- [x] test_elevation.tres rebuilt: 40 cps, length 1762; knot overpass cps 22-35 (lower pass cp24 s=1237 h0, upper cp32 s=1437 h7); ramp distance 508 len 9 lip 1.6 (lip s=517, plateau h5 cps 9-10); ledge open_edges (455,562,+1) outer side east straight
+- [x] tools/elevation_probe.gd (debug tool): crossover query by y_hint picks upper s=1437 / lower s=1237 correctly
+- NEXT: headless autopilot lap w/ --height-log; dunk run (--dunk-at=470); bot race; regressions; 2-peer; shots; fps
+- [x] autopilot 3 laps headless scale4: laps 63.6/64.07/64.07, 3 jumps (takeoff s518.7 vy4.62, airtime .73, land s536, impact 10), 3 tricks (+0.7 boost), 0 falls, min grounded clearance 0.000; logs runs/ap_3laps*
+- [x] crossover in CSV: under s1228-1246 h 0.00-0.32 (33 ticks), over s1428-1446 h 6.99-7.01 (30 ticks) every lap, track_s continuous
+- [x] forced fall --dunk-at=470: takeoff off ledge s484 -> FALL t18.93 h1.81 vs road 5.03 -> RESPAWN t19.80 s479.4 h4.68 immunity 3.00 speed 6.8; lap1 66.0 (vs 63.6), laps counted 3, min clearance 0.000; runs/fall*
+- [!] bot race QUIT=90 SCALE=4 test_elevation 11 2 0: all DNF (quit before 2 laps: lap ~65-72 s, track now 1762 m), 0 ERROR, 0 stuck, 0 sinks; rerunning QUIT=180 (runs/bots_elev_q180)
+- [x] bot race test_elevation 11 bots 2 laps (QUIT=180 SCALE=4; QUIT=90 too short for 2 laps of 1762 m): 11/11 finished 131.7-145.3 s, 0 ERROR, 0 stuck, 0 sinks/falls (0 self-caused); host laps 63.6/64.07; runs/bots_elev_q180
+- [x] main: --height-log=every-tick prints [height] per kart per tick in net runs (t=%.3f); scratchpad cmp_heights.py (owner interp at t - view_delay)
+- [x] castle regression bot race (QUIT=60 SCALE=4, 11 1 1): 10/10 bots finished 40.4-43.3, host lap 38.27 (= part 1), 0 stuck, 0 sinks, 0 ERROR host+client; runs/castle_reg
+- [ ] item_net_test castle running (runs/item_net)
+- [x] item_net_test castle 1 lap: host vs client1 IDENTICAL (10 hits), host vs client2 IDENTICAL (10 hits), 0 ERROR x3; runs/item_net
+- [ ] 2-peer test_elevation running: runs/peer2 (0 bots, 1 lap, --height-log=every-tick)
+- [x] 2-peer test_elevation (host+client autopilot, 1 lap, 0 ERROR, both jumped+trick): remote vs owner at display time (t - view delay 50/58 ms): max 0.019 m (client view) / 0.051 m (host view), 0 samples >0.15, during vertical motion max 0.015/0.051; same race-clock (no delay comp): max 0.486/0.432, 134/104 of ~4540 >0.15 (= vy*view delay in jumps); remote drawn h - road min 0.000; runs/peer2
+- NEXT: windowed shots (scratchpad shots.sh), open each; fps run
+- [x] shots opened: jump_air (kart above detached shadow, open right edge), jump_land, side_s512 (ramp wedge on raised deck, pillars, open edge), at_s1222 (bridge overhead from lower road, pillars beside lower road walls, underside solid), at_s1424/1440 (on the bridge), fall_sink (kart fallen to ground under the deck), fall_respawn (back on road before ramp, 43 km/h); side_s1237 unusable (camera inside the knot under the deck) -> redo side_s1437
+- [x] side_s1437 opened: lower road passing under the bridge, bridge shadow on it, supports clear both sides, deck reads solid, no z-fight
+- [x] fps windowed 11 bots test_elevation 1 lap, no shots: n=73 min 59 p5 60 median 60 avg 60.0, worst frame 29.3 ms, 0 ERROR, 11/11 bots finished; runs/fps_elev
+- ALL DONE -> report

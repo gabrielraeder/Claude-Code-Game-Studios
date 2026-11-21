@@ -23,6 +23,17 @@ signal sank()
 signal respawned()
 ## Drove onto a boost pad (story 003).
 signal pad_boosted()
+## Left the ground (a ramp lip or a ledge, story 008). [param trick] is true when the drift hop
+## was pressed inside the trick window before it.
+signal took_off(trick: bool)
+## Back on the ground after [param airtime] seconds in the air, hitting it at [param impact] m/s
+## (vertical speed relative to the surface).
+signal landed(airtime: float, impact: float)
+## A trick jump paid its boost on landing.
+signal trick_boosted()
+
+## hazard_kind of a fall off the track (story 008): the kart falls instead of sinking.
+const FALL_KIND: StringName = &"fall"
 
 ## Handling data for this kart.
 var stats: VehicleStats
@@ -74,8 +85,21 @@ var respawn_count: int = 0
 var height: float = 0.0
 ## Vertical speed in m/s (positive = rising). Sent to other PCs.
 var vertical_velocity: float = 0.0
-## True while the kart rides on the road surface. Always true in part 1 (jumps come later).
+## True while the kart rides on a surface; false in the air (off a ramp lip or a ledge).
 var grounded: bool = true
+## Seconds in the air so far (0 while grounded).
+var air_time: float = 0.0
+## Height of what holds the kart up under it, from the last query (TrackModel.Query.support).
+var support_height: float = 0.0
+## Road surface height beside or under the kart, from the last query (TrackModel.Query.height).
+var road_height: float = 0.0
+## False past an open edge (off the road's deck), from the last query.
+var on_deck: bool = true
+## Number of takeoffs, landings and trick boosts since the last reset (logs).
+var jump_count: int = 0
+var trick_count: int = 0
+## Number of falls off the track since the last reset (logs and track_check).
+var fall_count: int = 0
 ## Unit normal of the surface the kart stands on (from the last track query).
 var surface_normal: Vector3 = Vector3.UP
 ## Bank of the road under the kart in radians (positive = banked into a left turn).
@@ -95,7 +119,8 @@ var _bump_cooldown: float = 0.0
 var _wall_drag_mult: float = 1.0
 # Floor drag multiplier of the road the kart is on (sleepers of the mine rail; 1 = smooth).
 var _floor_drag_mult: float = 1.0
-## Kind of the hazard (water, lava) the kart last sank in; picks the sink visual.
+## Kind of the hazard (water, lava) the kart last sank in; picks the sink visual. FALL_KIND after
+## falling off the track (story 008).
 var hazard_kind: StringName = &"water"
 # True when the sink was in a speed-gated hazard: the respawn then uses the main road.
 var _gate_sink: bool = false
@@ -120,6 +145,15 @@ var _main_safe_along: float = 0.0
 var _repeat_sink: bool = false
 var _on_pad: bool = false
 var _sink_total: float = 1.0
+# Air state (story 008): yaw rate in the air, the yaw rate of the last grounded tick, seconds
+# since drift was last pressed on the ground, the drift button last tick, a pending trick, and
+# seconds in the air off the road's deck.
+var _air_yaw_rate: float = 0.0
+var _ground_yaw_rate: float = 0.0
+var _since_hop: float = INF
+var _prev_drift_btn: bool = false
+var _trick_pending: bool = false
+var _off_deck_air: float = 0.0
 
 
 func _init(vehicle_stats: VehicleStats) -> void:
@@ -159,6 +193,17 @@ func reset_to(track: TrackModel, distance: float, lateral_offset: float) -> void
 	sink_progress = 0.0
 	respawn_count = 0
 	_on_pad = false
+	air_time = 0.0
+	jump_count = 0
+	trick_count = 0
+	fall_count = 0
+	_air_yaw_rate = 0.0
+	_ground_yaw_rate = 0.0
+	_since_hop = INF
+	_prev_drift_btn = false
+	_trick_pending = false
+	_off_deck_air = 0.0
+	hazard_kind = &"water"
 	var q: TrackModel.Query = track.query(position, -1)
 	_segment_hint = q.segment
 	track_s = q.s
@@ -201,12 +246,20 @@ func interpolated_height(fraction: float) -> float:
 
 
 ## Reads the road surface under the kart (surface normal, bank) without moving it. Used for
-## karts drawn from network data, whose height comes from the wire.
+## karts drawn from network data, whose height comes from the wire: on a road deck the drawn
+## height never goes below the surface (interpolating between two snapshots across a ramp lip
+## or a landing could otherwise dip under the road).
 func sample_surface(track: TrackModel) -> void:
-	var q: TrackModel.Query = track.query(position, _segment_hint)
+	var q: TrackModel.Query = track.query(position, _segment_hint, height)
 	_segment_hint = q.segment
-	surface_normal = q.surface_normal
-	surface_bank = q.bank
+	support_height = q.support
+	road_height = q.height
+	on_deck = q.on_deck
+	if q.on_deck and height < q.support:
+		height = q.support
+	if height - q.support <= stats.ride_max_gap:
+		surface_normal = q.surface_normal
+		surface_bank = q.bank
 
 
 ## Yaw blended between the last two ticks, for smooth rendering.
@@ -214,8 +267,18 @@ func interpolated_yaw(fraction: float) -> float:
 	return lerp_angle(_prev_yaw, yaw, fraction)
 
 
-## Distance between the two karts' body capsules (negative = overlapping, in meters).
+## True when karts [param a] and [param b] are at different heights (more than
+## VehicleStats.bump_max_height_diff apart): one on a bridge and one under it, or one flying over
+## the other. Such karts never touch (story 008).
+static func levels_apart(a: KartSim, b: KartSim) -> bool:
+	return absf(a.height - b.height) > minf(a.stats.bump_max_height_diff, b.stats.bump_max_height_diff)
+
+
+## Distance between the two karts' body capsules (negative = overlapping, in meters). INF when
+## they are at different heights (see [method levels_apart]).
 static func body_gap(a: KartSim, b: KartSim) -> float:
+	if levels_apart(a, b):
+		return INF
 	var af: Vector2 = a.forward() * a.stats.bump_half_length
 	var bf: Vector2 = b.forward() * b.stats.bump_half_length
 	var pts: PackedVector2Array = Geometry2D.get_closest_points_between_segments(
@@ -228,6 +291,8 @@ static func body_gap(a: KartSim, b: KartSim) -> float:
 ## kart against an owned one: 0, since its owner moves it; two remote karts: half each,
 ## display only). Position only, no bump effects.
 static func push_apart(a: KartSim, b: KartSim, a_part: float, b_part: float) -> void:
+	if levels_apart(a, b):
+		return
 	var af: Vector2 = a.forward() * a.stats.bump_half_length
 	var bf: Vector2 = b.forward() * b.stats.bump_half_length
 	var pts: PackedVector2Array = Geometry2D.get_closest_points_between_segments(
@@ -246,7 +311,7 @@ static func push_apart(a: KartSim, b: KartSim, a_part: float, b_part: float) -> 
 ## Puts the kart back inside the walls (position only, no wall effects). Used after karts
 ## are pushed apart, so a push can never leave a kart inside a wall.
 func clamp_to_walls(track: TrackModel) -> void:
-	var q: TrackModel.Query = track.query(position, _segment_hint)
+	var q: TrackModel.Query = track.query(position, _segment_hint, height)
 	_segment_hint = q.segment
 	var limit: float = q.wall_offset - stats.radius
 	if absf(q.lateral) > limit:
@@ -257,6 +322,8 @@ func clamp_to_walls(track: TrackModel) -> void:
 ## Their owners keep them apart; the overlap comes from showing them slightly in the past.
 ## Remote positions are rebuilt from network updates every tick, so nothing accumulates.
 static func separate_for_display(a: KartSim, b: KartSim) -> void:
+	if levels_apart(a, b):
+		return
 	var af: Vector2 = a.forward() * a.stats.bump_half_length
 	var bf: Vector2 = b.forward() * b.stats.bump_half_length
 	var pts: PackedVector2Array = Geometry2D.get_closest_points_between_segments(
@@ -281,6 +348,8 @@ static func separate_for_display(a: KartSim, b: KartSim) -> void:
 ## get (its owner applies it through apply_received_bump), or Vector2.ZERO.
 func resolve_kart_contact(other: KartSim, other_id: int, other_push: float, my_push: float,
 		full_separation: bool) -> Vector2:
+	if levels_apart(self, other):
+		return Vector2.ZERO
 	var a0: Vector2 = position + forward() * stats.bump_half_length
 	var a1: Vector2 = position - forward() * stats.bump_half_length
 	var of: Vector2 = other.forward()
@@ -380,7 +449,15 @@ func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 	_prev_height = height
 	if sink_time > 0.0:
 		sink_time = maxf(0.0, sink_time - dt)
-		sink_progress = 1.0 - sink_time / maxf(_sink_total, 0.001)
+		if hazard_kind == FALL_KIND:
+			# Fell off the track: no sinking, the kart just keeps falling to the ground.
+			vertical_velocity -= stats.air_gravity * dt
+			height += vertical_velocity * dt
+			if height <= track.data.ground_y:
+				height = track.data.ground_y
+				vertical_velocity = 0.0
+		else:
+			sink_progress = 1.0 - sink_time / maxf(_sink_total, 0.001)
 		speed = 0.0
 		velocity = Vector2.ZERO
 		knock = Vector2.ZERO
@@ -395,9 +472,14 @@ func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 	last_steer = steer
 	var speed_before: float = speed
 	var brake: float = input.brake if control else 0.0
+	# Trick jump timing: seconds since drift (the hop) was last pressed on the ground.
+	if grounded:
+		_since_hop = 0.0 if (input.drift and not _prev_drift_btn) else _since_hop + dt
+	_prev_drift_btn = input.drift
 
-	# Drift: hold the button while steering at speed. The direction locks in.
-	if not drifting and control and input.drift and absf(steer) > stats.drift_start_steer \
+	# Drift: hold the button while steering at speed. The direction locks in. A drift starts on
+	# the ground only; one held into a jump carries on through the air.
+	if not drifting and control and grounded and input.drift and absf(steer) > stats.drift_start_steer \
 			and speed > stats.drift_min_speed:
 		drifting = true
 		drift_dir = 1 if steer > 0.0 else -1
@@ -408,26 +490,35 @@ func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 			or not control):
 		_end_drift(true)
 
-	_update_speed(dt, throttle, brake)
+	# In the air the planar velocity is kept: no throttle, brake, drag or grip (story 008).
+	if grounded:
+		_update_speed(dt, throttle, brake)
 
 	var yaw_rate: float = 0.0
-	if drifting:
+	if not grounded:
+		# Air control (notes 3.8): the yaw rate eases toward the steer at a limited rate.
+		_air_yaw_rate = move_toward(_air_yaw_rate, steer * stats.air_yaw_max, stats.air_yaw_accel * dt)
+		yaw_rate = _air_yaw_rate
+	elif drifting:
 		yaw_rate = drift_dir * (stats.drift_yaw_base
 				+ stats.drift_yaw_range * clampf(steer * drift_dir, -1.0, 1.0))
 	else:
 		var low_speed: float = clampf(absf(speed) / stats.full_steer_speed, 0.0, 1.0)
 		var damp: float = 1.0 - stats.high_speed_steer_damp * clampf(speed / stats.max_speed, 0.0, 1.0)
 		yaw_rate = steer * stats.turn_rate * low_speed * damp * (1.0 if speed >= 0.0 else -1.0)
+	if grounded:
+		_ground_yaw_rate = yaw_rate
 	yaw += yaw_rate * dt
 	accel_long = (speed - speed_before) / dt if dt > 0.0 else 0.0
-	accel_lat = yaw_rate * speed
+	accel_lat = yaw_rate * speed if grounded else 0.0
 
-	var grip: float = stats.drift_grip if drifting else stats.grip
-	if stats.bank_grip_gain > 0.0:
-		grip *= 1.0 + stats.bank_grip_gain * absf(sin(surface_bank))
-	if _wall_slide_time > 0.0:
-		grip = minf(grip, stats.wall_slide_grip)
-	velocity = velocity.lerp(forward() * speed, clampf(grip * dt, 0.0, 1.0))
+	if grounded:
+		var grip: float = stats.drift_grip if drifting else stats.grip
+		if stats.bank_grip_gain > 0.0:
+			grip *= 1.0 + stats.bank_grip_gain * absf(sin(surface_bank))
+		if _wall_slide_time > 0.0:
+			grip = minf(grip, stats.wall_slide_grip)
+		velocity = velocity.lerp(forward() * speed, clampf(grip * dt, 0.0, 1.0))
 	position += (velocity + knock) * dt
 	knock *= exp(-stats.bump_knock_decay * dt)
 
@@ -501,7 +592,7 @@ func _end_drift(pay_boost: bool) -> void:
 
 
 func _constrain_to_track(dt: float, track: TrackModel) -> void:
-	var q: TrackModel.Query = track.query(position, _segment_hint)
+	var q: TrackModel.Query = track.query(position, _segment_hint, height)
 	_segment_hint = q.segment
 	track_path = q.path
 	_wall_drag_mult = q.wall_drag_mult
@@ -532,6 +623,10 @@ func _constrain_to_track(dt: float, track: TrackModel) -> void:
 	track_s = track.limit_progress(track_s, q.s, position.distance_to(_prev_position))
 	_ride_surface(dt, q)
 	road_half_width = q.half_width
+	if _fell_off(dt, q, track):
+		return
+	if not grounded:
+		return  # no hazard, safe point or pad while flying
 	if track.has_hazards():
 		var hz: int = track.hazard_index(position, q, speed)
 		if hz >= 0:
@@ -555,15 +650,36 @@ func _constrain_to_track(dt: float, track: TrackModel) -> void:
 # Height follows the road through a damped spring with the surface's own vertical speed as
 # feed-forward (so a steady climb has no lag). The surface is a hard floor, and the kart never
 # floats more than stats.ride_max_gap above it.
+#
+# Story 008: the support is the road deck (with any ramp), or the ground past an open edge. When
+# it drops away by more than stats.air_takeoff_gap in one tick (a ramp lip, a ledge) the kart
+# takes off with its current vertical speed (the climb rate at the lip) and flies under
+# stats.air_gravity until it meets the support again.
 func _ride_surface(dt: float, q: TrackModel.Query) -> void:
-	surface_normal = q.surface_normal
-	surface_bank = q.bank
-	_road_slope = q.slope
-	_road_tangent = q.tangent
-	var target: float = q.height
+	support_height = q.support
+	road_height = q.height
+	on_deck = q.on_deck
+	var target: float = q.support
 	var target_v: float = clampf((target - _surface_target) / dt, -stats.ride_max_target_speed, stats.ride_max_target_speed) if dt > 0.0 else 0.0
 	_surface_target = target
-	grounded = true
+	if grounded and height - target > stats.air_takeoff_gap:
+		_take_off()
+	if not grounded:
+		air_time += dt
+		vertical_velocity -= stats.air_gravity * dt
+		height += vertical_velocity * dt
+		if height > target:
+			return
+		_land(target, target_v)
+	if q.on_deck:
+		surface_normal = q.surface_normal
+		surface_bank = q.bank
+		_road_slope = q.slope
+		_road_tangent = q.tangent
+	else:
+		surface_normal = Vector3.UP
+		surface_bank = 0.0
+		_road_slope = 0.0
 	var acc: float = stats.ride_spring * (target - height) + stats.ride_damping * (target_v - vertical_velocity)
 	vertical_velocity += acc * dt
 	height += vertical_velocity * dt
@@ -575,6 +691,57 @@ func _ride_surface(dt: float, q: TrackModel.Query) -> void:
 		vertical_velocity = minf(vertical_velocity, target_v)
 
 
+# Leaves the ground: keeps the vertical speed, starts the air yaw from the last ground yaw rate
+# (capped to the air limit) and arms a trick when the hop came inside the trick window.
+func _take_off() -> void:
+	grounded = false
+	air_time = 0.0
+	jump_count += 1
+	_air_yaw_rate = clampf(_ground_yaw_rate, -stats.air_yaw_max, stats.air_yaw_max)
+	_trick_pending = _since_hop <= stats.trick_window
+	took_off.emit(_trick_pending)
+
+
+# Meets the support [param target] (moving at [param target_v]) again: on the ground, and the
+# trick boost is paid when the jump was long enough.
+func _land(target: float, target_v: float) -> void:
+	var impact: float = maxf(target_v - vertical_velocity, 0.0)
+	height = target
+	vertical_velocity = target_v
+	grounded = true
+	var airtime: float = air_time
+	air_time = 0.0
+	_since_hop = INF
+	landed.emit(airtime, impact)
+	if _trick_pending and airtime >= stats.trick_min_airtime:
+		boost_time = maxf(boost_time, stats.trick_boost_time)
+		trick_count += 1
+		trick_boosted.emit()
+	_trick_pending = false
+
+
+# Off the track (story 008): past an open edge over a drop, a kart that is fall_respawn_depth
+# below the road, or in the air off the deck for fall_respawn_time, or standing on the ground
+# well below the road, has fallen: it is put back like a hazard respawn. Returns true then.
+func _fell_off(dt: float, q: TrackModel.Query, track: TrackModel) -> bool:
+	if q.on_deck:
+		_off_deck_air = 0.0
+		return false
+	if not grounded:
+		_off_deck_air += dt
+	var below: float = q.height - height
+	var fallen: bool = below > track.data.fall_respawn_depth or _off_deck_air > track.data.fall_respawn_time \
+			or (grounded and below > stats.air_takeoff_gap)
+	if not fallen:
+		return false
+	hazard_kind = FALL_KIND
+	_gate_sink = false
+	_off_deck_air = 0.0
+	fall_count += 1
+	_start_sinking(track)
+	return true
+
+
 # Places the kart exactly on the surface (reset, respawn): no suspension travel.
 func _snap_to_surface(q: TrackModel.Query) -> void:
 	height = q.height
@@ -582,6 +749,12 @@ func _snap_to_surface(q: TrackModel.Query) -> void:
 	_surface_target = height
 	vertical_velocity = 0.0
 	grounded = true
+	air_time = 0.0
+	_off_deck_air = 0.0
+	_trick_pending = false
+	support_height = q.support
+	road_height = q.height
+	on_deck = q.on_deck
 	surface_normal = q.surface_normal
 	surface_bank = q.bank
 	_road_slope = q.slope
@@ -599,7 +772,8 @@ func _start_sinking(track: TrackModel) -> void:
 	# Sinking again before the last respawn's immunity ran out means the branch respawn point
 	# did not work for this kart: the next respawn uses the main road instead (no loop).
 	_repeat_sink = hit_immunity_time > 0.0 and respawn_count > 0
-	_sink_total = maxf(track.data.respawn_sink_time, 0.001)
+	_trick_pending = false
+	_sink_total = maxf(track.data.fall_respawn_delay if hazard_kind == FALL_KIND else track.data.respawn_sink_time, 0.001)
 	sink_time = _sink_total
 	sink_progress = 0.0
 	sank.emit()
@@ -620,7 +794,10 @@ func _respawn(track: TrackModel) -> void:
 	hit_immunity_time = track.data.respawn_immunity_time
 	spin_time = 0.0
 	sink_progress = 0.0
-	var q: TrackModel.Query = track.query(position, track.hint_for(_safe_path, _safe_along))
+	var safe_road: TrackModel.Path = track.path_of(_safe_path)
+	var st: Vector2 = safe_road.seg_t_at(_safe_along - track.data.respawn_back_off)
+	var q: TrackModel.Query = track.query(position, track.hint_for(_safe_path, _safe_along),
+			safe_road.height_at(int(st.x), st.y))
 	_segment_hint = q.segment
 	track_s = q.s
 	track_path = q.path

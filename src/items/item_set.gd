@@ -19,6 +19,9 @@ extends Resource
 ## was not free on the host yet, e.g. a respawn a few ms apart). Bugfix 2026-11-20.
 @export var box_ask_retry: float = 1.0
 @export var kart_hit_radius: float = 1.0
+## Items act only on karts at a similar height (story 008): a kart more than this many meters
+## above or below an item (one under a bridge, one in the air) is not hit by it.
+@export var hit_height_tolerance: float = 2.0
 ## Hit slowdown profile index (story 001 data) applied after a hit.
 @export var hit_slowdown_profile: int = 0
 

@@ -1,0 +1,25 @@
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+   1 Careful             DNF  69.3                       0(0.0)       0       0      - -
+   2 Wide Wanderer       DNF  69.5                       0(0.0)       0       0      - -
+   3 Shortcut Hunter     DNF  69.5                       0(0.0)       0       0      - -
+   4 Apex Ace            DNF  65.1                       0(0.0)       0       0      - -
+   5 Outside Swinger     DNF  68.1                       0(0.0)       0       0      - -
+   6 Item Hoarder        DNF  70.6                       0(0.0)       0       0      - -
+   7 Steady Eddie        DNF  72.3                       0(0.0)       0       0      - -
+   8 Hothead             DNF  67.6                       0(0.0)       0       0      - -
+   9 Careful             DNF  71.9                       0(0.0)       0       0      - -
+  10 Wide Wanderer       DNF  72.4                       0(0.0)       0       0      - -
+  11 Shortcut Hunter     DNF  66.9                       0(0.0)       0       0      - -
+bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+
+SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+  per personality: {}
+  per location: {}
+  SEED 2817025686; karts sinking again within 5 s: 0
+  shortcuts skipped because crowded: 0
+
+shortcut enters by name/branch:
+
+bot item use: {'horn': 2, 'shield': 1, 'spill': 1, 'falcon': 2}
+hits by bot items: {('spill', 'hit'): 1, ('falcon', 'hit'): 1}
+items used per bot: {'Careful': 1, 'Shortcut Hunter': 1, 'Apex Ace': 1, 'Steady Eddie': 1}

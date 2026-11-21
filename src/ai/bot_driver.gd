@@ -499,6 +499,8 @@ func _scan_traffic(sim: KartSim, usable: float) -> void:
 	for r: Racer in _ctx.racers_fn.call():
 		if r.kart_id == kart_id or r.dropped or r.sim == null or r.is_finished() or r.sim.is_sinking():
 			continue
+		if KartSim.levels_apart(sim, r.sim):
+			continue  # another level (a bridge above or the road below): not traffic, not a target
 		var rel: Vector2 = r.sim.position - sim.position
 		if rel.length_squared() > (reach + 10.0) * (reach + 10.0):
 			continue
@@ -658,6 +660,8 @@ func _kart_in_cone(sim: KartSim, min_range: float, max_range: float) -> bool:
 	for r: Racer in _ctx.racers_fn.call():
 		if r.kart_id == kart_id or r.dropped or r.sim == null or r.is_finished() or r.sim.is_sinking():
 			continue
+		if KartSim.levels_apart(sim, r.sim):
+			continue  # another level (a bridge above or the road below): not traffic, not a target
 		var rel: Vector2 = r.sim.position - sim.position
 		var ahead: float = rel.dot(fwd)
 		if ahead >= min_range and ahead <= max_range and absf(rel.dot(nrm)) <= ahead * slope + _set.stone_cone_slack:
@@ -671,6 +675,8 @@ func _kart_behind(sim: KartSim, reach: float) -> bool:
 	for r: Racer in _ctx.racers_fn.call():
 		if r.kart_id == kart_id or r.dropped or r.sim == null or r.is_finished() or r.sim.is_sinking():
 			continue
+		if KartSim.levels_apart(sim, r.sim):
+			continue  # another level (a bridge above or the road below): not traffic, not a target
 		var rel: Vector2 = r.sim.position - sim.position
 		var ahead: float = rel.dot(fwd)
 		if ahead <= -2.0 and ahead >= -reach and absf(rel.dot(nrm)) <= _set.spill_lane:

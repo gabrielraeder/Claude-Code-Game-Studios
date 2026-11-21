@@ -1,0 +1,30 @@
+kart name            finish   laps                       stuck(longest) enters  misses rubber ai_us
+   1 Careful           69.75  69.2                       0(0.0)       0       0      0.9497 73.0
+   2 Wide Wanderer     72.65  71.7                       0(0.0)       0       0      0.9710 62.2
+   3 Shortcut Hunter   67.05  66.0                       0(0.0)       0       0      0.9667 58.1
+   4 Apex Ace          69.85  68.6                       0(0.0)       0       0      0.9872 58.2
+   5 Outside Swinger   71.88  70.7                       0(0.0)       0       0      0.9775 57.6
+   6 Item Hoarder      70.73  69.2                       0(0.0)       0       0      0.9668 56.7
+   7 Steady Eddie      71.68  70.4                       0(0.0)       0       0      0.9463 56.1
+   8 Hothead           67.82  66.0                       0(0.0)       0       0      0.9787 55.5
+   9 Careful           73.07  71.5                       0(0.0)       0       0      0.9589 54.8
+  10 Wide Wanderer     72.07  70.0                       0(0.0)       0       0      0.9748 54.7
+  11 Shortcut Hunter   72.18  70.4                       0(0.0)       0       0      0.9828 54.5
+
+bots finished: 11/11  first 67.05  last 73.07  spread 9.0% of winner
+bots with a stuck event: 0, total events 0, longest stuck 0.00 s
+
+SINKS: 0 total, 0 self-caused (no bump and no hit in the last second)
+  per personality: {}
+  per location: {}
+  SEED 703695828; karts sinking again within 5 s: 0
+  shortcuts skipped because crowded: 0
+
+shortcut enters by name/branch:
+
+host autopilot: [debug] finished: laps [64.0999999999976] boosts [6, 1, 1] start_boost 3 max_speed 35.10 cap 35.10
+[net-summary] role=host peer=1 place=1 finish=64.75 karts=12 | rtt_avg=0ms rtt_max=0ms view_delay=100ms | snaps/s=0.0 | extrap=0.0% | pred_err avg=0.000m max=0.000m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=0.0 kb_in/s=0.0
+
+bot item use: {'horn': 2, 'spill': 1, 'falcon': 1}
+hits by bot items: {('spill', 'hit'): 1, ('falcon', 'hit'): 1}
+items used per bot: {'Careful': 1, 'Shortcut Hunter': 1, 'Apex Ace': 1, 'Item Hoarder': 1}

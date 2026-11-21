@@ -20,8 +20,12 @@ extends RefCounted
 ##   --lineup=DIR         build a line-up of all 8 dogs on both vehicles, save pictures into DIR, quit
 ##   --ui-shot=NAME      photograph a menu screen with sample data into --shots=, then quit
 ##   --auto-ui=host|join:ADDR  click through menu and lobby by script (--auto-pick=R,V --auto-track= --auto-bots= --auto-laps= --auto-races=)
-##   --dunk-at=S          the autopilot steers off the open moat edge once from distance S
-##                        (pictures of the sinking kart and of its respawn)
+##   --dunk-at=S          the autopilot steers off the first open edge once from distance S
+##                        (pictures of the sinking or falling kart and of its respawn)
+##   --height-log=PATH    CSV of the local kart's height against the surface every tick, plus
+##                        [air] lines for takeoffs, landings, tricks and falls (story 008)
+##                        (--height-log=every-tick instead: a [height] line per kart per tick online)
+##   --no-trick           the autopilot does not hop before ramp lips (no trick boosts)
 
 var autopilot: bool = false
 var shots_dir: String = ""
@@ -46,6 +50,10 @@ var grid_shot: bool = false
 var shot_s: PackedFloat32Array = PackedFloat32Array()
 ## Main-loop distance where the autopilot drives into the moat once (--dunk-at=), -1 = off.
 var dunk_s: float = -1.0
+## Per-tick height CSV of the local kart (--height-log=PATH), "" = off.
+var height_log: String = ""
+## The autopilot never hops before a ramp lip (--no-trick).
+var no_trick: bool = false
 ## Racer index from --racer= (-1 = not given, the mascot).
 var racer: int = -1
 ## Vehicle token from --vehicle= ("" = not given, the cart): an id or an index.
@@ -98,6 +106,10 @@ static func parse(args: PackedStringArray) -> DebugOptions:
 		elif a.begins_with("--shot-s="):
 			for part in a.substr("--shot-s=".length()).split(","):
 				o.shot_s.append(part.to_float())
+		elif a.begins_with("--height-log="):
+			o.height_log = a.substr("--height-log=".length())
+		elif a == "--no-trick":
+			o.no_trick = true
 		elif a.begins_with("--dunk-at="):
 			o.dunk_s = a.substr("--dunk-at=".length()).to_float()
 		elif a.begins_with("--give-item="):
@@ -145,4 +157,4 @@ static func parse(args: PackedStringArray) -> DebugOptions:
 
 ## True when any option that needs a DebugHarness node is set.
 func needs_harness() -> bool:
-	return shots_dir != "" or quit_after_race or quit_after_seconds > 0.0 or log_path != "" or verbose
+	return shots_dir != "" or quit_after_race or quit_after_seconds > 0.0 or log_path != "" or verbose 			or height_log != ""

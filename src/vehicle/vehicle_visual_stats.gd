@@ -121,3 +121,14 @@ extends Resource
 @export var camera_bank_roll_max_deg: float = 4.0
 ## Rate (1/s) at which the camera roll follows its target.
 @export var camera_bank_roll_smoothing: float = 4.0
+
+@export_group("Air (story 008)")
+## Landing squash: the body is flattened by up to this share of its height (0.25 = 25 %) ...
+@export var land_squash_amount: float = 0.22
+## ... at this landing speed (m/s, vertical, relative to the surface) or more; softer landings squash less.
+@export var land_squash_full_speed: float = 8.0
+## Seconds the squash takes to spring back.
+@export var land_squash_time: float = 0.28
+## Remote karts (no local landing event): a landing is seen when the vertical speed from the wire
+## jumps up by more than this (m/s) from a fall faster than it.
+@export var land_detect_speed: float = 2.0

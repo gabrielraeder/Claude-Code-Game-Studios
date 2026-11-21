@@ -28,3 +28,4 @@
 - NEXT: side shots 390, 600; open 860+finish?; fps run; report
 - [x] side_s392 (banked strip, supports), side_s605 (dip) opened ok. NEXT: fps run, report
 - [x] fps 11 bots windowed test_elevation: min 60 avg 60 (37 samples), 0 ERROR. ALL DONE -> report
+- coordinator 2026-11-21: track_check (11) bot mode fails on pre-008 code too (BotDriver.new() without create since story 005); fix it in part 4.

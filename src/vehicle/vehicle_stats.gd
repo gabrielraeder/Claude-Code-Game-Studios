@@ -156,6 +156,29 @@ extends Resource
 ## the kart sideways; this only helps it hold a line. 0 = none.
 @export var bank_grip_gain: float = 0.0
 
+@export_group("Air (story 008)")
+## Gravity in m/s^2 while the kart is in the air (arcade: about twice real gravity, so jumps are
+## short and snappy).
+@export var air_gravity: float = 20.0
+## The kart leaves the ground when the surface under it drops away by more than this (meters) in
+## one tick: a ramp lip or a ledge. Must be above ride_max_gap (crests are followed, not jumped).
+@export var air_takeoff_gap: float = 0.45
+## Air control (the user's notes 01-veiculos-e-fisica.md 3.8, "aftertouch"): the yaw rate in
+## the air moves toward steer * air_yaw_max at this rate (rad/s^2) ...
+@export var air_yaw_accel: float = 3.0
+## ... and never exceeds this (rad/s; notes: 1.5).
+@export var air_yaw_max: float = 1.5
+## Trick jump: pressing drift (the hop) this many seconds or less before leaving a ramp lip pays
+## a boost on landing.
+@export var trick_window: float = 0.3
+## Boost seconds a trick jump pays on landing (like a tier 1 drift).
+@export var trick_boost_time: float = 0.7
+## A trick only pays when the kart was in the air at least this long (seconds).
+@export var trick_min_airtime: float = 0.25
+## Karts whose heights differ by more than this (meters) never touch (one on a bridge, one under
+## it, or one flying over another).
+@export var bump_max_height_diff: float = 1.2
+
 @export_group("Look")
 ## Body paint color.
 @export var paint_color: Color = Color(0.95, 0.2, 0.2)

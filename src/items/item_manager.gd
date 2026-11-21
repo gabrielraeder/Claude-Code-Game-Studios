@@ -37,6 +37,8 @@ class ActiveItem extends RefCounted:
 	var bounces: int = 0
 	var s: float = 0.0
 	var lateral: float = 0.0
+	## Height (Y) of the item: the road surface it lies or travels on (story 008).
+	var y: float = 0.0
 	var dead: bool = false
 	var node: Node3D
 	var ring: Node3D
@@ -489,10 +491,14 @@ func _spawn(seq: int, idx: int, owner_id: int, t: float, pos: Vector2, dir: Vect
 	ai.target_id = target
 	ai.pos = pos
 	ai.dir = dir
+	# The item starts on the road at its owner's level (the owner's height on this PC picks the
+	# level where roads cross, so every PC puts it on the same road).
+	var owner_r: Racer = _racer_by_id(owner_id)
+	var q0: TrackModel.Query = _track.query(pos, -1, owner_r.sim.height if owner_r != null else NAN)
+	ai.y = q0.height
 	if def.id == &"falcon":
-		var q: TrackModel.Query = _track.query(pos, -1)
-		ai.s = q.s
-		ai.lateral = q.lateral
+		ai.s = q0.s
+		ai.lateral = q0.lateral
 	ai.node = _make_item_node(def)
 	add_child(ai.node)
 	if def.id == &"falcon" and target >= 0:
@@ -521,7 +527,8 @@ func _step_item(ai: ActiveItem, dt: float) -> void:
 	match def.id:
 		&"stone":
 			ai.pos += ai.dir * def.speed * dt
-			var q: TrackModel.Query = _track.query(ai.pos, -1)
+			var q: TrackModel.Query = _track.query(ai.pos, -1, ai.y)
+			ai.y = q.height
 			var limit: float = q.wall_offset - def.radius
 			if absf(q.lateral) > limit:
 				var n: Vector2 = q.normal * signf(q.lateral)
@@ -538,7 +545,7 @@ func _step_item(ai: ActiveItem, dt: float) -> void:
 			ai.s += def.speed * dt
 			var target: Racer = _racer_by_id(ai.target_id)
 			if target != null and not target.dropped:
-				var tq: TrackModel.Query = _track.query(target.sim.position, -1)
+				var tq: TrackModel.Query = _track.query(target.sim.position, -1, target.sim.height)
 				var ahead: float = wrapf(tq.s - ai.s, -_track.length * 0.5, _track.length * 0.5)
 				if ahead > def.lose_range or ahead < -def.pass_miss:
 					ai.dead = true
@@ -546,6 +553,7 @@ func _step_item(ai: ActiveItem, dt: float) -> void:
 					return
 				ai.lateral = move_toward(ai.lateral, tq.lateral, def.turn_rate * dt)
 			ai.pos = _track.point_at(ai.s) + _track.normal_at(ai.s) * ai.lateral
+			ai.y = _track.query(ai.pos, -1, ai.y).height
 			if ai.dir.length_squared() > 0.0:
 				ai.dir = _track.tangent_at(ai.s)
 
@@ -566,6 +574,8 @@ func _test_hits() -> void:
 				continue
 			if r.sim.position.distance_to(ai.pos) > reach:
 				continue
+			if absf(r.sim.height - ai.y) > _set.hit_height_tolerance:
+				continue  # a different level (under a bridge) or flying over it
 			if r.sim.spin_time > 0.0 or r.sim.is_hit_immune() or r.sim.is_sinking():
 				continue
 			_victim_hit(ai, r)
@@ -764,12 +774,12 @@ func _sync_visuals() -> void:
 	for ai in _active:
 		if ai.node == null:
 			continue
-		ai.node.position = Vector3(ai.pos.x, ITEM_Y, ai.pos.y)
+		ai.node.position = Vector3(ai.pos.x, ai.y + ITEM_Y, ai.pos.y)
 		ai.node.rotation.y = atan2(-ai.dir.x, -ai.dir.y)
 		if ai.ring != null:
 			var tr: Racer = _racer_by_id(ai.target_id)
 			if tr != null:
-				ai.ring.position = Vector3(tr.sim.position.x, 1.0, tr.sim.position.y)
+				ai.ring.position = Vector3(tr.sim.position.x, tr.sim.height + 1.0, tr.sim.position.y)
 				var dist: float = tr.sim.position.distance_to(ai.pos)
 				ai.ring.scale = Vector3.ONE * lerpf(0.8, 3.0, clampf(dist / 40.0, 0.0, 1.0))
 	for r: Racer in _racers_fn.call():
@@ -785,7 +795,7 @@ func _sync_visuals() -> void:
 			(_shield_nodes[r.kart_id] as Node3D).queue_free()
 			_shield_nodes.erase(r.kart_id)
 		if up:
-			(_shield_nodes[r.kart_id] as Node3D).position = Vector3(r.sim.position.x, 0.9, r.sim.position.y)
+			(_shield_nodes[r.kart_id] as Node3D).position = Vector3(r.sim.position.x, r.sim.height + 0.9, r.sim.position.y)
 
 
 # Star puff / dust ring (slapstick hit feedback) or a shield-break burst around [param r].

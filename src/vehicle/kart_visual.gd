@@ -28,6 +28,9 @@ var _sparks: Array[MeshInstance3D] = []
 var _spark_mat: StandardMaterial3D
 var _flame: MeshInstance3D
 var _hop_t: float = -1.0
+# Landing squash (story 008): seconds since the last landing (-1 = none) and its strength 0..1.
+var _land_t: float = -1.0
+var _land_strength: float = 0.0
 var _spin_angle: float = 0.0
 var _clock: float = 0.0
 var _pitch: float = 0.0
@@ -65,6 +68,7 @@ func bind(sim: KartSim, racer: RacerDef = null, style: PennantStyle = null, slot
 	_style = style if style != null else PennantStyle.new()
 	_color = sim.stats.paint_color
 	_sim.drift_started.connect(_on_drift_started)
+	_sim.landed.connect(_on_landed)
 	_build()
 
 
@@ -125,6 +129,12 @@ func pennant_height() -> float:
 
 func _on_drift_started(_direction: int) -> void:
 	_hop_t = 0.0
+
+
+func _on_landed(_airtime: float, impact: float) -> void:
+	_land_strength = clampf(impact / maxf(_vs.land_squash_full_speed, 0.01), 0.0, 1.0)
+	if _land_strength > 0.0:
+		_land_t = 0.0
 
 
 ## How far (meters) a kart sinking in a hazard drops below the surface (story 003).
@@ -216,6 +226,16 @@ func _process(delta: float) -> void:
 		if _hop_t >= _vs.hop_duration:
 			_hop_t = -1.0
 	_body.position.y = sin(_hop_t / _vs.hop_duration * PI) * _vs.hop_height if _hop_t >= 0.0 else 0.0
+	# Landing squash (story 008): flattened at touchdown, springing back over land_squash_time.
+	var squash: float = 0.0
+	if _land_t >= 0.0:
+		_land_t += delta
+		var u: float = _land_t / maxf(_vs.land_squash_time, 0.01)
+		if u >= 1.0:
+			_land_t = -1.0
+		else:
+			squash = _vs.land_squash_amount * _land_strength * (1.0 - u) * (1.0 - u)
+	_body.scale = Vector3(1.0 + squash * 0.5, 1.0 - squash, 1.0 + squash * 0.5)
 	_animate_parts(delta, follow)
 	_spin_angle = _spin_angle + delta * _vs.spin_speed if _sim.spin_time > 0.0 else 0.0
 	_spin_root.rotation.y = _spin_angle

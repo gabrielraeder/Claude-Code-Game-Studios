@@ -50,6 +50,12 @@ var _dunked: bool = false
 
 ## False makes a sloppy driver: full throttle, plain steering, never drifts (track check).
 var allow_drift: bool = true
+## Hop (press drift) just before every ramp lip for the trick boost (story 008). --no-trick = off.
+var trick_hops: bool = true
+## The hop is pressed this share of the kart's trick window (in seconds of travel) before the lip,
+## after the button was released for HOP_RELEASE_METERS before that.
+const HOP_LEAD_FRAC: float = 0.5
+const HOP_RELEASE_METERS: float = 6.0
 ## Sloppy driver: steering is held straight for this many meters of main-loop progress from
 ## just before the chosen branch's entrance (0 = off). Track check only.
 var blind_entrance: float = 0.0
@@ -64,7 +70,22 @@ var _drifting_intent: bool = false
 var _drift_sign: float = 0.0
 
 
-func drive(input: KartInput, sim: KartSim, track: TrackModel, _dt: float) -> void:
+func drive(input: KartInput, sim: KartSim, track: TrackModel, dt: float) -> void:
+	_drive_line(input, sim, track, dt)
+	if not trick_hops or not sim.grounded:
+		return
+	# Trick jump: release the drift button, then press it (the hop) just before the lip.
+	var lead: float = maxf(sim.speed, 1.0) * sim.stats.trick_window * HOP_LEAD_FRAC
+	for lip in track.ramp_lip_s:
+		var to_lip: float = wrapf(lip - sim.track_s, -track.length * 0.5, track.length * 0.5)
+		if to_lip > 0.0 and to_lip <= lead:
+			input.drift = true
+		elif to_lip > lead and to_lip <= lead + HOP_RELEASE_METERS:
+			input.drift = false
+			_drifting_intent = false
+
+
+func _drive_line(input: KartInput, sim: KartSim, track: TrackModel, _dt: float) -> void:
 	if _branch == -2:
 		_branch = track.branch_index(shortcut_id) if shortcut_id != &"" else -1
 		if _branch >= 0:

@@ -33,6 +33,14 @@ var _last_shot_s: float = 0.0
 var _pad_shot_done: bool = false
 ## Most bump screenshots taken in one run.
 const MAX_BUMP_SHOTS: int = 3
+var _air_shots: int = 0
+var _height_file: FileAccess
+# Height summary (story 008): smallest clearance above the support while grounded and on a deck,
+# total air time, and ticks logged.
+var _min_clearance: float = INF
+var _min_clearance_s: float = 0.0
+var _air_total: float = 0.0
+var _height_ticks: int = 0
 
 
 ## Attaches to the running game. [param main] must expose the properties and the
@@ -56,8 +64,37 @@ func setup(options: DebugOptions, main: Node, sim: KartSim, laps: LapCounter) ->
 	var items: Object = _main.get("items")
 	if items != null and _options.shots_dir != "":
 		items.item_event.connect(_on_item_event)
-	_sim.sank.connect(func() -> void: _delayed_shot("moat_sink", 0.5))
-	_sim.respawned.connect(func() -> void: _delayed_shot("moat_respawn", 0.4))
+	_sim.sank.connect(func() -> void:
+		var fall: bool = _sim.hazard_kind == KartSim.FALL_KIND
+		if fall:
+			print("[air] FALL t=%.2f s=%.1f h=%.2f road=%.2f lat=%.1f falls=%d" % [_main.race_time, _sim.track_s,
+					_sim.height, _sim.road_height, _sim.lateral, _sim.fall_count])
+		_delayed_shot("fall_sink" if fall else "moat_sink", 0.25 if fall else 0.5))
+	_sim.respawned.connect(func() -> void:
+		var fall: bool = _sim.hazard_kind == KartSim.FALL_KIND
+		print("[air] RESPAWN t=%.2f s=%.1f h=%.2f immunity=%.2f speed=%.1f kind=%s" % [_main.race_time, _sim.track_s,
+				_sim.height, _sim.hit_immunity_time, _sim.speed, _sim.hazard_kind])
+		_delayed_shot("fall_respawn" if fall else "moat_respawn", 0.4))
+	_sim.took_off.connect(func(trick: bool) -> void:
+		print("[air] TAKEOFF t=%.2f s=%.1f h=%.2f vy=%.2f speed=%.1f trick=%d drift=%d boost=%.2f" % [
+				_main.race_time, _sim.track_s, _sim.height, _sim.vertical_velocity, _sim.speed,
+				1 if trick else 0, 1 if _sim.drifting else 0, _sim.boost_time])
+		if _air_shots == 0:
+			_delayed_shot("jump_air", 0.3))
+	_sim.landed.connect(func(airtime: float, impact: float) -> void:
+		print("[air] LAND t=%.2f s=%.1f airtime=%.2f impact=%.2f h=%.2f speed=%.1f drift=%d tier=%d boost=%.2f" % [
+				_main.race_time, _sim.track_s, airtime, impact, _sim.height, _sim.speed,
+				1 if _sim.drifting else 0, _sim.drift_tier, _sim.boost_time])
+		if _air_shots == 0:
+			_air_shots += 1
+			_delayed_shot("jump_land", 0.03))
+	_sim.trick_boosted.connect(func() -> void:
+		print("[air] TRICK t=%.2f s=%.1f boost=%.2f" % [_main.race_time, _sim.track_s, _sim.boost_time]))
+	if _options.height_log != "" and _options.height_log != "every-tick":
+		DirAccess.make_dir_recursive_absolute(_options.height_log.get_base_dir())
+		_height_file = FileAccess.open(_options.height_log, FileAccess.WRITE)
+		if _height_file != null:
+			_height_file.store_line("t,lap,s,path,x,z,height,support,road,clearance,grounded,on_deck,vy,speed,sinking")
 	_sim.pad_boosted.connect(func() -> void:
 		if not _pad_shot_done:
 			_pad_shot_done = true
@@ -109,6 +146,8 @@ func _on_drift_ended(tier: int, _boost_seconds: float) -> void:
 
 func _physics_process(_dt: float) -> void:
 	_max_speed = maxf(_max_speed, absf(_sim.speed))
+	if _height_file != null and not _main.start_sequence.is_counting():
+		_log_height(_dt)
 	_start_level = maxi(_start_level, _sim.start_boost_level)
 	_ticks += 1
 	if _options.verbose and _ticks % VERBOSE_EVERY_TICKS == 0:
@@ -152,7 +191,39 @@ func _process(delta: float) -> void:
 		_save_shot("drive_t%02d" % int(t))
 
 
+# One CSV row per tick: the kart's height against what holds it up and the road beside it.
+func _log_height(dt: float) -> void:
+	var clearance: float = _sim.height - _sim.support_height
+	if _sim.grounded and _sim.on_deck and not _sim.is_sinking():
+		if clearance < _min_clearance:
+			_min_clearance = clearance
+			_min_clearance_s = _sim.track_s
+	if not _sim.grounded:
+		_air_total += dt
+	_height_ticks += 1
+	_height_file.store_line("%.3f,%d,%.2f,%d,%.2f,%.2f,%.3f,%.3f,%.3f,%.3f,%d,%d,%.2f,%.2f,%d" % [_main.race_time,
+			_laps.lap, _sim.track_s, _sim.track_path, _sim.position.x, _sim.position.y, _sim.height,
+			_sim.support_height, _sim.road_height, clearance, 1 if _sim.grounded else 0, 1 if _sim.on_deck else 0,
+			_sim.vertical_velocity, _sim.speed, 1 if _sim.is_sinking() else 0])
+
+
+## Prints the height summary line ([air] SUMMARY) and closes the height log.
+func print_height_summary() -> void:
+	if _height_file == null:
+		return
+	_height_file.close()
+	_height_file = null
+	print("[air] SUMMARY ticks=%d min_grounded_clearance=%.3f at_s=%.1f air_total=%.2f jumps=%d tricks=%d falls=%d respawns=%d laps=%s" % [
+			_height_ticks, _min_clearance, _min_clearance_s, _air_total, _sim.jump_count, _sim.trick_count,
+			_sim.fall_count, _sim.respawn_count, str(_laps.lap_times)])
+
+
+func _exit_tree() -> void:
+	print_height_summary()
+
+
 func _on_race_finished(_total: float) -> void:
+	print_height_summary()
 	if _options.shots_dir != "" and not _headless:
 		# Let the finish panel render, then capture it.
 		await get_tree().create_timer(0.5).timeout
