@@ -1,13 +1,13 @@
 # Story 007: Race flow, HUD and basic sound
 
 > **Epic**: Dogworks Racing: Kennel Kingdom
-> **Status**: In Progress
+> **Status**: Complete
 > **Layer**: Presentation
 > **Type**: UI
 > **Estimate**: L
 > **Build step**: core
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: 2026-11-20
+> **Last Updated**: 2026-11-21
 
 ## Context
 
@@ -92,3 +92,16 @@
 
 - Depends on: `story-002-online-multiplayer.md`, `story-003-tracks-and-shortcuts.md`, `story-004-items.md`, `story-005-tougher-bots.md`, `story-006-racers-and-vehicles.md`
 - Unlocks: None
+
+## Completion Notes
+**Completed**: 2026-11-21
+**Criteria**: 10/10 passing (menu, countdown, sound and controls menu confirmed by the owner; checks with a real controller and a listening test are the owner's own)
+**Deviations**: None. Added with the owner's approval during the story: the Solo race setup offline with bots (2026-11-21) and the version check through SceneMultiplayer authentication (KartWire VERSION 8), found when an old build joined a new host.
+**Test Evidence**: production/qa/evidence/story-007-ui-evidence.md (a screenshot of each screen, 2-PC and 3-PC flows, controls checks, version-check runs); waived test files at qa.level minimal
+**Reviewed by**: self, no independent review
+
+## Calls beyond the design
+- Solo race opens an offline setup (2 bots by default, 0-11), runs on an OfflineMultiplayerPeer, results when every kart finishes plus 1.5 s or at 30 s, real pause offline · `src/main.gd`, `src/net/net_session.gd`, `assets/data/ui/ui_theme.tres` · kept 2026-11-21
+- Recent hosts (last 5, `user://recent_hosts.json`), "Ready" rule (host starts when every client is ready), bots 0 to 12 minus humans, laps 1-9, results 3 s after the last human or at 30 s, rematch keeps racers and vehicles, rtt/view delay line still shown · `src/ui/`, `src/main.gd`, `assets/data/ui/ui_theme.tres` · kept 2026-11-21
+- HUD layout and sizes (place numeral 64, minimap 210 px north-up, item top left), gold "GO!", music plays on every screen, which race moment plays which sound, synthesised sounds (C major tune at 120 BPM), Sound button in the menus, M / Back mute · `src/ui/race_hud.gd`, `src/audio/`, `assets/data/audio/audio_set.tres`, `assets/audio/` · kept 2026-11-21
+- Bindings saved in `user://controls.json`, a new key replaces the action's keys in that column, swap on conflict, Esc/Back cancel capture, spectator camera follows place 1 and cycles with the steer actions, watchers shown to the host as a count, version check by authentication with a 3 s timeout (VERSION 8) · `src/input/input_bindings.gd`, `src/ui/controls_menu.gd`, `src/main.gd`, `src/net/net_handshake.gd`, `assets/data/net/net_config.tres` · kept 2026-11-21

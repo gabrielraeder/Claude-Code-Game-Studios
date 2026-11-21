@@ -86,7 +86,7 @@
   - Armored cart: steady, with wide drifts, and barely knocked by bumps.
   - War-bike: faster acceleration and tighter drifts, but knocked harder. *(handling split guessed)*
 - [ ] **Room codes (added 2026-11-21):** the host gets a short code and friends join with it, no IP needed. A rendezvous service finds the host, the connection goes direct when it can and through a relay when it cannot.
-- [ ] **Race flow, HUD and basic sound:**
+- [x] **Race flow, HUD and basic sound:**
   - Flow: lobby with racer and vehicle pick, track choice, countdown, 3 laps, results, rematch.
   - HUD: stream-readable place display and minimap.
   - Sound: engines, drift sparks, boost, item hits, war-horn countdown, and one music loop.
