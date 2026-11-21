@@ -1,7 +1,7 @@
 # Story 009: Moving track hazards
 
 > **Epic**: Dogworks Racing: Kennel Kingdom
-> **Status**: In Progress
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: L
@@ -85,3 +85,17 @@
 
 - Depends on: `story-003-tracks-and-shortcuts.md`, `story-004-items.md`, `story-008-elevation.md`
 - Unlocks: None
+
+## Completion Notes
+**Completed**: 2026-11-21
+**Criteria**: 4/6 passing (deferred to the owner's play: the drawbridge on a timer, and the extra moving hazards on both tracks; both are covered by scripted runs and retained images)
+**Deviations**: Built on story 008 while it was still In Progress (waiting for the owner's feel sign-off), with the owner's "Proceed anyway" on 2026-11-21. Also fixed a story 004 logging bug found by the Dungeon item test: when one spill hit two karts, the second HIT line lost its item id.
+**Test Evidence**: production/qa/evidence/story-009-moving-hazards-evidence.md (scripted autopilot runs, 11 bot races, 2 and 3 PC hazard comparisons, track_check, a screenshot of each hazard); waived test files at qa.level minimal
+**Reviewed by**: self, no independent review
+
+## Calls beyond the design
+- Hazards are pure functions of the synced race time, with hits decided by the victim's PC · `src/track/hazard_manager.gd`, `src/vehicle/kart_sim.gd` · kept 2026-11-21
+- Castle drawbridge: 20 s cycle, rise at 12 s, 1.2 s transition, 1.5 s warning with lantern and horn, raised 43% of the time, 18 m deck; a kart on the raised deck sinks and respawns on the main road · `tools/gen_castle_circuit.py` (`castle_circuit.tres`) · kept 2026-11-21
+- Barrels: 3 at 9 m/s on a 10 s cycle, lanes ±2.6 and 0, visible 1.5 s wait at the top, medium spin; portcullis closed 29.5% of a 20 s cycle, stops the kart (no sink), always out of phase with the drawbridge; bots time both with a per-personality risk (Hothead 0.8, Careful 0, Shortcut Hunter 0.9) · `tools/gen_castle_circuit.py`, `assets/data/ai/bot_set.tres` · kept 2026-11-21
+- Dungeon: 3 lava bursts on a 7.5 s cycle with a bubbling warning dome, at most one up, spin with scorch puff; solid ore cart shuttling 18 m in its own lane on a rail widened to 3.25 m half width, heavy hit profile and a push to the free lane · `tools/gen_dungeon_depths.py` (`dungeon_depths.tres`) · kept 2026-11-21
+- Hazard sounds reuse existing wavs (barrel roll, drawbridge, portcullis, burst, cart) · `assets/data/audio/audio_set.tres` · kept 2026-11-21
