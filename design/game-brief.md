@@ -85,6 +85,7 @@
 - [x] **8 knight-dog racers** (the Dogworks mascot plus 7 originals of different breeds and colors) and 2 medieval vehicle types with pennants:
   - Armored cart: steady, with wide drifts, and barely knocked by bumps.
   - War-bike: faster acceleration and tighter drifts, but knocked harder. *(handling split guessed)*
+- [ ] **Room codes (added 2026-11-21):** the host gets a short code and friends join with it, no IP needed. A rendezvous service finds the host, the connection goes direct when it can and through a relay when it cannot.
 - [ ] **Race flow, HUD and basic sound:**
   - Flow: lobby with racer and vehicle pick, track choice, countdown, 3 laps, results, rematch.
   - HUD: stream-readable place display and minimap.
@@ -114,7 +115,7 @@
 - Anti-cheat and host migration · not needed among friends
 
 ## Build order
-*The first version is stories 001-007, in this order. After it (the user, 2026-11-20): 008 elevation and banking, 009 moving hazards, 011 surfaces, 012 living scenery, 013 pack-racing speed, 014 air tricks, 010 graphics pass, 015 lap evolution, 016 set pieces, 017 motion and air extras, 018 weather, 019 traffic and traps, 020 time trials and variety (features from `design/references/track-features-catalog.md`).*
+*The first version is stories 001-007, in this order. After it (the user, 2026-11-20): 008 elevation and banking, 009 moving hazards, 011 surfaces, 012 living scenery, 013 pack-racing speed, 014 air tricks, 010 graphics pass, 015 lap evolution, 016 set pieces, 017 motion and air extras, 018 weather, 019 traffic and traps, 020 time trials and variety; 021 room codes and relay goes after 010 graphics, by the user 2026-11-21 (features from `design/references/track-features-catalog.md`).*
 *(guessed)*
 1. **Online core and driving together:** the net architecture from day 1, the cart's drift rebuilt on top, and vehicle stats as data. Includes a 12-player stress test with headless copies on autopilot.
 2. **Castle Circuit** with shortcuts. Track character is the least proven part.

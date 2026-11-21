@@ -35,3 +35,4 @@ The brief's 7 Features, built in its Build order: online core and driving first,
 | 018 | Weather, wind and time of day | Visual/Feel | Ready | N/A |
 | 019 | Track traffic, triggered traps, flyovers and boost rings | Integration | Ready | N/A |
 | 020 | Time trials, ghosts, replays and race variety | Integration | Ready | N/A |
+| 021 | Room codes and relay fallback | Integration | Ready | N/A |
