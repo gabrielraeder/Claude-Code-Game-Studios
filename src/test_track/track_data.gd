@@ -62,3 +62,24 @@ extends Resource
 @export var boost_pad_time: float = 1.1
 ## Largest change of track_s per meter actually moved (keeps progress smooth at junctions).
 @export var progress_rate_cap: float = 1.95
+
+@export_group("Elevation")
+## Road height (Y, meters) of the centerline at each control point. Empty = flat at 0. Must
+## have one entry per control point when set. Interpolated with the same Catmull-Rom parameter
+## as the centerline (story 008).
+@export var heights: PackedFloat32Array = PackedFloat32Array()
+## Bank (roll) in degrees at each control point. Positive = banked into a LEFT turn: the road's
+## normal side (TrackModel.Query.lateral > 0, the driver's right) is the high side, so the
+## surface height is centerline + lateral * tan(bank). Negative = banked into a right turn
+## (on a left bend that is off-camber). Empty = flat. One entry per control point when set.
+@export var banks: PackedFloat32Array = PackedFloat32Array()
+## Y of the world floor (the ground plane) and the level the support columns reach down to.
+@export var ground_y: float = -0.05
+## Distance (meters along the road) between support columns under raised road.
+@export var pillar_spacing: float = 12.0
+## Half the side of a square support column in meters.
+@export var pillar_half_width: float = 0.7
+## Road further than this above the ground (meters) gets support columns.
+@export var pillar_min_height: float = 1.0
+## Color of the support columns.
+@export var pillar_color: Color = Color(0.45, 0.42, 0.4)

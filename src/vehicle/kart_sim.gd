@@ -69,8 +69,25 @@ var sink_progress: float = 0.0
 ## Number of respawns since the last reset (logs and track_check).
 var respawn_count: int = 0
 
+## Height of the kart above the world origin plane in meters (story 008): it follows the road
+## surface through a damped spring (VehicleStats.ride_*). The planar model above is unchanged.
+var height: float = 0.0
+## Vertical speed in m/s (positive = rising). Sent to other PCs.
+var vertical_velocity: float = 0.0
+## True while the kart rides on the road surface. Always true in part 1 (jumps come later).
+var grounded: bool = true
+## Unit normal of the surface the kart stands on (from the last track query).
+var surface_normal: Vector3 = Vector3.UP
+## Bank of the road under the kart in radians (positive = banked into a left turn).
+var surface_bank: float = 0.0
+
 var _prev_position: Vector2 = Vector2.ZERO
 var _prev_yaw: float = 0.0
+var _prev_height: float = 0.0
+# Road height and slope seen by the last query, for the suspension feed-forward and slope gravity.
+var _surface_target: float = 0.0
+var _road_slope: float = 0.0
+var _road_tangent: Vector2 = Vector2.ZERO
 var _segment_hint: int = -1
 var _wall_cooldown: float = 0.0
 var _bump_cooldown: float = 0.0
@@ -153,6 +170,7 @@ func reset_to(track: TrackModel, distance: float, lateral_offset: float) -> void
 	_main_safe_along = q.s
 	_prev_position = position
 	_prev_yaw = yaw
+	_snap_to_surface(q)
 
 
 ## Unit vector the kart faces, in (x, z).
@@ -175,6 +193,20 @@ func current_speed_cap() -> float:
 ## Position blended between the last two ticks, for smooth rendering.
 func interpolated_position(fraction: float) -> Vector2:
 	return _prev_position.lerp(position, fraction)
+
+
+## Height blended between the last two ticks, for smooth rendering.
+func interpolated_height(fraction: float) -> float:
+	return lerpf(_prev_height, height, fraction)
+
+
+## Reads the road surface under the kart (surface normal, bank) without moving it. Used for
+## karts drawn from network data, whose height comes from the wire.
+func sample_surface(track: TrackModel) -> void:
+	var q: TrackModel.Query = track.query(position, _segment_hint)
+	_segment_hint = q.segment
+	surface_normal = q.surface_normal
+	surface_bank = q.bank
 
 
 ## Yaw blended between the last two ticks, for smooth rendering.
@@ -345,6 +377,7 @@ func is_sinking() -> bool:
 func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 	_prev_position = position
 	_prev_yaw = yaw
+	_prev_height = height
 	if sink_time > 0.0:
 		sink_time = maxf(0.0, sink_time - dt)
 		sink_progress = 1.0 - sink_time / maxf(_sink_total, 0.001)
@@ -390,6 +423,8 @@ func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 	accel_lat = yaw_rate * speed
 
 	var grip: float = stats.drift_grip if drifting else stats.grip
+	if stats.bank_grip_gain > 0.0:
+		grip *= 1.0 + stats.bank_grip_gain * absf(sin(surface_bank))
 	if _wall_slide_time > 0.0:
 		grip = minf(grip, stats.wall_slide_grip)
 	velocity = velocity.lerp(forward() * speed, clampf(grip * dt, 0.0, 1.0))
@@ -420,6 +455,10 @@ func tick(dt: float, input: KartInput, track: TrackModel) -> void:
 
 
 func _update_speed(dt: float, throttle: float, brake: float) -> void:
+	# Gravity along the slope (stats.slope_gravity): uphill slows, downhill speeds up. A bank adds
+	# no sideways force at all: only the component along the road matters.
+	if grounded and stats.slope_gravity != 0.0 and _road_tangent != Vector2.ZERO:
+		speed -= stats.slope_gravity * sin(atan(_road_slope)) * forward().dot(_road_tangent) * dt
 	var boosting: bool = boost_time > 0.0
 	var cap: float = current_speed_cap()
 	# Accelerate toward the cap, never past it. This is what stops boosts stacking
@@ -491,6 +530,7 @@ func _constrain_to_track(dt: float, track: TrackModel) -> void:
 		_turnback_rate = 0.0
 	# Progress follows the road, but never faster than the rate cap allows (smooth at junctions).
 	track_s = track.limit_progress(track_s, q.s, position.distance_to(_prev_position))
+	_ride_surface(dt, q)
 	road_half_width = q.half_width
 	if track.has_hazards():
 		var hz: int = track.hazard_index(position, q, speed)
@@ -510,6 +550,42 @@ func _constrain_to_track(dt: float, track: TrackModel) -> void:
 		if not _on_pad:
 			pad_boosted.emit()
 	_on_pad = pad >= 0
+
+
+# Height follows the road through a damped spring with the surface's own vertical speed as
+# feed-forward (so a steady climb has no lag). The surface is a hard floor, and the kart never
+# floats more than stats.ride_max_gap above it.
+func _ride_surface(dt: float, q: TrackModel.Query) -> void:
+	surface_normal = q.surface_normal
+	surface_bank = q.bank
+	_road_slope = q.slope
+	_road_tangent = q.tangent
+	var target: float = q.height
+	var target_v: float = clampf((target - _surface_target) / dt, -stats.ride_max_target_speed, stats.ride_max_target_speed) if dt > 0.0 else 0.0
+	_surface_target = target
+	grounded = true
+	var acc: float = stats.ride_spring * (target - height) + stats.ride_damping * (target_v - vertical_velocity)
+	vertical_velocity += acc * dt
+	height += vertical_velocity * dt
+	if height < target:
+		height = target
+		vertical_velocity = maxf(vertical_velocity, target_v)
+	elif height > target + stats.ride_max_gap:
+		height = target + stats.ride_max_gap
+		vertical_velocity = minf(vertical_velocity, target_v)
+
+
+# Places the kart exactly on the surface (reset, respawn): no suspension travel.
+func _snap_to_surface(q: TrackModel.Query) -> void:
+	height = q.height
+	_prev_height = height
+	_surface_target = height
+	vertical_velocity = 0.0
+	grounded = true
+	surface_normal = q.surface_normal
+	surface_bank = q.bank
+	_road_slope = q.slope
+	_road_tangent = q.tangent
 
 
 # Entered a hazard: the kart stops, loses its drift and boost, and sinks for
@@ -550,6 +626,7 @@ func _respawn(track: TrackModel) -> void:
 	track_path = q.path
 	lateral = q.lateral
 	road_half_width = q.half_width
+	_snap_to_surface(q)
 	_prev_position = position
 	_prev_yaw = yaw
 	respawn_count += 1

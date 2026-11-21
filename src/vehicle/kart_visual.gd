@@ -32,6 +32,9 @@ var _spin_angle: float = 0.0
 var _clock: float = 0.0
 var _pitch: float = 0.0
 var _roll: float = 0.0
+# Smoothed pitch and roll of the road surface under the kart (whole-kart lean).
+var _surface_pitch: float = 0.0
+var _surface_roll: float = 0.0
 var _lean_n: float = 0.0
 var _paint: StandardMaterial3D
 var _racer: RacerDef
@@ -179,8 +182,17 @@ func _process(delta: float) -> void:
 	var fraction: float = Engine.get_physics_interpolation_fraction()
 	var p: Vector2 = _sim.interpolated_position(fraction)
 	# Sinking in a hazard (story 003): the kart drops below the water surface.
-	position = Vector3(p.x, -_sim.sink_progress * SINK_DEPTH, p.y)
-	rotation.y = _sim.interpolated_yaw(fraction)
+	position = Vector3(p.x, _sim.interpolated_height(fraction) - _sim.sink_progress * SINK_DEPTH, p.y)
+	var yaw: float = _sim.interpolated_yaw(fraction)
+	rotation.y = yaw
+	# The whole kart leans with the road surface (story 008): pitch with the slope, roll with the
+	# bank, taken from the surface normal in the kart's own frame and smoothed.
+	var local_n: Vector3 = _sim.surface_normal.rotated(Vector3.UP, -yaw)
+	var surface_follow: float = 1.0 - exp(-_vs.surface_tilt_smoothing * delta)
+	_surface_pitch = lerpf(_surface_pitch, atan2(local_n.z, local_n.y), surface_follow)
+	_surface_roll = lerpf(_surface_roll, -atan2(local_n.x, local_n.y), surface_follow)
+	rotation.x = _surface_pitch
+	rotation.z = _surface_roll
 
 	var follow: float = 1.0 - exp(-_vs.tilt_smoothing * delta)
 	# Drift body angle: neutral steering = default, into the turn up to max, out down to min.

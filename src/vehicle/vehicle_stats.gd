@@ -137,6 +137,25 @@ extends Resource
 ## Seconds of immunity after a hit (applied by the item system in story 004).
 @export var hit_immunity_time: float = 0.6
 
+@export_group("Surface (story 008)")
+## Stiffness (1/s^2) of the suspension that makes the kart's height follow the road surface.
+## Natural frequency is sqrt(this): 900 = 4.8 Hz, so crests and dips are followed in about 0.1 s.
+@export var ride_spring: float = 900.0
+## Damping (1/s) of that suspension; 2*sqrt(ride_spring) = 60 is critical, lower overshoots a little.
+@export var ride_damping: float = 42.0
+## Largest vertical speed (m/s) the road surface may have for the suspension feed-forward; a
+## bigger jump (a road switch at a junction) is treated as a step, not a climb.
+@export var ride_max_target_speed: float = 30.0
+## Most the kart may float above the surface while grounded (meters): bounds the overshoot over a crest.
+@export var ride_max_gap: float = 0.3
+## Gravity along the slope in m/s^2 per unit sine of the slope angle: uphill slows, downhill
+## speeds up the kart. Real gravity is 9.8; the genre barely uses it, so the default is tiny
+## (0.15 m/s^2 on a 6-degree slope against an acceleration of ~15). 0 = slopes never change speed.
+@export var slope_gravity: float = 1.5
+## Extra grip on a banked road: grip is multiplied by 1 + this * |sin(bank)|. A bank never slides
+## the kart sideways; this only helps it hold a line. 0 = none.
+@export var bank_grip_gain: float = 0.0
+
 @export_group("Look")
 ## Body paint color.
 @export var paint_color: Color = Color(0.95, 0.2, 0.2)

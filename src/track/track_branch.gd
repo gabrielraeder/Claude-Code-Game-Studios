@@ -45,3 +45,10 @@ extends Resource
 @export var fill_color: Color = Color(0, 0, 0, 0)
 ## True to build a stone arch at both ends.
 @export var arch_ends: bool = false
+## Road height (Y, meters) at each control point. Empty = the height follows the main road,
+## blending smoothly from its height at s_in to its height at s_out. When set, the first and
+## last entries are replaced by the main road's height at s_in and s_out (story 008).
+@export var heights: PackedFloat32Array = PackedFloat32Array()
+## Bank in degrees at each control point (same sign as TrackData.banks). Empty = blends from the
+## main road's bank at s_in to its bank at s_out. The first and last entries are replaced like heights.
+@export var banks: PackedFloat32Array = PackedFloat32Array()

@@ -34,6 +34,7 @@ func build(track: TrackModel) -> void:
 	var walls := SurfaceTool.new()
 	walls.begin(Mesh.PRIMITIVE_TRIANGLES)
 	_main_walls(walls, track, th)
+	_pillars(walls, track)
 	for i in track.branches.size():
 		_branch_walls(walls, track, i)
 	add_child(_instance(walls.commit()))
@@ -116,10 +117,18 @@ func _main_road(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
 		var hb: float = path.half[j]
 		var ca: float = ha + path.curb
 		var cb: float = hb + path.curb
-		_quad(st, a + na * ha, a - na * ha, b - nb * hb, b + nb * hb, 0.0, th.road_color)
+		var ka: float = tan(path.bank[i])
+		var kb: float = tan(path.bank[j])
+		var ya: float = path.y[i]
+		var yb: float = path.y[j]
+		# The normal side (+) is the high side for a positive bank: y = centerline + lateral * tan(bank).
+		_quadh(st, a + na * ha, a - na * ha, b - nb * hb, b + nb * hb,
+				PackedFloat32Array([ya + ha * ka, ya - ha * ka, yb - hb * kb, yb + hb * kb]), 0.0, th.road_color)
 		var curb: Color = th.curb_color_a if ((i / maxi(th.curb_stripe_segments, 1)) % 2) == 0 else th.curb_color_b
-		_quad(st, a + na * ca, a + na * ha, b + nb * hb, b + nb * cb, 0.01, curb)
-		_quad(st, a - na * ha, a - na * ca, b - nb * cb, b - nb * hb, 0.01, curb)
+		_quadh(st, a + na * ca, a + na * ha, b + nb * hb, b + nb * cb,
+				PackedFloat32Array([ya + ca * ka, ya + ha * ka, yb + hb * kb, yb + cb * kb]), 0.01, curb)
+		_quadh(st, a - na * ha, a - na * ca, b - nb * cb, b - nb * hb,
+				PackedFloat32Array([ya - ha * ka, ya - ca * ka, yb - cb * kb, yb - hb * kb]), 0.01, curb)
 
 
 func _start_line(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
@@ -135,8 +144,12 @@ func _start_line(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
 			var d0: float = -1.0 + r
 			var d1: float = d0 + 1.0
 			var col: Color = th.line_color_a if (r + c) % 2 == 0 else th.line_color_b
-			_quad(st, p0 + n0 * w0 + t0 * d0, p0 + n0 * w1 + t0 * d0,
-					p0 + n0 * w1 + t0 * d1, p0 + n0 * w0 + t0 * d1, 0.02, col)
+			var c0: Vector2 = p0 + n0 * w0 + t0 * d0
+			var c1: Vector2 = p0 + n0 * w1 + t0 * d0
+			var c2: Vector2 = p0 + n0 * w1 + t0 * d1
+			var c3: Vector2 = p0 + n0 * w0 + t0 * d1
+			_quadh(st, c0, c1, c2, c3, PackedFloat32Array([_road_y(track, c0), _road_y(track, c1),
+					_road_y(track, c2), _road_y(track, c3)]), 0.02, col)
 
 
 func _branch_road(st: SurfaceTool, track: TrackModel, bi: int) -> void:
@@ -148,8 +161,12 @@ func _branch_road(st: SurfaceTool, track: TrackModel, bi: int) -> void:
 		var col: Color = b.deck_color if i % 2 == 0 else b.deck_alt_color
 		var ha: float = path.half[i] + b.curb_width
 		var hb: float = path.half[i + 1] + b.curb_width
-		_quad(st, pts[i] + normals[i] * ha, pts[i] - normals[i] * ha,
-				pts[i + 1] - normals[i + 1] * hb, pts[i + 1] + normals[i + 1] * hb, DECK_Y, col)
+		var ka: float = tan(path.bank[i])
+		var kb: float = tan(path.bank[i + 1])
+		_quadh(st, pts[i] + normals[i] * ha, pts[i] - normals[i] * ha,
+				pts[i + 1] - normals[i + 1] * hb, pts[i + 1] + normals[i + 1] * hb,
+				PackedFloat32Array([path.y[i] + ha * ka, path.y[i] - ha * ka,
+				path.y[i + 1] - hb * kb, path.y[i + 1] + hb * kb]), DECK_Y, col)
 
 
 # Boost pads: a base plate with a chevron pointing along the road.
@@ -159,19 +176,20 @@ func _pads(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
 		var t: Vector2 = track.pad_dirs[i]
 		var n: Vector2 = Vector2(-t.y, t.x)
 		var h: Vector2 = track.pad_halves[i]
-		_quad(st, c - t * h.x + n * h.y, c - t * h.x - n * h.y, c + t * h.x - n * h.y, c + t * h.x + n * h.y, PAD_Y, th.pad_color_a)
+		var q0: Vector2 = c - t * h.x + n * h.y
+		var q1: Vector2 = c - t * h.x - n * h.y
+		var q2: Vector2 = c + t * h.x - n * h.y
+		var q3: Vector2 = c + t * h.x + n * h.y
+		_quadh(st, q0, q1, q2, q3, PackedFloat32Array([_road_y(track, q0), _road_y(track, q1),
+				_road_y(track, q2), _road_y(track, q3)]), PAD_Y, th.pad_color_a)
 		for k in 2:
 			var base: Vector2 = c + t * (h.x * (-0.55 + 0.6 * k))
 			var tip: Vector2 = base + t * h.x * 0.45
 			var w: float = h.y * 0.75
 			st.set_color(th.pad_color_b)
 			st.set_normal(Vector3.UP)
-			st.add_vertex(_v3(base + n * w, PAD_Y + 0.01))
-			st.add_vertex(_v3(tip, PAD_Y + 0.01))
-			st.add_vertex(_v3(base + n * w * 0.4 + t * 0.6, PAD_Y + 0.01))
-			st.add_vertex(_v3(base - n * w, PAD_Y + 0.01))
-			st.add_vertex(_v3(base - n * w * 0.4 + t * 0.6, PAD_Y + 0.01))
-			st.add_vertex(_v3(tip, PAD_Y + 0.01))
+			for v in [base + n * w, tip, base + n * w * 0.4 + t * 0.6, base - n * w, base - n * w * 0.4 + t * 0.6, tip]:
+				st.add_vertex(_v3(v, _road_y(track, v) + PAD_Y + 0.01))
 
 
 func _main_walls(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
@@ -193,7 +211,9 @@ func _main_walls(st: SurfaceTool, track: TrackModel, th: TrackTheme) -> void:
 				continue
 			var odd: bool = (i / stripe) % 2 == 1
 			var h: float = th.wall_height + (0.0 if odd else th.merlon_height)
-			_block(st, a, b, -normals[i] * side, th.wall_thickness, h,
+			var ya: float = path.y[i] + wi * side * tan(path.bank[i])
+			var yb: float = path.y[j] + wj * side * tan(path.bank[j])
+			_block(st, a, b, -normals[i] * side, th.wall_thickness, ya, yb, h,
 					th.wall_color_b if odd else th.wall_color_a)
 
 
@@ -213,7 +233,9 @@ func _branch_walls(st: SurfaceTool, track: TrackModel, bi: int) -> void:
 				continue
 			if _in_other_branch(track, mid, bi):
 				continue
-			_block(st, a, c, -normals[i] * side, maxf(b.curb_width, 0.3), b.wall_height,
+			var ya: float = path.y[i] + DECK_Y + path.wall_pos[i] * side * tan(path.bank[i])
+			var yb: float = path.y[i + 1] + DECK_Y + path.wall_pos[i + 1] * side * tan(path.bank[i + 1])
+			_block(st, a, c, -normals[i] * side, maxf(b.curb_width, 0.3), ya, yb, b.wall_height,
 					b.wall_alt_color if i % 2 == 1 else b.wall_color)
 
 
@@ -265,23 +287,24 @@ func _fill_polygon(st: SurfaceTool, poly: PackedVector2Array, col: Color, y: flo
 
 # One wall block from [param a] to [param b]; [param inward] points toward the road.
 func _block(st: SurfaceTool, a: Vector2, b: Vector2, inward: Vector2, thickness: float,
-		height: float, col: Color) -> void:
+		base_a: float, base_b: float, height: float, col: Color) -> void:
 	var a2: Vector2 = a - inward * thickness
 	var b2: Vector2 = b - inward * thickness
 	st.set_color(col)
-	_vquad(st, a, b, 0.0, height, inward)
-	_vquad(st, a2, b2, 0.0, height, -inward)
-	_vquad(st, a, a2, 0.0, height, (a - b).normalized())
-	_vquad(st, b, b2, 0.0, height, (b - a).normalized())
+	_vquad(st, a, b, base_a, base_b, height, inward)
+	_vquad(st, a2, b2, base_a, base_b, height, -inward)
+	_vquad(st, a, a2, base_a, base_a, height, (a - b).normalized())
+	_vquad(st, b, b2, base_b, base_b, height, (b - a).normalized())
 	st.set_normal(Vector3.UP)
-	_tri(st, _v3(a, height), _v3(b, height), _v3(b2, height))
-	_tri(st, _v3(a, height), _v3(b2, height), _v3(a2, height))
+	_tri(st, _v3(a, base_a + height), _v3(b, base_b + height), _v3(b2, base_b + height))
+	_tri(st, _v3(a, base_a + height), _v3(b2, base_b + height), _v3(a2, base_a + height))
 
 
-func _vquad(st: SurfaceTool, a: Vector2, b: Vector2, y0: float, y1: float, normal: Vector2) -> void:
+# A vertical wall face from [param a] (base y0a) to [param b] (base y0b), [param height] tall.
+func _vquad(st: SurfaceTool, a: Vector2, b: Vector2, y0a: float, y0b: float, height: float, normal: Vector2) -> void:
 	st.set_normal(_v3(normal, 0.0))
-	_tri(st, _v3(a, y0), _v3(b, y0), _v3(b, y1))
-	_tri(st, _v3(a, y0), _v3(b, y1), _v3(a, y1))
+	_tri(st, _v3(a, y0a), _v3(b, y0b), _v3(b, y0b + height))
+	_tri(st, _v3(a, y0a), _v3(b, y0b + height), _v3(a, y0a + height))
 
 
 func _tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
@@ -302,16 +325,59 @@ func _instance(mesh: Mesh) -> MeshInstance3D:
 	return mi
 
 
+# A quad with a height per corner [param ys] (plus [param lift]); the normal follows the surface.
+func _quadh(st: SurfaceTool, a: Vector2, b: Vector2, c: Vector2, d: Vector2, ys: PackedFloat32Array,
+		lift: float, col: Color) -> void:
+	var va := Vector3(a.x, ys[0] + lift, a.y)
+	var vb := Vector3(b.x, ys[1] + lift, b.y)
+	var vc := Vector3(c.x, ys[2] + lift, c.y)
+	var vd := Vector3(d.x, ys[3] + lift, d.y)
+	var n: Vector3 = (vb - va).cross(vc - va)
+	if n.length_squared() < 0.000001:
+		n = (vc - va).cross(vd - va)
+	n = n.normalized() if n.length_squared() > 0.000001 else Vector3.UP
+	if n.y < 0.0:
+		n = -n
+	st.set_color(col)
+	st.set_normal(n)
+	st.add_vertex(va)
+	st.add_vertex(vb)
+	st.add_vertex(vc)
+	st.add_vertex(va)
+	st.add_vertex(vc)
+	st.add_vertex(vd)
+
+
+# Road surface height under [param p] on whichever road is nearest (0 on a flat track).
+func _road_y(track: TrackModel, p: Vector2) -> float:
+	return track.query(p, -1).height
+
+
+# Square support columns under raised main road, from the ground up to just below the surface.
+func _pillars(st: SurfaceTool, track: TrackModel) -> void:
+	var d: TrackData = track.data
+	var path: TrackModel.Path = track.main
+	var hw: float = d.pillar_half_width
+	var count: int = int(path.length / maxf(d.pillar_spacing, 1.0))
+	for k in count:
+		var s: float = (float(k) + 0.5) * path.length / float(count)
+		var stv: Vector2 = path.seg_t_at(s)
+		var top: float = path.height_at(int(stv.x), stv.y) - hw * absf(tan(path.bank_at(int(stv.x), stv.y))) - 0.03
+		if top - d.ground_y < d.pillar_min_height:
+			continue
+		var c: Vector2 = path.point_at(s)
+		var t: Vector2 = path.tangent_at(s)
+		var n: Vector2 = Vector2(-t.y, t.x)
+		st.set_color(d.pillar_color)
+		var dirs: Array[Vector2] = [t, n, -t, -n]
+		for dir in dirs:
+			var side: Vector2 = Vector2(-dir.y, dir.x)
+			_vquad(st, c + dir * hw - side * hw, c + dir * hw + side * hw, d.ground_y, d.ground_y, top - d.ground_y, dir)
+		st.set_normal(Vector3.UP)
+		_tri(st, _v3(c + t * hw + n * hw, top), _v3(c + t * hw - n * hw, top), _v3(c - t * hw - n * hw, top))
+		_tri(st, _v3(c + t * hw + n * hw, top), _v3(c - t * hw - n * hw, top), _v3(c - t * hw + n * hw, top))
+
+
 func _v3(p: Vector2, y: float) -> Vector3:
 	return Vector3(p.x, y, p.y)
 
-
-func _quad(st: SurfaceTool, a: Vector2, b: Vector2, c: Vector2, d: Vector2, y: float, col: Color) -> void:
-	st.set_color(col)
-	st.set_normal(Vector3.UP)
-	st.add_vertex(_v3(a, y))
-	st.add_vertex(_v3(b, y))
-	st.add_vertex(_v3(c, y))
-	st.add_vertex(_v3(a, y))
-	st.add_vertex(_v3(c, y))
-	st.add_vertex(_v3(d, y))

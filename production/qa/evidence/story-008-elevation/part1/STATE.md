@@ -1,0 +1,30 @@
+# Story 008 part 1 state
+- [ ] started; reading files
+- [x] TrackData/TrackBranch elevation exports written
+- design: bank>0 => normal side (lateral>0, driver's RIGHT in 3D) is high: y=yc+lateral*tan(bank)
+- [x] TrackModel: Path.y/bank/slope, Query.height/bank/slope/surface_normal/slope_angle, query(p,hint,y_hint), height_at(s), surface_height_on(path,p), surface_normal_of
+- [x] VehicleStats (ride_spring/damping/max_gap, slope_gravity, bank_grip_gain) + VehicleVisualStats (surface_tilt_smoothing, camera_bank_roll_*) fields added
+- NEXT order: track_mesh.gd -> KartSim -> KartVisual+ChaseCamera -> wire v9 + remote_kart -> test_elevation track -> parse -> verify runs -> screenshots
+- [x] track_mesh.gd edited (banked road, walls, pillars, _quadh); main.gd ground_y. needs parse check
+- [x] KartSim height/vertical_velocity/grounded/surface_normal/_ride_surface/slope gravity/bank grip/sample_surface/interpolated_height
+- [x] KartVisual tilt, ChaseCamera roll+height, wire v9 (HEIGHT=19,VY=20), RemoteKart height, main.gd sample_surface for remotes
+- NEXT: test_elevation track (.tres + TrackLibrary), parse check all, import
+- [x] assets/tracks/test_elevation/test_elevation.tres + TrackLibrary entry (27 pts; hill pts2-4, 90deg bank pts6-8, dip 10-12, off-camber 13-16, S 17-20)
+- NEXT: import, parse check all changed .gd, run verifies
+- [x] import + parse check ok (13 files)
+- [x] track_check test_elevation: 3 laps ~57.4s, 0 wall hits, 0 sinks; 2 FAIL only castle-generic (length 600-950 vs 1545 m; start straight 4m)
+- [x] track_check castle: 31 PASS, 1 FAIL (11) BotDriver nil profile in tool (src/ai untouched => pre-existing, not from my change)
+- [x] track_check dungeon: 36 PASS, same single pre-existing (11) BotDriver tool failure
+- NEXT: bot_race_test, item_net_test, 2-peer height, shots, fps
+- [x] bot_race_test castle 11 bots+1 client: 0 ERROR, host lap 38.27, 0 stuck, 0 sinks
+- [x] main.gd _log_heights ([height] lines in netlog runs)
+- [x] item_net_test castle: IDENTICAL 9 hits, 0 ERROR
+- [!] found: Catmull-Rom height overshoot (-0.7 m, road under ground) -> replaced catmull_rom_f by monotone Hermite (no overshoot). First 2-peer run (before fix): remote-vs-road max .031, cross-PC max .104 avg .018 (1/148 >0.1, view delay). RERUN after fix.
+- NEXT: parse, track_check test_elevation again, rerun 2-peer, shots, fps
+- [x] 2-peer test_elevation after fix: remote-vs-road max 0.036; cross-PC same-clock max 0.118 (2/148 >0.1, = vy*view delay), 0 ERROR; lap 57.0s
+- track tweak: banked section raised (low edge was below ground): heights now 0,0,3,6,3,.5,2,3,3,3,3,.8,3,3,3,3,3,2.5,2,1.5,1,.4,0..
+- [x] added --side-shot=S debug (debug_options+main); side_s190.png opened: supports fine
+- [x] chase shots at_s165/205/385/600/720/860 saved; opened 165,385,205,600,720: no floating/gaps seen; bank turn shows rolled camera+outer wall high
+- NEXT: side shots 390, 600; open 860+finish?; fps run; report
+- [x] side_s392 (banked strip, supports), side_s605 (dip) opened ok. NEXT: fps run, report
+- [x] fps 11 bots windowed test_elevation: min 60 avg 60 (37 samples), 0 ERROR. ALL DONE -> report

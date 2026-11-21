@@ -77,6 +77,7 @@ func projected_progress(now: float, track_length: float) -> float:
 func update_view(now: float) -> void:
 	_prev_position = position
 	_prev_yaw = yaw
+	_prev_height = height
 	if _buffer.is_empty():
 		return
 	var rt: float = now - _net_stats.view_delay
@@ -87,6 +88,7 @@ func update_view(now: float) -> void:
 		var ahead: float = minf(rt - float(newest.t), _cfg.max_extrapolation)
 		velocity = Vector2(d[KartWire.VX], d[KartWire.VZ])
 		position = Vector2(d[KartWire.X], d[KartWire.Z]) + velocity * ahead
+		height = d[KartWire.HEIGHT] + d[KartWire.VY] * ahead
 		yaw = d[KartWire.YAW]
 		_apply_fields(d)
 		return
@@ -106,12 +108,14 @@ func update_view(now: float) -> void:
 			if pa.distance_to(pb) > reach:
 				f = 0.0
 			position = pa.lerp(pb, f)
+			height = lerpf(da[KartWire.HEIGHT], db[KartWire.HEIGHT], f)
 			velocity = Vector2(da[KartWire.VX], da[KartWire.VZ]).lerp(Vector2(db[KartWire.VX], db[KartWire.VZ]), f)
 			yaw = lerp_angle(da[KartWire.YAW], db[KartWire.YAW], f)
 			_apply_fields(da)
 			return
 	var oldest: PackedFloat32Array = _buffer[0].d
 	position = Vector2(oldest[KartWire.X], oldest[KartWire.Z])
+	height = oldest[KartWire.HEIGHT]
 	yaw = oldest[KartWire.YAW]
 	_apply_fields(oldest)
 
@@ -125,6 +129,7 @@ func _apply_fields(d: PackedFloat32Array) -> void:
 	drift_dir = dir
 	drift_tier = int(d[KartWire.DRIFT_TIER])
 	speed = d[KartWire.SPEED]
+	vertical_velocity = d[KartWire.VY]
 	boost_time = d[KartWire.BOOST_TIME]
 	spin_time = d[KartWire.SPIN_TIME]
 	last_steer = d[KartWire.LAST_STEER]

@@ -296,6 +296,8 @@ func _ready() -> void:
 		auto.spectating_fn = func() -> bool: return _spectating
 	if _options.overview_shot:
 		_run_overview_shot()
+	if _options.side_shot >= 0.0:
+		_run_side_shot()
 		return
 	if _options.lineup_dir != "":
 		_run_lineup()
@@ -416,6 +418,7 @@ func _net_tick(dt: float) -> void:
 				r.laps.update(r.sim.track_s, race_time)
 		else:
 			r.remote.update_view(race_time)
+			r.remote.sample_surface(_track)
 		keys[r.kart_id] = _rank_key(r)
 	_ranking.update(dt, keys)
 	_resolve_kart_contacts()
@@ -1295,9 +1298,18 @@ func _net_log_tick(dt: float) -> void:
 					_perf_frame_max_us / 1000.0, _perf_proc_max_ms, _perf_phys_max_ms,
 					KartVisual.take_cost_usec()])
 		_log_file.flush()
+		_log_heights()
 	_perf_frame_max_us = 0
 	_perf_proc_max_ms = 0.0
 	_perf_phys_max_ms = 0.0
+
+
+# Debug (netlog runs): one "[height]" line per kart, so two PCs can be compared on the same
+# race-clock second. h is the kart's drawn height, road the track surface under its position.
+func _log_heights() -> void:
+	for r in _racers:
+		print("[height] t=%.1f kart=%d owned=%d h=%.3f road=%.3f vy=%.2f" % [race_time, r.kart_id,
+				1 if r.owned else 0, r.sim.height, _track.query(r.sim.position, -1).height, r.sim.vertical_velocity])
 
 
 func _print_summary() -> void:
@@ -1400,7 +1412,7 @@ func _build_world() -> void:
 	var gmat := StandardMaterial3D.new()
 	gmat.albedo_color = th.ground_color
 	ground.material_override = gmat
-	ground.position = Vector3(center.x, -0.05, center.y)
+	ground.position = Vector3(center.x, _track.data.ground_y, center.y)
 	_world.add_child(ground)
 	var mesh := TrackMesh.new()
 	_world.add_child(mesh)
@@ -1710,6 +1722,27 @@ func _debug_save(shot_name: String) -> void:
 	var path: String = "%s/%s.png" % [_options.shots_dir, shot_name]
 	var err: Error = get_viewport().get_texture().get_image().save_png(path)
 	print("[debug] screenshot %s (err %d)" % [path, err])
+
+
+# Debug (--side-shot=S): a picture from the side of the road at main-loop distance S, 40 m from
+# the centerline and level with the road, to check the supports and the road surface. Then quit.
+func _run_side_shot() -> void:
+	get_tree().paused = false
+	_ui.close_all()
+	_hud.hide()
+	var s: float = _options.side_shot
+	var c: Vector2 = _track.point_at(s)
+	var side: Vector2 = _track.normal_at(s) * 40.0
+	var y: float = _track.height_at(s)
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.far = 1500.0
+	cam.fov = 55.0
+	cam.look_at_from_position(Vector3(c.x + side.x, y + 3.0, c.y + side.y), Vector3(c.x, y * 0.5, c.y))
+	cam.current = true
+	await get_tree().create_timer(1.5).timeout
+	_debug_save("side_s%d" % int(s))
+	get_tree().quit()
 
 
 # Debug (--overview-shot): a straight-down orthographic view of the whole track, saved once.

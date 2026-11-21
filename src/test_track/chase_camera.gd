@@ -26,6 +26,8 @@ var _target: KartSim
 var _tight: float = 0.0
 var _vs: VehicleVisualStats
 var _smoothed_position: Vector3 = Vector3.ZERO
+# Current camera roll in radians (follows the road bank a little).
+var _roll: float = 0.0
 
 
 ## Sets the kart to follow and snaps the camera behind it.
@@ -39,9 +41,10 @@ func follow(target: KartSim) -> void:
 func snap() -> void:
 	if _target == null:
 		return
-	_smoothed_position = _desired_position(_target.position, _target.forward())
+	_smoothed_position = _desired_position(_target.position, _target.forward(), _target.height)
 	fov = _vs.camera_base_fov
-	_apply(_target.position, _target.forward())
+	_roll = _bank_roll_target()
+	_apply(_target.position, _target.forward(), _target.height)
 
 
 func _process(delta: float) -> void:
@@ -50,27 +53,35 @@ func _process(delta: float) -> void:
 	var fraction: float = Engine.get_physics_interpolation_fraction()
 	var pos: Vector2 = _target.interpolated_position(fraction)
 	var yaw: float = _target.interpolated_yaw(fraction)
+	var height: float = _target.interpolated_height(fraction)
 	var fwd: Vector2 = Vector2(-sin(yaw), -cos(yaw))
 	var narrow: bool = _target.road_half_width > 0.0 and _target.road_half_width < NARROW_HALF_WIDTH
 	_tight = move_toward(_tight, 1.0 if narrow else 0.0, TIGHT_BLEND_RATE * delta)
-	_smoothed_position = _smoothed_position.lerp(_desired_position(pos, fwd),
+	_smoothed_position = _smoothed_position.lerp(_desired_position(pos, fwd, height),
 			1.0 - exp(-_vs.camera_position_smoothing * delta))
 	_keep_inside_corridor(pos)
-	_apply(pos, fwd)
+	_roll = lerpf(_roll, _bank_roll_target(), 1.0 - exp(-_vs.camera_bank_roll_smoothing * delta))
+	_apply(pos, fwd, height)
 	var speed_frac: float = clampf(_target.speed / _target.stats.max_speed, 0.0, 1.4)
 	var target_fov: float = _vs.camera_base_fov + _vs.camera_speed_fov_gain * speed_frac \
 			+ (_vs.camera_boost_fov_gain if _target.boost_time > 0.0 else 0.0)
 	fov = lerpf(fov, target_fov, 1.0 - exp(-_vs.camera_fov_smoothing * delta))
 
 
-func _desired_position(pos: Vector2, fwd: Vector2) -> Vector3:
+# Camera roll that follows the road bank under the kart: a share of the bank, capped.
+func _bank_roll_target() -> float:
+	var cap: float = deg_to_rad(_vs.camera_bank_roll_max_deg)
+	return clampf(_target.surface_bank * _vs.camera_bank_roll_factor, -cap, cap)
+
+
+func _desired_position(pos: Vector2, fwd: Vector2, kart_height: float) -> Vector3:
 	var p: Vector2 = pos - fwd * lerpf(_vs.camera_distance, TIGHT_DISTANCE, _tight)
 	if _on_narrow_branch():
 		# Follow the road, not the kart's heading: a point on the corridor's centerline behind
 		# the kart stays inside the corridor even right after a 90-degree bend.
 		var along: float = track.branch_along(_target.track_path, pos)
 		p = p.lerp(track.branch_point_at(_target.track_path, along - TIGHT_DISTANCE), _tight)
-	return Vector3(p.x, lerpf(_vs.camera_height, TIGHT_HEIGHT, _tight), p.y)
+	return Vector3(p.x, kart_height + lerpf(_vs.camera_height, TIGHT_HEIGHT, _tight), p.y)
 
 
 func _on_narrow_branch() -> bool:
@@ -102,10 +113,11 @@ func _excess(p: Vector2) -> float:
 	return track.excess_at(p)
 
 
-func _apply(pos: Vector2, fwd: Vector2) -> void:
+func _apply(pos: Vector2, fwd: Vector2, kart_height: float) -> void:
 	position = _smoothed_position
 	var look: Vector2 = pos + fwd * _vs.camera_look_ahead
 	if _on_narrow_branch():
 		var along: float = track.branch_along(_target.track_path, pos)
 		look = look.lerp(track.branch_point_at(_target.track_path, along + ROAD_LOOK_AHEAD), _tight)
-	look_at(Vector3(look.x, _vs.camera_look_height, look.y), Vector3.UP)
+	look_at(Vector3(look.x, kart_height + _vs.camera_look_height, look.y), Vector3.UP)
+	rotate_object_local(Vector3(0, 0, 1), _roll)

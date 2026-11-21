@@ -47,6 +47,16 @@ class Query extends RefCounted:
 	var floor_drag_mult: float = 1.0
 	## Distance from the point to that road's centerline.
 	var distance: float = 0.0
+	## Height (Y, meters) of the road surface at the point (lateral clamped to the road+curb).
+	var height: float = 0.0
+	## Bank of the road here in radians (positive = banked into a left turn).
+	var bank: float = 0.0
+	## Slope of the road along its direction: rise per meter (dy/ds), positive = climbing.
+	var slope: float = 0.0
+	## Unit normal of the road surface (from the slope along the road and the bank across it).
+	var surface_normal: Vector3 = Vector3.UP
+	## Slope angle along the road in radians (atan of [member slope]).
+	var slope_angle: float = 0.0
 
 
 ## Nearest-point result on one road (internal).
@@ -65,6 +75,12 @@ class Path extends RefCounted:
 	var index: int = -1
 	var id: StringName = &""
 	var points: PackedVector2Array = PackedVector2Array()
+	## Road height (Y) of the centerline at each point.
+	var y: PackedFloat32Array = PackedFloat32Array()
+	## Bank in radians at each point (positive = banked into a left turn).
+	var bank: PackedFloat32Array = PackedFloat32Array()
+	## Rise per meter along the road at each point (smoothed central difference).
+	var slope: PackedFloat32Array = PackedFloat32Array()
 	## Cumulative distance per point; the last entry is the total length.
 	var cumulative: PackedFloat32Array = PackedFloat32Array()
 	var length: float = 0.0
@@ -100,6 +116,18 @@ class Path extends RefCounted:
 			min_p = Vector2(minf(min_p.x, p.x), minf(min_p.y, p.y))
 			max_p = Vector2(maxf(max_p.x, p.x), maxf(max_p.y, p.y))
 		length = cumulative[count]
+		if y.size() != n:
+			y.resize(n)
+			y.fill(0.0)
+		if bank.size() != n:
+			bank.resize(n)
+			bank.fill(0.0)
+		slope.resize(n)
+		for i in n:
+			var i0: int = (i - 1 + n) % n if (closed or i > 0) else 0
+			var i1: int = (i + 1) % n if (closed or i < n - 1) else n - 1
+			var span: float = cumulative[i1] - cumulative[i0] if i1 > i0 else cumulative[count] - cumulative[i0] + cumulative[i1]
+			slope[i] = (y[i1] - y[i0]) / span if span > 0.0001 else 0.0
 		if half.size() != n:
 			half.resize(n)
 			half.fill(half_width)
@@ -129,6 +157,24 @@ class Path extends RefCounted:
 		var n: int = points.size()
 		var arr: PackedFloat32Array = wall_pos if side >= 0 else wall_neg
 		return lerpf(arr[seg], arr[(seg + 1) % n], t)
+
+	## Centerline height at segment [param seg], fraction [param t].
+	func height_at(seg: int, t: float) -> float:
+		return lerpf(y[seg], y[(seg + 1) % points.size()], t)
+
+	## Bank (radians) at segment [param seg], fraction [param t].
+	func bank_at(seg: int, t: float) -> float:
+		return lerpf(bank[seg], bank[(seg + 1) % points.size()], t)
+
+	## Rise per meter along the road at segment [param seg], fraction [param t].
+	func slope_at(seg: int, t: float) -> float:
+		return lerpf(slope[seg], slope[(seg + 1) % points.size()], t)
+
+	## Surface height at segment [param seg], fraction [param t], [param lateral] meters to the
+	## normal side. The lateral offset is clamped to the road plus curb (the curb is flat out).
+	func surface_y(seg: int, t: float, lateral: float) -> float:
+		var reach: float = half_at(seg, t) + curb
+		return height_at(seg, t) + clampf(lateral, -reach, reach) * tan(bank_at(seg, t))
 
 	## Segment (x) and fraction (y) at distance [param dist] along the road.
 	func seg_t_at(dist: float) -> Vector2:
@@ -249,6 +295,8 @@ func _init(track_data: TrackData) -> void:
 	var ctrl: PackedVector2Array = data.control_points
 	var n: int = ctrl.size()
 	var widths: bool = data.half_widths.size() == n
+	var has_h: bool = data.heights.size() == n
+	var has_b: bool = data.banks.size() == n
 	for i in n:
 		var p0: Vector2 = ctrl[(i - 1 + n) % n]
 		var p1: Vector2 = ctrl[i]
@@ -258,6 +306,16 @@ func _init(track_data: TrackData) -> void:
 			var f: float = float(k) / data.samples_per_segment
 			main.points.append(catmull_rom(p0, p1, p2, p3, f))
 			main.half.append(lerpf(data.half_widths[i], data.half_widths[(i + 1) % n], f) if widths else data.road_half_width)
+			if has_h:
+				main.y.append(catmull_rom_f(data.heights[(i - 1 + n) % n], data.heights[i],
+						data.heights[(i + 1) % n], data.heights[(i + 2) % n], f))
+			else:
+				main.y.append(0.0)
+			if has_b:
+				main.bank.append(deg_to_rad(catmull_rom_f(data.banks[(i - 1 + n) % n], data.banks[i],
+						data.banks[(i + 1) % n], data.banks[(i + 2) % n], f)))
+			else:
+				main.bank.append(0.0)
 	_main_walls()
 	main.finish()
 	points = main.points
@@ -308,6 +366,24 @@ func _main_walls() -> void:
 		acc += main.points[i].distance_to(main.points[(i + 1) % m])
 
 
+# Per-control-point height (or bank in degrees) of branch [param b]: the data when it has one entry
+# per control point, with both ends forced to the main road's value at s_in and s_out; else a
+# smoothstep blend from the main road's value at s_in to its value at s_out.
+func _branch_profile(values: PackedFloat32Array, count: int, b: TrackBranch, is_bank: bool) -> PackedFloat32Array:
+	var in_st: Vector2 = main.seg_t_at(b.s_in)
+	var out_st: Vector2 = main.seg_t_at(b.s_out)
+	var v_in: float = rad_to_deg(main.bank_at(int(in_st.x), in_st.y)) if is_bank else main.height_at(int(in_st.x), in_st.y)
+	var v_out: float = rad_to_deg(main.bank_at(int(out_st.x), out_st.y)) if is_bank else main.height_at(int(out_st.x), out_st.y)
+	var out := PackedFloat32Array()
+	out.resize(count)
+	for i in count:
+		var u: float = float(i) / float(maxi(count - 1, 1))
+		out[i] = values[i] if values.size() == count else lerpf(v_in, v_out, smoothstep(0.0, 1.0, u))
+	out[0] = v_in
+	out[count - 1] = v_out
+	return out
+
+
 func _build_branch(index: int, b: TrackBranch) -> Path:
 	var c: PackedVector2Array = b.control_points.duplicate()
 	c[0] = main.point_at(b.s_in)
@@ -324,6 +400,8 @@ func _build_branch(index: int, b: TrackBranch) -> Path:
 	path.s_out = b.s_out
 	var cn: int = c.size()
 	var widths: bool = b.half_widths.size() == cn
+	var hs: PackedFloat32Array = _branch_profile(b.heights, cn, b, false)
+	var bs: PackedFloat32Array = _branch_profile(b.banks, cn, b, true)
 	for i in cn - 1:
 		var p0: Vector2 = c[i - 1] if i > 0 else c[0] * 2.0 - c[1]
 		var p3: Vector2 = c[i + 2] if i + 2 < cn else c[cn - 1] * 2.0 - c[cn - 2]
@@ -331,8 +409,16 @@ func _build_branch(index: int, b: TrackBranch) -> Path:
 			var f: float = float(k) / b.samples_per_segment
 			path.points.append(catmull_rom(p0, c[i], c[i + 1], p3, f))
 			path.half.append(lerpf(b.half_widths[i], b.half_widths[i + 1], f) if widths else b.half_width)
+			var h0: float = hs[i - 1] if i > 0 else hs[0] * 2.0 - hs[1]
+			var h3: float = hs[i + 2] if i + 2 < cn else hs[cn - 1] * 2.0 - hs[cn - 2]
+			path.y.append(catmull_rom_f(h0, hs[i], hs[i + 1], h3, f))
+			var b0: float = bs[i - 1] if i > 0 else bs[0] * 2.0 - bs[1]
+			var b3: float = bs[i + 2] if i + 2 < cn else bs[cn - 1] * 2.0 - bs[cn - 2]
+			path.bank.append(deg_to_rad(catmull_rom_f(b0, bs[i], bs[i + 1], b3, f)))
 	path.points.append(c[cn - 1])
 	path.half.append(b.half_widths[cn - 1] if widths else b.half_width)
+	path.y.append(hs[cn - 1])
+	path.bank.append(deg_to_rad(bs[cn - 1]))
 	var m: int = path.points.size()
 	path.wall_pos.resize(m)
 	path.wall_neg.resize(m)
@@ -355,8 +441,9 @@ func _build_branch(index: int, b: TrackBranch) -> Path:
 ## search everywhere). The kart belongs to the road whose corridor it is inside; where
 ## corridors overlap it keeps its road unless another centerline is clearly closer. Outside
 ## every corridor the nearest corridor edge is used, so the union of corridors is the
-## drivable area.
-func query(p: Vector2, hint: int) -> Query:
+## drivable area. [param y_hint] is the caller's current height; it is reserved for crossovers
+## (part 2 of story 008: roads that overlap in XZ at different heights) and ignored for now.
+func query(p: Vector2, hint: int, _y_hint: float = NAN) -> Query:
 	var cur_path: int = MAIN_PATH
 	var cur_seg: int = -1
 	if hint >= 0:
@@ -436,6 +523,13 @@ func _to_query(p: Vector2, h: Hit) -> Query:
 	q.wall_drag_mult = path.wall_drag_mult
 	q.floor_drag_mult = path.floor_drag_mult
 	q.distance = h.dist
+	var reach: float = q.half_width + path.curb
+	var lat_c: float = clampf(q.lateral, -reach, reach)
+	q.bank = path.bank_at(h.seg, h.t)
+	q.slope = path.slope_at(h.seg, h.t)
+	q.slope_angle = atan(q.slope)
+	q.height = path.height_at(h.seg, h.t) + lat_c * tan(q.bank)
+	q.surface_normal = surface_normal_of(q.tangent, q.slope, q.bank)
 	return q
 
 
@@ -477,6 +571,43 @@ func tangent_at(dist: float) -> Vector2:
 func normal_at(dist: float) -> Vector2:
 	var t: Vector2 = tangent_at(dist)
 	return Vector2(-t.y, t.x)
+
+
+## Unit normal of a road surface with direction [param tangent] (x, z), rise per meter
+## [param slope] along it and bank [param bank] (radians, positive = banked into a left turn).
+static func surface_normal_of(tangent: Vector2, slope: float, bank: float) -> Vector3:
+	var side: Vector2 = Vector2(-tangent.y, tangent.x)
+	var k: float = tan(bank)
+	return Vector3(-slope * tangent.x - k * side.x, 1.0, -slope * tangent.y - k * side.y).normalized()
+
+
+## Height of the MAIN centerline at main-loop distance [param s] (wraps).
+func height_at(s: float) -> float:
+	var st: Vector2 = main.seg_t_at(s)
+	return main.height_at(int(st.x), st.y)
+
+
+## Bank (radians, positive = left-turn bank) of the MAIN road at main-loop distance [param s].
+func bank_at(s: float) -> float:
+	var st: Vector2 = main.seg_t_at(s)
+	return main.bank_at(int(st.x), st.y)
+
+
+## Slope angle (radians, positive = climbing) of the MAIN road at main-loop distance [param s].
+func slope_angle_at(s: float) -> float:
+	var st: Vector2 = main.seg_t_at(s)
+	return atan(main.slope_at(int(st.x), st.y))
+
+
+## Surface height of road [param path_index] under the point [param p] (nearest point of that
+## road, whatever its corridor; lateral clamped to road plus curb).
+func surface_height_on(path_index: int, p: Vector2) -> float:
+	var path: Path = path_of(path_index)
+	var h: Hit = path.nearest(p, -1, 0)
+	var a: Vector2 = path.points[h.seg]
+	var b: Vector2 = path.points[(h.seg + 1) % path.points.size()]
+	var lateral: float = (p - a.lerp(b, h.t)).dot(Vector2(-(b - a).y, (b - a).x).normalized()) if a != b else 0.0
+	return path.surface_y(h.seg, h.t, lateral)
 
 
 ## Number of shortcut branches.
@@ -645,6 +776,27 @@ func limit_progress(prev: float, target: float, moved: float) -> float:
 	if absf(d) <= allow:
 		return target
 	return fposmod(prev + signf(d) * allow, length)
+
+
+## Smooth profile value between [param p1] and [param p2] (the height and bank profiles): a cubic
+## Hermite with Catmull-Rom tangents, limited so it never overshoots its control values (a plain
+## Catmull-Rom dips below a flat stretch after a hill, which would sink the road under the ground).
+## Same parameter t as the centerline spline; a control value that is a peak or a valley gets a
+## flat tangent, so crests and dips land exactly on their data values.
+static func catmull_rom_f(p0: float, p1: float, p2: float, p3: float, t: float) -> float:
+	var d: float = p2 - p1
+	var m1: float = 0.0
+	var m2: float = 0.0
+	if absf(d) > 0.00001:
+		m1 = clampf((p2 - p0) * 0.5, minf(0.0, 3.0 * d), maxf(0.0, 3.0 * d))
+		m2 = clampf((p3 - p1) * 0.5, minf(0.0, 3.0 * d), maxf(0.0, 3.0 * d))
+		if m1 * d < 0.0 or (p1 - p0) * d <= 0.0:
+			m1 = 0.0
+		if m2 * d < 0.0 or (p3 - p2) * d <= 0.0:
+			m2 = 0.0
+	var t2: float = t * t
+	var t3: float = t2 * t
+	return (2.0 * t3 - 3.0 * t2 + 1.0) * p1 + (t3 - 2.0 * t2 + t) * m1 + (-2.0 * t3 + 3.0 * t2) * p2 + (t3 - t2) * m2
 
 
 ## Catmull-Rom spline point between [param p1] and [param p2].

@@ -111,3 +111,13 @@ extends Resource
 @export var camera_boost_fov_gain: float = 6.0
 ## FOV smoothing rate (1/s).
 @export var camera_fov_smoothing: float = 5.0
+
+@export_group("Surface (story 008)")
+## Rate (1/s) at which the kart's pitch and roll follow the road surface normal.
+@export var surface_tilt_smoothing: float = 14.0
+## Share of the road's bank angle the chase camera rolls by (0 = no roll).
+@export var camera_bank_roll_factor: float = 0.3
+## Largest camera roll in degrees.
+@export var camera_bank_roll_max_deg: float = 4.0
+## Rate (1/s) at which the camera roll follows its target.
+@export var camera_bank_roll_smoothing: float = 4.0

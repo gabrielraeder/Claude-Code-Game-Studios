@@ -12,6 +12,7 @@ extends RefCounted
 ##   --shortcut=ID        the autopilot takes a branch: drawbridge, secret_passage, hall_left,
 ##                        hall_right, mine_rail, lava_gap
 ##   --overview-shot      one top-down picture of the whole track into --shots=, then quit
+##   --side-shot=S        one picture from the side of the road at main-loop distance S (elevation check), then quit
 ##   --grid-shot          fixed camera above the start grid (picture during the countdown)
 ##   --shot-s=A,B,C       pictures when the kart first passes these main-loop distances
 ##   --racer=N            the local kart's dog, 0..7 (default 0, the mascot); works for host and clients
@@ -37,6 +38,8 @@ var track_id: String = ""
 var shortcut: String = ""
 ## Save one top-down picture of the whole track and quit (--overview-shot, needs --shots=).
 var overview_shot: bool = false
+## Main-loop distance of a side-on picture of the road and its supports (--side-shot=S, needs --shots=), -1 = off.
+var side_shot: float = -1.0
 ## Fixed camera above the start grid, one picture during the countdown (--grid-shot).
 var grid_shot: bool = false
 ## Main-loop distances where a picture is saved on the first lap (--shot-s=a,b,c).
@@ -88,6 +91,8 @@ static func parse(args: PackedStringArray) -> DebugOptions:
 			o.shortcut = a.substr("--shortcut=".length())
 		elif a == "--overview-shot":
 			o.overview_shot = true
+		elif a.begins_with("--side-shot="):
+			o.side_shot = a.substr("--side-shot=".length()).to_float()
 		elif a == "--grid-shot":
 			o.grid_shot = true
 		elif a.begins_with("--shot-s="):
