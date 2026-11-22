@@ -57,7 +57,7 @@ battle and adventure modes.
 | 6 | Kart Physics (mesh collision; body, contact, kart-vs-kart bumps, variable up vector) | Core | MVP | Not Started | — | Track Collision & Surface Attributes, Input & Bindings |
 | 7 | Blender Track Pipeline | Core | MVP | Not Started | — | Track Collision & Surface Attributes, Course Data |
 | 8 | Race Session & Synced Clock (inferred) | Core | MVP | Implemented | — | Network Session & Sync |
-| 9 | Driving & Drift (control law, drift, boost, surface grip and caps; turbo-reserve rules decided here) | Gameplay | MVP | Implemented (2.5D, migrate) | — | Kart Physics |
+| 9 | Driving & Drift (control law, drift, boost, surface grip and caps; turbo-reserve rules decided here) | Gameplay | MVP | In Review (reverse-documented; owner decisions D1-D7) | design/gdd/driving-and-drift.md | Kart Physics |
 | 10 | Vehicles & Racers Roster | Gameplay | MVP | Implemented (placeholder models) | — | Driving & Drift |
 | 11 | Lap & Position Tracking (inferred) | Gameplay | MVP | Implemented (2.5D, migrate) | — | Course Data, Race Session & Synced Clock |
 | 12 | Fall & Respawn (inferred) | Gameplay | MVP | Implemented (2.5D, migrate) | — | Course Data, Kart Physics |
@@ -288,7 +288,7 @@ above marked "Implemented (2.5D, migrate)" read as "rebuilt on the new core; the
 | Metric | Count |
 |--------|-------|
 | Total systems identified | 41 |
-| Design docs started | 0 |
+| Design docs started | 1 |
 | Design docs reviewed | 0 |
 | Design docs approved | 0 |
 | MVP systems designed | 0/22 |
