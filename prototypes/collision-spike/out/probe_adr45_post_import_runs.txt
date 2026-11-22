@@ -1,0 +1,8 @@
+2026-11-22T00:55:27 post_import ran source=res://import_adr45/null/fixture.glb case=null
+2026-11-22T00:55:27 post_import ran source=res://import_adr45/off/fixture.glb case=off
+2026-11-22T00:55:27 post_import ran source=res://import_adr45/on/fixture.glb case=on
+2026-11-22T00:55:51 post_import ran source=res://import_adr45/null/fixture.glb case=null
+2026-11-22T00:56:04 post_import ran source=res://import_adr45/null/fixture.glb case=null
+2026-11-22T00:56:29 post_import ran source=res://import_adr45/off/fixture.glb case=off
+2026-11-22T00:56:29 post_import ran source=res://import_adr45/on/fixture.glb case=on
+2026-11-22T00:56:52 post_import ran source=res://import_adr45/null/fixture.glb case=null

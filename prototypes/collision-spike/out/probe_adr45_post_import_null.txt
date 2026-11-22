@@ -1,0 +1,41 @@
+source=res://import_adr45/null/fixture.glb case=null engine=4.8-beta3 (official) editor_hint=true
+NODE . (Node3D) meta={  } origin=(0.0, 0.0, 0.0) det=1.000
+NODE Barrier-col (MeshInstance3D) meta={  } origin=(0.0, 0.0, 0.0) det=1.000
+  mesh fixture_Barrier-col_mesh class=ArrayMesh surfaces=1
+  surface 0 material=wall_stone compressed_flag=false format=0x800001007 verts=4 tris=2 godot_front_normals=["(-1.0, 0.0, 0.0)", "(-1.0, 0.0, 0.0)"]
+NODE Box-colonly (MeshInstance3D) meta={  } origin=(30.0, 0.0, -55.0) det=1.000
+  mesh fixture_Box-colonly_mesh class=ArrayMesh surfaces=1
+  surface 0 material=vis_prop compressed_flag=false format=0x800001007 verts=4 tris=2 godot_front_normals=["(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)"]
+NODE CP_0 (Node3D) meta={ &"extras": { "kk_type": "checkpoint", "kk_index": 0.0 } } origin=(0.0, 0.0, -10.0) det=1.000
+NODE NegRoad (MeshInstance3D) meta={  } origin=(20.0, 0.0, 0.0) det=-1.000
+  mesh fixture_NegRoad_mesh class=ArrayMesh surfaces=1
+  surface 0 material=surf_road compressed_flag=false format=0x800001007 verts=4 tris=2 godot_front_normals=["(0.0, -1.0, 0.0)", "(0.0, -1.0, 0.0)"]
+NODE Plain (MeshInstance3D) meta={  } origin=(30.0, 0.0, -25.0) det=1.000
+  mesh fixture_Plain_mesh class=ArrayMesh surfaces=1
+  surface 0 material=vis_prop compressed_flag=false format=0x800001007 verts=4 tris=2 godot_front_normals=["(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)"]
+NODE Prop-noimp (MeshInstance3D) meta={  } origin=(30.0, 0.0, -50.0) det=1.000
+  mesh fixture_Prop-noimp_mesh class=ArrayMesh surfaces=1
+  surface 0 material=vis_prop compressed_flag=false format=0x800001007 verts=4 tris=2 godot_front_normals=["(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)"]
+NODE Road (MeshInstance3D) meta={  } origin=(0.0, 0.0, 0.0) det=1.000
+  mesh fixture_Road_mesh class=ArrayMesh surfaces=2
+  surface 0 material=surf_road compressed_flag=false format=0x800001007 verts=8 tris=4 godot_front_normals=["(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)"]
+  PRECISION expected=(1995.123413, 3.333333, -1900.500000) got=(1995.123413, 3.333333, -1900.500000) exact=true err_m=0.000000
+  PRECISION expected=(1999.987671, 3.333333, -1900.500000) got=(1999.987671, 3.333333, -1900.500000) exact=true err_m=0.000000
+  PRECISION expected=(1999.987671, 3.333333, -1910.250000) got=(1999.987671, 3.333333, -1910.250000) exact=true err_m=0.000000
+  PRECISION expected=(1995.123413, 3.333333, -1910.250000) got=(1995.123413, 3.333333, -1910.250000) exact=true err_m=0.000000
+  PRECISION expected=(-1999.987671, 0.000000, 1999.750000) got=(-7.000000, 0.000000, 0.000000) exact=false err_m=2823.295898
+  surface 1 material=surf_grass compressed_flag=false format=0x800001007 verts=8 tris=4 godot_front_normals=["(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)"]
+  PRECISION expected=(1995.123413, 3.333333, -1900.500000) got=(-7.000000, 0.000000, -40.000000) exact=false err_m=2733.124512
+  PRECISION expected=(1999.987671, 3.333333, -1900.500000) got=(-7.000000, 0.000000, -40.000000) exact=false err_m=2736.689697
+  PRECISION expected=(1999.987671, 3.333333, -1910.250000) got=(-7.000000, 0.000000, -40.000000) exact=false err_m=2743.327393
+  PRECISION expected=(1995.123413, 3.333333, -1910.250000) got=(-7.000000, 0.000000, -40.000000) exact=false err_m=2739.770752
+  PRECISION expected=(-1999.987671, 0.000000, 1999.750000) got=(-1999.987671, 0.000000, 1999.750000) exact=true err_m=0.000000
+NODE Thing-rigid (MeshInstance3D) meta={  } origin=(30.0, 0.0, -55.0) det=1.000
+  mesh fixture_Thing-rigid_mesh class=ArrayMesh surfaces=1
+  surface 0 material=vis_prop compressed_flag=false format=0x800001007 verts=4 tris=2 godot_front_normals=["(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)"]
+NODE Track (Node3D) meta={ &"extras": { "kk_type": "track", "kk_schema": 1.0, "kk_keys": "<String len=40000>", "kk_float": 1.5, "kk_bool": true } } origin=(0.0, 0.0, 0.0) det=1.000
+CLASS_COUNTS { "Node3D": 3, "MeshInstance3D": 7 }
+COLLISION_NODES 0
+NV8 kk_keys type=String len=40000 head=0,0.000000,0.000000,1.00 tail=,463.000000,-231.500000, kk_schema=1.0(float) kk_float=1.5 kk_bool=true(bool)
+NV7 static make_fixture ok gates=8; instance gate_count()=8; instance route_half_sum()=13999.0; Adr45Route.new().total_half()=3.0 script=(res://scripts/probe_adr45_route.gd):<GDScript#-9223370598493645463>
+NV5 null case mode=null

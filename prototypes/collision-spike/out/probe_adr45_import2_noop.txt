@@ -1,0 +1,173 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Started Inicialização do Projeto (5 steps)[39m[0m
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Escaneando estrutura de arquivos...[39m[0m
+[  16% ] [90m[1mfirst_scan_filesystem[22m | Carregando nomes de classe globais...[39m[0m
+[  33% ] [90m[1mfirst_scan_filesystem[22m | Verificando GDExtensions...[39m[0m
+[  50% ] [90m[1mfirst_scan_filesystem[22m | Criando scripts autoload...[39m[0m
+[  66% ] [90m[1mfirst_scan_filesystem[22m | Inicializando plugins...[39m[0m
+[  83% ] [90m[1mfirst_scan_filesystem[22m | Iniciando escaneamento de arquivos...[39m[0m
+[92m[ DONE ][39m [1mfirst_scan_filesystem[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importando Recursos (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[   0% ] [90m[1mreimport[22m | Executando operações pré-reimportação...[39m[0m
+[   0% ] [90m[1mpreload_reimporting_scene[22m | Started Preparando cenas para recarregamento (1 steps)[39m[0m
+[   0% ] [90m[1mpreload_reimporting_scene[22m | Analisando cena [vazio][39m[0m
+[  50% ] [90m[1mpreload_reimporting_scene[22m | Preparação concluída.[39m[0m
+[92m[ DONE ][39m [1mpreload_reimporting_scene[22m
+[0m
+[   0% ] [90m[1mreimport[22m | fixture.glb[39m[0m
+[   0% ] [90m[1mimport[22m | Started Importar Cena (104 steps)[39m[0m
+[   0% ] [90m[1mimport[22m | Importando Cena...[39m[0m
+[   1% ] [90m[1mimport[22m | Executando Script Personalizado...[39m[0m
+ADR45 source=res://import_adr45/null/fixture.glb case=null engine=4.8-beta3 (official) editor_hint=true
+ADR45 NODE . (Node3D) meta={  } origin=(0.0, 0.0, 0.0) det=1.000
+ADR45 NODE Barrier-col (MeshInstance3D) meta={  } origin=(0.0, 0.0, 0.0) det=1.000
+ADR45   mesh fixture_Barrier-col_mesh class=ArrayMesh surfaces=1
+ADR45   surface 0 material=wall_stone compressed_flag=false format=0x800001007 verts=4 tris=2 godot_front_normals=["(-1.0, 0.0, 0.0)", "(-1.0, 0.0, 0.0)"]
+ADR45 NODE Box-colonly (MeshInstance3D) meta={  } origin=(30.0, 0.0, -55.0) det=1.000
+ADR45   mesh fixture_Box-colonly_mesh class=ArrayMesh surfaces=1
+ADR45   surface 0 material=vis_prop compressed_flag=false format=0x800001007 verts=4 tris=2 godot_front_normals=["(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)"]
+ADR45 NODE CP_0 (Node3D) meta={ &"extras": { "kk_type": "checkpoint", "kk_index": 0.0 } } origin=(0.0, 0.0, -10.0) det=1.000
+ADR45 NODE NegRoad (MeshInstance3D) meta={  } origin=(20.0, 0.0, 0.0) det=-1.000
+ADR45   mesh fixture_NegRoad_mesh class=ArrayMesh surfaces=1
+ADR45   surface 0 material=surf_road compressed_flag=false format=0x800001007 verts=4 tris=2 godot_front_normals=["(0.0, -1.0, 0.0)", "(0.0, -1.0, 0.0)"]
+ADR45 NODE Plain (MeshInstance3D) meta={  } origin=(30.0, 0.0, -25.0) det=1.000
+ADR45   mesh fixture_Plain_mesh class=ArrayMesh surfaces=1
+ADR45   surface 0 material=vis_prop compressed_flag=false format=0x800001007 verts=4 tris=2 godot_front_normals=["(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)"]
+ADR45 NODE Prop-noimp (MeshInstance3D) meta={  } origin=(30.0, 0.0, -50.0) det=1.000
+ADR45   mesh fixture_Prop-noimp_mesh class=ArrayMesh surfaces=1
+ADR45   surface 0 material=vis_prop compressed_flag=false format=0x800001007 verts=4 tris=2 godot_front_normals=["(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)"]
+ADR45 NODE Road (MeshInstance3D) meta={  } origin=(0.0, 0.0, 0.0) det=1.000
+ADR45   mesh fixture_Road_mesh class=ArrayMesh surfaces=2
+ADR45   surface 0 material=surf_road compressed_flag=false format=0x800001007 verts=8 tris=4 godot_front_normals=["(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)"]
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:818)
+   GDScript backtrace (most recent call first):
+       [0] _precision (res://scripts/probe_adr45_post_import.gd:85)
+       [1] _walk (res://scripts/probe_adr45_post_import.gd:70)
+       [2] _walk (res://scripts/probe_adr45_post_import.gd:72)
+       [3] _post_import (res://scripts/probe_adr45_post_import.gd:96)
+ADR45   PRECISION expected=(%.6f, %.6f, %.6f) got=(%.6f, %.6f, %.6f) exact=%s err_m=%.6g
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:818)
+   GDScript backtrace (most recent call first):
+       [0] _precision (res://scripts/probe_adr45_post_import.gd:85)
+       [1] _walk (res://scripts/probe_adr45_post_import.gd:70)
+       [2] _walk (res://scripts/probe_adr45_post_import.gd:72)
+       [3] _post_import (res://scripts/probe_adr45_post_import.gd:96)
+ADR45   PRECISION expected=(%.6f, %.6f, %.6f) got=(%.6f, %.6f, %.6f) exact=%s err_m=%.6g
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:818)
+   GDScript backtrace (most recent call first):
+       [0] _precision (res://scripts/probe_adr45_post_import.gd:85)
+       [1] _walk (res://scripts/probe_adr45_post_import.gd:70)
+       [2] _walk (res://scripts/probe_adr45_post_import.gd:72)
+       [3] _post_import (res://scripts/probe_adr45_post_import.gd:96)
+ADR45   PRECISION expected=(%.6f, %.6f, %.6f) got=(%.6f, %.6f, %.6f) exact=%s err_m=%.6g
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:818)
+   GDScript backtrace (most recent call first):
+       [0] _precision (res://scripts/probe_adr45_post_import.gd:85)
+       [1] _walk (res://scripts/probe_adr45_post_import.gd:70)
+       [2] _walk (res://scripts/probe_adr45_post_import.gd:72)
+       [3] _post_import (res://scripts/probe_adr45_post_import.gd:96)
+ADR45   PRECISION expected=(%.6f, %.6f, %.6f) got=(%.6f, %.6f, %.6f) exact=%s err_m=%.6g
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:818)
+   GDScript backtrace (most recent call first):
+       [0] _precision (res://scripts/probe_adr45_post_import.gd:85)
+       [1] _walk (res://scripts/probe_adr45_post_import.gd:70)
+       [2] _walk (res://scripts/probe_adr45_post_import.gd:72)
+       [3] _post_import (res://scripts/probe_adr45_post_import.gd:96)
+ADR45   PRECISION expected=(%.6f, %.6f, %.6f) got=(%.6f, %.6f, %.6f) exact=%s err_m=%.6g
+ADR45   surface 1 material=surf_grass compressed_flag=false format=0x800001007 verts=8 tris=4 godot_front_normals=["(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)"]
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:818)
+   GDScript backtrace (most recent call first):
+       [0] _precision (res://scripts/probe_adr45_post_import.gd:85)
+       [1] _walk (res://scripts/probe_adr45_post_import.gd:70)
+       [2] _walk (res://scripts/probe_adr45_post_import.gd:72)
+       [3] _post_import (res://scripts/probe_adr45_post_import.gd:96)
+ADR45   PRECISION expected=(%.6f, %.6f, %.6f) got=(%.6f, %.6f, %.6f) exact=%s err_m=%.6g
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:818)
+   GDScript backtrace (most recent call first):
+       [0] _precision (res://scripts/probe_adr45_post_import.gd:85)
+       [1] _walk (res://scripts/probe_adr45_post_import.gd:70)
+       [2] _walk (res://scripts/probe_adr45_post_import.gd:72)
+       [3] _post_import (res://scripts/probe_adr45_post_import.gd:96)
+ADR45   PRECISION expected=(%.6f, %.6f, %.6f) got=(%.6f, %.6f, %.6f) exact=%s err_m=%.6g
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:818)
+   GDScript backtrace (most recent call first):
+       [0] _precision (res://scripts/probe_adr45_post_import.gd:85)
+       [1] _walk (res://scripts/probe_adr45_post_import.gd:70)
+       [2] _walk (res://scripts/probe_adr45_post_import.gd:72)
+       [3] _post_import (res://scripts/probe_adr45_post_import.gd:96)
+ADR45   PRECISION expected=(%.6f, %.6f, %.6f) got=(%.6f, %.6f, %.6f) exact=%s err_m=%.6g
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:818)
+   GDScript backtrace (most recent call first):
+       [0] _precision (res://scripts/probe_adr45_post_import.gd:85)
+       [1] _walk (res://scripts/probe_adr45_post_import.gd:70)
+       [2] _walk (res://scripts/probe_adr45_post_import.gd:72)
+       [3] _post_import (res://scripts/probe_adr45_post_import.gd:96)
+ADR45   PRECISION expected=(%.6f, %.6f, %.6f) got=(%.6f, %.6f, %.6f) exact=%s err_m=%.6g
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:818)
+   GDScript backtrace (most recent call first):
+       [0] _precision (res://scripts/probe_adr45_post_import.gd:85)
+       [1] _walk (res://scripts/probe_adr45_post_import.gd:70)
+       [2] _walk (res://scripts/probe_adr45_post_import.gd:72)
+       [3] _post_import (res://scripts/probe_adr45_post_import.gd:96)
+ADR45   PRECISION expected=(%.6f, %.6f, %.6f) got=(%.6f, %.6f, %.6f) exact=%s err_m=%.6g
+ADR45 NODE Thing-rigid (MeshInstance3D) meta={  } origin=(30.0, 0.0, -55.0) det=1.000
+ADR45   mesh fixture_Thing-rigid_mesh class=ArrayMesh surfaces=1
+ADR45   surface 0 material=vis_prop compressed_flag=false format=0x800001007 verts=4 tris=2 godot_front_normals=["(0.0, 1.0, 0.0)", "(0.0, 1.0, 0.0)"]
+ADR45 NODE Track (Node3D) meta={ &"extras": { "kk_type": "track", "kk_schema": 1.0, "kk_keys": "<String len=40000>", "kk_float": 1.5, "kk_bool": true } } origin=(0.0, 0.0, 0.0) det=1.000
+ADR45 CLASS_COUNTS { "Node3D": 3, "MeshInstance3D": 7 }
+ADR45 COLLISION_NODES 0
+ADR45 NV8 kk_keys type=String len=40000 head=0,0.000000,0.000000,1.00 tail=,463.000000,-231.500000, kk_schema=1.0(float) kk_float=1.5 kk_bool=true(bool)
+ADR45 NV7 static make_fixture ok gates=8; instance gate_count()=8; instance route_half_sum()=13999.0; Adr45Route.new().total_half()=3.0 script=(res://scripts/probe_adr45_route.gd):<GDScript#-9223370596765592215>
+ADR45 NV5 null case mode=null
+[92m[ DONE ][39m [1mimport[22m
+[0m
+ERROR: Condition "f.is_null()" is true. Continuing.
+   at: get_multiple_md5 (core/io/file_access.cpp:967)
+[  50% ] [90m[1mreimport[22m | Finalizando Importação de Recursos...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importando Recursos (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Executando operações pós-reimportação...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Started Carregando editor (5 steps)[39m[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Carregando layout do editor...[39m[0m
+[  16% ] [90m[1mloading_editor_layout[22m | Carregando abas...[39m[0m
+[92m[ DONE ][39m [1mloading_editor_layout[22m
+[0m
+ERROR: 4 RID allocations of type 'N13RendererDummy15MaterialStorage13DummyMaterialE' were leaked at exit.
+ERROR: 1 RID allocations of type 'N13RendererDummy15MaterialStorage11DummyShaderE' were leaked at exit.
+ERROR: 7 RID allocations of type 'N13RendererDummy9DummyMeshE' were leaked at exit.
+ERROR: 7 RID allocations of type 'N17RendererSceneCull8InstanceE' were leaked at exit.
+ERROR: Pages in use exist at exit in PagedAllocator: N20RasterizerSceneDummy21GeometryInstanceDummyE
+   at: ~PagedAllocator (./core/templates/paged_allocator.h:170)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: 21 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2609)
+exit=0

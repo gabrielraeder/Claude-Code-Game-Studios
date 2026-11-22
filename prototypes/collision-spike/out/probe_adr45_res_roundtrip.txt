@@ -1,0 +1,26 @@
+engine 4.8-beta3 (official)
+OS.has_feature(editor)=true (editor binary, -s run)
+PASS save errs=0,0
+PASS two saves byte-equal size=41591
+PASS NV-13 get_sha256(res://) == HashingContext b0752cf6e110a4f67a6b3c22332645a00f646e4469d6e9ae3324f74cb2b0f722
+PASS NV-13 get_sha256(res://) == get_sha256(absolute) 
+PASS NV-13 get_sha256(missing) is empty 
+PASS reload class script=res://scripts/probe_adr45_course.gd
+PASS format_version/lap_length lap_length=1234.567800
+PASS gate_xform typed builtin typed=true builtin=18
+PASS gate_xform exact (==, not approx) n=8 first=[X: (1.0, 0.0, 0.0), Y: (0.0, 1.0, 0.0), Z: (0.0, 0.0, 1.0), O: (1999.987, 12.3456, -1999.123)]
+PASS gate_half/group/s exact 
+PASS routes typed (script) class_name=Resource script=(res://scripts/probe_adr45_route.gd):<GDScript#-9223372009742793241>
+  route 0 id=route_0(StringName) kind=main pos.size=1000 resource_path='res://out/probe_adr45_course_a.res::Resource_qvvi4'
+  route 1 id=route_1(StringName) kind=branch pos.size=1000 resource_path='res://out/probe_adr45_course_a.res::Resource_hwgmy'
+PASS routes exact (embedded sub-resources) 
+PASS instance methods on loaded data half_sum=13999.000000
+PASS stats dictionary { "tris_ground": 154000, "tris_walls": 3000 }
+INFO plain (non-@export) var after reload = 0 (fixture set 42; 0 means not stored)
+FAIL re-save of loaded copy byte-equal to first save 
+PASS load() twice returns the same cached instance ids=-9223372008635496961,-9223372008635496961,-9223372008635496961
+PASS uncached load is a different instance 
+PASS new-array copy leaves cached gate_xform untouched 
+INFO duplicate(false) shares route sub-resources with the cached instance: true
+INFO duplicate(true) makes new route sub-resources: true
+PASS cached route pos untouched 

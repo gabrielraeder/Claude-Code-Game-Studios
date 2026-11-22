@@ -1,0 +1,127 @@
+=== NV-5 fresh null: .godot/imported listing
+total 40
+drwxr-xr-x 1 gabri 197609    0 Nov 22 00:55 .
+drwxr-xr-x 1 gabri 197609    0 Nov 22 00:55 ..
+-rw-r--r-- 1 gabri 197609   91 Nov 22 00:55 fixture.glb-3b7a45e71d909eb13ca5a89434ec4d82.md5
+-rw-r--r-- 1 gabri 197609 8907 Nov 22 00:55 fixture.glb-3b7a45e71d909eb13ca5a89434ec4d82.scn
+-rw-r--r-- 1 gabri 197609   91 Nov 22 00:55 fixture.glb-b8bc48aaf905b8e4078b4225691cdd92.md5
+-rw-r--r-- 1 gabri 197609 8525 Nov 22 00:55 fixture.glb-b8bc48aaf905b8e4078b4225691cdd92.scn
+-rw-r--r-- 1 gabri 197609   91 Nov 22 00:55 fixture.glb-f6b54d49e07afabf420e48fe45892b85.md5
+-rw-r--r-- 1 gabri 197609   91 Nov 22 00:24 track_piece.glb-51a22a570b0e1f3d70fe63fb33f2cf03.md5
+-rw-r--r-- 1 gabri 197609 2921 Nov 22 00:24 track_piece.glb-51a22a570b0e1f3d70fe63fb33f2cf03.scn
+=== import_adr45/null/fixture.glb.import after import
+[remap]
+
+importer="scene"
+importer_version=1
+type="PackedScene"
+uid="uid://du5u0dttbxpfu"
+path="res://.godot/imported/fixture.glb-f6b54d49e07afabf420e48fe45892b85.scn"
+
+[deps]
+
+source_file="res://import_adr45/null/fixture.glb"
+dest_files=["res://.godot/imported/fixture.glb-f6b54d49e07afabf420e48fe45892b85.scn"]
+
+[params]
+
+nodes/root_type=""
+nodes/root_name=""
+nodes/root_script=null
+mesh_library/use_node_names_as_mesh_names=false
+mesh_library/create_categories_from_hierarchy=false
+array_mesh/deduplicate_surfaces=true
+nodes/apply_root_scale=true
+nodes/root_scale=1.0
+nodes/import_as_skeleton_bones=false
+nodes/use_name_suffixes=false
+nodes/use_node_type_suffixes=false
+meshes/ensure_tangents=true
+meshes/generate_lods=false
+meshes/create_shadow_meshes=false
+meshes/light_baking=1
+meshes/lightmap_texel_size=0.2
+meshes/force_disable_compression=true
+skins/use_named_skins=true
+animation/import=false
+animation/fps=30
+animation/trimming=false
+animation/remove_immutable_tracks=true
+animation/import_rest_as_RESET=false
+import_script/path="res://scripts/probe_adr45_post_import.gd"
+materials/extract=0
+materials/extract_format=0
+materials/extract_path=""
+_subresources={}
+gltf/naming_version=2
+gltf/embedded_image_handling=1
+gltf/texture_map_mode=0
+=== import_adr45/off/fixture.glb.import after import
+[remap]
+
+importer="scene"
+importer_version=1
+type="PackedScene"
+uid="uid://crj5c1x20cu4"
+path="res://.godot/imported/fixture.glb-b8bc48aaf905b8e4078b4225691cdd92.scn"
+
+[deps]
+
+source_file="res://import_adr45/off/fixture.glb"
+dest_files=["res://.godot/imported/fixture.glb-b8bc48aaf905b8e4078b4225691cdd92.scn"]
+
+[params]
+
+nodes/root_type=""
+nodes/root_name=""
+nodes/root_script=null
+mesh_library/use_node_names_as_mesh_names=false
+mesh_library/create_categories_from_hierarchy=false
+array_mesh/deduplicate_surfaces=true
+nodes/apply_root_scale=true
+nodes/root_scale=1.0
+nodes/import_as_skeleton_bones=false
+nodes/use_name_suffixes=false
+nodes/use_node_type_suffixes=false
+meshes/ensure_tangents=true
+meshes/generate_lods=false
+meshes/create_shadow_meshes=false
+meshes/light_baking=1
+meshes/lightmap_texel_size=0.2
+meshes/force_disable_compression=true
+skins/use_named_skins=true
+animation/import=false
+animation/fps=30
+animation/trimming=false
+animation/remove_immutable_tracks=true
+animation/import_rest_as_RESET=false
+import_script/path="res://scripts/probe_adr45_post_import.gd"
+materials/extract=0
+materials/extract_format=0
+materials/extract_path=""
+_subresources={}
+gltf/naming_version=2
+gltf/embedded_image_handling=1
+gltf/texture_map_mode=0
+=== import_adr45 listing
+import_adr45/null:
+total 56
+drwxr-xr-x 1 gabri 197609     0 Nov 22 00:55 .
+drwxr-xr-x 1 gabri 197609     0 Nov 22 00:54 ..
+-rw-r--r-- 1 gabri 197609 45896 Nov 22 00:54 fixture.glb
+-rw-r--r-- 1 gabri 197609  1250 Nov 22 00:55 fixture.glb.import
+
+import_adr45/off:
+total 100
+drwxr-xr-x 1 gabri 197609     0 Nov 22 00:55 .
+drwxr-xr-x 1 gabri 197609     0 Nov 22 00:54 ..
+-rw-r--r-- 1 gabri 197609 45896 Nov 22 00:54 fixture.glb
+-rw-r--r-- 1 gabri 197609  1248 Nov 22 00:55 fixture.glb.import
+-rw-r--r-- 1 gabri 197609 41724 Nov 22 00:55 fixture.track.res
+
+import_adr45/on:
+total 56
+drwxr-xr-x 1 gabri 197609     0 Nov 22 00:55 .
+drwxr-xr-x 1 gabri 197609     0 Nov 22 00:54 ..
+-rw-r--r-- 1 gabri 197609 45896 Nov 22 00:54 fixture.glb
+-rw-r--r-- 1 gabri 197609  1244 Nov 22 00:55 fixture.glb.import

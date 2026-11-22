@@ -1,0 +1,33 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+mode=main face_index setting=false
+face_index setting now=true
+T1 inactive space: direct_state=true ray=hit y=0.00 n=(0.0, 1.0, 0.0) face=3 shape=0 id=0
+T2 degenerate first: ray at (5,_,-5) (tri idx2) hit y=0.00 n=(0.0, 1.0, 0.0) face=2 shape=0 id=0 | at (5,_,5) (tri idx3) hit y=0.00 n=(0.0, 1.0, 0.0) face=3 shape=0 id=0
+T10 space set before shapes, inactive: hit y=0.00 n=(0.0, 1.0, 0.0) face=1 shape=0 id=0
+T3 rest walls mask=2 near shape0: n=(1.0, 0.0, 0.0) p=(0.0, 1.0, 0.0) shape=0 rid=RID(171798691842) id=0
+T3 rest walls mask=2 near shape1: n=(1.0, 0.0, 0.0) p=(20.0, 1.0, 0.0) shape=1 rid=RID(171798691842) id=0
+T3 rest walls mask=2 near shape2: n=(1.0, 0.0, 0.0) p=(40.0, 1.0, 0.0) shape=2 rid=RID(171798691842) id=0
+T3 rest mask=1 near shape2 (should be none, floor far): none
+T3 rest mask=3 at floor+wall corner (0.3,0.3,0): n=(0.0, 1.0, 0.0) p=(0.3, 0.0, 0.0) shape=0 rid=RID(180388626435) id=0
+T3 ray mask=1 through wall: MISS mask=2: hit y=1.00 n=(1.0, 0.0, 0.0) face=0 shape=0 id=0
+   wall body id=0 ground id=0
+T4 backface_collision=false
+   front: far->toward ret=true safe=0.933 unsafe=0.935
+   back : far->toward ret=false safe=1.000 unsafe=1.000 rest@unsafe-ish(-0.5) none
+   front: center crosses plane 0.3 -> -1.0 ret=false safe=1.000 unsafe=1.000 rest@to none
+   front: from 1.0 through to -2.0 ret=true safe=0.133 unsafe=0.134
+   start overlap front 0.3 toward ret=false safe=1.000 unsafe=1.000 rest@from n=(1.0, 0.0, 0.0) p=(0.0, 1.0, 0.0) shape=0 rid=RID(219043332100) id=0
+   start overlap back -0.3 none
+   ray back side hit_back_faces=false MISS true MISS
+T4 backface_collision=true
+   front: far->toward ret=true safe=0.933 unsafe=0.935
+   back : far->toward ret=true safe=0.933 unsafe=0.935 rest@unsafe-ish(-0.5) n=(-1.0, 0.0, 0.0) p=(0.0, 1.0, 0.0) shape=0 rid=RID(274877906948) id=0
+   front: center crosses plane 0.3 -> -1.0 ret=false safe=1.000 unsafe=1.000 rest@to none
+   front: from 1.0 through to -2.0 ret=true safe=0.133 unsafe=0.134
+   start overlap front 0.3 toward ret=false safe=1.000 unsafe=1.000 rest@from n=(1.0, 0.0, 0.0) p=(0.0, 1.0, 0.0) shape=0 rid=RID(274877906948) id=0
+   start overlap back -0.3 n=(-1.0, 0.0, 0.0) p=(0.0, 1.0, 0.0) shape=0 rid=RID(274877906948) id=0
+   ray back side hit_back_faces=false MISS true hit y=1.00 n=(-1.0, 0.0, 0.0) face=0 shape=0 id=0
+T5 before drop: hit y=0.00 n=(0.0, 1.0, 0.0) face=1 shape=0 id=0 shape_count=1
+T5 after drop:  MISS shape_count=0
+T6 done main; orphan RIDs check via --verbose at exit

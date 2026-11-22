@@ -1,0 +1,5 @@
+[setting_false] has_setting(filesystem/import/blender/enabled)=true value=false default=true | blend_plain/t.blend.import exists=false | blend_ignored/t.blend.import exists=false | ResourceLoader.exists(plain)=false
+[default] has_setting(filesystem/import/blender/enabled)=true value=true default=true | blend_plain/t.blend.import exists=false | blend_ignored/t.blend.import exists=false | ResourceLoader.exists(plain)=false
+disabled-log blender mentions: 1
+default-log blender mentions: 1
+ERROR: Blender path is invalid or not set, check your Editor Settings. Cannot configure blender path in headless mode.

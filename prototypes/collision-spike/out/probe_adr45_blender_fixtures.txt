@@ -1,0 +1,33 @@
+BLENDER kk_keys len=40000 head=0,0.000000,0.000000,1.00 tail=,463.000000,-231.500000,
+BLENDER far quad float32 x0=1995.12341 x1=1999.98767 y0=1900.5 y1=1910.25 z=3.33333302
+BLENDER neg-scale det=1.000
+BLENDER collection _scratch objects=['ScratchEmpty']
+BLENDER collection Course objects=['Track', 'CP_0']
+BLENDER collection Ground objects=['Road', 'NegRoad']
+BLENDER collection Visual objects=['Prop-noimp', 'Box-colonly', 'Thing-rigid', 'Plain']
+BLENDER collection Walls objects=['Barrier-col']
+INFO Draco is available, use library at C:\Program Files\Blender Foundation\Blender 5.3\blender.shared\bf_intern_draco_bridge.dll
+INFO MeshOptimizer is available, use library at C:\Program Files\Blender Foundation\Blender 5.3\blender.shared\bf_intern_meshopt_bridge.dll
+00:54:53 | INFO: Starting glTF 2.0 export
+00:54:53 | INFO: Extracting primitive: Barrier-col_mesh
+00:54:53 | INFO: Primitives created: 1
+00:54:53 | INFO: Extracting primitive: Box-colonly_mesh
+00:54:53 | INFO: Primitives created: 1
+00:54:53 | INFO: Extracting primitive: NegRoad_mesh
+00:54:53 | INFO: Primitives created: 1
+00:54:53 | INFO: Extracting primitive: Plain_mesh
+00:54:53 | INFO: Primitives created: 1
+00:54:53 | INFO: Extracting primitive: Prop-noimp_mesh
+00:54:53 | INFO: Primitives created: 1
+00:54:53 | INFO: Extracting primitive: Road_mesh
+00:54:53 | INFO: Primitives created: 2
+00:54:53 | INFO: Extracting primitive: Thing-rigid_mesh
+00:54:53 | INFO: Primitives created: 1
+00:54:53 | INFO: Finished glTF 2.0 export in 0.06512236595153809 s
+
+EXPORTED C:/writechoice/Claude-Code-Game-Studios/prototypes/collision-spike/import_adr45/off/fixture.glb
+COPIED C:/writechoice/Claude-Code-Game-Studios/prototypes/collision-spike/import_adr45/on/fixture.glb
+COPIED C:/writechoice/Claude-Code-Game-Studios/prototypes/collision-spike/import_adr45/null/fixture.glb
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit

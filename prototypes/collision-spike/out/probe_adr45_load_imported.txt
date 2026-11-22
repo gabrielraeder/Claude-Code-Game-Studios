@@ -1,0 +1,8 @@
+off: loaded, root meta={ &"adr45_scalar_meta": 7, &"adr45_resource_meta": (res://import_adr45/off/fixture.glb::Resource_uluwg):<Resource#-9223372009205922314> }
+off: saved scene Road far vertex exact float32 present=true
+on: loaded, root meta={ &"adr45_scalar_meta": 7, &"adr45_resource_meta": (res://import_adr45/on/fixture.glb::Resource_scma6):<Resource#-9223372008652274172> }
+on: saved scene Road far vertex exact float32 present=false
+null: loaded, root meta={ &"adr45_null_case_good": true }
+null: saved scene Road far vertex exact float32 present=true
+package: class=Resource script=res://scripts/probe_adr45_course.gd gates=8 routes_typed=true stats={ "source": "res://import_adr45/off/fixture.glb", "sha256": "9e164b681b177a6abd66005725ef717bd5fe4039954be599dc2a84051ee8d908", "stamp": "2026-11-22T00:56:29" }
+package sha256 field == current glb sha256: true

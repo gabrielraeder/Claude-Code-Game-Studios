@@ -1,0 +1,20 @@
+=== before null-over-good: imported listing
+-rw-r--r-- 1 gabri 197609   91 2026-11-22 00:56:04.697409800 -0300 fixture.glb-f6b54d49e07afabf420e48fe45892b85.md5
+-rw-r--r-- 1 gabri 197609 8329 2026-11-22 00:56:04.691407500 -0300 fixture.glb-f6b54d49e07afabf420e48fe45892b85.scn
+import exit=0
+=== after
+-rw-r--r-- 1 gabri 197609   91 2026-11-22 00:56:04.697409800 -0300 fixture.glb-f6b54d49e07afabf420e48fe45892b85.md5
+-rw-r--r-- 1 gabri 197609 8329 2026-11-22 00:56:04.691407500 -0300 fixture.glb-f6b54d49e07afabf420e48fe45892b85.scn
+source_md5="73553a0c5d9f98480d2dd38b4ef09a29"
+dest_md5="6079812c321b7a697e36e23e1a4cbf47"
+
+
+=== error lines in import log
+=== retry: md5 deleted + touch (a touch alone did not reimport: md5 unchanged)
+import exit=0
+=== after
+-rw-r--r-- 1 gabri 197609   91 2026-11-22 00:56:52.774131200 -0300 fixture.glb-f6b54d49e07afabf420e48fe45892b85.md5
+-rw-r--r-- 1 gabri 197609 8329 2026-11-22 00:56:04.691407500 -0300 fixture.glb-f6b54d49e07afabf420e48fe45892b85.scn
+=== error lines in import log
+ADR45 NV5 null case mode=null
+ERROR: Pages in use exist at exit in PagedAllocator: N20RasterizerSceneDummy21GeometryInstanceDummyE
