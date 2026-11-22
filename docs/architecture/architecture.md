@@ -72,15 +72,15 @@ Layers follow `design/gdd/systems-index.md`, which is the authority for each sys
 
 ## Module Ownership
 
-Folder layout of the rebuilt core is fixed by ADR-0001; "today" names the frozen file a module learns from or ports.
+Folder layout and class names of the rebuilt core are fixed by ADR-0001 (ported modules get new role names, e.g. NetLink, SnapshotCodec, RemoteKartView, NetMetrics, DriverInput; shared data classes move to `src/data/`); "today" names the frozen file a module learns from or ports.
 
 ### Foundation
 
 | Module | Owns | Exposes | Consumes | Engine APIs |
 |---|---|---|---|---|
 | **Track Collision & Surface Attributes** (rebuilt; learns from `track_model.gd`, `track_surface.gd`) | The static collision geometry, per-triangle floor attributes and per-wall attributes (drag, opening), moving colliders' shapes **and pose curves** (pure functions of race time, addressed by id), surface data (`SurfaceSet` `.tres`, ported) | `CollisionQuery` | race time (a parameter) | ADR-0002 choice: engine ray/shape casts on `ConcavePolygonShape3D`, per-surface shapes, or an own triangle grid. 4.8 `_into` variants NEEDS VERIFICATION |
-| **Network Session & Sync** (ported from `src/net/`) | Connection lifecycle, version handshake, the snapshot wire format (new VERSION 10), remote-kart interpolation, `NetStats` (with teleport exclusion, TD-010) | session signals, `KartWire.pack/unpack`, `RemoteKart` | the `KartSnapshot` contract | `SceneMultiplayer`, `ENetMultiplayerPeer`, `@rpc` |
-| **Input & Bindings** (ported) | Actions, rebinding, per-PC saved bindings | `KartInput` | — | `Input`, `InputMap` |
+| **Network Session & Sync** (ported from `src/net/`) | Connection lifecycle, version handshake, the snapshot wire format (new VERSION 10), remote-kart interpolation, `NetMetrics` (with teleport exclusion, TD-010) | `NetLink` signals, `SnapshotCodec.pack/unpack`, `RemoteKartView` | the `KartSnapshot` contract | `SceneMultiplayer`, `ENetMultiplayerPeer`, `@rpc` |
+| **Input & Bindings** (ported) | Actions, rebinding, per-PC saved bindings | `DriverInput` | — | `Input`, `InputMap` |
 | **Settings & Local Save** (ported) | Per-PC config files | typed reads | — | `ConfigFile` |
 | **Room Codes & Relay** (new, story 021) | Code ↔ host address, relay fallback | `Rendezvous.resolve(code)` | Network Session | ADR-0008 |
 
@@ -127,7 +127,7 @@ HUD, menus, audio, camera, kart visuals and track art read state and signals and
 **1. Tick (60 Hz `_physics_process`, pinned by ADR-0001).**
 
 ```
-KartInput ──▶ Driving & Drift.drive(DriveState, input, snapshot, stats, surface) ──▶ KartIntent
+DriverInput ──▶ Driving & Drift.drive(DriveState, input, snapshot, stats, surface) ──▶ KartIntent
 KartIntent + CollisionQuery ──▶ KartBody.step ──▶ KartSnapshot
 KartSnapshot ──▶ Course Data progress ──▶ Lap & Position
             ──▶ hazard hit test (victim decides) ──▶ same-tick effect (spin/stop/sink)
@@ -181,13 +181,13 @@ func apply_event(e: KartEvent) -> void
 func snapshot(out: KartSnapshot) -> void
 ```
 - `step` is deterministic given state; it mutates state.
-- Kart Physics never references the network; `KartWire` alone serialises a snapshot (VERSION 10). The frozen 2.5D build stays on VERSION 9; the two never play together (the handshake refuses), which is correct.
+- Kart Physics never references the network; `SnapshotCodec` alone serialises a snapshot (VERSION 10). The frozen 2.5D build stays on VERSION 9; the two never play together (the handshake refuses), which is correct.
 
 ### Driving & Drift
 
 ```gdscript
 class_name DriveState extends RefCounted
-func drive(state: DriveState, input: KartInput, snap: KartSnapshot, stats: VehicleStats, surface: SurfaceType, dt: float, out: KartIntent) -> void
+func drive(state: DriveState, input: DriverInput, snap: KartSnapshot, stats: VehicleStats, surface: SurfaceType, dt: float, out: KartIntent) -> void
 ```
 
 ### CourseData
@@ -206,7 +206,7 @@ Bots read routes and baked tables only.
 
 ### Hazards and items
 
-`TrackHazard.effect_at(collider_id, t) -> HazardEffect` (pure); a hit is decided on the victim's PC. Item use is an event resolved by the owner and confirmed by the victim; projectiles use `CollisionQuery`; homing targets come from `RacerRegistry`.
+`HazardEffect.effect_at(collider_id, t) -> HazardOutcome` (pure); a hit is decided on the victim's PC. Item use is an event resolved by the owner and confirmed by the victim; projectiles use `CollisionQuery`; homing targets come from `RacerRegistry`.
 
 ### Tool layer
 
@@ -222,7 +222,7 @@ Technical Requirements Baseline: **deferred** (no system GDD exists to extract f
 
 **Before the rebuild's first code (order matters):**
 
-1. **ADR-0001 Simulation conventions and code layout:** folder layout of the rebuilt core; axes and units (Godot Y-up, -Z forward, metres; Blender Z-up exported to glTF +Y-up, scale applied); orientation as a `Basis` with up following a smoothed ground normal; banking physical or presentation-only; tick model (pin `physics_ticks_per_second=60` and `max_physics_steps_per_frame`), 30 Hz send rate, view delay; interpolation (own kart lerp+slerp between ticks, remote buffered with slerp, engine physics interpolation off); mirror as X negation with flipped winding.
+1. **ADR-0001 Simulation conventions and code layout:** folder layout of the rebuilt core; axes and units (Godot Y-up, -Z forward, metres; Blender Z-up exported to glTF +Y-up, scale applied); orientation as a `Basis` with up following a smoothed ground normal; banking physical or presentation-only; tick model (pin `physics_ticks_per_second=60` and `max_physics_steps_per_frame`), 30 Hz send rate, view delay; interpolation (own kart lerp+slerp between ticks, remote buffered with slerp, engine physics interpolation off); mirror per ADR-0001 §7 (M·B·M, side swaps, winding flip).
 2. **ADR-0002 Collision backend and surface attributes:** (a) engine casts on one `ConcavePolygonShape3D` with `face_index` (verify under Jolt); (b) one shape per surface id (shape index gives the surface); (c) an own XZ grid of triangles per cell in a `RefCounted` (no SceneTree, per-triangle ids, decks by y); (d) a GDExtension BVH if speed demands it. Pin the 3D physics backend and check it at boot. Decided by a measured spike on a mesh baked from today's generator output.
 3. **ADR-0003 Kart physics model:** custom kinematic `KartBody` + `DriveState` (recommended) vs `CharacterBody3D` vs `RigidBody3D` on Jolt; parity rule against the golden traces (tolerances stated).
 4. **ADR-0004 Course data format:** checkpoint groups, routes and baked tables, item boxes, respawn, grid.
@@ -239,7 +239,7 @@ From `.claude/docs/technical-preferences.md`: 60 fps, 16.6 ms frame, ≤ 2000 dr
 
 - **Simulation (host worst case, 12 bodies: 1 human + 11 bots):** ≤ 3 ms per tick for kart simulation + collision + bot decisions on the owner's PC (a named minimum-spec PC is open, QQ-06). Baseline measured on the frozen build before the rebuild starts.
 - **Queries per kart per tick (target):** ≤ 4 ground casts + ≤ 1 wall sweep, the sweep skipped when the margin is large; kart-pair contact behind a broadphase on route distance (66 pairs at 12); remote karts trust the wire's height.
-- **Bandwidth (estimate, verified with `NetStats`):** ~84 B × 30 Hz ≈ 2.5 KB/s per kart; ~30 KB/s down per client; ~330 KB/s host upload for 12 before overhead.
+- **Bandwidth (estimate, verified with `NetMetrics`):** ~84 B × 30 Hz ≈ 2.5 KB/s per kart; ~30 KB/s down per client; ~330 KB/s host upload for 12 before overhead.
 - **Tools:** the mesh `track_check` samples rather than re-running the ~120,000 single-kart ticks of today's infield check.
 
 ## Target Hardware
