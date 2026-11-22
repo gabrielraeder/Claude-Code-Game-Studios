@@ -1,0 +1,4 @@
+PASS native_exit exit_clean (exit 0, sentinel seen, no ERROR: line)
+PASS native_exit exit_rid (exit 0, sentinel seen, no ERROR: line)
+PASS native_exit negative control exit_leak is caught (1 leak line(s) in /c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-068/regression-final/native_exit/exit_leak.txt: WARNING: 1 ObjectDB instance was leaked at exit (run with `--verbose` for details).)
+PASS native_exit collision (exit 0, sentinel seen, no ERROR: line, no leak line; CollisionQuery + QueryCursor + hits held at quit)

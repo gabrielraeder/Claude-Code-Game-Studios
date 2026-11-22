@@ -1,0 +1,7 @@
+IDENTICAL bots_castle_circuit.csv (35316 rows)
+IDENTICAL bots_dungeon_depths.csv (32664 rows)
+IDENTICAL solo_castle_circuit_bike.csv (2854 rows)
+IDENTICAL solo_castle_circuit_cart.csv (2756 rows)
+IDENTICAL solo_dungeon_depths_bike.csv (2533 rows)
+IDENTICAL solo_dungeon_depths_cart.csv (2521 rows)
+IDENTICAL

@@ -6,6 +6,7 @@
 #include "collision/wall_hit.h"
 #include "core/dogworks_core.h"
 #include "core/toolchain_probe.h"
+#include "race/race_sim.h"
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/godot.hpp>
@@ -29,6 +30,7 @@ static void initialize_dogworks_core(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(WallHit);
 	GDREGISTER_CLASS(QueryCursor);
 	GDREGISTER_CLASS(CollisionQuery);
+	GDREGISTER_CLASS(RaceSim);
 	dogworks::g_servers_alive = true;
 }
 
@@ -43,6 +45,7 @@ static void uninitialize_dogworks_core(ModuleInitializationLevel p_level) {
 	ToolchainProbe::release_all_server_objects();
 	CollisionQuery::release_all_server_objects();
 	QueryCursor::release_all_engine_objects();
+	RaceSim::release_all();
 	dogworks::g_servers_alive = false;
 }
 

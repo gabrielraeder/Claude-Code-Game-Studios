@@ -1,0 +1,3 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+BOOT_CHECK problem='stale native DLL: sources hash 245aec204f7677c4ea92deebf43336995c8f8145ac7376677c66c5cb64948c8a but the loaded DLL says 38c75ca85cf1a02683f520db141d303d537d39e57842672ac2e6e0ae387e0ade; run tools/build_native.sh' hash_usec=6818

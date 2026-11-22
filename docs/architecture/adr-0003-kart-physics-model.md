@@ -609,6 +609,22 @@ RaceSim.hold(slot_mask: int)                   # countdown and resync hold
 ```
 `KartContactSolver.resolve_all(...)` is internal to `step_contact()`. The per-object calls (`KartBody.step`, `apply_event`, `snapshot`) stay bound **for unit tests only**. Tests that depend on tick order go through `RaceSim`. The exact buffer layouts (fields per slot, driver-row columns, event encoding) are fixed by the `RaceSim` story and recorded here then.
 
+**Amended 2026-11-22 (story 068): `RaceSim` buffer layouts, as built.** One definition per side: `native/src/race/race_layout.h` (C++, with `static_assert`s) and `src/core/race_layout.gd` (`RaceLayout`). `tests/unit/race/race_layout_test.gd` pins both to these numbers and to the constants bound on `RaceSim`. Floats are `float32` on the wire of these buffers; flags are bitmasks held in a float (exact below 2^24). Fields no system writes yet are zero and say so.
+
+| Buffer | Row | Fields (offset: name) |
+|---|---|---|
+| Setup dictionary, `RaceSim.create(setup)` | keys | `schema_version` (int, 1), `slot_count` (int, 1..32), `slot_roles` (PackedInt32Array, one per slot: 0 local, 1 bot, 2 remote), `seeds` (PackedInt64Array, 1..64 per-consumer seeds), `event_capacity` (int, 1..4096). Unknown keys are refused. |
+| `step_drive` driver row, one per **local** slot in slot order | 6 floats | 0 steer, 1 throttle, 2 brake, 3 drift, 4 hop, 5 item-use |
+| `snapshots()`, one row per slot in slot order | 20 floats | 0-2 position, 3-11 basis (columns x, y, z), 12-14 velocity, 15 speed, 16 flags (1 teleported, 2 bumped, 4 held, 8 contact-eligible), 17 knock (zero until story 022), 18 drive state id (zero until story 011), 19 tick (-1 before the first tick). Velocity and speed are zero until story 010. |
+| `set_remote` row, one per **remote** slot in slot order | 16 floats | the first 16 fields of a snapshot row: position, basis, velocity, speed |
+| `place` pose | 12 floats | 0-2 position, 3-11 basis columns |
+| `progress()`, one row per slot | 4 floats | 0 distance, 1 lap, 2 rank, 3 flags (1 moved, 2 safe, 4 finished). Carried over from the last published tick at `begin_tick`. |
+| `event_headers()` | 3 ints per event, `event_capacity` rows | 0 slot, 1 kind, 2 payload offset (a float index into `event_payload()`) |
+| `event_payload()` | `event_capacity` x 4 floats | per kind: 1 KNOCK = knock x, y, z, speed loss (4 floats); 2 PICKUP = item id (1 float); 3 ITEM_HIT = item id, source slot (2 floats) |
+| `stage_usec()` | 8 doubles | index = stage: 0 begin_tick, 1 apply_events, 2 step_drive, 3 step_bodies, 4 set_remote, 5 step_contact, 6 step_progress_items_hazards, 7 end_tick |
+
+Event arrays are always full capacity; only the first `event_count()` rows are valid and the rest are zero. The mask in `set_remote` and `hold` is bit `i` for slot `i`, not for the remote or local ordinal.
+
 ### Implementation Guidelines
 - `KartBody` **must** be `RefCounted`, own no nodes, and run headless with no SceneTree physics frame.
 - `src/core/kart/` **must never** reference any of these:

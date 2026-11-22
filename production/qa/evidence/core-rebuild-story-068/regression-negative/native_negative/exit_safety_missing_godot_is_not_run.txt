@@ -1,0 +1,4 @@
+NOT RUN native_exit exit_clean (exit 127, sentinel PROBE_RAN not seen; see /c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-068/regression-negative/native_negative/exit_safety_missing/exit_clean.txt)
+NOT RUN native_exit exit_rid (exit 127, sentinel PROBE_RAN not seen; see /c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-068/regression-negative/native_negative/exit_safety_missing/exit_rid.txt)
+NOT RUN native_exit exit_leak (exit 127, sentinel PROBE_RAN not seen; see /c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-068/regression-negative/native_negative/exit_safety_missing/exit_leak.txt)
+NOT RUN native_exit collision (exit 127, sentinel PROBE_RAN not seen; see /c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-068/regression-negative/native_negative/exit_safety_missing/collision.txt)

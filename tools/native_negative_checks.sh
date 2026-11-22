@@ -150,6 +150,9 @@ mk_tree() {  # name registered(1/0) suite_text
 	printf '// PER_TICK_BEGIN
 // PER_TICK_END
 ' > "$d/native/src/collision/stub.cpp"
+	# Story 068: the race-stage rule FAILS on a tree without race_sim.cpp, so every scratch tree carries one with all eight stages in a region.
+	mkdir -p "$d/native/src/race"
+	{ printf '// PER_TICK_BEGIN\n'; for st in begin_tick apply_events step_drive step_bodies set_remote step_contact step_progress_items_hazards end_tick; do printf 'void RaceSim::%s() {}\n' "$st"; done; printf '// PER_TICK_END\n'; } > "$d/native/src/race/race_sim.cpp"
 	if [ "$2" = 1 ]; then printf 'GDREGISTER_CLASS(DogworksCore);\n' > "$d/native/src/register_types.cpp"; fi
 	if [ "$2" = 0 ]; then printf '// nothing registered\n' > "$d/native/src/register_types.cpp"; fi
 	if [ -n "$3" ]; then printf '%b' "$3" > "$d/tests/unit/native/x_test.gd"; fi
@@ -208,7 +211,29 @@ v.resize(3);
 v.reserve(3);
 std::unordered_map<int, int> m;
 int r = rand();
+float f = randf();
+int r = randi_range(0, 3);
+std::mt19937 g;
+auto d = std::make_shared<int>();
 SNIPPETS
+echo "== story 068: the native/src/race rules fail on planted violations"
+mk_plant race_no_file "" ""
+case_run plant_race_sim_missing 1 "FAIL every RaceSim stage method sits inside a PER_TICK region .*race_sim.cpp is missing" bash tools/core_greps.sh "$P/race_no_file"
+mk_plant race_outside native/src/race/race_sim.cpp "// PER_TICK_BEGIN
+void RaceSim::begin_tick(int64_t t) {}
+// PER_TICK_END
+void RaceSim::end_tick() { String s; }
+"
+case_run plant_race_stage_outside_region 1 "FAIL every RaceSim stage method sits inside a PER_TICK region" bash tools/core_greps.sh "$P/race_outside"
+mk_plant race_alloc native/src/race/race_sim.cpp "// PER_TICK_BEGIN
+void RaceSim::begin_tick(int64_t t) { Dictionary d; }
+// PER_TICK_END
+"
+case_run plant_race_stage_allocates 1 "FAIL no allocation, .*per-tick regions" bash tools/core_greps.sh "$P/race_alloc"
+mk_plant race_random native/src/race/race_sim.cpp "#include <random>
+std::random_device rd;
+"
+case_run plant_race_random_include 1 "FAIL no <random>, std::random_device or std engine in native/src" bash tools/core_greps.sh "$P/race_random"
 mk_plant dict native/src/collision/planted.cpp "void g() { state->intersect_ray(params); }\n"
 case_run plant_dictionary_query_form 1 "FAIL no Dictionary query forms in native" bash tools/core_greps.sh "$P/dict"
 mk_plant ctor native/src/collision/planted.cpp "void g() { Ref<CollisionQuery> q = memnew(CollisionQuery); }\n"

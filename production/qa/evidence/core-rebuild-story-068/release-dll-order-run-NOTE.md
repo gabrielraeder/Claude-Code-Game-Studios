@@ -1,0 +1,5 @@
+# Release-build stage-order run (story 068, criterion "Order asserted")
+- DLL: `bash tools/build_native.sh --bench` put the bench DLL (scons variant `bench` = godot-cpp `template_release`, the optimised release code path) in the debug slot; `release-target.txt` shows `DogworksCore.build_target() == bench`. Restored afterwards (`--restore`, `--check` PASS).
+- Run: `release-dll-order-run.log`, suites race_sim_stages_test.gd (32 cases) and race_sim_factory_test.gd (66 cases) on that DLL.
+- Result: every test case passed, including the 8 out-of-order cases, the 7 skipped-stage cases and the unbuilt-refusal cases. The only "failure" in each suite is `before()`: native_test_guard.problem() refuses by design while bench.lock exists ("bench.lock exists: a bench DLL is in the debug slot"). It is the guard working, not a test failing; the stage code ran on the template_release DLL.
+- The ERR_FAIL stage-order assert is not debug-only: the macros are compiled in template_release (godot-cpp), and the refusals appear in the log as `ERROR: RaceSim.<stage>: stage called out of order`.

@@ -1,0 +1,19 @@
+WorkerThreadPool: 16 threads, 4 max low-priority.
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+TextServer: Added interface "Dummy" (dummy)
+TextServer: Added interface "ICU / HarfBuzz / Graphite (Built-in)" (advanced)
+Using "default" pen tablet driver...
+
+TextServer: Primary interface set to: "ICU / HarfBuzz / Graphite (Built-in)" (advanced).
+TextureStreaming settings: enabled=0, budget_mb=512, min_lod=0, max_lod=3
+CORE API HASH: 2601269559
+EDITOR API HASH: 413009678
+Loading resource: res://tools/collision_exit_probe.gd remapped: res://tools/collision_exit_probe.gd
+Completed load for: 'res://tools/collision_exit_probe.gd' remapped 'res://tools/collision_exit_probe.gd' at thread -1
+SceneTreeFTI: traversal method DEFAULT
+PROBE_RAN built=true cursor_built=true owned_rids=7 ground=true wall=true
+MbedTLS: Some X509 certificates could not be parsed (1 certificates skipped).
+Loaded system CA certificates
+XR: Clearing primary interface
+XR: Removed interface "Native mobile"
+XR: Removed interface "OpenXR"

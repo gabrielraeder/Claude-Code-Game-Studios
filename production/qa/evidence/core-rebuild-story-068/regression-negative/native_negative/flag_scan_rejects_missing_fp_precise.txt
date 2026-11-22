@@ -1,0 +1,2 @@
+FAIL flag scan: a compile line in /c/writechoice/Claude-Code-Game-Studios/native/obj/negative_tmp/flags_noprecise.txt lacks /fp:precise or /MT:
+cl /Fox.obj /c x.cpp /MT /O2

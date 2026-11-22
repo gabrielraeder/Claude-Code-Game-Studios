@@ -1,0 +1,49 @@
+ERROR: Remote Debugger: Unable to connect. Status: 1.
+   at: _try_connect (core/debugger/remote_debugger_peer.cpp:190)
+ERROR: Condition "_try_connect(stream)" is true. Returning: nullptr
+   at: create_tcp (core/debugger/remote_debugger_peer.cpp:248)
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+[2J[H[38;2;233;150;122m
+--------------------------------------------------------------------------------------------------
+GdUnit4 Comandline Tool
+--------------------------------------------------------------------------------------------------[0m
+[38;2;218;165;32m
+Headless mode is ignored by option '--ignoreHeadlessMode'"
+
+Please note that tests that use UI interaction do not work correctly in headless mode.
+Godot 'InputEvents' are not transported by the Godot engine in headless mode and therefore
+have no effect in the test!
+[0m
+[38;2;100;149;237mInstalling GdUnit4 session system hooks.[0m
+[38;2;100;149;237mSession hook 'GdUnitHtmlTestReporter' installed.[0m
+[38;2;100;149;237mSession hook 'GdUnitXMLTestReporter' installed.[0m
+[38;2;0;206;209mRun Test Suite: [0m[38;2;250;235;215mres://tests/unit/native/native_toolchain_test.gd[0m
+  [38;2;250;235;215mres://tests/unit/native/native_toolchain_test.gd[0m[38;2;128;128;128m > [0m[38;2;250;235;215mtest_sim_hz_is_60[0m[38;2;34;139;34m STARTED[0m[38;2;128;128;128m[0m
+  [38;2;250;235;215mres://tests/unit/native/native_toolchain_test.gd[0m[38;2;128;128;128m > [0m[38;2;250;235;215mtest_sim_hz_is_60[0m[38;2;34;139;34m PASSED[0m[38;2;100;149;237m 5ms[0m
+[38;2;128;128;128m[0m
+  [38;2;250;235;215mres://tests/unit/native/native_toolchain_test.gd[0m[38;2;128;128;128m > [0m[38;2;250;235;215mtest_sim_hz_times_boot_check_sim_dt_is_one[0m[38;2;34;139;34m STARTED[0m[38;2;128;128;128m[0m
+  [38;2;250;235;215mres://tests/unit/native/native_toolchain_test.gd[0m[38;2;128;128;128m > [0m[38;2;250;235;215mtest_sim_hz_times_boot_check_sim_dt_is_one[0m[38;2;34;139;34m PASSED[0m[38;2;100;149;237m 7ms[0m
+[38;2;128;128;128m[0m
+  [38;2;250;235;215mres://tests/unit/native/native_toolchain_test.gd[0m[38;2;128;128;128m > [0m[38;2;250;235;215mtest_boot_check_refuses_when_ticks_per_second_differs_from_sim_hz[0m[38;2;34;139;34m STARTED[0m[38;2;128;128;128m[0m
+  [38;2;250;235;215mres://tests/unit/native/native_toolchain_test.gd[0m[38;2;128;128;128m > [0m[38;2;250;235;215mtest_boot_check_refuses_when_ticks_per_second_differs_from_sim_hz[0m[38;2;178;34;34m[1m FAILED[0m[38;2;100;149;237m 16ms[0m
+  [38;2;0;206;209m[1m[4mReport:[0m
+  [38;2;128;128;128m[38;2;255;69;0mExpecting:[0m
+ must be empty but was
+ '[38;2;30;144;255mstale native DLL: sources hash 245aec204f7677c4ea92deebf43336995c8f8145ac7376677c66c5cb64948c8a but the loaded DLL says 38c75ca85cf1a02683f520db141d303d537d39e57842672ac2e6e0ae387e0ade; run tools/build_native.sh[0m'[0m[38;2;173;216;230m	at 'test_boot_check_refuses_when_ticks_per_second_differs_from_sim_hz' in res://tests/unit/native/native_toolchain_test.gd:66[0m[38;2;128;128;128m[0m
+[38;2;128;128;128m[0m
+  [38;2;250;235;215mnative_toolchain_test[0m[38;2;128;128;128m > [0m[38;2;250;235;215mfinalize()[0m  [38;2;0;206;209m[1m[4mReport:[0m
+  [38;2;128;128;128m[38;2;255;69;0mExpecting:[0m
+ must be empty but was
+ '[38;2;30;144;255mstale native DLL: sources hash 245aec204f7677c4ea92deebf43336995c8f8145ac7376677c66c5cb64948c8a but the loaded DLL says 38c75ca85cf1a02683f520db141d303d537d39e57842672ac2e6e0ae387e0ade; run tools/build_native.sh[0m'[0m[38;2;173;216;230m	at 'before' in res://tests/unit/native/native_toolchain_test.gd:34[0m[38;2;128;128;128m[0m
+[38;2;30;144;255mStatistics:[0m[38;2;128;128;128m 3 test cases | 0 errors | 2 failures | 0 flaky | 0 skipped | 0 orphans |[0m[38;2;178;34;34m[1m FAILED[0m[38;2;100;149;237m 81ms[0m
+[38;2;128;128;128m[0m
+[38;2;128;128;128m[0m
+[38;2;30;144;255mOverall Summary:[0m[38;2;255;255;255m 3 test cases | 0 errors | 2 failures | 0 flaky | 0 skipped | 0 orphans |[0m
+[38;2;233;150;122mExecuted test suites: (1/1)[0m
+[38;2;233;150;122mExecuted test cases : (3/3)[0m
+[38;2;233;150;122mTotal execution time: 81ms[0m
+[38;2;255;255;255m [0m[38;2;100;149;237mOpen XML Report at: file:///C:/writechoice/Claude-Code-Game-Studios/reports/report_89/results.xml[0m
+[38;2;100;149;237mOpen HTML Report at: file:///C:/writechoice/Claude-Code-Game-Studios/reports/report_89/index.html[0m
+[38;2;178;34;34mExit code: 100[0m
+Run dispose test resources

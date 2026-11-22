@@ -1,0 +1,13 @@
+# Story 068 STATE (resume from here)
+- Godot/build only when `Get-Process Godot*` is empty (story 008 holds the DLL). Port 24690. No git add. Owner commits.
+- [ ] step 1: native/src/race/race_layout.h, race_sim.{h,cpp}, register_types.cpp
+- [ ] step 2: src/core/race_layout.gd, tests/unit/race/*, core_greps + native_negative plants
+- [ ] step 3: ADR-0003 amendment (dated block), build, tests, evidence, finish checks
+- [x] step 1 written: race_layout.h race_sim.h/.cpp register_types (NOT BUILT)
+- [x] build passes (build2.log). NEXT: race_layout.gd, tests/unit/race, greps, ADR-0003 amendment, run
+- [x] race_layout.gd + 4 suites + base written (not run). NEXT: core_greps rules + native_negative plants, ADR-0003 amendment, run
+- [x] core_greps rules + negative plants + ADR-0003 amendment written. NEXT: --check, --import, gdUnit tests/unit/race, fix, bench release run, negative checks, commands.test, regression
+- [x] gdunit1: tests/unit/race 115 cases 0 failures (import ok)
+- [x] commands.test 426/0 (gdunit-commands-test.log); release-dll run done (release-dll-order-run*.{log,md}). NEXT: regression.sh, parse check, core_greps final
+- regression-full (1st): 9/10, native_negative FAIL greps_real_call_passes: scratch tree lacked race_sim.cpp (new story-068 rule). Fixed mk_tree stub. Re-running full -> regression-final.txt
+- [x] ALL DONE: --check PASS, commands.test 426/0, regression-final 10/10, parse ok, core_greps 12 PASS. Machine free.

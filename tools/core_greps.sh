@@ -186,7 +186,7 @@ native_scan "CollisionQuery is constructed only in collision_query.cpp (story 06
 # print_line and UtilityFunctions::print; tools/native_negative_checks.sh plants one of each.
 tick_rule="no allocation, *_create( or String/Variant/Dictionary in native per-tick regions (story 067)"
 tick_words='memnew|new|String|StringName|Variant|Dictionary|Array|TypedArray|instantiate|ERR_PRINT|print_line|vformat'
-tick_regex='_create[[:space:]]*\(|(^|[^A-Za-z0-9_])('"$tick_words"')([^A-Za-z0-9_]|$)|push_back|emplace_back|\.assign[[:space:]]*\(|\.insert[[:space:]]*\(|\.resize[[:space:]]*\(|\.reserve[[:space:]]*\(|std::(vector|string|map|set|unordered_[a-z]+|function|random_device|make_[a-z_]+)|(^|[^A-Za-z0-9_])rand[[:space:]]*\(|<random>|UtilityFunctions::print'
+tick_regex='_create[[:space:]]*\(|(^|[^A-Za-z0-9_])('"$tick_words"')([^A-Za-z0-9_]|$)|push_back|emplace_back|\.assign[[:space:]]*\(|\.insert[[:space:]]*\(|\.resize[[:space:]]*\(|\.reserve[[:space:]]*\(|std::(vector|string|map|set|unordered_[a-z]+|function|random_device|make_[a-z_]+)|(^|[^A-Za-z0-9_])rand[[:space:]]*\(|(^|[^A-Za-z0-9_.>])(randf|randi|randf_range|randi_range|rand_from_seed)[[:space:]]*\(|<random>|std::(mt19937|mt19937_64|default_random_engine|minstd_rand)|UtilityFunctions::print'
 if [ ! -d native/src ]; then
 	echo "FAIL $tick_rule (native/src is missing)"; fails=$((fails + 1))
 else
@@ -232,6 +232,22 @@ else
 	hits=$(grep -rnE --include='*.gd' "^class_name[[:space:]]+($native_names)([^A-Za-z0-9_]|\$)" src tests 2>/dev/null)
 	if [ -z "$hits" ]; then echo "PASS $clash_rule (class list from $clash_src: $(printf '%s' "$native_names" | tr '|' '\n' | grep -c .) names)"; else
 		echo "FAIL $clash_rule"; printf '%s\n' "$hits" | sed 's/^/  /'; fails=$((fails + 1)); fi
+fi
+
+# Story 068 (ADR-0007 section 4 Randomness, Validation Criteria "static grep"): the native/src/race/ rules.
+# (1) No random source anywhere in native/src: <random>, std::random_device and the std engines are forbidden outside the
+#     per-consumer RandomNumberGenerator; the global randf/rand family is covered by the per-tick rule above.
+native_scan "no <random>, std::random_device or std engine in native/src (story 068)" 	'#include[[:space:]]*<random>|std::(random_device|mt19937|mt19937_64|default_random_engine|minstd_rand)' ""
+# (2) native/src/race/race_sim.cpp carries a PER_TICK region and every one of the eight stage methods is inside it,
+#     so the per-tick rule above cannot pass by checking an empty region. A missing file or a missing stage FAILS.
+race_rule="every RaceSim stage method sits inside a PER_TICK region of native/src/race/race_sim.cpp (story 068)"
+if [ ! -f native/src/race/race_sim.cpp ]; then
+	echo "FAIL $race_rule (native/src/race/race_sim.cpp is missing)"; fails=$((fails + 1))
+else
+	inside=$(awk '/^\/\/ PER_TICK_BEGIN/ { inr = 1; next } /^\/\/ PER_TICK_END/ { inr = 0; next } inr && /^void RaceSim::(begin_tick|apply_events|step_drive|step_bodies|set_remote|step_contact|step_progress_items_hazards|end_tick)\(/ { sub(/^void RaceSim::/, ""); sub(/\(.*$/, ""); print }' native/src/race/race_sim.cpp | sort -u | paste -sd' ' -)
+	want="apply_events begin_tick end_tick set_remote step_bodies step_contact step_drive step_progress_items_hazards"
+	if [ "$inside" = "$want" ]; then echo "PASS $race_rule"; else
+		echo "FAIL $race_rule (inside the region: [$inside]; wanted: [$want])"; fails=$((fails + 1)); fi
 fi
 
 if [ $fails != 0 ]; then exit 1; fi

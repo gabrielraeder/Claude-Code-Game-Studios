@@ -1,0 +1,6 @@
+ok: res://src/core/race_layout.gd
+ok: res://tests/unit/race/race_suite_base.gd
+ok: res://tests/unit/race/race_sim_factory_test.gd
+ok: res://tests/unit/race/race_sim_stages_test.gd
+ok: res://tests/unit/race/race_sim_buffers_test.gd
+ok: res://tests/unit/race/race_layout_test.gd
