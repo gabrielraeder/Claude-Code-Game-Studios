@@ -46,10 +46,10 @@ This ADR fixes protocol **VERSION 10**:
 
 | Field | Value |
 |-------|-------|
-| **Depends On** | **ADR-0001** (Accepted): §5 clock and target tick, §6 determinism and race seed, §7 mirror frame on the wire, §8 interpolation, teleport flag, canonical quaternion, capped extrapolation, §9 class names.<br>**ADR-0003 v4** (must be Accepted): `KartSnapshot` with `throttle`, `KartEvent`, the pinned §8 event-bit table, the `contact_eligible` mask, the stale-bump drop via `last_teleport_tick`, and the remote broadphase on distance sampled at the tick.<br>**ADR-0004** (must be Accepted): wire meaning of `lap` and `distance`; finish ordering.<br>**ADR-0005** (must be Accepted): `TrackPackage.source_sha256` and `bake_key` |
+| **Depends On** | **ADR-0001** (Accepted): §5 clock and target tick, §6 determinism and race seed, §7 mirror frame on the wire, §8 interpolation, teleport flag, canonical quaternion, capped extrapolation, §9 class names.<br>**ADR-0003 v4** (must be Accepted): `KartSnapshot` with `throttle`, `KartEvent`, the pinned §8 event-bit table, the `contact_eligible` mask, the stale-bump drop via `last_teleport_tick`, and the remote broadphase on distance sampled at the tick.<br>**ADR-0004** (must be Accepted): wire meaning of `lap` and `distance`; finish ordering.<br>**ADR-0005** (must be Accepted): `TrackPackage.source_sha256` and `bake_key`.<br>**ADR-0002 v5** (must be Accepted): `surface_id` on the wire is ADR-0002's stable registry id (u8, ids ≤ 255) |
 | **Enables** | **ADR-0008** room codes and relay. It inherits this ADR's network-side contract: one UDP port, ENet, 30 Hz, the bandwidth figures.<br>**ADR-0010** time-trial ghost format. Ghosts record snapshot streams (Data Flow 3), and the per-packet version byte lets a stored stream be decoded |
 | **Blocks** | Story 025's network sub-story (Castle Circuit online with bots, checkpoint **A2**) |
-| **Ordering Note** | `NetConfig` (`src/data/`) gains fields **additively** only (ADR-0001 §9), including `contact_extrapolation_max`, which ADR-0003 v4 names. The frozen `assets/data/net/net_config.tres` is never read by new code; the new core reads `assets/data/core/net_config.tres`. ADR-0005 will hash LF-normalised text inputs into `bake_key` (coordinator, v2), which removes the line-ending risk of §6 |
+| **Ordering Note** | `NetConfig` (`src/data/`) gains fields **additively** only (ADR-0001 §9), including `contact_extrapolation_max`, which ADR-0003 v4 names. The frozen `assets/data/net/net_config.tres` is never read by new code; the new core reads `assets/data/core/net_config.tres`. ADR-0005 v3 hashes LF-normalised text inputs into `bake_key`, which removes the line-ending risk of §6 |
 
 ## Context
 
@@ -185,7 +185,7 @@ V3 verified what that means: clients see only peer 1, so every client message go
 
 **Snapshot records** are checked on **`slot`**. Events the host raises for its own bots are local and not checked.
 
-**BUMP tick.** It is the tick **on the victim's timeline** of the pose the detector collided against: `pose_tick = floor((n × SIM_DT − view_delay) / SIM_DT)`, which is the remote sample time of ADR-0003 §7. It is not the detector's own tick `n`. A bump against a pose drawn from before the victim's respawn therefore has `pose_tick < last_teleport_tick` and is dropped. This is the case ADR-0003 v4's stale-bump rule targets. Using the detector's `n` would let it through, because `n` runs `view_delay` ahead of the pose.
+**BUMP tick.** It is the **tick of the record whose pose was sampled** for the victim (record a while lerping or holding, the newest record while extrapolating), which `RemoteKartView` returns as the sampled `KartSnapshot.tick`. It is never later than `floor((n × SIM_DT − view_delay) / SIM_DT)`, so legitimate bumps are unaffected, and it closes the hold window: when the victim respawns at tick T on an off-send tick, a sample in [T·dt, (T+1)·dt) still draws pre-teleport record a and reports a's tick (< T), so the bump is dropped. The same holds while a pre-teleport record is extrapolated because the teleported packet is late or lost. Validation 4 covers the hold window.
 
 **Other rules:**
 - Item spawn and box-take messages (frozen `rpc_item_spawn`, `rpc_box_take`, `rpc_box_taken`) move into this envelope as kinds 5 and up when the Items story defines them. Adding a kind bumps VERSION.
@@ -257,7 +257,7 @@ V3 verified what that means: clients see only peer 1, so every client message go
 **`bake_key` refusal (OQ-6, resolved: keep it).**
 - **Why:** the same `.glb` baked by a different `CourseBuilder` gives different `distance` values, and so a silently wrong ranking and broadphase. ADR-0005's intent is that "two PCs never race different builds of a track".
 - **Order:** `source_sha256` is checked first and `bake_key` second, so the message names the right cause.
-- **Line endings:** ADR-0005 will hash LF-normalised text inputs, so a line-ending difference cannot cause a false refusal.
+- **Line endings:** ADR-0005 v3 hashes LF-normalised text inputs, so a line-ending difference cannot cause a false refusal.
 
 ### 7. Clock sync (owned here per ADR-0001 §5)
 - **Session clock.** The host's session time is its monotonic `Time.get_ticks_usec()` since the session opened. A client keeps an applied offset: `synced_session = local_usec / 1e6 + offset_applied`.
@@ -767,3 +767,7 @@ func send_event(bytes: PackedByteArray, to_peer: int) -> void        ## ch2 reli
 - **Architecture:** `docs/architecture/architecture.md` (Data Flow 2-3, API Boundaries, Performance Budgets, line 82 follow-up); `docs/registry/architecture.yaml` (follow-up).
 - **Evidence:** `prototypes/collision-spike/out/probe_adr6_codec.txt`, `probe_adr6_net.txt`, `probe_adr6_net2.txt`.
 - **TD-010** (respawn teleports counted as prediction error): closed by §5 and §9 once implemented.
+
+## v2.1 note (TD-ADR re-review, 2026-11-22)
+- BUMP tick = sampled record's tick (above), mirrored in ADR-0003 §7.
+- **`frozen` on the wire:** a spare bit of the flags byte carries the owner's `BodyState.mode == FROZEN` (sinking/falling, ADR-0003 v4 P6). Receivers set `contact_eligible = 0` for a frozen remote kart, so nobody takes full separation off a sinking ghost. The flags-byte layout is pinned in §3; using the spare bit bumps VERSION only if a released build already used it (none has).

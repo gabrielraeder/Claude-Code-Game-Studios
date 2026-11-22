@@ -12,7 +12,7 @@ Proposed
 ## Decision Makers
 Claude (autonomous mode, owner-authorized) drafted it from the measured spike (`prototypes/collision-spike/REPORT.md`, `out/`). It has been through two reviews and is now v2:
 - **godot-specialist:** probe runs on 4.8-beta3, kept as `scripts/probe_adr2.gd` with output in `out/probe_adr2.txt`; four blocking items, all applied in v2.
-- **technical-director (TD-ADR):** v1 CONCERNS applied in v2; v2 CONCERNS (wall-attribute mapping, rotating-mover contacts) applied in v3; v4 amends ids and `MoverDef` from the joint ADR-0004/0005 review; v5 makes `sweep_walls` return at once on `started_inside` (godot-specialist, ADR-0003 review).
+- **technical-director (TD-ADR):** v1 CONCERNS applied in v2; v2 CONCERNS (wall-attribute mapping, rotating-mover contacts) applied in v3; v4 amends ids and `MoverDef` from the joint ADR-0004/0005 review; v5 makes `sweep_walls` return at once on `started_inside` (godot-specialist, ADR-0003 review); v5.1 pins core surface ids, adds `SurfaceType.neutral`, drops the wall `opening` field and adds `MoverDef.solid` (TD calls on the Track Collision GDD).
 
 Acceptance needs the owner's confirmation.
 
@@ -119,6 +119,7 @@ It must serve 12 karts within budget. It needs per-triangle surface ids for trac
   - Mover ids are **≥ 1**; 0 always means static geometry.
   - Each has a primitive shape and a **keyframed pose curve**, stored in `MoverDef extends Resource` (so it serialises in the `.res`):
     - `id: int` (≥ 1), `period: float`;
+    - `solid: bool = true`. **Non-solid movers** (e.g. rolling barrels: a spin, no push) are skipped by `cast_ground` and `sweep_walls` and are tested only by Track Hazards through `mover_pose`;
     - `shape: int` enum `BOX | CAPSULE | CYLINDER`; `half_extents: Vector3` for a box (Godot local axes); `radius` and `half_height` for a capsule or cylinder, axis along Godot local +Y, where `half_height` is the half-length of the **segment** (Godot's `CapsuleShape3D.height` is the total height);
     - keys as packed arrays: `key_t: PackedFloat32Array`, `key_pos: PackedVector3Array`, `key_rot: PackedVector4Array` (quaternion xyzw). The pose is piecewise linear in position and slerp in rotation, looped over `period`, so it is a pure function of time.
   - `CollisionQuery` is the single evaluator: `mover_pose(id, t)` and `mover_point_velocity(id, t, p)`. The point velocity is v + ω × (p − origin), from the analytic derivative of the active segment (linear and angular), so a kart on a spinning platform or hit by a swinging hammer gets the velocity at the contact point.
@@ -159,8 +160,10 @@ A `Resource` saved as binary **`.res`**. 154k triangles is about 5.5 MB raw, too
   - `SurfaceType` gains `@export var id: int = -1` (additive, ADR-0001 §9; the frozen game ignores it).
   - The core `SurfaceSet` instance (`assets/data/core/`) gives every type an id: unique, ≥ 0, append-only, a removed id is never reused; **id 0 = `road`**. The core instance adds the kinds `road`, `boost_pad` and `trick_ramp` (pads and trick ramps are collision attributes, MK KCL style; Course Data derives its PAD and RAMP spans from them, ADR-0004).
   - The Blender material `surf_<name>` maps to the id registered for `<name>`. An unknown name fails the import. The array index is never used as the id.
+  - **Core ids (pinned before the first core bake):** 0 road, 1 grass, 2 sand, 3 mud, 4 rubble, 5 shallows, 6 slick, 7 boost_pad, 8 trick_ramp; new kinds append at 9+; ids ≤ 255 (u8 on the ADR-0006 wire).
+  - `SurfaceType` also gains `@export var neutral: bool = false` (additive): a neutral surface has no floor effect of its own and an active slick tail keeps counting down on it (the frozen "no surface" branch). road, boost_pad and trick_ramp are neutral. The load check asserts that neutral types hold the field defaults.
 - **Floor effects** (drag, grip, caps) are looked up by Driving & Drift in `SurfaceSet` by surface id. `GroundHit` carries no floor drag.
-- **Wall-attribute ids:** stable, from new **core** classes `WallAttr` / `WallAttrSet` in `src/core/collision/` (not `src/data/`; the frozen game never used them), instance in `assets/data/core/`. Same id policy as surfaces (unique, append-only); fields include scrape drag, bounce and opening. Material `wall_<name>` maps by name; unknown names fail the import.
+- **Wall-attribute ids:** stable, from new **core** classes `WallAttr` / `WallAttrSet` in `src/core/collision/` (not `src/data/`; the frozen game never used them), instance in `assets/data/core/`. Same id policy as surfaces (unique, append-only); fields include scrape drag and bounce. **An opening is the absence of wall geometry** (no `opening` field): Course Data derives `WALL_OPENING` / `OPEN_EDGE` from its lateral wall sweeps (ADR-0004). Material `wall_<name>` maps by name; unknown names fail the import.
 - **Load check (ids):** every id in `surface_of_face` and `wall_attr_ids` exists in the registries, and ids are unique.
 
 ### Boot and load checks

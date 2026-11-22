@@ -418,7 +418,7 @@ This section ports the frozen owner-authoritative model (`main.gd` `_resolve_kar
 - **Against a kart another PC owns:**
   - (a) The local kart takes the **full separation** into its own `pending_push`. Only the **knock** is split by share.
   - The other kart's share of the knock (`n × closing × (1 − share) × (1 + bump_restitution_other)`, from its `KartContactShape`), the strength and the **tick** of detection go to its owner as a reliable `KartEvent` bump. The owner applies it at the **start of its next tick** (§4 step 1).
-  - **The owner drops a received bump whose tick is earlier than its own `last_teleport_tick`.** A bump detected against a pose from before a respawn or resync must not shove the respawned kart. The bump's `tick` is the **pose tick on the victim's timeline** (the tick of the remote pose the detector tested: `floor((n·SIM_DT − view_delay)/SIM_DT)`, ADR-0006), not the detector's own tick `n`, which runs a view delay ahead of that pose.
+  - **The owner drops a received bump whose tick is earlier than its own `last_teleport_tick`.** A bump detected against a pose from before a respawn or resync must not shove the respawned kart. The bump's `tick` is the **tick of the remote record whose pose the detector sampled** (record a while lerping or holding, the newest while extrapolating; `RemoteKartView` returns it as the sampled snapshot's `tick`, ADR-0006 §4), not the detector's own tick `n`. A remote kart flagged `frozen` on the wire (ADR-0006) is not contact-eligible.
   - This keeps the frozen rule: local hits apply in the same tick, events from other PCs apply on the next tick.
 - **Dedup: the frozen max-merge, not first-wins.**
   - For each other kart's slot, `pair_bump_mag` holds the largest knock magnitude felt from that kart within `bump_cooldown`.
@@ -546,7 +546,7 @@ class_name KartContactSolver extends RefCounted # broadphase + pair resolution; 
 func resolve_all(bodies: Array[KartBody], snaps: Array[KartSnapshot], shapes: Array[KartContactShape],
         simulated_here: PackedByteArray, contact_eligible: PackedByteArray, is_bot: PackedByteArray,
         out_events: Array[KartEvent]) -> int   # returns the event count; contact_eligible = 0 for STALE, EMPTY, over-extrapolated, FROZEN
-class_name KartEvent extends RefCounted         # kind, from_slot, to_slot, tick (of detection), impulse/velocity: Vector3, strength, pose: Transform3D
+class_name KartEvent extends RefCounted         # kind, from_slot, to_slot, tick (pose tick of the sampled remote record, ADR-0006), impulse/velocity: Vector3, strength, pose: Transform3D
 # KartBody also: func set_frozen(frozen: bool) -> void   # Fall & Respawn only (§8)
 class_name KartPhysicsConfig extends Resource   # slide_max_sweeps, wall_skin, max_depenetration_per_tick, broadphase_margin, bot_push_mult
 

@@ -387,7 +387,7 @@ Course Data owns the derivation. ADR-0005 owns only the Blender-side parse.
 - **Gates:** pose (a Godot `Transform3D`, origin on the road), `index`, `group`, `width`, `height`, `next` (optional index list), `key` (bool) and `respawn` (optional index).
 - **Routes:** `id`, `kind` (`main`, `branch`, `cpu`, `item`, `cut`) and an ordered polyline of points, each with attributes. Header attributes: `branch_type`, `min_speed`, `min_boost`, `lanes`. Per-point attributes: the `kk_hint_*` overrides.
 - **Respawns:** pose and index. **Grid:** 12 poses by slot. **Item boxes:** poses and index.
-- **Areas:** oriented box (pose and half extents), `kind` (`hazard_static`, `hazard_speed_gated`, `cannon_trigger`, `fall_boundary`) and parameters. Authored as `kk_type = area` with `kk_area` (the kind) and its params.
+- **Areas:** `area_shape` BOX (pose and half extents) or CYLINDER (vertical, radius and half height; e.g. a lava vent footprint), `kind` (`hazard_static`, `hazard_speed_gated`, `cannon_trigger`, `fall_boundary`) and parameters. Authored as `kk_type = area` with `kk_area` (the kind) and its params.
 - **`kk_index` to array position.** Authored indices are unique but not necessarily contiguous; the builder maps each `kk_index` to its array position, and `next` and `respawn` lists are resolved through that map (an unknown index FAILs).
 - **Settings:** none inside `CourseAuthoring`; they come from `CourseBuildSettings`.
 
