@@ -40,7 +40,7 @@
 #   unsupported layout, with its number.
 
 version: 1
-last_updated: "2026-11-21"
+last_updated: "2026-11-22"
 
 # ─── STATE OWNERSHIP ─────────────────────────────────────────────────────────
 # Who is the authoritative owner of each piece of shared game state.
@@ -130,7 +130,94 @@ interfaces: []
 # Register a budget when an ADR explicitly claims a frame time allocation.
 # The registry lets /architecture-review verify the total doesn't exceed the target.
 
-performance_budgets: []
+performance_budgets:
+  - target_fps: 60
+    total_frame_budget_ms: 16.6
+    platform: PC
+    adr: docs/architecture/architecture.md
+    added: 2026-11-22
+    revised: ""
+  - system: simulation_tick
+    status: active
+    budget_ms: 2.0
+    adr: docs/architecture/architecture.md
+    notes: "Whole host sim tick p95, 12 karts, owner's PC (Ryzen 7 7800X3D), release export when available"
+    referenced_by:
+      - docs/architecture/architecture.md
+    added: 2026-11-22
+    revised: ""
+  - system: track_collision
+    status: active
+    budget_ms: 0.3
+    adr: docs/architecture/adr-0002-collision-backend-and-surface-attributes.md
+    notes: "Collision queries for 12 karts p95 (ADR-0002 measured 0.06 ms debug)"
+    referenced_by:
+      - docs/architecture/adr-0002-collision-backend-and-surface-attributes.md
+    added: 2026-11-22
+    revised: ""
+  - system: kart_physics_driving
+    status: active
+    budget_ms: 0.3
+    adr: docs/architecture/architecture.md
+    notes: "12 bodies p95"
+    referenced_by:
+      - docs/architecture/architecture.md
+    added: 2026-11-22
+    revised: ""
+  - system: kart_contact
+    status: active
+    budget_ms: 0.2
+    adr: docs/architecture/architecture.md
+    notes: "Pairwise with broadphase p95"
+    referenced_by:
+      - docs/architecture/architecture.md
+    added: 2026-11-22
+    revised: ""
+  - system: hazards_movers
+    status: active
+    budget_ms: 0.1
+    adr: docs/architecture/architecture.md
+    notes: "Effects only p95"
+    referenced_by:
+      - docs/architecture/architecture.md
+    added: 2026-11-22
+    revised: ""
+  - system: bots
+    status: active
+    budget_ms: 0.8
+    adr: docs/architecture/architecture.md
+    notes: "11 bots p95"
+    referenced_by:
+      - docs/architecture/architecture.md
+    added: 2026-11-22
+    revised: ""
+  - system: items
+    status: active
+    budget_ms: 0.15
+    adr: docs/architecture/architecture.md
+    notes: "p95"
+    referenced_by:
+      - docs/architecture/architecture.md
+    added: 2026-11-22
+    revised: ""
+  - system: race_logic_net
+    status: active
+    budget_ms: 0.15
+    adr: docs/architecture/architecture.md
+    notes: "Lap/progress, race state, net send p95"
+    referenced_by:
+      - docs/architecture/architecture.md
+    added: 2026-11-22
+    revised: ""
+  - system: chase_camera
+    status: active
+    budget_ms: 0.3
+    adr: docs/architecture/architecture.md
+    notes: "Per rendered frame p95"
+    referenced_by:
+      - docs/architecture/architecture.md
+    added: 2026-11-22
+    revised: ""
 
 # Example:
 #

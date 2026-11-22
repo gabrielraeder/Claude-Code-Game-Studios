@@ -235,12 +235,47 @@ Technical Requirements Baseline: **deferred** (no system GDD exists to extract f
 
 ## Performance Budgets
 
-From `.claude/docs/technical-preferences.md`: 60 fps, 16.6 ms frame, ≤ 2000 draw calls, 2 GB memory, PC (Windows).
+**Amended 2026-11-22** (logged decision: amend before ADR-0003). Basis: the per-system profile of the frozen 2.5D tick (`production/qa/evidence/core-rebuild-story-001/perf-per-system.md`, tool `tools/profile_tick.gd`). On the owner's PC, headless, debug editor build, 12 karts:
+- the whole tick is 3.5 ms median and 6.4 ms p95;
+- track queries (`Path.nearest` full scans) are about 43% of it;
+- kart contacts are 47%, mostly wall-clamp re-queries;
+- bots are 0.95 ms median;
+- kart dynamics are about 0.1 ms;
+- per frame, the chase camera costs 2.7 ms of scans.
 
-- **Simulation (host worst case, 12 bodies: 1 human + 11 bots):** ≤ 3 ms per tick for kart simulation + collision + bot decisions on the owner's PC (a named minimum-spec PC is open, QQ-06). Baseline measured on the frozen build before the rebuild starts.
-- **Queries per kart per tick (target):** ≤ 4 ground casts + ≤ 1 wall sweep, the sweep skipped when the margin is large; kart-pair contact behind a broadphase on route distance (66 pairs at 12); remote karts trust the wire's height.
-- **Bandwidth (estimate, verified with `NetMetrics`):** ~84 B × 30 Hz ≈ 2.5 KB/s per kart; ~30 KB/s down per client; ~330 KB/s host upload for 12 before overhead.
-- **Tools:** the mesh `track_check` samples rather than re-running the ~120,000 single-kart ticks of today's infield check.
+The rebuild removes the dominant cost: Jolt collision measured 0.06 ms per tick for 12 karts (ADR-0002).
+
+**How budgets are measured.** p95 per tick:
+- on the **owner's PC** (Ryzen 7 7800X3D), which is the reference machine;
+- 12 karts (1 human or autopilot + 11 bots);
+- Castle Circuit and the heaviest track of each cup;
+- a **release export** once export templates are installed (none for 4.8-beta3 today; until then the debug build is an upper bound);
+- with `tools/profile_tick.gd`-style stage timing.
+
+**Minimum CPU** (i5-8400 / Ryzen 5 2600 class) is estimated at about 2× slower (unverified estimate). The owner-PC budgets below are set so the minimum CPU stays inside a 60 fps frame with rendering.
+
+| Simulation stage (per tick, host, 12 karts) | Budget p95 |
+|---|---|
+| Track collision queries (ADR-0002) | 0.3 ms |
+| Kart physics and driving (12 bodies) | 0.3 ms |
+| Kart-vs-kart contact (broadphase on route distance) | 0.2 ms |
+| Hazards and movers (effects; collision part is in the first row) | 0.1 ms |
+| Bots (11) | 0.8 ms |
+| Items | 0.15 ms |
+| Race logic, lap/progress, net send | 0.15 ms |
+| **Whole simulation tick** | **≤ 2.0 ms** (≈ 4 ms on the minimum CPU, estimate) |
+
+| Presentation (per rendered frame) | Budget p95 |
+|---|---|
+| Chase camera (no per-frame track scans; reads Course Data or collision once) | 0.3 ms |
+| Kart visuals (12) | 0.5 ms |
+| HUD, minimap, audio | 0.5 ms |
+
+Plus the frame rules from `.claude/docs/technical-preferences.md`: 60 fps, 16.6 ms, ≤ 2000 draw calls, 2 GB.
+
+- **Rule:** no simulation or camera query may scan a whole route or the whole track per call. Each call's cost must stay the same on every track section (the frozen game's p95 doubled in its branch section because of full scans).
+- **Bandwidth (estimate, verify with `NetMetrics`):** ~84 B × 30 Hz ≈ 2.5 KB/s per kart; ~30 KB/s down per client; ~330 KB/s host upload for 12 before overhead.
+- **Tools:** the mesh `track_check` samples instead of re-running the ~120,000 single-kart ticks of today's infield check.
 
 ## Target Hardware
 

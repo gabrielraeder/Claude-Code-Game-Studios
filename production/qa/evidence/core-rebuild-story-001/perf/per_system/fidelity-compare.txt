@@ -1,0 +1,2 @@
+IDENTICAL bots_castle_circuit.csv (35316 rows)
+IDENTICAL
