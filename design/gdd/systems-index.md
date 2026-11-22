@@ -54,7 +54,7 @@ battle and adventure modes.
 | 3 | Course Data (checkpoints, routes, respawns) | Core | MVP | In Review (owner decisions open) | design/gdd/course-data.md | Track Collision & Surface Attributes |
 | 4 | Network Session & Sync | Core | MVP | Implemented (migrate: 3D snapshot, wire version bump) | — | — |
 | 5 | Blender Asset Pipeline (dogs, karts, props; owner 2026-11-21: after the migration, story 027 follows 025) | Core | Vertical Slice | Not Started | — | — |
-| 6 | Kart Physics (mesh collision; body, contact, kart-vs-kart bumps, variable up vector) | Core | MVP | Not Started | — | Track Collision & Surface Attributes, Input & Bindings |
+| 6 | Kart Physics (mesh collision; body, contact, kart-vs-kart bumps, variable up vector) | Core | MVP | In Review (owner and TD decisions open) | design/gdd/kart-physics.md | Track Collision & Surface Attributes, Input & Bindings |
 | 7 | Blender Track Pipeline | Core | MVP | Not Started | — | Track Collision & Surface Attributes, Course Data |
 | 8 | Race Session & Synced Clock (inferred) | Core | MVP | Implemented | — | Network Session & Sync |
 | 9 | Driving & Drift (control law, drift, boost, surface grip and caps; turbo-reserve rules decided here) | Gameplay | MVP | In Review (reverse-documented; owner decisions D1-D7) | design/gdd/driving-and-drift.md | Kart Physics |
@@ -288,7 +288,7 @@ above marked "Implemented (2.5D, migrate)" read as "rebuilt on the new core; the
 | Metric | Count |
 |--------|-------|
 | Total systems identified | 41 |
-| Design docs started | 3 |
+| Design docs started | 4 |
 | Design docs reviewed | 0 |
 | Design docs approved | 0 |
 | MVP systems designed | 0/22 |
