@@ -1,0 +1,8 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+[prewarm] 61 mesh/material pairs drawn for 4 frames
+[loadout] kart=0 peer=1 bot=false racer=0 vehicle=cart
+[loadout] kart=1 peer=593461793 bot=false racer=0 vehicle=cart
+[net] built 2 karts in 5.2 ms
+[net] race start: 2 karts, 3 laps, role=client peer=593461793 kart=1
+[bump-summary] role=client frames=1580 contact_frames=98 deep_frames=0 pen_max=0.000m (own-vs-any 0.000m, remote-vs-remote 0.000m, deep remote frames 0) bumps=8 knock_max=16.00m/s moved=12.21m

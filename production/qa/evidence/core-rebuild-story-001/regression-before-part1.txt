@@ -1,0 +1,4 @@
+regression: out=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-001/regression-before-part1 port=24690 golden=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-001/golden checks=track_check
+PASS track_check castle_circuit
+PASS track_check dungeon_depths
+RESULT PASS (out=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-001/regression-before-part1)
