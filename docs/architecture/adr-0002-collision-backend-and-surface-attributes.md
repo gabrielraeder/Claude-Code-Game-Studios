@@ -168,7 +168,7 @@ A `Resource` saved as binary **`.res`**. 154k triangles is about 5.5 MB raw, too
 - **At track load:** `cast_ground` at `probe_point` must return `probe_surface_id` with `normal.y > 0`. This catches a disabled setting or a missing winding flip, and also warms Jolt's broadphase, which is built lazily on the first query. The probe point is mirrored with the track.
 
 ### Mirror
-- `TrackCollisionData.mirrored()` returns a **new** object built once at load. It **never mutates the source Resource**, because ResourceLoader caching would corrupt the next non-mirrored race.
+- `TrackCollisionData.mirrored()` returns a **new** object built once at load. It builds **new `MoverDef` sub-resources** too: `duplicate(false)` shares sub-resources with the cached instance (verified, `prototypes/collision-spike/out/probe_adr45_res_roundtrip.txt`). It **never mutates the source Resource**, because ResourceLoader caching would corrupt the next non-mirrored race.
 - It applies ADR-0001 §7: every vertex x → −x; triangle winding flipped (swap b and c); `surface_of_face` and wall-attribute ids kept in face order; mover keys mirrored as M·B·M; the probe point mirrored.
 - **Collision data carries no left/right labels.** Mirroring the geometry moves the walls. Any left/right data lives in Course Data and swaps there (ADR-0004).
 
