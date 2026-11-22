@@ -5,13 +5,18 @@ A src/data/ script may reference engine types and other src/data/ classes only: 
 class_name declared under src/legacy/, and never a res://src/legacy/ path. REGRESSION TOOL.
 
 Usage: python -I tools/check_data_closure.py [REPO_ROOT]
-Prints one line per reference found, then CLOSED or OPEN; exit 0 when closed, 1 when open.
+Prints one line per reference found, then CLOSED or OPEN; exit 0 when closed, 1 when open,
+2 when the check cannot run: src/data/ or src/legacy/ is missing or has no .gd script, or
+src/data/ has fewer than MIN_DATA_SCRIPTS scripts (a wrong root or a lost folder, not a pass).
 """
 import os
 import re
 import sys
 
 CLASS_RE = re.compile(r"^class_name\s+(\w+)", re.M)
+# Data scripts the story-001 move produced (data-closure.txt: 15). Fewer means files went
+# missing or the root is wrong, so the check refuses to call the set closed.
+MIN_DATA_SCRIPTS = 15
 
 
 def _scripts(folder):
@@ -33,12 +38,23 @@ def _code(text):
 def main(root):
     legacy = os.path.join(root, "src", "legacy")
     data = os.path.join(root, "src", "data")
+    for folder in (data, legacy):
+        if not os.path.isdir(folder):
+            print("ERROR %s is missing (root %s)" % (folder, root))
+            return 2
+    legacy_files = sorted(_scripts(legacy))
+    if not legacy_files:
+        print("ERROR no .gd scripts under %s" % legacy)
+        return 2
+    data_files = sorted(_scripts(data))
+    if len(data_files) < MIN_DATA_SCRIPTS:
+        print("ERROR %d data scripts under %s, expected at least %d" % (len(data_files), data, MIN_DATA_SCRIPTS))
+        return 2
     legacy_classes = set()
-    for p in _scripts(legacy):
+    for p in legacy_files:
         with open(p, encoding="utf-8") as f:
             legacy_classes.update(CLASS_RE.findall(f.read()))
     found = 0
-    data_files = sorted(_scripts(data))
     for p in data_files:
         with open(p, encoding="utf-8") as f:
             text = f.read()

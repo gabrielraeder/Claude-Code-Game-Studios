@@ -1,0 +1,27 @@
+host + 3 clients, 1 laps, out=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-001/net-stress-rerun-1/net_stress
+done in 60 s
+== [net-summary] lines ==
+role=client peer=775473086 place=4 finish=45.24 karts=4 | rtt_avg=10ms rtt_max=12ms view_delay=52ms | snaps/s=90.4 | extrap=0.0% | pred_err avg=0.029m max=9.119m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=11.4 kb_in/s=11.5
+role=client peer=1930492993 place=3 finish=44.17 karts=4 | rtt_avg=10ms rtt_max=12ms view_delay=51ms | snaps/s=90.4 | extrap=0.0% | pred_err avg=0.030m max=9.119m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=11.4 kb_in/s=11.3
+role=client peer=1275048874 place=2 finish=43.61 karts=4 | rtt_avg=4ms rtt_max=12ms view_delay=50ms | snaps/s=90.4 | extrap=0.0% | pred_err avg=0.030m max=2.601m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=11.3 kb_in/s=11.3
+role=host peer=1 place=1 finish=40.95 karts=4 | rtt_avg=0ms rtt_max=0ms view_delay=50ms | snaps/s=90.4 | extrap=0.0% | pred_err avg=0.031m max=9.119m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=34.1 kb_in/s=34.0
+
+processes with a summary: 4
+extrap %      avg 0.000   max 0.000
+pred_err avg  avg 0.030 m   max-of-avgs 0.031 m
+pred_err max  worst 9.119 m
+rtt avg (ms)  avg 6.000   rtt max worst 12.000
+view delay ms avg 50.750   max 52.000
+snaps/s       avg 90.400
+kb_out/s      host 34.1   client avg 11.367
+kb_in/s       host 34.0   client avg 11.367
+
+== lead-change agreement ==
+      4 2 0>1>0
+(distinct 'lead_changes lead_seq' values above; one line = all processes agree)
+
+== finished places ==
+1 40.95;2 43.61;3 44.17;4 45.24;
+
+== errors / warnings in logs ==
+(count: 0)

@@ -7,7 +7,8 @@
 # Env: GODOT (console exe), PORT (default 24690, never 24680), RACE_SEED (bot races, default 1001),
 #      RUN_TIMEOUT (real seconds per run before it is stopped, default 300).
 # Runs: autopilot 1 lap on castle_circuit and dungeon_depths with the cart and the bike, and one
-# bot race per track (host autopilot + 11 bots, 1 lap, fixed race seed). Exit 1 if any run fails.
+# bot race per track (host autopilot + 11 bots, 1 lap, fixed race seed). Exit 1 if any run fails:
+# a non-zero exit, a missing CSV, or a CSV with the header only (0 data rows).
 set -u
 OUT="$1"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -24,10 +25,12 @@ run() {  # run NAME game-args...
 	timeout "${RUN_TIMEOUT:-300}" "$GODOT" --headless --fixed-fps 60 --path . -s res://tools/capture_traces.gd -- \
 		--trace-out="$OUT_ABS/$name.csv" "$@" > "$OUT_ABS/$name.log" 2>&1
 	local code=$?
-	if [ $code -ne 0 ] || [ ! -s "$OUT_ABS/$name.csv" ]; then
-		echo "capture $name: FAILED (exit $code, see $OUT_ABS/$name.log)"; fail=1
+	local rows=0
+	[ -s "$OUT_ABS/$name.csv" ] && rows=$(($(wc -l < "$OUT_ABS/$name.csv") - 1))
+	if [ $code -ne 0 ] || [ "$rows" -lt 1 ]; then
+		echo "capture $name: FAILED (exit $code, $rows data rows, see $OUT_ABS/$name.log)"; fail=1
 	else
-		echo "capture $name: $(($(wc -l < "$OUT_ABS/$name.csv") - 1)) rows"
+		echo "capture $name: $rows rows"
 	fi
 }
 for track in castle_circuit dungeon_depths; do

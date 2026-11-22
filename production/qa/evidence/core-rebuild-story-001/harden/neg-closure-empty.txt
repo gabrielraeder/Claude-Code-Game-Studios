@@ -1,0 +1,8 @@
+root: empty temp dir C:/Users/gabri/AppData/Local/Temp/claude/25b18857ae796cc5/961fdd0e-dfb8-45ed-b4f1-eb5c3c260843/scratchpad/empty_root
+$ check_data_closure.py <empty_root>
+ERROR C:/Users/gabri/AppData/Local/Temp/claude/25b18857ae796cc5/961fdd0e-dfb8-45ed-b4f1-eb5c3c260843/scratchpad/empty_root\src\data is missing (root C:/Users/gabri/AppData/Local/Temp/claude/25b18857ae796cc5/961fdd0e-dfb8-45ed-b4f1-eb5c3c260843/scratchpad/empty_root)
+exit=2
+
+$ check_data_closure.py (repo root)
+CLOSED (15 data scripts, 64 legacy classes, 0 references)
+exit=0

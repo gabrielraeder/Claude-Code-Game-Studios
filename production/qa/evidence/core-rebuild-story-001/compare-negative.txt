@@ -1,0 +1,10 @@
+## Negative runs of compare_traces.py (QL-TEST-COVERAGE gap 1)
+### speed +0.5 at data row 500 of solo_castle_circuit_cart.csv; solo_dungeon_depths_bike.csv truncated to 999 data rows
+IDENTICAL bots_castle_circuit.csv (35316 rows)
+IDENTICAL bots_dungeon_depths.csv (32664 rows)
+IDENTICAL solo_castle_circuit_bike.csv (2854 rows)
+DIVERGED solo_castle_circuit_cart.csv tick=499 kart=0 field=speed golden=26 new=26.5
+DIVERGED solo_dungeon_depths_bike.csv tick=999 kart=0 field=row golden=present new=absent (only golden has rows from here; 2533 vs 999 rows)
+IDENTICAL solo_dungeon_depths_cart.csv (2521 rows)
+DIVERGED
+exit=1

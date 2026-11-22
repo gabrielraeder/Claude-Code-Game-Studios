@@ -1,7 +1,7 @@
 # Story 001: Freeze the 2.5D game and capture the regression oracle
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: In Review
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Integration
 > **Estimate**: L
@@ -81,3 +81,19 @@
 
 - Depends on: ADR-0001 (Accepted)
 - Unlocks: the collision and Blender round-trip spike; story 022
+
+## Completion Notes
+**Completed**: 2026-11-22
+**Criteria**: 11/11 passing (golden traces IDENTICAL x6 and reproducible; one-command regression RESULT PASS (6/6 checks) after hardening; perf baseline 3.4 ms median / 6.3 ms p95; gdUnit4 3/3; tag v0.11-2.5d; move and path commits clean, data set CLOSED, no uid warnings; settings pinned; 4.8 greps clean; windowed race screenshot)
+**Deviations**: (1) Pinning `physics_jitter_fix = 0.0` (ADR-0001) changes the frozen game's windowed frame pacing slightly from the engine default 0.5; the headless oracle (`--fixed-fps 60`) does not cover windowed play. (2) TD-011: a near-tie for first can show a different lead-change sequence per PC in net_stress (about 1 in 5 runs, finish places always agree); reported as WARN by regression.sh, not fixed in the frozen game. (3) Oracle tools hardened after LP-CODE-REVIEW (no vacuous PASS: CHECKS names, track_check ALL PASS line, empty traces, expected golden count, empty hit logs, empty closure dirs, wider error patterns), each proven by a negative run in production/qa/evidence/core-rebuild-story-001/harden/.
+**Test Evidence**: production/qa/evidence/core-rebuild-story-001/ (golden/, regression-*.txt, harden/full.txt, harden/neg-*.txt, compare-negative.txt, gdunit4-after-move.txt, harden/gdunit4.txt, perf-baseline.md, perf-per-system.md, screenshots/drive_t10.png)
+**Reviewed by**: lead-programmer (LP-CODE-REVIEW: CONCERNS, revised and re-run); qa-lead (QL-TEST-COVERAGE: GAPS, closed by runs)
+
+## Calls beyond the design
+- Extra tools `tools/capture_all_traces.sh` (run list) and `tools/check_data_closure.py` (repeatable closure check) · kept 2026-11-22
+- `tools/regression.sh`: `CHECKS=` subsets, default output `production/qa/regression/<timestamp>`, PASS rules per check · kept 2026-11-22
+- Trace format: tick 0 is the first racing tick; extra fields race_time, track_s, drifting, drift_dir; exact float text · kept 2026-11-22
+- Race seed 1001 for traces; bot traces end when the host's autopilot finishes · kept 2026-11-22
+- Perf measured headless by recorder nodes around the frozen tick · kept 2026-11-22
+- gdUnit4 editor plugin not enabled (CLI runner needs none); example test on `ItemSet.roll` with an in-test set · kept 2026-11-22
+- Data classes flat in `src/data/`; path rewrite scope src/, assets/, tools/, tests/, project.godot; annotated tag · kept 2026-11-22

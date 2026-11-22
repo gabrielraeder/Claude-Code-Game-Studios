@@ -1,0 +1,4 @@
+$ CHECKS="track_check trace" tools/regression.sh production/qa/evidence/core-rebuild-story-001/harden/neg-checks-typo
+unknown CHECKS name(s): trace; known: track_check bot_race item_net bump net_stress traces
+exit=2
+outdir created: no

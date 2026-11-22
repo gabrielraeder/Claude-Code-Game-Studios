@@ -1,6 +1,6 @@
 ## Technical Debt Register
 
-Last updated: 2026-11-21
+Last updated: 2026-11-22
 Total items: 10 | Estimated total effort: 9 S + M
 
 | ID | Category | Description | Files | Effort | Impact | Priority | Status | Added | Sprint |
@@ -15,3 +15,4 @@ Total items: 10 | Estimated total effort: 9 S + M
 | TD-008 | Performance | A kart on an off-road zone runs a full main-road nearest search every tick (also for remote karts via sample_surface); 60 fps with 11 karts today, likeliest hot spot with 12 in a zone. Replaced by story 022 — from production/epics/dogworks-racing-kennel-kingdom/story-011-surfaces-and-off-road.md | src/test_track/track_model.gd | S | Low | — | Open | 2026-11-21 | Backlog |
 | TD-009 | Test | Coverage gaps: no Dungeon puddle (criterion names 'dungeon puddles'; add in story 025's rebuild); no 12-PC online run and no Dungeon 2-peer zone run (single machine; item_net, Castle 2-peer and 11-bot runs stand in) — from production/epics/dogworks-racing-kennel-kingdom/story-011-surfaces-and-off-road.md | assets/tracks/dungeon_depths/, tools/ | M | Med | — | Open | 2026-11-21 | Backlog |
 | TD-010 | Code Quality | NetStats.record_error counts a respawn teleport as prediction error (a 9.7 m spike); exclude teleport-sized jumps with update_view's reach rule — from production/epics/dogworks-racing-kennel-kingdom/story-011-surfaces-and-off-road.md | src/net/remote_kart.gd, src/net/net_stats.gd | S | Low | — | Open | 2026-11-21 | Backlog |
+| TD-011 | Test | Frozen 2.5D game: a near-tie for first place can show a different lead-change sequence per PC (net_stress: host 0>1, clients 0>1>0>1, about 1 run in 5; finish places always agree). regression.sh reports it as WARN. Not fixed in the frozen game; the rebuilt ranking (ADR-0004 distance, ADR-0006 host finish events) replaces it — from production/epics/core-rebuild/story-001-freeze-and-oracle.md | src/legacy/race/race_ranking.gd, tools/regression.sh | S | Low | — | Open | 2026-11-22 | Backlog |

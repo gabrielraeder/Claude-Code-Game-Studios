@@ -15,6 +15,8 @@ extends SceneTree
 ## or NET_RACE), so lobby timing never shifts the tick numbers. The file is written when the game
 ## quits (atomic: a .tmp file renamed over the target). Floats use String.num_scientific, the
 ## shortest text that reads back as the same 64-bit value, so equal text means equal values.
+## A run that recorded no data row (0 ticks, or ticks with no owned kart) writes no file, prints
+## an ERROR line and exits 1: an empty trace is a failed capture, never a golden file.
 
 ## Main.Mode values this tool reads (src main.gd enum Mode { SOLO, HOST_LOBBY, CLIENT_LOBBY, NET_RACE }).
 const MODE_SOLO: int = 0
@@ -145,6 +147,11 @@ func _write() -> void:
 		return
 	_written = true
 	var out: String = _perf_out if _perf_out != "" else _trace_out
+	if _ticks == 0 or _rows.size() <= 1:
+		printerr("[trace] ERROR: recorded %d ticks and %d data rows (the game never raced?); no file written to %s"
+				% [_ticks, _rows.size() - 1, out])
+		quit(1)  # sets the process exit code; the tree is already quitting
+		return
 	var abs_out: String = ProjectSettings.globalize_path(out)
 	DirAccess.make_dir_recursive_absolute(abs_out.get_base_dir())
 	var tmp: String = abs_out + ".tmp"

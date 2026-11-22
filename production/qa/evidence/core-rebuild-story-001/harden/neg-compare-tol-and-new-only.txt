@@ -1,0 +1,18 @@
+$ compare_traces.py golden <new> --tol speed=-1
+usage: compare_traces.py [-h] [--expect N] [--tol FIELD=VALUE] golden new
+compare_traces.py: error: --tol speed: tolerance must be >= 0, got '-1'
+exit=2
+$ compare_traces.py golden <new> --tol nosuchfield=0.1
+usage: compare_traces.py [-h] [--expect N] [--tol FIELD=VALUE] golden new
+compare_traces.py: error: --tol nosuchfield: no such column in bots_castle_circuit.csv (header: tick,kart,race_time,x,z,height,speed,yaw,track_s,drifting,drift_dir,drift_tier,boost,lap,lap_times)
+exit=2
+$ compare_traces.py golden <new + extra_run.csv> --expect 6
+IDENTICAL bots_castle_circuit.csv (35316 rows)
+IDENTICAL bots_dungeon_depths.csv (32664 rows)
+IDENTICAL solo_castle_circuit_bike.csv (2854 rows)
+IDENTICAL solo_castle_circuit_cart.csv (2756 rows)
+IDENTICAL solo_dungeon_depths_bike.csv (2533 rows)
+IDENTICAL solo_dungeon_depths_cart.csv (2521 rows)
+WARN extra_run.csv only in the new capture (not compared)
+IDENTICAL
+exit=0

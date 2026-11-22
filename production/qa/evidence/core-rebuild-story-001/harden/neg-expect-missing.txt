@@ -1,0 +1,11 @@
+golden copy: solo_dungeon_depths_bike.csv removed (5 csv); new = production/qa/evidence/core-rebuild-story-001/full-run-2/traces
+$ compare_traces.py <g_missing> <new> --expect 6
+DIVERGED expected 6 golden *.csv files in C:/Users/gabri/AppData/Local/Temp/claude/25b18857ae796cc5/961fdd0e-dfb8-45ed-b4f1-eb5c3c260843/scratchpad/g_missing, found 5
+IDENTICAL bots_castle_circuit.csv (35316 rows)
+IDENTICAL bots_dungeon_depths.csv (32664 rows)
+IDENTICAL solo_castle_circuit_bike.csv (2854 rows)
+IDENTICAL solo_castle_circuit_cart.csv (2756 rows)
+IDENTICAL solo_dungeon_depths_cart.csv (2521 rows)
+WARN solo_dungeon_depths_bike.csv only in the new capture (not compared)
+DIVERGED
+exit=1

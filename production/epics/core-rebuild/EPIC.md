@@ -18,7 +18,7 @@ Phase A Sequencing in `docs/architecture/architecture.md`: freeze and oracle →
 
 | # | Story | Type | Status | ADR |
 |---|-------|------|--------|-----|
-| 001 | Freeze the 2.5D game and capture the regression oracle | Integration | In Review | ADR-0001 |
+| 001 | Freeze the 2.5D game and capture the regression oracle | Integration | Complete | ADR-0001 |
 | 002 | Core surface and wall-attribute registries | Logic | Ready | ADR-0002 |
 | 003 | TrackCollisionData and CollisionQuery ground casts | Logic | Ready | ADR-0002 |
 | 004 | CollisionQuery wall sweeps | Logic | Ready | ADR-0002 |

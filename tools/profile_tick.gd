@@ -1,5 +1,7 @@
 extends SceneTree
 ## Per-system tick profiler for the frozen 2.5D game (core-rebuild story 001, perf-per-system.md).
+## VALID ONLY FOR THE FROZEN src/legacy/main.gd: its replica of Main's tick must match that file, and
+## a --trace-out run must stay IDENTICAL to golden/bots_castle_circuit.csv; re-check both after any change.
 ## MEASUREMENT TOOL: it runs the real main scene and changes no game file. During NET_RACE it turns
 ## Main's own _physics_process off and runs a line-for-line copy of Main._net_tick / _tick_owned
 ## (src/legacy/main.gd) from here, with a microsecond stamp around each call, so every stage of
@@ -26,13 +28,22 @@ extends SceneTree
 ## measure = _measure_contacts (debug stats); items = ItemManager.update; net_send = KartWire.pack +
 ## NetSession.send_state; debug = _net_log_tick, height and surface logs; finish = _finish_check.
 
+## Main.Mode.SOLO (src/legacy/main.gd enum Mode { SOLO, HOST_LOBBY, CLIENT_LOBBY, NET_RACE }).
 const MODE_SOLO: int = 0
+## Main.Mode.NET_RACE: the only mode in which the replica takes over Main's tick.
 const MODE_NET_RACE: int = 3
+## Physics priority of the bracket nodes (the end stamp at +, the start stamp at -): far beyond the
+## game's nodes (default 0), so the bracket encloses the whole game tick.
 const RECORDER_PRIORITY: int = 1000000
+## CSV columns of a --trace-out row; must equal tools/capture_traces.gd TRACE_HEADER so the
+## fidelity trace compares with the golden set.
 const TRACE_HEADER: String = "tick,kart,race_time,x,z,height,speed,yaw,track_s,drifting,drift_dir,drift_tier,boost,lap,lap_times"
+## Timed stages of the replica tick, in call order; one perf column (ms) each (see the header above).
 const STAGES: PackedStringArray = ["hazards", "drive_auto", "drive_bots", "sim", "laps_rank", "remote",
 		"ranking", "contacts", "separate", "measure", "items", "net_send", "debug", "finish"]
+## Perf CSV columns before the stage columns.
 const PERF_HEADER_HEAD: String = "tick,tick_ms,replica_ms,engine_physics_ms,karts,"
+## Perf CSV columns after the stage columns: the slowest single kart's sim and bot-drive time.
 const PERF_HEADER_TAIL: String = ",sim_max_kart_ms,drive_bot_max_ms"
 
 var _main: Node

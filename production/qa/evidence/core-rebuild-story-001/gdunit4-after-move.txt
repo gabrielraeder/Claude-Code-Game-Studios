@@ -1,0 +1,9 @@
+## gdUnit4 on the current tree (after the move), QL gap 4
+[38;2;0;206;209mRun Test Suite: [0m[38;2;250;235;215mres://tests/unit/data/item_set_roll_test.gd[0m
+  [38;2;250;235;215mres://tests/unit/data/item_set_roll_test.gd[0m[38;2;128;128;128m > [0m[38;2;250;235;215mtest_roll_zero_weight_item_is_never_picked[0m[38;2;34;139;34m STARTED[0m[38;2;128;128;128m[0m
+  [38;2;250;235;215mres://tests/unit/data/item_set_roll_test.gd[0m[38;2;128;128;128m > [0m[38;2;250;235;215mtest_roll_zero_weight_item_is_never_picked[0m[38;2;34;139;34m PASSED[0m[38;2;100;149;237m 10ms[0m
+  [38;2;250;235;215mres://tests/unit/data/item_set_roll_test.gd[0m[38;2;128;128;128m > [0m[38;2;250;235;215mtest_roll_place_past_last_row_uses_last_row[0m[38;2;34;139;34m STARTED[0m[38;2;128;128;128m[0m
+  [38;2;250;235;215mres://tests/unit/data/item_set_roll_test.gd[0m[38;2;128;128;128m > [0m[38;2;250;235;215mtest_roll_place_past_last_row_uses_last_row[0m[38;2;34;139;34m PASSED[0m[38;2;100;149;237m 4ms[0m
+[38;2;30;144;255mStatistics:[0m[38;2;128;128;128m 2 test cases | 0 errors | 0 failures | 0 flaky | 0 skipped | 0 orphans |[0m[38;2;34;139;34m PASSED[0m[38;2;100;149;237m 43ms[0m
+[38;2;233;150;122mTotal execution time: 43ms[0m
+exit=0
