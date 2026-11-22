@@ -1,0 +1,30 @@
+engine 4.8-beta3 (official)
+proxy bind down 24694: OK, up 24695: OK
+create_server(24693, 11): OK
+create_client(127.0.0.1, 24694 proxy): OK
+connected, C1 id 814738885
+--- V5: exact UDP payload sizes seen by the proxy (add 28 B for IPv4+UDP headers). 100 sends per case, 20 ms apart, random payload
+  s2c snap_bytes payload 43: datagram sizes s2c { 53: 1, 64: 1, 10: 5, 56: 96, 62: 3, 16: 1 } ; c2s { 10: 5, 16: 2, 8: 3 }
+  s2c snap_bytes payload 453: datagram sizes s2c { 466: 99, 8: 3, 10: 4, 472: 1 } ; c2s { 8: 4, 10: 4 }
+  s2c send_bytes payload 43: datagram sizes s2c { 54: 99, 8: 4, 10: 5, 60: 1 } ; c2s { 8: 5, 10: 5 }
+  s2c ev_bytes payload 15: datagram sizes s2c { 28: 100, 10: 4 } ; c2s { 10: 100, 8: 4 }
+  c2s snap_bytes payload 43: datagram sizes s2c { 10: 5, 16: 1, 8: 4 } ; c2s { 53: 1, 64: 1, 10: 5, 56: 97, 62: 2, 8: 2 }
+  c2s ev_bytes payload 15: datagram sizes s2c { 10: 100, 8: 4 } ; c2s { 28: 100, 10: 4 }
+  send log S: { "0/2": 2, "1/1": 300, "2/2": 100 } ; C1: { "0/2": 2, "1/1": 100, "2/2": 100 } (key transfer_channel/transfer_mode)
+--- V2 under loss: proxy drops 20% of datagrams both ways (seed 3). 300 per kind each way, 10 per frame, 2 ms apart
+  done after 0.38 s; dropped by proxy c2s 234, s2c 203
+  S.ev: received 300/300, strictly increasing=true, channel=[2], mode=[2] (0 unreliable, 1 unreliable_ordered, 2 reliable)
+  S.snap: received 246/300, strictly increasing=true, channel=[1], mode=[1] (0 unreliable, 1 unreliable_ordered, 2 reliable)
+  S.ctl: received 300/300, strictly increasing=true, channel=[0], mode=[2] (0 unreliable, 1 unreliable_ordered, 2 reliable)
+  S.ping: received 246/300, strictly increasing=true, channel=[0], mode=[0] (0 unreliable, 1 unreliable_ordered, 2 reliable)
+  C1.ev: received 300/300, strictly increasing=true, channel=[2], mode=[2] (0 unreliable, 1 unreliable_ordered, 2 reliable)
+  C1.snap: received 237/300, strictly increasing=true, channel=[1], mode=[1] (0 unreliable, 1 unreliable_ordered, 2 reliable)
+  C1.ctl: received 300/300, strictly increasing=true, channel=[0], mode=[2] (0 unreliable, 1 unreliable_ordered, 2 reliable)
+  C1.ping: none
+--- HOL: 20%% loss. Each trial: host sends 40 x 1000 B ctl (ch0 reliable) then 1 ev (ch2 reliable) in the same frame; times to C1 arrival
+  trial 0: ev (ch2) arrived 12.5 ms, 40th ctl (ch0) arrived 47.0 ms; ev arrived after ctl #7
+  trial 1: ev (ch2) arrived 40.2 ms, 40th ctl (ch0) arrived 198.8 ms; ev arrived after ctl #0
+  trial 2: ev (ch2) arrived 12.5 ms, 40th ctl (ch0) arrived 95.3 ms; ev arrived after ctl #22
+  trial 3: ev (ch2) arrived 12.5 ms, 40th ctl (ch0) arrived 295.5 ms; ev arrived after ctl #7
+  trial 4: ev (ch2) arrived 12.5 ms, 40th ctl (ch0) arrived 150.5 ms; ev arrived after ctl #0
+  trial 5: ev (ch2) arrived 40.1 ms, 40th ctl (ch0) arrived 95.3 ms; ev arrived after ctl #29

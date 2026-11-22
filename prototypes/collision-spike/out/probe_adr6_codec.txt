@@ -1,0 +1,54 @@
+engine 4.8-beta3 (official)
+encode_half/decode_half: script parsed with static calls, so both exist (statically resolved on PackedByteArray)
+--- half: specific values (value -> bits -> decoded; RN-even expectation)
+  1.0                                                     in=1.0000000000 bits=0x3C00 out=1.0000000000 finite=true
+  tie 1+2^-11 (RNE -> 1.0, 0x3C00)                        in=1.0004882813 bits=0x3C00 out=1.0000000000 finite=true
+  just above half ULP (RN -> 1+2^-10, 0x3C01; trunc -> 0x3C00) in=1.0004892349 bits=0x3C00 out=1.0000000000 finite=true
+  tie 1+3*2^-11 (RNE -> 1+2^-9, 0x3C02; trunc -> 0x3C01)  in=1.0014648438 bits=0x3C01 out=1.0009765625 finite=true
+  1+0.9 ULP (RN -> 0x3C01; trunc -> 0x3C00)               in=1.0008789063 bits=0x3C00 out=1.0000000000 finite=true
+  33.3                                                    in=33.3000000000 bits=0x5029 out=33.2812500000 finite=true
+  -33.3                                                   in=-33.3000000000 bits=0xD029 out=-33.2812500000 finite=true
+  max finite                                              in=65504.0000000000 bits=0x7BFF out=65504.0000000000 finite=true
+  65519 (RN -> 65504)                                     in=65519.0000000000 bits=0x7BFF out=65504.0000000000 finite=true
+  65520 (RN -> inf)                                       in=65520.0000000000 bits=0x7BFF out=65504.0000000000 finite=true
+  70000 (RN -> inf)                                       in=70000.0000000000 bits=0x7C00 out=inf finite=false
+  -70000 (RN -> -inf)                                     in=-70000.0000000000 bits=0xFC00 out=-inf finite=false
+  1e6                                                     in=1000000.0000000000 bits=0x7C00 out=inf finite=false
+  1e-5 subnormal                                          in=0.0000100000 bits=0x0000 out=0.0000000000 finite=true
+  6e-8 ~ smallest subnormal                               in=0.0000000600 bits=0x0000 out=0.0000000000 finite=true
+  1e-9 underflow                                          in=0.0000000010 bits=0x0000 out=0.0000000000 finite=true
+  -0.0                                                    in=-0.0000000000 bits=0x0000 out=0.0000000000 finite=true
+  inf                                                     in=inf bits=0x7C00 out=inf finite=false
+  -inf                                                    in=-inf bits=0xFC00 out=-inf finite=false
+  nan                                                     in=nan bits=0x7FFF out=nan finite=false
+--- half: random round trip, 1e6 uniform samples in [-128, 128], seed 6
+  max abs err |v|<64: 0.031242 m/s (ADR states <= 0.016; RN bound 2^-6=0.015625, trunc bound 2^-5=0.03125)
+  max abs err 64<=|v|<128: 0.062492 m/s (ADR states <= 0.031; RN bound 0.03125, trunc bound 0.0625)
+  max rel err (|v|>1): 0.0009753718 (RN bound 2^-11=0.0004882813, trunc bound 2^-10=0.0009765625)
+  mean (|out|-|in|): -0.0208145207 ; toward zero 998686, away 0 (RN ~ balanced, trunc all toward zero)
+--- position u24: 1e6 random float32 positions in [-2000, 2000] (through Vector3), seed 7
+  max err 0.0001220703 m (ADR 0.122 mm = 0.0001220703; 2^-13)
+  edge in=-2048.0000000 out=-2048.0000000 clamped=false
+  edge in=-2000.0000000 out=-2000.0000000 clamped=false
+  edge in=0.0000000 out=0.0000000 clamped=false
+  edge in=1999.9998779 out=2000.0000000 clamped=false
+  edge in=2047.9997559 out=2047.9997559 clamped=false
+  edge in=2048.0000000 out=2047.9997559 clamped=true
+  edge in=2100.0000000 out=2047.9997559 clamped=true
+  edge in=-2100.0000000 out=-2048.0000000 clamped=true
+  float32 ULP at 2000 m = 0.0001220703 (2^-13 = 0.0001220703; ADR text says 2^-12)
+--- smallest-three 2+3x10 bits: random uniform rotations, 300k, seed 8
+  max 0.2226 deg, mean 0.0844 deg, decoded w<0: 0 (ADR states ~0.14 deg, test asserts < 0.2 deg)
+  worst input (0.555768, 0.56808, -0.483851, 0.366464)
+--- adversarial: 300k rotations near q=(.5,.5,.5,.5)-type corners (dropped component ~0.5), seed 9
+  max 0.2682 deg; worst input (0.496292, 0.500439, -0.494915, 0.508246)
+  analytic: half-step e=0.00069121; ADR formula 2*asin(sqrt3*e)=0.1372 deg; corner case 2*asin(sqrt12*e)=0.2744 deg
+  at 1 m half-length: 3.88 mm (random max), 4.68 mm (adversarial max)
+--- candidate fix _half_rne (pre-round + clamp): same 1e6 samples, seed 6
+  max abs err |v|<64: 0.015625, 64-128: 0.031250, mean (|out|-|in|): -0.0000238568
+  in=1.0004882813 bits=0x3C00 out=1.0000000000
+  in=1.0004892349 bits=0x3C01 out=1.0009765625
+  in=1.0014648438 bits=0x3C02 out=1.0019531250
+  in=65519.0000000000 bits=0x7BFF out=65504.0000000000
+  in=70000.0000000000 bits=0x7BFF out=65504.0000000000
+  in=-1000000.0000000000 bits=0xFBFF out=-65504.0000000000

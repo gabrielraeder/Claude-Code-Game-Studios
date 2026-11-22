@@ -1,0 +1,44 @@
+engine 4.8-beta3 (official)
+create_server(24690, 11) -> OK
+C1 create_client(127.0.0.1, 24690) -> OK
+C2 create_client(127.0.0.1, 24690) -> OK
+connected after 6 frames: S=1 C1=38117033 C2=1509032883
+--- ENet channel counts (ENetPacketPeer.get_channels)
+  host side peer 38117033: 255 channels
+  host side peer 1509032883: 255 channels
+  C1 side, peer 1 (host): 255 channels
+  C2 side, peer 1 (host): 255 channels
+  host ENetConnection max channels: 255
+  peers visible to C1 (relay off): [1] ; to C2: [1]
+--- V2 (300 per kind each way, 10 per frame; frames 36..37)
+  S.ev: received 300, strictly increasing=true, packet_channel=[1], packet_mode=[1] (0 unrel,1 unrel_ord,2 rel), senders=[38117033]
+  S.snap: received 300, strictly increasing=true, packet_channel=[0], packet_mode=[2] (0 unrel,1 unrel_ord,2 rel), senders=[38117033]
+  S.ctl: received 300, strictly increasing=true, packet_channel=[0], packet_mode=[0] (0 unrel,1 unrel_ord,2 rel), senders=[38117033]
+  S.ping: received 300, strictly increasing=true, packet_channel=[2, 1], packet_mode=[2] (0 unrel,1 unrel_ord,2 rel), senders=[38117033]
+  C1.ev: received 300, strictly increasing=true, packet_channel=[1], packet_mode=[1] (0 unrel,1 unrel_ord,2 rel), senders=[1]
+  C1.snap: received 300, strictly increasing=true, packet_channel=[0], packet_mode=[2] (0 unrel,1 unrel_ord,2 rel), senders=[1]
+  C1.ctl: received 300, strictly increasing=true, packet_channel=[2, 0, 1], packet_mode=[2] (0 unrel,1 unrel_ord,2 rel), senders=[1]
+  C1.ping: none
+--- V3 send: C1 rpc_id(C2=1509032883, 1), C1 rpc(2) broadcast, C1 rpc_id(1, 3), S rpc_id(C2, 4), S rpc(5) broadcast
+--- V3 results (after 120 frames)
+  S got: ["seq 2 from 38117033", "seq 3 from 38117033"]
+  C1 got: ["seq 5 from 1"]
+  C2 got: ["seq 4 from 1", "seq 5 from 1"]
+  S multiplayer events: ["peer_connected 38117033", "peer_connected 1509032883"]
+  C1 multiplayer events: ["connected_to_server", "peer_connected 1"]
+  C2 multiplayer events: ["connected_to_server", "peer_connected 1"]
+--- V5: host -> C1, 1 send per frame, 300 frames per case, after 20 warm-up sends; stats from ENetConnection.pop_statistic (ENet bytes, UDP/IP headers excluded)
+  idle       payload   0 B: host sent 144 B in 16 datagrams (9.00 B/datagram, overhead/datagram n/a); C1 received 72 B in 8; C1 sent 72 B in 8 (acks/pings)
+    C1 handler calls so far: { "direct": 1 }
+  snap_bytes payload  43 B: host sent 16880 B in 311 datagrams (54.28 B/datagram, overhead/datagram 11.28); C1 received 16864 B in 304; C1 sent 72 B in 8 (acks/pings)
+    C1 handler calls so far: { "direct": 1, "snap_bytes": 319 }
+  snap_bytes payload 453 B: host sent 139470 B in 311 datagrams (448.46 B/datagram, overhead/datagram -4.54); C1 received 139864 B in 304; C1 sent 72 B in 8 (acks/pings)
+    C1 handler calls so far: { "direct": 1, "snap_bytes": 638 }
+  send_bytes payload  43 B: host sent 16292 B in 312 datagrams (52.22 B/datagram, overhead/datagram 9.22); C1 received 16274 B in 305; C1 sent 72 B in 8 (acks/pings)
+    C1 handler calls so far: { "direct": 1, "snap_bytes": 638 }
+  send_bytes payload 453 B: host sent 138872 B in 311 datagrams (446.53 B/datagram, overhead/datagram -6.47); C1 received 139264 B in 304; C1 sent 72 B in 8 (acks/pings)
+    C1 handler calls so far: { "direct": 1, "snap_bytes": 638 }
+  ev_bytes   payload  15 B: host sent 8512 B in 314 datagrams (27.11 B/datagram, overhead/datagram 12.11); C1 received 8450 B in 305; C1 sent 3040 B in 305 (acks/pings)
+    C1 handler calls so far: { "direct": 1, "snap_bytes": 638, "ev_bytes": 319 }
+  ev_bytes   payload 453 B: host sent 139446 B in 311 datagrams (448.38 B/datagram, overhead/datagram -4.62); C1 received 139840 B in 304; C1 sent 3032 B in 304 (acks/pings)
+    C1 handler calls so far: { "direct": 1, "snap_bytes": 638, "ev_bytes": 638 }
