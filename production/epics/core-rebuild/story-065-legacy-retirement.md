@@ -40,6 +40,16 @@
 
 - Never delete before the owner's approval is on record; a skipped question is not an answer.
 
+### Retire at A3
+
+Tools that run or read the frozen game under the ADR-0001 section 9 amendment (2026-11-22); delete them, their output folder and their `tools/core_greps.sh` rule together with `src/legacy/`:
+
+- `tools/legacy_track_export.gd` (story 008): the extractor; output `build/legacy_tracks/` (gitignored).
+- `tools/legacy_test_bake.gd` (story 008): JSON to `TrackCollisionData` test builder.
+- `tools/spline_mesh_equivalence.gd` (story 008): the spline-vs-mesh equivalence run.
+- `tools/legacy_bake_tri_dump.gd` (story 008): triangle dump of the baked test mesh around a point (debug).
+- `tests/integration/collision/generator_bake_test.gd` (story 008): the bake's fixture test (it preloads the bake).
+
 ---
 
 ## Out of Scope

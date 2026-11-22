@@ -1,0 +1,50 @@
+extends SceneTree
+## Story 008 seam-gap diagnostic (scratch). Prints, on a 5 cm grid around a point, which road the
+## frozen game gives each point (TrackModel.query), which road each deck's bake ownership rule
+## gives it, and the distances, so the gap's cause can be read off.
+const Bake = preload("res://tools/legacy_test_bake.gd")
+
+
+func _initialize() -> void:
+	var track: String = "castle_circuit"
+	var c: Vector2 = Vector2(28.216, 108.531)
+	var y: float = 0.0
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--track="):
+			track = arg.substr(8)
+		elif arg.begins_with("--x="):
+			c.x = float(arg.substr(4))
+		elif arg.begins_with("--z="):
+			c.y = float(arg.substr(4))
+		elif arg.begins_with("--y="):
+			y = float(arg.substr(4))
+	var doc: Dictionary = Bake.load_doc("res://build/legacy_tracks/%s.json" % track)
+	var paths: Array[Bake.BakePath] = []
+	for pd in doc["paths"]:
+		var bp: Bake.BakePath = Bake._path_from(pd)
+		bp.window = int(doc["query_window"])
+		paths.append(bp)
+	var keep: float = float(doc["road_keep_band"])
+	var sw: float = float(doc["branch_switch_margin"])
+	var sep: float = float(doc["level_separation"])
+	var model: TrackModel = TrackModel.new(TrackLibrary.load_track(track))
+	for dz in range(-6, 7):
+		var line: String = ""
+		for dx in range(-6, 7):
+			var p: Vector2 = c + Vector2(dx, dz) * 0.05
+			var q: TrackModel.Query = model.query(p, -1, y)
+			var cell: String = "%d" % (q.path + 1) if q.on_deck else "-"
+			for bp in paths:
+				var h: PackedFloat32Array = bp.nearest(p, -1, -1, y - sep, y + sep)
+				if h[0] < 0.0 or h[2] > bp.reach(int(h[0]), h[1]):
+					continue
+				var others: Array[Bake.BakePath] = []
+				for o in paths:
+					if o != bp:
+						others.append(o)
+				if not Bake._owned_by_other(bp, p, int(h[0]), bp.centre_height(int(h[0]), h[1]), others, sep, keep, sw):
+					cell += "k%d" % (bp.index + 1)
+			line += cell.rpad(7)
+		print(line)
+	print("cell = frozen road (0 main, 1.. branch; - off deck), then kN for each deck whose bake keeps the point")
+	quit()

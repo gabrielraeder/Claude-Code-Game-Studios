@@ -1,0 +1,12 @@
+  test_fixture_bakes_with_valid_layout_and_core_ids PASSED 3s 647ms
+  test_surface_ids_are_road_pad_slick_and_ramp PASSED 3s 618ms
+  test_walls_are_one_standard_shape PASSED 3s 588ms
+  test_barrel_becomes_a_non_solid_cylinder_mover PASSED 3s 618ms
+  test_checked_query_passes_and_casts_find_the_baked_surfaces PASSED 3s 614ms
+  test_wall_sweep_finds_the_wall_at_the_frozen_offset PASSED 3s 600ms
+  test_cast_exactly_on_a_shared_deck_vertex_hits_the_deck PASSED 3s 590ms
+  test_deck_grid_is_watertight PASSED 3s 594ms
+  test_wrong_format_version_is_refused PASSED 9ms
+  test_bake_is_deterministic PASSED 7s 160ms
+Statistics: 10 test cases | 0 errors | 0 failures | 0 flaky | 0 skipped | 0 orphans | PASSED 36s 144ms
+exit 0

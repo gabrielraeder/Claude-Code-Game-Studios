@@ -1,0 +1,7 @@
+SH eb304412bb9f1005aec1e04081703290d6b2aede270dd11352f555b6b06ee911
+PASS no bench.lock
+PASS debug (1 marker, sh and fh match)
+PASS release (1 marker, sh and fh match)
+PASS bench (1 marker, sh and fh match)
+CHECK PASS
+exit 0

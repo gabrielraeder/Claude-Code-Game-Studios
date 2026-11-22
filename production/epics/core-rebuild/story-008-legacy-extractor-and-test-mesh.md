@@ -1,12 +1,12 @@
 # Story 008: Legacy track extractor and generator-baked test mesh
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Ready
+> **Status**: In Progress
 > **Layer**: Foundation
 > **Type**: Integration
 > **Estimate**: M
 > **Manifest Version**: N/A (no control manifest yet)
-> **Last Updated**: not started (set by /dev-story)
+> **Last Updated**: 2026-11-22
 
 ## Context
 
@@ -41,7 +41,7 @@
 
 ## Implementation Notes
 
-- Do not start until the owner approves the ADR-0001 §9 amendment text in ADR-0004 §15.
+- The ADR-0001 §9 amendment (tools may run or read the frozen game) was approved by the owner on 2026-11-22.
 - Output location: a gitignored folder outside `assets/` (for example `build/legacy_tracks/`), never imported by Godot.
 - The `CourseAuthoring` half of consumer 1 is story 034 (it needs `CourseBuilder`).
 

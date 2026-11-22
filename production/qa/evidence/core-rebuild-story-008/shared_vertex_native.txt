@@ -1,0 +1,5 @@
+checked_query problem: ''
+pad (id 7) offset (0.0, 0.0): hit true point (0.0, -0.05, 30.0) surface_id 0 | ids of triangles sharing that vertex: []
+pad (id 7) offset (0.01, 0.02): hit true point (0.01, 0.0, 30.02) surface_id 7 | ids of triangles sharing that vertex: []
+slick (id 6) offset (0.0, 0.0): hit true point (-30.0, -0.05, 0.0) surface_id 0 | ids of triangles sharing that vertex: []
+slick (id 6) offset (0.01, 0.02): hit true point (-29.99, 0.0, 0.02) surface_id 6 | ids of triangles sharing that vertex: []

@@ -1,0 +1,11 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+EXPORTED castle_circuit -> C:/writechoice/Claude-Code-Game-Studios/build/legacy_tracks/castle_circuit.json (801768 bytes; 4 paths, main 1145.3 m, 1 ramps, 4 pads, 4 zones, 3 hazards, 5 movers)
+EXPORTED dungeon_depths -> C:/writechoice/Claude-Code-Game-Studios/build/legacy_tracks/dungeon_depths.json (510125 bytes; 5 paths, main 1095.6 m, 1 ramps, 3 pads, 4 zones, 4 hazards, 4 movers)
+exit 0
+--- grep -c 'src/legacy' build/legacy_tracks/*.json
+build/legacy_tracks/castle_circuit.json:0
+build/legacy_tracks/dungeon_depths.json:0
+--- grep -c 'res://'
+build/legacy_tracks/castle_circuit.json:0
+build/legacy_tracks/dungeon_depths.json:0
