@@ -252,7 +252,7 @@ tests distances along the spline).
 Full contract: ADR-0002 "Queries per kart per tick". Player-facing consequences:
 
 - **Surface under the kart** = majority surface of the wheel probes (4 for the Cart, 2-3 for the Bike,
-  ADR-0003 §5); kept while airborne; starts at 0 (road). Ties are not yet specified (Open decision C12).
+  ADR-0003 §5); kept while airborne; starts at 0 (road). A tie goes to the kind of the tied probe whose contact point is nearest the centre of mass, measured on the up plane; probes at equal distance go to the lowest probe index (C12, decided).
 - **Walls are swept, not just tested**, so a fast kart cannot pass through a thin wall in one tick. A
   kart that starts a tick inside a wall (7.5% of sampled sweeps in the spike) is reported at once with
   `fraction = 0` and pushed out by Kart Physics; if a static wall and a mover both overlap, the deeper
@@ -337,8 +337,8 @@ surface_id(kart) = majority( surface_id(hit_k) for k in probes that hit )   whil
 | probes | set | 2-4 rays | Wheel probe points (`ground_probe_points`, ADR-0003 §5) |
 | `surface_id(kart)` | int | registered ids | Passed to Driving as `snapshot.surface_id` |
 
-**Output range:** always a registered id (load check). Starts at 0. **Tie:** unspecified (C12).
-**Example:** Cart probes hit road, road, grass, grass → 2-2 tie, unresolved today; road, grass, grass,
+**Output range:** always a registered id (load check). Starts at 0. **Tie (C12, owner 2026-11-22):** among the kinds with the most votes, the kind of the probe whose contact point is nearest the kart's centre of mass on the up plane (`|(p − com) − up·((p − com)·up)|`); equal distance → lowest probe index (FL, FR, RL, RR; Bike front, rear). Same rule as the ADR-0003 support.
+**Example:** Cart probes hit road, road, grass, grass → 2-2 tie, won by whichever of the four probes is nearest the centre of mass; road, grass, grass,
 grass → grass (id 1 under C1).
 
 ### 4.2 Wall scrape drag with a wall attribute
@@ -473,7 +473,7 @@ atan(0.5 / 1.0) = 26.57° sustained over a sample, so `slope_limit` matters only
 | ID | Situation | What happens |
 |---|---|---|
 | E-1 | Kart airborne | `surface_id` keeps the last grounded value (ADR-0003). Landing re-samples it. |
-| E-2 | Probes split 2-2 (Cart) or 1-1 (Bike, 2 probes) between surfaces | **Unspecified today.** Proposal: the surface of the probe nearest the centre of mass, ties to the lower probe index — the same rule ADR-0003 uses for the support (C12). |
+| E-2 | Probes split 2-2 (Cart) or 1-1 (Bike, 2 probes) between surfaces | The kind of the tied probe nearest the centre of mass (measured on the up plane); equal distance → lowest probe index. The same rule ADR-0003 uses for the support (C12, decided 2026-11-22). |
 | E-3 | Ground ray hits both static ground and a mover deck | Nearest hit wins (ADR-0002). |
 | E-4 | Surface id not in `SurfaceSet` at runtime | Unreachable after the load check; Driving's fallback is `driving-and-drift.md` E-16 (treat as road, debug counter, proposal). |
 | E-5 | Unknown `surf_` / `wall_` name in Blender | Import FAIL (I5); the track is refused. |
@@ -628,7 +628,7 @@ meshes, unless stated. Many restate ADR-0002 Validation Criteria as player-facin
 | C9 | Barrel hidden phase | park the collider below ground in its cellar; add an active flag to `MoverDef` (ADR change) | Park below ground (no ADR change). |
 | C10 | Barrel roll in collision keys | collision empty translates only, roll is a child visual (rule); allow roll | Translate only. |
 | **C11** | **Lava burst hit volume and solidity** | A. frozen footprint (≈ 7.39 m / 5.54 m octagon) as a non-solid trigger; B. the column (1.6 m radius); and: solid vs trigger needs a flag `MoverDef` lacks | A for parity, with a "trigger" (non-solid) mover kind added to ADR-0002, or the burst authored as an ADR-0004 area switched by Track Hazards' schedule. Technical-director call. |
-| C12 | Surface tie-break between probes (2-2 Cart, 1-1 Bike) | nearest centre of mass, ties to lower index (= support rule); keep previous surface; lowest id | Nearest centre of mass (one rule for support and surface). |
+| C12 | Surface tie-break between probes (2-2 Cart, 1-1 Bike) | nearest centre of mass, ties to lower index (= support rule); keep previous surface; lowest id | **DECIDED (owner, 2026-11-22):** nearest centre of mass on the up plane; distance ties go to the lowest probe index. |
 | C13 | Surface of a mover's top (a deck you drive on) | always road (id 0); a per-mover surface id in `MoverDef` | Road through parity (frozen decks were road). `MoverDef` has no surface field today. |
 | C14 | Where mover schedule checks (§4.5) run on the new core | track_check over the baked keys + Track Hazards data; Track Hazards loader | track_check, so the import refuses an unfair hazard. |
 | C15 | Ground slope limit for I16 | a value (≤ 26.57° to matter, §4.6); rely on the step rule alone | Set it with Kart Physics; NOT SOURCED. |
@@ -652,3 +652,4 @@ meshes, unless stated. Many restate ADR-0002 Validation Criteria as player-facin
 | Date | Change | By |
 |---|---|---|
 | 2026-11-22 | First draft, reverse-documented from `src/legacy` and frozen data at `59614ff`, against ADR-0002 v5 | systems-designer (orchestrated run) |
+| 2026-11-22 | C12 decided (owner): probe-majority ties go to the probe nearest the centre of mass on the up plane, equal distance to the lowest probe index; §3.5, §4.1, E-2 updated | engine-programmer (orchestrated run) |

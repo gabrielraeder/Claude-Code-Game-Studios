@@ -41,3 +41,7 @@ func _on_mover_hit(mover_index: int, sim_ref: WeakRef) -> void:
   ```
 
   It must also print no new "resources still in use at exit" lines.
+
+## Cleanup in `NOTIFICATION_PREDELETE` (found in core-rebuild story 003)
+
+On Godot 4.8-beta3, inside a RefCounted's `_notification(NOTIFICATION_PREDELETE)`, calling an instance method (`dispose()`) fails with "Attempt to call function ... in base 'null instance'": `self` is already unusable. A fallback that must free server RIDs (PhysicsServer3D bodies, shapes, spaces) therefore calls a **static** function with the RIDs as arguments, e.g. `CollisionQuery._free_server_objects(bodies, shapes, space)`, which both `dispose()` and the PREDELETE fallback use. Test it: drop the object without `dispose()` and check every RID is freed.

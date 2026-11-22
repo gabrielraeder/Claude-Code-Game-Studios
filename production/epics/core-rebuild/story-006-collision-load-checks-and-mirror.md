@@ -39,6 +39,9 @@
 
 ## Implementation Notes
 
+> **Note from story 003 review (LP):** the id load check must be a blocking assert (a face with `SURFACE_NONE` = -1 would otherwise reach Driving), and the probe cast at `probe_point` must run on every load, including an empty query (bad data builds no geometry and only `push_error`s). Consider a `has_geometry()` accessor for a precise boot message.
+> **Note from story 003 engine check:** add a save/load round-trip test of `TrackCollisionData` to a binary `.res` (typed `Array[PackedVector3Array]` and `Array[MoverDef]`), comparing the arrays after reload; ADR-0005 bakes these.
+
 - Mirror is applied once at track load, never per query (ADR-0001 §7).
 - Later stories append their boundary greps to `tools/core_greps.sh`; it emits observations per rule, not a verdict on the story (CLAUDE.md helper-script rule).
 - Follow `.claude/rules/godot-refcount.md` for any new `connect(`.

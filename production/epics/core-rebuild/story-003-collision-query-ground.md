@@ -1,12 +1,12 @@
 # Story 003: TrackCollisionData and CollisionQuery ground casts
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: M
 > **Manifest Version**: N/A (no control manifest yet)
-> **Last Updated**: not started (set by /dev-story)
+> **Last Updated**: 2026-11-22
 
 ## Context
 
@@ -28,10 +28,10 @@
 
 *Each criterion cites its source (GDD AC id, ADR Validation Criteria, or `architecture.md`).*
 
-- [ ] **Jolt pinned and query built.** `project.godot` pins Jolt as the 3D physics engine; a `@tool` `TrackCollisionData` resource (ground triangles with a per-triangle surface-id table, wall triangles per wall attribute, `wall_attr_ids`, mover defs) builds a `CollisionQuery` that owns a private space with server-created shapes and bodies (ADR-0002 Summary).
-- [ ] **Ground surface ids.** On a fixture ground with one triangle per registered kind, `cast_ground` straight down on each returns that kind's registered id, not its array index, for a registry with non-contiguous ids (Track Collision AC-1; ADR-0002 Validation Criteria).
-- [ ] **Probe majority.** 4 probes on road, grass, grass, grass give the grass id; 2-2 and 1-1 ties resolve by the rule Track Collision C12 chooses, identically over 1000 repeats (Track Collision AC-4).
-- [ ] **Dispose.** `dispose()` frees every RID in the fixed order (orphan check finds none) and is safe to call twice (ADR-0002 Validation Criteria).
+- [x] **Jolt pinned and query built.** `project.godot` pins Jolt as the 3D physics engine; a `@tool` `TrackCollisionData` resource (ground triangles with a per-triangle surface-id table, wall triangles per wall attribute, `wall_attr_ids`, mover defs) builds a `CollisionQuery` that owns a private space with server-created shapes and bodies (ADR-0002 Summary).
+- [x] **Ground surface ids.** On a fixture ground with one triangle per registered kind, `cast_ground` straight down on each returns that kind's registered id, not its array index, for a registry with non-contiguous ids (Track Collision AC-1; ADR-0002 Validation Criteria).
+- [x] **Probe majority.** 4 probes on road, grass, grass, grass give the grass id; 2-2 and 1-1 ties resolve by the rule Track Collision C12 chooses, identically over 1000 repeats (Track Collision AC-4).
+- [x] **Dispose.** `dispose()` frees every RID in the fixed order (orphan check finds none) and is safe to call twice (ADR-0002 Validation Criteria).
 
 ---
 
@@ -56,11 +56,9 @@
 
 ## Files
 
-*Planned; `/dev-story` replaces this list with the files it changed.*
-
-- `project.godot` (pin Jolt)
-- `src/core/collision/track_collision_data.gd`, `src/core/collision/collision_query.gd`, `src/core/collision/ground_hit.gd` (new)
-- `tests/unit/collision/collision_query_ground_test.gd`, `tests/unit/collision/collision_fixtures.gd` (new)
+- `project.godot` (pins: Jolt, face index, main-thread physics)
+- `src/core/collision/collision_query.gd`, `ground_hit.gd`, `track_collision_data.gd`, `query_cursor.gd`, `mover_def.gd` (new)
+- `tests/unit/collision/collision_fixtures.gd`, `tests/unit/collision/collision_query_ground_test.gd` (new)
 
 ---
 
@@ -74,7 +72,7 @@
 
 **Story Type**: Logic
 **Required evidence**: `tests/unit/collision/collision_query_ground_test.gd`, `tests/unit/collision/collision_fixtures.gd` — must exist and pass, with at least one test per acceptance criterion (`qa.level: full`)
-**Status**: [ ] Not yet created
+**Status**: [x] Created: tests/unit/collision/collision_query_ground_test.gd (25 tests; suite 55/55, production/qa/evidence/core-rebuild-story-003/gdunit4-final.log)
 
 ---
 
@@ -82,3 +80,17 @@
 
 - Depends on: `production/epics/core-rebuild/story-002-surface-and-wall-registries.md`
 - Unlocks: `production/epics/core-rebuild/story-004-collision-query-walls.md`, `production/epics/core-rebuild/story-010-kart-body-ground-and-up.md`
+
+## Completion Notes
+**Completed**: 2026-11-22
+**Criteria**: 4/4 passing (gdUnit4 55/55; tools/regression.sh RESULT PASS (6/6) with Jolt pinned, golden traces IDENTICAL)
+**Deviations**: The PREDELETE fallback calls a static `_free_server_objects` instead of `dispose()` (engine limitation on 4.8-beta3; ADR-0002 and `.claude/rules/godot-refcount.md` updated). C12 was decided by the owner during the close (nearest centre of mass); the GDD was updated.
+**Test Evidence**: tests/unit/collision/collision_query_ground_test.gd; production/qa/evidence/core-rebuild-story-003/ (gdunit4-final.log, regression/)
+**Reviewed by**: lead-programmer (LP-CODE-REVIEW: APPROVE); qa-lead (QL-TEST-COVERAGE: GAPS — tie rule and two advisories, all closed); godot-gdscript-specialist engine check (clean)
+
+## Calls beyond the design
+- Probe-majority tie: nearest centre of mass on the up plane, equal distance to the lowest probe index · `CollisionQuery.majority_surface` · decided by the owner 2026-11-22
+- `majority_surface` is a static, allocation-free helper on `CollisionQuery` taking ids, points, centre of mass and up · kept 2026-11-22
+- `QueryCursor` and `MoverDef` created now (data only); walls built now (one body, dense shapes) · kept 2026-11-22
+- Bad data builds an empty query with `push_error`; a face without a valid index gives `SURFACE_NONE` (-1); a miss leaves `out` untouched · kept 2026-11-22
+- Test-only accessors (`owned_rids`, `space_rid`, `ground_body_rid`, `wall_body_rid`, `is_disposed`) · kept 2026-11-22

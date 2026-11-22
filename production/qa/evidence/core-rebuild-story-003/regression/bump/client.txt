@@ -1,0 +1,11 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+[prewarm] 61 mesh/material pairs drawn for 4 frames
+[loadout] kart=0 peer=1 bot=false racer=0 vehicle=cart
+[loadout] kart=1 peer=102352895 bot=false racer=0 vehicle=cart
+[net] built 2 karts in 7.1 ms
+[net] race start: 2 karts, 3 laps, role=client peer=102352895 kart=1
+[net] peer 1 left; kart 0 removed
+[net] leaving network: Lost the connection to the host.
+[net-summary] role=client peer=102352895 place=1 finish=-1.00 karts=2 | rtt_avg=9ms rtt_max=12ms view_delay=50ms | snaps/s=30.6 | extrap=0.1% | pred_err avg=0.002m max=0.508m | lag=0 jitter=0 loss=0% | lead_changes=8 lead_seq=0>1>0>1>0>1>0>1>0 | kb_out/s=3.7 kb_in/s=3.6
+[bump-summary] role=client frames=1535 contact_frames=73 deep_frames=0 pen_max=0.000m (own-vs-any 0.000m, remote-vs-remote 0.000m, deep remote frames 0) bumps=7 knock_max=16.00m/s moved=4.57m

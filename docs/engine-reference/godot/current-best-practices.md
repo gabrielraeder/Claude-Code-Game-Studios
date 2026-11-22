@@ -61,8 +61,20 @@ This supplements (not replaces) the agent's built-in knowledge.
 - **Non-allocating queries:** `PhysicsDirectSpaceState3D` (and 2D) gain
   `intersect_ray_into` and `cast_motion_into`, which fill a reusable typed result
   object instead of allocating a Dictionary/Array each call. Prefer them for
-  per-frame queries (tower targeting, line of sight). Exact signatures: NOT
-  SOURCEABLE at https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/ — check the class reference in the editor (F1) before use.
+  per-frame queries (tower targeting, line of sight). Signatures read from
+  ClassDB on the installed 4.8.beta3.official.c51ff06e8 (2026-11-22,
+  `prototypes/collision-spike/REPORT.md` Q1, `out/probe_api.txt`):
+  - `intersect_ray_into(PhysicsRayQueryParameters3D, PhysicsIntersectRayResult3D) -> bool`
+  - `cast_motion_into(PhysicsShapeQueryParameters3D, PhysicsCastMotionResult3D) -> bool`
+  - `intersect_point_into(PhysicsPointQueryParameters3D, PhysicsIntersectPointResult3D) -> bool`
+  - `intersect_shape_into(PhysicsShapeQueryParameters3D, PhysicsIntersectShapeResult3D) -> bool`
+  - `collide_shape_into(PhysicsShapeQueryParameters3D, PhysicsCollideShapeResult3D) -> bool`
+  - `get_rest_info_into(PhysicsShapeQueryParameters3D, PhysicsGetRestInfoResult3D) -> bool`
+  - Result classes are RefCounted, getters only. `PhysicsCastMotionResult3D` has only
+    safe/unsafe fractions (no normal, no point); `PhysicsGetRestInfoResult3D` has no face index.
+    A miss leaves the result object's previous values in place: read it only after `true`.
+  - Jolt: `face_index` needs `physics/jolt_physics_3d/queries/enable_ray_cast_face_index=true`
+    (default false; pin it in project.godot, an override.cfg is ignored by `--import`).
 - Jolt updated to 5.6.0 (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/).
 - `RigidBody3D.get_velocity_at_local_position()` / `get_velocity_at_position()` added (https://godotengine.org/article/dev-snapshot-godot-4-8-dev-3/).
 

@@ -39,6 +39,8 @@
 
 ## Implementation Notes
 
+> **Note from story 003 review (LP):** treat `GroundHit.surface_id == CollisionQuery.SURFACE_NONE` (-1) as a miss or assert on it; never read a `GroundHit` after `cast_ground` returned false (it is left untouched). Pass unit `dir` vectors. Do not call `owned_rids()` per tick.
+
 - Step order per ADR-0003: slide loop (story 013), then 2 to 4 ground rays, one damped ride spring, up from the smoothed normal; this story implements the ground half with a stub wall phase.
 - Per-body gravity vector; no `Vector3.DOWN`, `randf`, `randi` or `delta` in `src/core/kart/` (ADR-0003 grep).
 - Rebuild the `Basis` from up and heading each tick; the probe showed it stays orthonormal without `orthonormalized()`.

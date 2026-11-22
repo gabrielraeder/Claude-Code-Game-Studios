@@ -37,6 +37,8 @@
 
 ## Implementation Notes
 
+> **Note from story 003 review (LP):** add mover checks to `TrackCollisionData.layout_error()` (or a sibling) before evaluation: `id >= 1` and unique, `period > 0`, key arrays of equal length with ascending `key_t` in `[0, period)`, extents valid for the shape. The mover test in `cast_ground` must keep writing all `GroundHit` fields on a hit (nearest wins) and leave `out` untouched on a miss; rename `_t` to `t`.
+
 - Movers are evaluated analytically from keyframed pose curves; no physics body is stepped (ADR-0002 Summary).
 - Time comes from the caller (synced race time per ADR-0001 §5); never read a clock inside the query.
 

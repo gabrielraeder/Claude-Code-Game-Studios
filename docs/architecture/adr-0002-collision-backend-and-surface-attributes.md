@@ -100,7 +100,7 @@ It must serve 12 karts within budget. It needs per-triangle surface ids for trac
 - **`dispose()`** frees, in this order: **bodies, then shapes, then the space** (freeing the space first crashes later, Verified 8).
   - It is idempotent (a `_disposed` flag) and nulls the cached `PhysicsDirectSpaceState3D`.
   - Query methods `assert(not _disposed)`.
-  - A `_notification(NOTIFICATION_PREDELETE)` fallback calls `dispose()` and `push_warning`s that the owner forgot to call it.
+  - A `_notification(NOTIFICATION_PREDELETE)` fallback frees the RIDs and `push_warning`s that the owner forgot to call `dispose()`. It calls a **static** `_free_server_objects(bodies, shapes, space)` shared with `dispose()`, because on 4.8-beta3 an instance method cannot be called from a RefCounted's PREDELETE (`self` is already a null instance; found in story 003, recorded in `.claude/rules/godot-refcount.md`).
   - The composition root calls `dispose()` at track unload.
 
 ### Geometry layout
