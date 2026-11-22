@@ -1,7 +1,7 @@
 # Story 003: TrackCollisionData and CollisionQuery ground casts
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0002 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: M

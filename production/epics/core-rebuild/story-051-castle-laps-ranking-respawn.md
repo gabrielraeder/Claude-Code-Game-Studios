@@ -1,7 +1,7 @@
 # Story 051: Castle: laps, ranking and respawn
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0004 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Feature
 > **Type**: Integration
 > **Estimate**: M

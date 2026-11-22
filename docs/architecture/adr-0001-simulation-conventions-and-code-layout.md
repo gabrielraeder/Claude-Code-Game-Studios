@@ -201,6 +201,7 @@ The new code also needs a place to live. That place must avoid the frozen code's
 
     ADRs and `architecture.md` use these names.
   - The only names both games share are the `src/data/` classes listed above.
+- **Amendment (owner-approved, 2026-11-22):** tools under `tools/` may run or read the frozen game to produce reference data or bootstrap authoring sources (e.g. the Castle and Dungeon `.blend` files, ADR-0004 §15); nothing under `src/` may load them, their output carries no `src/legacy` reference, and they are retired at A3.
 - **New code must not reference `src/legacy/`.** The exceptions are the regression tools that run the frozen game.
 - **Main scene.** `run/main_scene` stays the frozen `res://src/legacy/main.tscn` until A3. Tests and tools launch the new core's scene by path.
 - **Blender sources:**

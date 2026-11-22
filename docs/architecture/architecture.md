@@ -214,7 +214,7 @@ Blender writes **only glTF** (meshes, custom properties, empties). The Godot imp
 
 ## ADR Audit
 
-ADR-0001 (simulation conventions and code layout) is Accepted (owner, 2026-11-21); ADR-0002…0010 remain to be written. At `standard` rigor, Foundation and Core ADRs are required before the stories that depend on them. Stories 001-011 (built at `minimal`) have none; their behaviour is the reference the rebuilt systems' GDDs document.
+ADR-0001 (simulation conventions and code layout) is Accepted (owner, 2026-11-21); ADR-0002…0006 Accepted (owner, 2026-11-22); ADR-0007…0010 remain to be written. At `standard` rigor, Foundation and Core ADRs are required before the stories that depend on them. Stories 001-011 (built at `minimal`) have none; their behaviour is the reference the rebuilt systems' GDDs document.
 
 Technical Requirements Baseline: **deferred** (no system GDD exists to extract from). Provisional `TR-[system]-NNN` IDs are created as each GDD is approved and registered by `/architecture-review`; until then the ADRs cite the systems-index rows and this document.
 

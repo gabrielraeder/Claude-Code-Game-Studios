@@ -1,7 +1,7 @@
 # Story 036: Track pipeline pins, limits and schema
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0005 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: S

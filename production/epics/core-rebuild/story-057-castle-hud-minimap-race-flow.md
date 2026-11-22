@@ -1,7 +1,7 @@
 # Story 057: Castle: HUD, minimap and race flow port
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0004 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Presentation
 > **Type**: UI
 > **Estimate**: M

@@ -1,7 +1,7 @@
 # Story 020: DriveState surface transitions, rubble, determinism and boundary
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0003 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Feature
 > **Type**: Logic
 > **Estimate**: S

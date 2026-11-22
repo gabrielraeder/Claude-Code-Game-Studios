@@ -1,7 +1,7 @@
 # Story 049: Version coexistence and track-package mismatch
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0006 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Foundation
 > **Type**: Integration
 > **Estimate**: S

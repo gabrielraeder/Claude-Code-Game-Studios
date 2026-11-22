@@ -1,7 +1,7 @@
 # ADR-0003: Kart Physics Model
 
 ## Status
-Proposed
+Accepted (owner, 2026-11-22)
 
 ## Date
 2026-11-22

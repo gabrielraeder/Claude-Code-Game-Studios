@@ -1,7 +1,7 @@
 # Story 017: DriveState drift end conditions, air drift and boost merge
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0003 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Feature
 > **Type**: Logic
 > **Estimate**: S

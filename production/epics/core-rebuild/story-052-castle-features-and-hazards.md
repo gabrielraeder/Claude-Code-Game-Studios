@@ -1,7 +1,7 @@
 # Story 052: Castle: track features and hazards
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0002 and ADR-0004 are Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Feature
 > **Type**: Integration
 > **Estimate**: M

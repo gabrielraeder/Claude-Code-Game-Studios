@@ -1,7 +1,7 @@
 # ADR-0005: Blender Track Pipeline
 
 ## Status
-Proposed
+Accepted (owner, 2026-11-22)
 
 ## Date
 2026-11-22

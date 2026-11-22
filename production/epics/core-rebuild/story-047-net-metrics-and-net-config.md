@@ -1,7 +1,7 @@
 # Story 047: NetMetrics (TD-010) and NetConfig fork
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0006 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: S

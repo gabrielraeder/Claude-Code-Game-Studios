@@ -1,7 +1,7 @@
 # ADR-0002: Collision Backend and Surface Attributes
 
 ## Status
-Proposed
+Accepted (owner, 2026-11-22)
 
 ## Date
 2026-11-22

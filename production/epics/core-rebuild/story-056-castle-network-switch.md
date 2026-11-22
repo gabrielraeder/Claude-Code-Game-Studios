@@ -1,7 +1,7 @@
 # Story 056: Castle: network switch to VERSION 10
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0006 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Foundation
 > **Type**: Integration
 > **Estimate**: M

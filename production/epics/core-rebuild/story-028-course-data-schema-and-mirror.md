@@ -1,7 +1,7 @@
 # Story 028: CourseData schema, tuning, build settings and mirror
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0004 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: M

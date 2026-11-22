@@ -1,7 +1,7 @@
 # Story 060: Checkpoint A2: Castle Circuit online with bots
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0006, ADR-0003 and ADR-0004 are Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Feature
 > **Type**: Integration
 > **Estimate**: M

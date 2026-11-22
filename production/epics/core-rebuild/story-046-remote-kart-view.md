@@ -1,7 +1,7 @@
 # Story 046: RemoteKartView and RemoteKartSet
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0006 and ADR-0003 are Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: M

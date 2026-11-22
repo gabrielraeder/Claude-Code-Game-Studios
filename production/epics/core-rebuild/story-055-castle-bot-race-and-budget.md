@@ -1,7 +1,7 @@
 # Story 055: Castle: bot race bar and tick budget
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0004 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Feature
 > **Type**: Integration
 > **Estimate**: S

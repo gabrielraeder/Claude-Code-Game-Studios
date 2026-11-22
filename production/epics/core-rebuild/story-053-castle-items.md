@@ -1,7 +1,7 @@
 # Story 053: Castle: items
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0004 and ADR-0006 are Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Feature
 > **Type**: Integration
 > **Estimate**: M

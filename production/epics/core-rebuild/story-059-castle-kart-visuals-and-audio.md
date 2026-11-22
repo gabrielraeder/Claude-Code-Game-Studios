@@ -1,7 +1,7 @@
 # Story 059: Castle: kart visuals and race audio port
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0003 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Presentation
 > **Type**: Visual/Feel
 > **Estimate**: M

@@ -90,7 +90,24 @@ state_ownership:
 #       - docs/architecture/adr-0007-ui-system.md       # reads to display HUD
 #     added: 2026-03-26
 #     revised: ""
-
+  - state: course_progress
+    status: active
+    owner_system: "course-data"
+    interface: "CourseProgress per kart (lap u8, signed distance, sector cursor), updated after KartBody.step in slot order"
+    adr: docs/architecture/adr-0004-course-data-format.md
+    referenced_by:
+      - docs/architecture/adr-0004-course-data-format.md
+    added: 2026-11-22
+    revised: ""
+  - state: surface_ids
+    status: active
+    owner_system: "track-collision"
+    interface: "Stable ids in core SurfaceSet: 0 road..8 trick_ramp, append-only, <=255; SurfaceType.neutral"
+    adr: docs/architecture/adr-0002-collision-backend-and-surface-attributes.md
+    referenced_by:
+      - docs/architecture/adr-0002-collision-backend-and-surface-attributes.md
+    added: 2026-11-22
+    revised: ""
 
 # ─── INTERFACE CONTRACTS ──────────────────────────────────────────────────────
 # How systems are required to communicate with each other.
@@ -101,7 +118,37 @@ state_ownership:
 #
 # pattern options: signal | direct_call | event_bus | shared_resource | rpc | none
 
-interfaces: []
+interfaces:
+  - contract: collision_query
+    status: active
+    pattern: "direct_call"
+    producer: "track-collision"
+    signal_signature: "cast_ground/sweep_walls with caller-owned GroundHit/WallHit and QueryCursor; t = n*SIM_DT; started_inside returns at once; touch = fraction 1.0"
+    adr: docs/architecture/adr-0002-collision-backend-and-surface-attributes.md
+    referenced_by:
+      - docs/architecture/adr-0002-collision-backend-and-surface-attributes.md
+    added: 2026-11-22
+    revised: ""
+  - contract: kart_snapshot_and_events
+    status: active
+    pattern: "shared_resource"
+    producer: "kart-physics"
+    signal_signature: "KartSnapshot (total world velocity, throttle, events bits 0-7 pinned) and KartEvent (bump pose tick = sampled remote record tick)"
+    adr: docs/architecture/adr-0003-kart-physics-model.md
+    referenced_by:
+      - docs/architecture/adr-0003-kart-physics-model.md
+    added: 2026-11-22
+    revised: ""
+  - contract: network_wire_v10
+    status: active
+    pattern: "rpc"
+    producer: "network-session"
+    signal_signature: "41 B snapshot record on ch1 unreliable_ordered 30 Hz; events on ch2 reliable; control ch0; VERSION 10 + source_sha256 + bake_key refusal"
+    adr: docs/architecture/adr-0006-network-snapshot-3d.md
+    referenced_by:
+      - docs/architecture/adr-0006-network-snapshot-3d.md
+    added: 2026-11-22
+    revised: ""
 
 # Example:
 #
@@ -294,7 +341,36 @@ api_decisions:
 #       - docs/architecture/adr-0003-combat-system.md
 #     added: 2026-03-26
 #     revised: ""
-
+  - purpose: collision_backend
+    status: active
+    api: "Jolt via PhysicsServer3D private inactive space; ConcavePolygonShape3D; face_index setting on; intersect_ray_into/cast_motion_into/get_rest_info_into with reused objects"
+    not: "collision nodes; Dictionary query forms in per-tick code"
+    reason: "0.06 ms/tick for 12 karts measured; headless; per-triangle surfaces"
+    adr: docs/architecture/adr-0002-collision-backend-and-surface-attributes.md
+    referenced_by:
+      - docs/architecture/adr-0002-collision-backend-and-surface-attributes.md
+    added: 2026-11-22
+    revised: ""
+  - purpose: course_data_format
+    status: active
+    api: "CourseData .res baked by CourseBuilder from CourseAuthoring; gates with key groups; routes with baked tables; areas BOX|CYLINDER"
+    not: "bots querying CollisionQuery"
+    reason: "KMP-like course layer separate from collision"
+    adr: docs/architecture/adr-0004-course-data-format.md
+    referenced_by:
+      - docs/architecture/adr-0004-course-data-format.md
+    added: 2026-11-22
+    revised: ""
+  - purpose: track_import
+    status: active
+    api: "Blender glTF + kk_* extras -> EditorScenePostImport (headless --import) -> TrackPackage .res with bake_key"
+    not: "runtime GLTFDocument for shipped tracks; Godot .blend import"
+    reason: "validated at import; verified NV-16"
+    adr: docs/architecture/adr-0005-blender-track-pipeline.md
+    referenced_by:
+      - docs/architecture/adr-0005-blender-track-pipeline.md
+    added: 2026-11-22
+    revised: ""
 
 # ─── FORBIDDEN PATTERNS ──────────────────────────────────────────────────────
 # Architecture anti-patterns explicitly banned by accepted ADRs.
@@ -344,3 +420,30 @@ forbidden_patterns:
 #       ownership model. The owning system must be the sole writer."
 #     adr: docs/architecture/adr-0000-architecture-principles.md
 #     added: 2026-03-26
+  - pattern: encode_half_unrounded
+    status: active
+    description: "Never call PackedByteArray.encode_half on an unclamped or unrounded value; clamp to +-65504 and pre-round (ADR-0006)"
+    why: "encode_half truncates toward zero and overflows to inf on 4.8-beta3"
+    adr: docs/architecture/adr-0006-network-snapshot-3d.md
+    referenced_by:
+      - docs/architecture/adr-0006-network-snapshot-3d.md
+    added: 2026-11-22
+    revised: ""
+  - pattern: get_packet_channel_in_rpc
+    status: active
+    description: "Do not use multiplayer_peer.get_packet_channel()/get_packet_mode() to classify bytes inside an RPC handler"
+    why: "They describe the next queued packet and error when the queue is empty"
+    adr: docs/architecture/adr-0006-network-snapshot-3d.md
+    referenced_by:
+      - docs/architecture/adr-0006-network-snapshot-3d.md
+    added: 2026-11-22
+    revised: ""
+  - pattern: free_space_before_bodies
+    status: active
+    description: "CollisionQuery.dispose() frees bodies, then shapes, then the space"
+    why: "Freeing the space first leaves dangling body RIDs and crashes later"
+    adr: docs/architecture/adr-0002-collision-backend-and-surface-attributes.md
+    referenced_by:
+      - docs/architecture/adr-0002-collision-backend-and-surface-attributes.md
+    added: 2026-11-22
+    revised: ""

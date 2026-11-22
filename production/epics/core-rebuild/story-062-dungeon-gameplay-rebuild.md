@@ -1,7 +1,7 @@
 # Story 062: Dungeon Depths gameplay on the new core
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0004, ADR-0002 and ADR-0006 are Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Feature
 > **Type**: Integration
 > **Estimate**: M

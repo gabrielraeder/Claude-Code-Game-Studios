@@ -1,7 +1,7 @@
 # ADR-0004: Course Data Format
 
 ## Status
-Proposed
+Accepted (owner, 2026-11-22)
 
 ## Date
 2026-11-22

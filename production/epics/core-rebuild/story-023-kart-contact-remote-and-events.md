@@ -1,7 +1,7 @@
 # Story 023: Kart contact solver: remote karts, events, merge and freeze
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0003 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: M

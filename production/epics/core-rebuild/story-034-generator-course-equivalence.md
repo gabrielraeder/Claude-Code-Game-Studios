@@ -1,7 +1,7 @@
 # Story 034: Generator-course equivalence oracle
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0004 is Proposed (owner acceptance pending); ADR-0001 §9 amendment (ADR-0004 §15, legacy extractor) pending owner approval — nothing in ADR-0004 §15 may be implemented until it is approved
+> **Status**: Ready
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: M

@@ -1,7 +1,7 @@
 # Story 037: Blender exporter and fixture .glb files
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0005 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: M

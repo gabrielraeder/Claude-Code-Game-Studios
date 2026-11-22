@@ -1,7 +1,7 @@
 # Story 010: KartBody ground, ride spring and up
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0003 and ADR-0002 are Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: M

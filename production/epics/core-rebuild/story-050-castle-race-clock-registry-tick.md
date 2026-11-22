@@ -1,7 +1,7 @@
 # Story 050: Castle: race clock, kart registry and tick order
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0003 and ADR-0004 are Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: M

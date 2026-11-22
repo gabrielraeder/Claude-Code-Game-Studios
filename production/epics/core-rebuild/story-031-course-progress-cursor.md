@@ -1,7 +1,7 @@
 # Story 031: CourseProgress sector cursor, smoothing, wrong way and off course
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0004 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: M

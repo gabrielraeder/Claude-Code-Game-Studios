@@ -1,7 +1,7 @@
 # Story 058: Castle: chase camera port
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0002 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Presentation
 > **Type**: Visual/Feel
 > **Estimate**: M

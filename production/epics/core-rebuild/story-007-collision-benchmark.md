@@ -1,7 +1,7 @@
 # Story 007: Collision benchmark (<= 0.3 ms p95, 12 karts)
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0002 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Foundation
 > **Type**: Integration
 > **Estimate**: S

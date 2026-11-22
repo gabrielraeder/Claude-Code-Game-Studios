@@ -1,7 +1,7 @@
 # Story 064: Checkpoint A3: both tracks on the new core
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0003, ADR-0004 and ADR-0006 are Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Feature
 > **Type**: Integration
 > **Estimate**: S

@@ -1,7 +1,7 @@
 # Story 009: Core vehicle data fork, KartIntent and KartSnapshot
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0003 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: S

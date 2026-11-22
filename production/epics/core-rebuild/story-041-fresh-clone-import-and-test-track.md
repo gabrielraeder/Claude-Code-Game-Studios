@@ -1,7 +1,7 @@
 # Story 041: Fresh-clone import (NV-15) and a Blender test track end to end
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0005 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: M

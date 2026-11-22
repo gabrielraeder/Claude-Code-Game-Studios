@@ -1,7 +1,7 @@
 # Story 040: TrackLoader and tools/track_build.sh
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0005 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: M

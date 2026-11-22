@@ -1,7 +1,7 @@
 # Story 061: Dungeon Depths .blend bootstrap and import
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0005 and ADR-0004 are Proposed (owner acceptance pending); ADR-0001 §9 amendment (ADR-0004 §15, legacy extractor) pending owner approval — nothing in ADR-0004 §15 may be implemented until it is approved
+> **Status**: Ready
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: M

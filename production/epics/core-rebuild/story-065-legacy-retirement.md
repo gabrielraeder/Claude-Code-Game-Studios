@@ -1,7 +1,7 @@
 # Story 065: Retire the frozen 2.5D modules (owner-approved deletion)
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0004 is Proposed (owner acceptance pending); deletion needs the owner's explicit approval (story 001 Out of Scope: owner-approved, after A3)
+> **Status**: Blocked — BLOCKED: owner deletion approval pending (ADRs accepted and ADR-0001 §9 amendment approved 2026-11-22)
 > **Layer**: Foundation
 > **Type**: Integration
 > **Estimate**: S

@@ -1,7 +1,7 @@
 # Story 027: Checkpoint A1: owner drift and feel sign-off
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0003 and ADR-0002 are Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Feature
 > **Type**: Visual/Feel
 > **Estimate**: M

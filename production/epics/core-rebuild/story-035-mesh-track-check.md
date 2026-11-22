@@ -1,7 +1,7 @@
 # Story 035: Mesh track_check
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0004, ADR-0005 and ADR-0003 are Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: M

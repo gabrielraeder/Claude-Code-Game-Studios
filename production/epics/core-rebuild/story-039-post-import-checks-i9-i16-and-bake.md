@@ -1,7 +1,7 @@
 # Story 039: Post-import checks I9-I16 and TrackPackage bake
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0005, ADR-0002 and ADR-0004 are Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: M

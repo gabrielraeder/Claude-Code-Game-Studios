@@ -1,7 +1,7 @@
 # Story 018: DriveState hits, slowdown profiles and start boost
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0003 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Feature
 > **Type**: Logic
 > **Estimate**: M

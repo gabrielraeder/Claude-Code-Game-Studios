@@ -1,7 +1,7 @@
 # Story 016: DriveState drift start, charge, tiers and release
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0003 is Proposed (owner acceptance pending)
+> **Status**: Ready
 > **Layer**: Feature
 > **Type**: Logic
 > **Estimate**: M

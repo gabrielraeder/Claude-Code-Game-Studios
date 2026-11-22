@@ -1,7 +1,7 @@
 # Story 026: Parity run: rebuilt kart against the golden traces
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Blocked — BLOCKED: ADR-0003 and ADR-0004 are Proposed (owner acceptance pending); needs the generator-baked mesh of story 008 (ADR-0001 §9 amendment (ADR-0004 §15, legacy extractor) pending owner approval)
+> **Status**: Ready
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: M

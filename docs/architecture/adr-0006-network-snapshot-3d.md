@@ -1,7 +1,7 @@
 # ADR-0006: Network Snapshot for 3D
 
 ## Status
-Proposed
+Accepted (owner, 2026-11-22)
 
 ## Date
 2026-11-22
