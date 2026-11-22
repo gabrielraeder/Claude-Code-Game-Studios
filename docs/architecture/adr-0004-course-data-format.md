@@ -10,9 +10,9 @@ Proposed
 2026-11-22
 
 ## Decision Makers
-Claude (ai-programmer, autonomous mode, owner-authorized) drafted v1 from `architecture.md`, ADR-0001, ADR-0002 and a read of the frozen code. The frozen code was read as reference only. **v2 (2026-11-22)** is the revision after the joint TD-ADR review of ADR-0004 and ADR-0005 (technical-director: CONCERNS on both). It fixes the seam with ADR-0005 (Course Data owns the derivation: §14 `CourseBuilder`), and applies the owner-side decisions logged with that review.
-- **godot-specialist validation:** NOT ASSESSED. Not yet run.
-- **technical-director (TD-ADR):** v1 CONCERNS (joint review with ADR-0005). v2 addresses every required item; a re-review of v2 is NOT ASSESSED. `review_mode` is `full`, so both reviews are required before acceptance.
+Claude (ai-programmer, autonomous mode, owner-authorized) drafted v1 from `architecture.md`, ADR-0001, ADR-0002 and a read of the frozen code. The frozen code was read as reference only. **v2 (2026-11-22)** is the revision after the joint TD-ADR review of ADR-0004 and ADR-0005 (technical-director: CONCERNS on both). It fixes the seam with ADR-0005 (Course Data owns the derivation: §14 `CourseBuilder`), and applies the owner-side decisions logged with that review. **v3** applies the TD re-review of v2. It adds `CourseBuildSettings` (the builder no longer depends on pipeline classes), sources for `closed` and fork/merge, and updates the record of the probes.
+- **godot-specialist:** probes ran (`prototypes/collision-spike/out/probe_adr45_*`): the `.res` round trip and cache identity are VERIFIED, with the findings recorded in Engine Compatibility. The full validation review (step 5.5) is NOT ASSESSED.
+- **technical-director (TD-ADR):** v1 CONCERNS (joint review with ADR-0005). v2 addresses every required item; the v2 re-review returned CONCERNS (narrow text edits), applied in v3; a re-review of v3 is NOT ASSESSED. `review_mode` is `full`, so both reviews are required before acceptance.
 - **Owner approval pending:** the ADR-0001 §9 amendment in §15 (tools may run the frozen game to produce reference data).
 - **GDD sync:** NOT ASSESSED. No system GDD exists, and this ADR cites `design/gdd/systems-index.md` rows only.
 
@@ -35,7 +35,7 @@ This ADR fixes:
 | **Domain** | Core |
 | **Layer** | Core (systems-index row 3 and the architecture layer map put Course Data in Core) |
 | **Knowledge Risk** | HIGH (4.8 is post-cutoff and pre-release). The APIs this ADR uses are pre-cutoff: `Resource`, packed arrays, typed `Array`, `Transform3D`, `ResourceSaver` / `ResourceLoader` |
-| **References Consulted** | `docs/engine-reference/godot/VERSION.md`, `breaking-changes.md` (4.7: a packed-array element write no longer calls the property setter), `current-best-practices.md` and `deprecated-apis.md` (`duplicate_deep()`, 4.5). No engine probe was run for this ADR |
+| **References Consulted** | `docs/engine-reference/godot/VERSION.md`, `breaking-changes.md` (4.7: a packed-array element write no longer calls the property setter), `current-best-practices.md` and `deprecated-apis.md` (`duplicate_deep()`, 4.5). Engine probes ran on 4.8-beta3 (`prototypes/collision-spike/out/probe_adr45_res_roundtrip.txt`, `probe_adr45_res_determinism.txt`) |
 | **Post-Cutoff APIs Used** | None. `mirrored()` builds new arrays explicitly and does not rely on `duplicate()` or `duplicate_deep()` semantics |
 | **Verification Required** | (1) On 4.8-beta3, a binary `.res` round-trip of a `Resource` with typed `Array[Transform3D]`, `Array[CourseRoute]` sub-resources and packed arrays reloads equal and typed: **VERIFIED** (godot-specialist probe, `probe_adr45_res_roundtrip.txt`). A plain `var` is **not** saved (it reloaded as 0), and a re-save of a loaded copy is not byte-equal to the first save. (2) Loading the same `.res` twice returns the cached instance: **VERIFIED**. `duplicate(false)` shares route sub-resources with the cached instance, so `mirrored()` builds new objects, including new `CourseRoute` sub-resources (§11). (3) The cost of `CourseProgress` and `RouteCursor` in a release export (see Performance Implications). All estimates there are UNVERIFIED |
 
@@ -140,9 +140,9 @@ Large per-element data is stored as **packed arrays (structure of arrays)**, not
 | `id` | `StringName` | Stable id from Blender (also used in logs) |
 | `kind` | `StringName` | `&"main"` (the lap reference), `&"branch"` (an alternative road: shortcut, lane split, deck), `&"cpu"` (an authored enemy line), `&"item"` (a projectile line), `&"cut"` (an off-road boost-cut line) |
 | `branch_type` | `StringName` | Authored, for example `&"shortcut"`, `&"lane_split"`, `&"deck"`. Bots weight their plans by it (`BotSet.branch_factor`, as today) |
-| `closed` | `bool` | True for loops. `main` is always closed and starts at the line |
-| `length`, `spacing` | `float` | Route length. Sample spacing in metres (an ADR-0005 import setting, default 1.0 m). Sample i lies at along = i × `spacing`, and the last sample is at `length` |
-| `fork_route`, `fork_along`, `merge_route`, `merge_along` | `int`, `float` | Where an open route leaves and rejoins its parent route (−1 for closed routes) |
+| `closed` | `bool` | True for loops. Source: the route header field `kk_closed` (default false). `main` is always closed and starts at the line: `main` with `kk_closed` false FAILs, and `main` is treated as closed whether or not the field is set. Open routes get fork and merge from the rule below |
+| `length`, `spacing` | `float` | Route length. Sample spacing in metres: **`CourseBuildSettings.sample_spacing_m`** (default 1.0 m), copied into the route. It is one setting, owned by Course Data. Sample i lies at along = i × `spacing`, and the last sample is at `length` |
+| `fork_route`, `fork_along`, `merge_route`, `merge_along` | `int`, `float` | Where an open route leaves and rejoins its parent route (−1 for closed routes). **Derivation (`CourseBuilder`):** for an open `branch` or `cut` route, the fork is the nearest point (by 3D distance) on any other route to its first sample, and the merge the same for its last sample, each within `CourseBuildSettings.fork_merge_tolerance_m`. Ties go to the lowest route index (`main` first), then the lowest sample index. **FAIL if none is within the tolerance.** Open `cpu` and `item` routes carry -1 |
 | `min_speed`, `min_boost` | `float` | Entry requirements, authored on the route header (§14): a speed-gated jump, a boost-cut. 0 means none |
 | `hint_flags`, `speed_cap` | `PackedInt32Array`, `PackedFloat32Array` | Optional per-sample CPU hints on `cpu` routes (§14, authored overrides only; empty when none). Bits: `NO_DRIFT`, `ITEM_HOLD`, `LANE_HOLD_LEFT`, `LANE_HOLD_RIGHT`. `speed_cap` 0 means none |
 | `pos`, `tangent`, `up` | `PackedVector3Array` | Per sample. right = `tangent.cross(up)`, and lateral is positive to the right |
@@ -382,19 +382,22 @@ These bake checks are `CourseBuilder`'s output lines (§14). ADR-0005 runs them 
 Course Data owns the derivation. ADR-0005 owns only the Blender-side parse.
 
 **`CourseAuthoring`** (`@tool`, `RefCounted`, `src/core/course/course_authoring.gd`) is a neutral description with no Blender or glTF in it:
-- **Gates:** pose (a Godot `Transform3D`, origin on the road), `index`, `group`, `width`, `height`, `next` (optional index list), `key` (bool), `respawn` (optional index), plus per-gate flags.
+- **Gates:** pose (a Godot `Transform3D`, origin on the road), `index`, `group`, `width`, `height`, `next` (optional index list), `key` (bool) and `respawn` (optional index).
 - **Routes:** `id`, `kind` (`main`, `branch`, `cpu`, `item`, `cut`) and an ordered polyline of points, each with attributes. Header attributes: `branch_type`, `min_speed`, `min_boost`, `lanes`. Per-point attributes: the `kk_hint_*` overrides.
 - **Respawns:** pose and index. **Grid:** 12 poses by slot. **Item boxes:** poses and index.
 - **Areas:** oriented box (pose and half extents), `kind` (`hazard_static`, `hazard_speed_gated`, `cannon_trigger`, `fall_boundary`) and parameters. Authored as `kk_type = area` with `kk_area` (the kind) and its params.
-- **Settings:** sample spacing and the tuning it needs.
+- **`kk_index` to array position.** Authored indices are unique but not necessarily contiguous; the builder maps each `kk_index` to its array position, and `next` and `respawn` lists are resolved through that map (an unknown index FAILs).
+- **Settings:** none inside `CourseAuthoring`; they come from `CourseBuildSettings`.
 
 **`CourseBuilder`** (`@tool`, `RefCounted`, `src/core/course/course_builder.gd`):
 ```gdscript
-func build(authoring: CourseAuthoring, query: CollisionQuery, limits: TrackImportLimits) -> CourseBuildResult
+func build(authoring: CourseAuthoring, query: CollisionQuery, settings: CourseBuildSettings) -> CourseBuildResult
 # CourseBuildResult: course: CourseData (null unless ok), lines: Array[CourseCheckLine], ok()
 ```
 - It is **pure** (no file I/O, no state between calls) and deterministic (sorted by index, then id).
 - It does everything §2-§13 call "the bake": the gate lift (§3), defaults for `next` and `respawn`, key groups, sector assignment, route sampling and tables, spans (`PAD` and `RAMP` from surface kinds, `HAZARD` from areas), respawn and grid invariants, and every check of §13 as a PASS / WARN / FAIL / NOT_ASSESSED line.
+- **`CourseBuildSettings`** (`@tool Resource`, `src/core/course/`, instance `assets/data/core/course_build_settings.tres`) holds what the builder needs: `sample_spacing_m`, `fork_merge_tolerance_m`, the lateral scan range and ground-cast limits, and the gate-sector tolerances. `CourseBuilder.BUILDER_VERSION` (a `const`) is bumped on any output change. **The builder never references `TrackImportLimits` or any `src/pipeline/` class.** The pipeline loads the settings and passes them in; where a pipeline threshold and a builder threshold coincide, the pipeline fills the builder's field from `TrackImportLimits`.
+- **Spacing is one baked setting, `sample_spacing_m`,** read by the builder and used for `CourseRoute.spacing` and for ADR-0005's wall check I9 (so ADR-0005 has no separate sampling spacing). The Blender exporter is Python and reads `track_schema.json`, not a `.tres`; it expands curves with its own `curve_expand_spacing_m` from that JSON. That only sets how densely authored points are generated, and the builder re-samples at `sample_spacing_m`.
 - It lives in the core because it needs `CollisionQuery` and must be unit-tested without Blender or the editor (`tests/unit/course/`).
 - A route authored as a Blender curve is expanded into points by ADR-0005's exporter before it reaches the builder. An optional auto-gate generator (a gate every N m along `main`, authored gates overriding) is also an exporter feature that produces `CourseAuthoring` gates.
 
@@ -473,7 +476,8 @@ class_name CourseRoute extends Resource        # §2 table
 class_name CourseGate extends RefCounted       # xform, half, group, s, next links (tools and tests)
 class_name CourseTuning extends Resource       # §2 tuning fields, each @export with a ## comment
 @tool class_name CourseAuthoring extends RefCounted   # §14 neutral authoring description
-@tool class_name CourseBuilder extends RefCounted     # §14 build(authoring, query, limits) -> CourseBuildResult
+@tool class_name CourseBuilder extends RefCounted     # §14 build(authoring, query, settings) -> CourseBuildResult; const BUILDER_VERSION
+@tool class_name CourseBuildSettings extends Resource # §14 builder settings, owned by Course Data
 ```
 
 ### Implementation Guidelines
@@ -538,7 +542,7 @@ class_name CourseTuning extends Resource       # §2 tuning fields, each @export
 - The tables are a snapshot of the geometry. Any mesh change needs a re-bake, which ADR-0005's import does automatically.
 
 ## Risks
-- **Unverified engine behaviour:** the binary `.res` round-trip of typed `Array[Transform3D]` and `Array[CourseRoute]` on 4.8-beta3. Mitigation: story 023's first test saves and reloads a fixture and compares field by field.
+- **Binary `.res` round trip (VERIFIED, 4.8-beta3):** typed `Array[Transform3D]`, `Array[CourseRoute]` and packed arrays reload equal and typed, and cache identity holds (`probe_adr45_res_roundtrip.txt`). Remaining hazards the probe found: a plain `var` is not saved (use `@export` / `@export_storage`), and a re-save of a loaded copy is not byte-equal. Story 023's first test keeps a fixture round trip as a regression guard.
 - **Gate authoring errors** (a missing key gate on a legal path, sectors that violate the corner rule, gaps under jumps). Mitigation: the bake and `track_check` reject them with the gate ids. A debug view (`src/debug/`) draws gates, sectors and the cursor per kart.
 - **Junction cursor flicker** where two sectors overlap (parallel lanes of a split). Mitigation: smallest outside first, then link order, both deterministic. The distance smoothing hides small jumps. Hysteresis is added only if tests show flicker; it would be a `CourseTuning` field.
 - **Off-course hold during long flights** (cannons, big jumps) freezes `distance` for seconds, so the ranking lags. Mitigation: gates must cover authored airborne paths, which `track_check` samples.

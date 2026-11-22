@@ -10,11 +10,11 @@ Proposed
 2026-11-22
 
 ## Decision Makers
-Drafted v1 by tools-programmer (subagent) from the collision and Blender round-trip spike (`prototypes/collision-spike/REPORT.md` Q4 and Recommendations, `out/q4_post_import.txt`, `out/q4_runtime.txt`) and from a re-run of the spike's read-only `blender/probe_exporter.py` on Blender 5.3, 2026-11-22. **v2 (2026-11-22)** is the revision after the joint TD-ADR review of ADR-0004 and ADR-0005 (technical-director: CONCERNS on both). It moves the course derivation into ADR-0004's `CourseBuilder` and applies the owner-side decisions logged with that review.
+Drafted v1 by tools-programmer (subagent) from the collision and Blender round-trip spike (`prototypes/collision-spike/REPORT.md` Q4 and Recommendations, `out/q4_post_import.txt`, `out/q4_runtime.txt`) and from a re-run of the spike's read-only `blender/probe_exporter.py` on Blender 5.3, 2026-11-22. **v2 (2026-11-22)** is the revision after the joint TD-ADR review of ADR-0004 and ADR-0005 (technical-director: CONCERNS on both). It moves the course derivation into ADR-0004's `CourseBuilder` and applies the owner-side decisions logged with that review. **v3** applies the TD re-review of v2. It adds NV-16, distinct per-object resource ids, a builder-aware `bake_key`, and corrects capsule conversion and stale text.
 
-**Not yet run:**
-- **godot-specialist validation (step 5.5):** NOT ASSESSED. The drafting subagent cannot spawn agents.
-- **technical-director review (TD-ADR):** v1 CONCERNS (joint with ADR-0004). v2 addresses every required item; a re-review of v2 is NOT ASSESSED.
+**Review status:**
+- **godot-specialist:** probes ran (`prototypes/collision-spike/out/probe_adr45_*`); their verdicts are in the NV table below. The full validation review (step 5.5) is NOT ASSESSED.
+- **technical-director review (TD-ADR):** v1 CONCERNS (joint with ADR-0004). v2 addresses every required item; the v2 re-review returned CONCERNS (narrow text edits), applied in v3; a re-review of v3 is NOT ASSESSED.
 - **Owner acceptance:** pending. **Owner approval also pending** for the ADR-0001 §9 amendment in ADR-0004 §15 (legacy extractor), which this ADR's Migration Plan relies on.
 
 ## Summary
@@ -37,7 +37,7 @@ This ADR chooses an **editor-time import**:
 | **References Consulted** | `docs/engine-reference/godot/VERSION.md`, `breaking-changes.md`, `deprecated-apis.md` (no import coverage). `prototypes/collision-spike/REPORT.md` Q4, `scripts/post_import.gd`, `scripts/scene_dump.gd`, `scripts/q4_runtime.gd`, `blender/build_track_piece.py`, `import_test/track_piece.glb.import`, `out/q4_post_import.txt`, `out/q4_runtime.txt`. ADR-0001 §1, §2, §7, §9. ADR-0002 "TrackCollisionData", "Boot and load checks", "Mirror". `architecture.md` "Tool layer", Data Flow 6. `tools/blender/common.py` |
 | **Post-Cutoff APIs Used** | Godot: none new. `EditorScenePostImport` and `GLTFDocument` predate the cutoff, but they are used here on a post-cutoff engine. The import-time probe check calls ADR-0002's `CollisionQuery`, which uses the 4.8 `_into` query methods. Blender 5.3: the `export_scene.gltf` operator properties listed under "Verified" below |
 | **Verified on 4.8-beta3 / Blender 5.3** | See the list below this table |
-| **Verification Required** | NV-1 … NV-15 below. Story 024 closes them before this ADR is Accepted, or records the fallback taken |
+| **Verification Required** | NV-1 … NV-16 below. Story 024 closes them before this ADR is Accepted, or records the fallback taken |
 
 **Verified (spike Q4, plus the exporter property dump of 2026-11-22):**
 1. **B1:** Blender 5.3 exports a valid GLB with `export_format='GLB', export_yup=True, export_extras=True, export_apply=True` (spike `build_track_piece.py`).
@@ -83,6 +83,7 @@ This ADR chooses an **editor-time import**:
 | NV-13 | `FileAccess.get_sha256(path)` on `res://` paths in editor and headless runs | `HashingContext` over the file bytes |
 | NV-14 | Negative-scale objects in Blender. How winding survives export and import is unknown, so the design forbids them and only the rejection is needed | None needed |
 | NV-15 | **Fresh-clone first import.** On a clean clone (no `.godot/`, no `*.track.res`), one headless `--import` registers the `@tool` scripts, runs the post-import script, bakes the package and saves it, with no second pass. Runs in CI | Two-pass import in `tools/track_build.sh` (script-class scan, then import); if that fails too, Git LFS for the baked package (Alternative 7) |
+| NV-16 | **`CollisionQuery` inside `_post_import`.** Running ADR-0002's `CollisionQuery` (private Jolt space, face-index setting) from the post-import script, under headless `--import` and on an editor reimport, is **unprobed** (a probe is running). I11, I15 and the builder depend on it | Return the parsed `CourseAuthoring` and collision data as Resource-valued root meta (it persists) and run I11, I15 and the builder in the `track_build` step from a headless `SceneTree`, which then writes the package |
 
 **Probe verdicts (godot-specialist, 2026-11-22; evidence in `prototypes/collision-spike/out/probe_adr45_*.txt`). Story 024 re-runs and retains them on the real pipeline:**
 - **VERIFIED:** NV-2, NV-3, NV-4, NV-6, NV-7, NV-8 (a 40 KB string extra arrives intact), NV-11, NV-13.
@@ -92,7 +93,7 @@ This ADR chooses an **editor-time import**:
 - **NV-6 correction:** `ResourceSaver.save` to a temporary path then rename inside headless `_post_import` works. **Resource-valued meta does persist**, embedded in the imported scene, so the meta fallback is real.
 - **Unverified:** NV-1 (keep `art_src/.gdignore` as the real guard; re-test the setting in story 024), NV-10. **Deferred:** NV-12. **Open until story 024:** NV-15.
 - **Surface names verified:** per-surface arrays with `surface_get_material(i).resource_name` give the material name per surface.
-- **Byte determinism:** fresh bakes differ by about 15 bytes when sub-resource ids are random and are byte-identical when `resource_scene_unique_id` is fixed (§4). A re-save of a *loaded* copy is not byte-equal to the first save, so determinism is asserted on fresh bakes.
+- **Byte determinism:** fresh bakes differ by about 15 bytes when sub-resource ids are random and are byte-identical when `resource_scene_unique_id` is set per object from its position (§4). A re-save of a *loaded* copy is not byte-equal to the first save, so determinism is asserted on fresh bakes.
 
 ## ADR Dependencies
 
@@ -217,9 +218,9 @@ LoadedTrack: TrackCollisionData (mirrored() if asked) · CourseData (mirrored() 
 | `respawn` | ≥ 1 | `kk_index: int` (unique) | — | Pose the kart takes. Which gates use it is set by the gates' `kk_respawn` (ADR-0004 §9) |
 | `grid` | exactly 12 (`grid_slots`) | `kk_slot: int` (0 … 11, each once) | — | **Exactly 12 explicit empties for MVP.** A generated pattern is future work. The spike's `grid_slot` is renamed `grid` |
 | `item_box` | ≥ 0 | `kk_index: int` (unique) | — | Box pose. Odds and respawn time are Items data, not authored here |
-| `route_point` | ≥ 3 for `main` | `kk_route_kind: string` (`main`, `branch`, `cpu`, `item`, `cut`), `kk_route: string` (the route id, `^[a-z0-9_]+$`), `kk_index: int` (contiguous from 0 per route) | **Route header** (on the route's first point, or on a `route_header` empty with the same `kk_route`): `kk_branch_type: string`, `kk_min_speed: float`, `kk_min_boost: float`, `kk_lanes: int`. **Per point (`cpu` routes):** `kk_hint_no_drift: bool`, `kk_hint_speed_cap: float`, `kk_hint_lane_hold: string` (`left` / `right`), `kk_hint_item_hold: bool` | A route is its points in index order. **One vocabulary**, in `track_schema.json` (no `enemy` / `branch_<x>` ids). Half width, surface runs, lanes and spans are **derived by `CourseBuilder`** from collision, not authored. `cpu` routes need no gates. Hints are optional overrides (ADR-0004 §6) |
+| `route_point` | ≥ 3 for `main` | `kk_route_kind: string` (`main`, `branch`, `cpu`, `item`, `cut`), `kk_route: string` (the route id, `^[a-z0-9_]+$`), `kk_index: int` (contiguous from 0 per route) | **Route header** (on the route's first point, or on a `route_header` empty with the same `kk_route`): `kk_closed: bool` (default false; `main` must be closed), `kk_branch_type: string`, `kk_min_speed: float`, `kk_min_boost: float`, `kk_lanes: int`. **Per point (`cpu` routes):** `kk_hint_no_drift: bool`, `kk_hint_speed_cap: float`, `kk_hint_lane_hold: string` (`left` / `right`), `kk_hint_item_hold: bool` | A route is its points in index order. **One vocabulary**, in `track_schema.json` (no `enemy` / `branch_<x>` ids). Half width, surface runs, lanes and spans are **derived by `CourseBuilder`** from collision, not authored. `cpu` routes need no gates. Hints are optional overrides (ADR-0004 §6) |
 | `route_header` | ≥ 0 | `kk_route: string` | The route header fields above | Optional carrier for header properties instead of the first point. A route with header fields on both fails |
-| `area` | ≥ 0 | `kk_area: string` (`hazard_static`, `hazard_speed_gated`, `cannon_trigger`, `fall_boundary`), plus kind params: `kk_min_speed: float` (speed-gated), `kk_cannon_id: int` (cannon trigger), `kk_hazard_id: int` (static) | — | An **oriented box**: the empty's pose, with `kk_size_x/y/z` (full size, m, Blender local axes; converted like a mover box). Boost pads and trick ramps are **not** areas: they are `surf_` materials of kinds `boost_pad` / `trick_ramp` (ADR-0002 v4) |
+| `area` | ≥ 0 | `kk_area: string` (`hazard_static`, `hazard_speed_gated`, `cannon_trigger`, `fall_boundary`), `kk_size_x`, `kk_size_y`, `kk_size_z: float` (> 0, full size in m, along the empty's Blender local axes) | Kind params: `kk_min_speed: float` (speed-gated), `kk_cannon_id: int` (cannon trigger), `kk_hazard_id: int` (static) | An **oriented box**: the empty's pose and size, converted like a mover box (§2, Movers). Boost pads and trick ramps are **not** areas: they are `surf_` materials of kinds `boost_pad` / `trick_ramp` (ADR-0002 v4) |
 | `mover` | ≥ 0 | `kk_mover_id: int` (≥ 1, unique), `kk_shape: string` (`box`, `capsule`, `cylinder`). For `box`: `kk_size_x`, `kk_size_y`, `kk_size_z: float` (full size, m, along the empty's **Blender** local axes). For `capsule` / `cylinder`: `kk_radius`, `kk_height: float`, with the axis along the empty's Blender local +Z (Godot local +Y) | — | Root-level (no parent). Its keys are baked by the exporter (§2, Movers). `kk_keys` and `kk_period` are **written by the exporter only**; an author-set value fails |
 
 **Course Data seam.** The baker parses these empties into ADR-0004's neutral `CourseAuthoring` (converting poses to Godot space) and hands it to `CourseBuilder`. **Nothing is derived in this ADR**: gate lift, defaults, key groups, respawn choice, route tables, spans and sectors are ADR-0004's.
@@ -236,7 +237,7 @@ LoadedTrack: TrackCollisionData (mirrored() if asked) · CourseData (mirrored() 
 - **The exporter fails** when the first and last poses differ (loop closure) by more than `loop_pos_m` / `loop_rot_deg`, or when the empty has no animation.
 - **glTF animation is not exported** (`export_animations=False`). Keys travel in the extras only, so the imported scene has no `AnimationPlayer` to fight `mover_pose`.
 - **The baker converts the keys** to Godot space with the same basis change as glTF. Position `(x, y, z)` → `(x, z, −y)`; basis B → C·B·C⁻¹, with C the map `(x, y, z) → (x, z, −y)`.
-- **Size conversion.** Blender full size `(sx, sy, sz)` becomes Godot half extents `(sx/2, sz/2, sy/2)` (the axis swap of the basis change). A capsule or cylinder keeps `radius` and `half_height = height / 2`.
+- **Size conversion.** Blender full size `(sx, sy, sz)` becomes Godot half extents `(sx/2, sz/2, sy/2)` (the axis swap of the basis change). A **cylinder** keeps `radius` and `half_height = kk_height / 2`. A **capsule** converts as `half_height = (kk_height - 2 * kk_radius) / 2`, because ADR-0002's `half_height` is the half-length of the segment between the cap centres; `kk_height` is the total height including the caps, and a capsule with `kk_height < 2 * kk_radius` FAILs.
 - **Scale is forbidden on movers.** The exporter FAILs if any sampled `matrix_world` of a mover has scale ≠ 1 (|s − 1| > 1e-4), at any frame. Size lives in the `kk_size_*` / `kk_radius` / `kk_height` properties only. I7 also covers mover empties.
 - **It cross-checks:** the converted key at t = 0 must equal the imported mover node's transform within 1 mm / 0.1°. That catches a conversion bug at once.
 - **It fills ADR-0002 v4's `MoverDef`** (a `Resource`): id, a shape enum, `half_extents` (box) or `radius` + `half_height` (capsule, cylinder), `period`, and packed `key_t`, `key_pos`, `key_rot`. ADR-0002 owns the storage; its moving-point velocity query is `mover_point_velocity`.
@@ -250,7 +251,7 @@ LoadedTrack: TrackCollisionData (mirrored() if asked) · CourseData (mirrored() 
 - **Negative-scale check.** Call `bpy.context.view_layer.update()` before reading `matrix_world.determinant()` (in a fresh script the determinant read 1.0 without it), or test the sign of `matrix_basis` scale.
 - It follows the `tools/blender/` conventions: a module docstring with the run line, `ROOT` taken from `__file__`, and an `EXPORTED <path>` line at the end.
 - **Authoring cost for MVP.**
-  - **Curves:** a Blender curve object in `Course` (with `kk_route_kind`, `kk_route` and the header properties) is expanded by the exporter into in-memory `route_point` empties at `route_sample_spacing_m`. The `.blend` is never changed (it never saves).
+  - **Curves:** a Blender curve object in `Course` (with `kk_route_kind`, `kk_route` and the header properties) is expanded by the exporter into in-memory `route_point` empties at `curve_expand_spacing_m` (a value in `track_schema.json`, which the Python exporter reads; the baked sample spacing is ADR-0004's `CourseBuildSettings.sample_spacing_m`). The `.blend` is never changed (it never saves).
   - **Auto-gates:** an optional generator (`--auto-gates <N>`) adds a gate every N metres along `main`, producing `checkpoint` empties in memory. An authored gate within the same stretch overrides the generated one. Key groups are not generated: they are authored.
 - **Do not reuse `common.export_glb`:** it exports with `export_extras=False` and strips custom properties on purpose, for story-006 models.
 - **It never saves the `.blend`.** Every change (the `kk_layer` stamp, the baked mover keys, the selection) is made in memory.
@@ -293,7 +294,7 @@ LoadedTrack: TrackCollisionData (mirrored() if asked) · CourseData (mirrored() 
   The spike ran with suffixes and compression on. Both are wrong for a track (NV-3, NV-4).
 - **`project.godot`** pins `filesystem/import/blender/enabled=false` (NV-1). `art_src/.gdignore` is committed.
 - **`TrackPostImport._post_import(scene)` is thin:**
-  1. load the registries and limits;
+  1. load the registries, the limits and the `CourseBuildSettings`; **delete any existing `*.track.res` before baking** (not only on a fail);
   2. `TrackBaker.bake(scene, get_source_file())`;
   3. print every check line as `TRACK_IMPORT <verdict> <check> <message>`;
   4. on a pass, save the package (NV-6) and **strip** the scene: remove Ground and Walls nodes (unless `kk_render_collision`) and every Course node except movers. Mover nodes keep only `kk_mover_id` as meta, and `extras` meta is removed from the rest;
@@ -310,7 +311,7 @@ LoadedTrack: TrackCollisionData (mirrored() if asked) · CourseData (mirrored() 
   - triangles are taken in surface order, then in index order;
   - empties are sorted by `(kk_type, index)`;
   - wall shapes are ordered by wall-attribute id ascending;
-  - **fixed sub-resource ids:** `resource_scene_unique_id` is set to a fixed string on the package and on every sub-resource (collision, course, each `CourseRoute`, each `MoverDef`) before `ResourceSaver.save`. Otherwise fresh bakes differ by about 15 bytes from random ids; with fixed ids they are byte-identical (probe).
+  - **distinct, deterministic resource ids:** `resource_scene_unique_id` is set on the package and on every sub-resource, **unique within the file** and derived from each object's position in the package: `package`, `collision`, `course`, `course/route_3`, `mover_7`, and so on (as the probe did). One shared fixed string is wrong. Random ids make fresh bakes differ by about 15 bytes; derived ids make them byte-identical.
 - **Triangles come from `surface_get_arrays(i)`** (`ARRAY_VERTEX` + `ARRAY_INDEX`, or sequential if there is no index), through the node's global transform, in index order (G5). Each one takes the surface id of `surface_get_material(i).resource_name` (G3). `Mesh.get_faces()` is not used: it flattens surfaces and loses the material.
 
 ### 5. Validation at import (every check runs; any FAIL or NOT ASSESSED refuses the file)
@@ -327,7 +328,7 @@ Thresholds live in `TrackImportLimits` (`assets/data/core/track_import_limits.tr
 | I6 | Collision transforms | A Ground or Walls node whose global transform is not identity (1e-5) | — |
 | I7 | Pose empties | A basis that is not orthonormal or not scale 1, on any pose empty **including mover empties** (the baked keys' bases too) | — |
 | I8 | Ground winding | Any ground triangle with normal.y ≤ 0 (rays from above miss it; ADR-0009 will add an anti-gravity exemption). Lists the count and the first 5 centres in Blender coordinates | Degenerate triangles (area < `degenerate_area_m2`). Jolt drops them and keeps `face_index` aligned (ADR-0002 Verified 1) |
-| I9 | Wall normals face the route (runs **after** the `CourseAuthoring` parse, which supplies the route polylines) | A wall triangle whose **front** half-space holds no route sample (all routes, densified to `route_sample_spacing_m`, \|Δy\| ≤ `wall_route_max_dy_m`) within `wall_route_max_dist_m`: "wall faces away from every route" (G9) | The nearest route sample is in its **back** half-space (a possibly flipped median face); \|normal.y\| > `wall_flat_normal_y` (ground rays do not see walls, ADR-0002) |
+| I9 | Wall normals face the route (runs **after** the `CourseAuthoring` parse, which supplies the route polylines) | A wall triangle whose **front** half-space holds no route sample (all routes, densified to ADR-0004's `sample_spacing_m`, \|Δy\| ≤ `wall_route_max_dy_m`) within `wall_route_max_dist_m`: "wall faces away from every route" (G9) | The nearest route sample is in its **back** half-space (a possibly flipped median face); \|normal.y\| > `wall_flat_normal_y` (ground rays do not see walls, ADR-0002) |
 | I10 | Required empties | The counts in §2: track = 1, probe = 1, checkpoints ≥ 3 and contiguous, grid = 12 explicit slots each once, respawn ≥ 1, `main` route ≥ 3 points and contiguous; duplicate `kk_mover_id` | No `item_box` |
 | I11 | Probe | A `CollisionQuery` built from the just-baked `TrackCollisionData` (the same code the game runs): a ray down from the probe within `probe_max_drop_m` misses, returns a different surface id, or has normal.y ≤ 0. This also checks the project's face-index setting in the editor | — |
 | I12 | Triangle budget | Ground + wall triangles > `collision_tris_fail` (160,000: ADR-0002 measured flat cost up to 154k) | > `collision_tris_warn` (120,000). The Visual count is printed as an observation; its budget belongs to Track Art |
@@ -351,7 +352,7 @@ Thresholds live in `TrackImportLimits` (`assets/data/core/track_import_limits.tr
   - `stats` (triangle counts per layer, for reports).
   - **Every stored field must be `@export` or `@export_storage`.** A plain `var` is not saved (it reloaded as 0 in the probe). The same holds for `TrackCollisionData`, `CourseData` and `CourseRoute`.
 - **No theme field.** The theme comes from the `TrackDef` catalog (§1).
-- **`bake_key`** is a SHA-256 over: the `.glb` bytes, `track_schema.json`, the registry instances (`SurfaceSet`, `WallAttrSet`), `TrackImportLimits`, `BAKER_VERSION` and `CourseData.FORMAT_VERSION`. Changing any of them makes the package stale, not only a changed `.glb`.
+- **`bake_key`** is a SHA-256 over: the `.glb` bytes, `track_schema.json`, the registry instances (`SurfaceSet`, `WallAttrSet`), `TrackImportLimits`, the `CourseBuildSettings` instance, `CourseBuilder.BUILDER_VERSION`, `BAKER_VERSION`, `CourseData.FORMAT_VERSION` and `TrackCollisionData`'s format version (ADR-0002's schema revision, if it defines no constant). Changing any of them makes the package stale, not only a changed `.glb`. Rule: any change to `CourseBuilder` output bumps `BUILDER_VERSION`.
 - **It is a build product.** `*.track.res` under `assets/tracks/core/` is gitignored and regenerated by `--import`, which a fresh clone and CI already run. The `.glb` is committed. **Fallback:** if the fresh-clone import fails (NV-15), commit the package with Git LFS (Alternative 7).
 - **`tools/track_build.sh`** re-imports every affected `.glb` when a `bake_key` input changes (a registry, the schema, the limits), using the md5 deletion recipe of §4.
 - **`TrackLoader.load_track(id, mirrored, out)`:**
@@ -397,7 +398,7 @@ The mesh track_check (story 023; working name `tools/track_check_mesh.gd`, headl
                          <id>.track.res (TrackPackage)  +  stripped visual scene   lines only, nothing written
                            collision: TrackCollisionData (ADR-0002)
                            course:    CourseData         (ADR-0004)
-                           theme_path · source_sha256
+                           bake_key · source_sha256
                                    │
               TrackLoader.load_track(id, mirrored) ── stale/schema check ── mirrored() ×2 ── scale.x = −1
                      │                         │
@@ -529,11 +530,11 @@ tools/track_build.sh <id>       export (needs EXPORTED line) → preset → dele
 - `source_sha256` gives a track identity for the network handshake.
 
 ### Negative
-- Authors place empties by hand. Routes need many `route_point` empties; a Blender helper (route from a curve) is a follow-up tool.
+- Authors still place gates, key groups, respawns and the grid by hand. Curve objects are expanded to route points and `--auto-gates` generates gates (§3), so route points are not hand-placed.
 - The schema is strict: a new field needs a schema bump and an edit to `track_schema.json`.
 - Applied transforms on collision meshes rule out instanced collision pieces. Instancing stays available for Visual.
 - The package is a build product: a machine that has not run `--import` has no track. The loader says so loudly.
-- Several import mechanics are unverified (NV-4, NV-5, NV-6, NV-7). Story 024 may have to take a named fallback.
+- Still unverified: NV-1 (the `.blend` import switch), NV-10, NV-15 (fresh-clone first import) and NV-16 (`CollisionQuery` inside `_post_import`). Story 024 may have to take a named fallback.
 
 ## Risks
 - **Import failure is not reported as a failure (NV-5).** Mitigation: `track_build.sh` and CI decide from the `TRACK_IMPORT RESULT` line and the package hash, never from the `--import` exit code alone.
@@ -543,7 +544,8 @@ tools/track_build.sh <id>       export (needs EXPORTED line) → preset → dele
 - **A silent import failure (NV-5).** Mitigation: success only from the `RESULT` line; a failed import deletes the package.
 - **Fresh-clone first import (NV-15).** Mitigation: CI proof in story 024; two-pass import, then LFS for the package.
 - **A Blender upgrade changes exporter defaults.** Mitigation: every flag is explicit, the exporter warns when the version is not 5.3, and `probe_exporter.py` is re-run on each Blender upgrade (as the spike scripts are on each engine re-pin, ADR-0002).
-- **A reimport loop when the post-import script writes into `res://` (NV-6).** Mitigation: the fallback in NV-6.
+- **A reimport loop from the package save (NV-6).** The probe saw none (NV-6 verified); story 024 re-checks it on the real pipeline.
+- **`CollisionQuery` cannot run inside `_post_import` (NV-16).** Mitigation: the root-meta fallback in NV-16.
 - **A beta engine changes the scene importer.** Mitigation: the fixture integration tests below run on every re-pin.
 
 ## GDD Requirements Addressed
@@ -572,7 +574,7 @@ No system GDD exists yet. This table cites the systems index and the architectur
 
 ## Migration Plan
 Nothing existing is migrated. The frozen game keeps its generator tracks (`tools/gen_*.py`, `assets/tracks/<name>/`). Story 024:
-1. pins the preset and `project.godot` keys, and closes the open NVs (NV-1, NV-10, NV-15; re-runs the verified ones on the real pipeline). It proves a fresh-clone first import in CI;
+1. pins the preset and `project.godot` keys, and closes the open NVs (NV-1, NV-10, NV-15, NV-16; re-runs the verified ones on the real pipeline). It proves a fresh-clone first import in CI;
 2. adds `art_src/.gdignore`, the gitignore line for `*.track.res`, and `assets/data/core/` instances of `SurfaceSet` (with `road`), `WallAttrSet` and `TrackImportLimits`;
 3. writes `export_track.py`, `track_schema.json`, the `src/pipeline/` classes and `tools/track_build.sh`;
 4. authors one test track in Blender end to end.
