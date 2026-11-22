@@ -358,7 +358,7 @@ What changes when the frozen `KartSim` is replaced:
    starting at 0 (road). Floor effects are looked up only here; `GroundHit` carries no floor drag.
 5. **Boost pads are a surface kind** (`boost_pad`), a collision attribute (MK KCL style). The pad test
    runs on the end-of-tick snapshot (ADR-0003 §4 step 13) and reaches `drive()` as an input on the next
-   tick. Landing, airtime and `hop_airborne` reach it through `snapshot.events`.
+   tick. Took-off and landed (airtime, impact, `hop_airborne`) reach it only through the controller's copy into `DriveState` at ADR-0003 v3 step 13 (`snapshot.events` is cleared after step 12).
 6. **Hop is visual-only through parity** (`hop_speed = 0.0`).
 7. **Snapshot fields copied in from `DriveState`** by the controller: `drift_state`, `boost`, `spin`,
    `sinking` (ADR-0003 Key Interfaces), for presentation, network and ghosts.
