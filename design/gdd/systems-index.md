@@ -264,22 +264,13 @@ new foundation.
 
 ---
 
-## Phase A checkpoints (PR-SCOPE, applied)
+## Phase A checkpoints
 
-Phase A is not one big switch-over. Each checkpoint ends with an owner sign-off, and the
-2.5D build stays playable on main until A3:
-
-- **A1:** one kart on a test track authored in Blender. The owner signs off drift parity
-  against the logged 2.5D runs.
-- **A2:** Castle Circuit migrated, a full online race with bots.
-- **A3:** Dungeon Depths migrated; the spline path may now be removed.
-
-Course Data consumers (bots, items, laps, respawn) move one at a time after A1. At most
-2 stories wait for the owner's sign-off before a new feature story starts; spare agent
-capacity goes to GDDs, ADRs, tests and tooling. Of the 16 systems gating story 025, about
-11 change code (camera, HUD minimap, audio surfaces, the network snapshot among them); the
-rest are documentation of shipped behaviour only. Godot 4.8 is still beta3: plan a re-pin
-and API pass if stable lands during Phase A.
+**Superseded 2026-11-21 by the owner's decision to rebuild the core** (not migrate it): the
+sequencing, the freeze of the 2.5D build at tag `v0.11-2.5d` and the checkpoints A1-A3 now
+live in `docs/architecture/architecture.md` (Rebuild Strategy, Phase A Sequencing). The rows
+above marked "Implemented (2.5D, migrate)" read as "rebuilt on the new core; the frozen
+2.5D code is the reference, and its tuning and data are ported".
 
 ---
 
