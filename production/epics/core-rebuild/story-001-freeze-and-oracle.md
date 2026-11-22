@@ -1,12 +1,12 @@
 # Story 001: Freeze the 2.5D game and capture the regression oracle
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: In Progress
+> **Status**: In Review
 > **Layer**: Foundation
 > **Type**: Integration
 > **Estimate**: L
 > **Manifest Version**: N/A (no control manifest yet)
-> **Last Updated**: 2026-11-21
+> **Last Updated**: 2026-11-22
 
 ## Context
 
@@ -24,17 +24,17 @@
 
 ## Acceptance Criteria
 
-- [ ] **Golden traces.** A capture tool records, per tick, for scripted headless autopilot runs (Castle Circuit and Dungeon Depths, armored cart and war-bike, 1 lap each) and one headless bot race per track (host + 11 bots, 1 lap): kart id, tick, position (x, z), height, speed, yaw, drift state, boost, lap, lap times. Traces are stored under `production/qa/evidence/core-rebuild-story-001/golden/`.
-- [ ] **Reproducibility.** Two captures in a row on the same machine are identical; if any run is not, the story names the source of non-determinism and either fixes it in a hotfix-scoped way or records the tolerance the comparison uses.
-- [ ] **Comparison tool.** A compare tool reports IDENTICAL, or the first diverging tick, kart and field, with the two values.
-- [ ] **One regression command.** `tools/regression.sh` runs `track_check` on both tracks, the existing shell tests (`bot_race_test.sh`, `item_net_test.sh`, `bump_test.sh`, a short `net_stress_test.sh`), the trace capture and the compare, prints one PASS/FAIL line per check and exits non-zero on any failure. It uses port 24690 and never kills processes it did not start.
-- [ ] **Performance baseline.** The host's ms per tick for 12 karts (1 autopilot + 11 bots) on Castle Circuit is recorded (median and 95th percentile), with the machine it ran on.
-- [ ] **Test framework.** gdUnit4 is installed, `tests/unit/` and `tests/integration/` exist, and one example test passes with `commands.test` from `project.yaml`.
-- [ ] **Tag.** `v0.11-2.5d` tags the last commit before the move.
-- [ ] **The move.** The frozen code is in `src/legacy/` and the shared data classes in `src/data/`, done as ADR-0001 §9 says (move commit, then path commit, then cache rebuild); the shared set is closed (no `src/data/` script references a `src/legacy/` class); `run/main_scene` points at `res://src/legacy/main.tscn`; loading the project prints no uid warnings.
-- [ ] **Same game after the move.** `tools/regression.sh` passes and the golden traces reproduce exactly (or within the recorded tolerance) after the move.
-- [ ] **Settings and 4.8 checks.** The tick settings above are pinned in `project.godot`; greps for string-as-comment blocks and inner-class self-inheritance in the frozen code are clean (or fixed as hotfixes).
-- [ ] **Still playable.** The game launches windowed from the moved main scene and a race starts; a retained screenshot shows it.
+- [x] **Golden traces.** A capture tool records, per tick, for scripted headless autopilot runs (Castle Circuit and Dungeon Depths, armored cart and war-bike, 1 lap each) and one headless bot race per track (host + 11 bots, 1 lap): kart id, tick, position (x, z), height, speed, yaw, drift state, boost, lap, lap times. Traces are stored under `production/qa/evidence/core-rebuild-story-001/golden/`.
+- [x] **Reproducibility.** Two captures in a row on the same machine are identical; if any run is not, the story names the source of non-determinism and either fixes it in a hotfix-scoped way or records the tolerance the comparison uses.
+- [x] **Comparison tool.** A compare tool reports IDENTICAL, or the first diverging tick, kart and field, with the two values.
+- [x] **One regression command.** `tools/regression.sh` runs `track_check` on both tracks, the existing shell tests (`bot_race_test.sh`, `item_net_test.sh`, `bump_test.sh`, a short `net_stress_test.sh`), the trace capture and the compare, prints one PASS/FAIL line per check and exits non-zero on any failure. It uses port 24690 and never kills processes it did not start.
+- [x] **Performance baseline.** The host's ms per tick for 12 karts (1 autopilot + 11 bots) on Castle Circuit is recorded (median and 95th percentile), with the machine it ran on.
+- [x] **Test framework.** gdUnit4 is installed, `tests/unit/` and `tests/integration/` exist, and one example test passes with `commands.test` from `project.yaml`.
+- [x] **Tag.** `v0.11-2.5d` tags the last commit before the move.
+- [x] **The move.** The frozen code is in `src/legacy/` and the shared data classes in `src/data/`, done as ADR-0001 §9 says (move commit, then path commit, then cache rebuild); the shared set is closed (no `src/data/` script references a `src/legacy/` class); `run/main_scene` points at `res://src/legacy/main.tscn`; loading the project prints no uid warnings.
+- [x] **Same game after the move.** `tools/regression.sh` passes and the golden traces reproduce exactly (or within the recorded tolerance) after the move.
+- [x] **Settings and 4.8 checks.** The tick settings above are pinned in `project.godot`; greps for string-as-comment blocks and inner-class self-inheritance in the frozen code are clean (or fixed as hotfixes).
+- [x] **Still playable.** The game launches windowed from the moved main scene and a race starts; a retained screenshot shows it.
 
 ---
 
@@ -57,12 +57,11 @@
 
 ## Files
 
-- `tools/capture_traces.gd`, `tools/compare_traces.py` (or `.gd`), `tools/regression.sh` (new)
-- `addons/gdUnit4/`, `tests/unit/`, `tests/integration/` (new)
-- `src/legacy/**`, `src/data/**` (moved), `project.godot`
-- `production/qa/evidence/core-rebuild-story-001/` (traces, perf baseline, screenshot, STATE.md)
-
----
+- `tools/capture_traces.gd`, `tools/capture_all_traces.sh`, `tools/compare_traces.py`, `tools/regression.sh`, `tools/check_data_closure.py` (new)
+- `addons/gdUnit4/` (v6.2.3), `tests/unit/data/item_set_roll_test.gd`, `tests/integration/.gitkeep` (new)
+- `src/legacy/**` and `src/data/**` (moved, 164 pure renames), 22 `.tres`/`.tscn`/`.gd` path rewrites, `tools/gen_*.py` path rewrites
+- `project.godot` (main scene path, pinned `[physics]` tick settings), `.godot/global_script_class_cache.cfg`
+- `production/qa/evidence/core-rebuild-story-001/` (oracle, scripts, reports, screenshots)
 
 ## QA Test Cases
 
@@ -74,7 +73,7 @@
 
 **Story Type**: Integration
 **Required evidence**: `tools/regression.sh` output before and after the move, the golden traces and compare reports, the gdUnit4 example test run, a retained screenshot
-**Status**: [ ] Not yet created
+**Status**: [x] Created: production/qa/evidence/core-rebuild-story-001/ (regression-before/after, golden + compare, perf-baseline.md, gdunit4-example-run.txt, screenshots/drive_t10.png)
 
 ---
 

@@ -17,4 +17,4 @@ Phase A Sequencing in `docs/architecture/architecture.md`: freeze and oracle →
 
 | # | Story | Type | Status | ADR |
 |---|-------|------|--------|-----|
-| 001 | Freeze the 2.5D game and capture the regression oracle | Integration | In Progress | ADR-0001 |
+| 001 | Freeze the 2.5D game and capture the regression oracle | Integration | In Review | ADR-0001 |
