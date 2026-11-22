@@ -1,0 +1,110 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Started Inicialização do Projeto (5 steps)[39m[0m
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Escaneando estrutura de arquivos...[39m[0m
+[  16% ] [90m[1mfirst_scan_filesystem[22m | Carregando nomes de classe globais...[39m[0m
+[  33% ] [90m[1mfirst_scan_filesystem[22m | Verificando GDExtensions...[39m[0m
+[  50% ] [90m[1mfirst_scan_filesystem[22m | Criando scripts autoload...[39m[0m
+[  66% ] [90m[1mfirst_scan_filesystem[22m | Inicializando plugins...[39m[0m
+[  83% ] [90m[1mfirst_scan_filesystem[22m | Iniciando escaneamento de arquivos...[39m[0m
+[92m[ DONE ][39m [1mfirst_scan_filesystem[22m
+[0m
+[   0% ] [90m[1mupdate_scripts_classes[22m | Started Registrando classes globais... (80 steps)[39m[0m
+[   0% ] [90m[1mupdate_scripts_classes[22m | AudioEventDef[39m[0m
+[   1% ] [90m[1mupdate_scripts_classes[22m | AudioSet[39m[0m
+[   2% ] [90m[1mupdate_scripts_classes[22m | BotPersonality[39m[0m
+[   3% ] [90m[1mupdate_scripts_classes[22m | HitSlowdownProfile[39m[0m
+[   4% ] [90m[1mupdate_scripts_classes[22m | ItemDef[39m[0m
+[   6% ] [90m[1mupdate_scripts_classes[22m | ItemSet[39m[0m
+[   7% ] [90m[1mupdate_scripts_classes[22m | NetConfig[39m[0m
+[   8% ] [90m[1mupdate_scripts_classes[22m | PennantStyle[39m[0m
+[   9% ] [90m[1mupdate_scripts_classes[22m | RacerDef[39m[0m
+[  11% ] [90m[1mupdate_scripts_classes[22m | RacerSet[39m[0m
+[  12% ] [90m[1mupdate_scripts_classes[22m | SurfaceSet[39m[0m
+[  13% ] [90m[1mupdate_scripts_classes[22m | SurfaceType[39m[0m
+[  14% ] [90m[1mupdate_scripts_classes[22m | UiTheme[39m[0m
+[  16% ] [90m[1mupdate_scripts_classes[22m | VehicleStats[39m[0m
+[  17% ] [90m[1mupdate_scripts_classes[22m | VehicleVisualStats[39m[0m
+[  18% ] [90m[1mupdate_scripts_classes[22m | BotContext[39m[0m
+[  19% ] [90m[1mupdate_scripts_classes[22m | BotDebug[39m[0m
+[  20% ] [90m[1mupdate_scripts_classes[22m | BotDriver[39m[0m
+[  22% ] [90m[1mupdate_scripts_classes[22m | BotSet[39m[0m
+[  23% ] [90m[1mupdate_scripts_classes[22m | AudioDirector[39m[0m
+[  24% ] [90m[1mupdate_scripts_classes[22m | RaceSound[39m[0m
+[  25% ] [90m[1mupdate_scripts_classes[22m | AutopilotDriver[39m[0m
+[  27% ] [90m[1mupdate_scripts_classes[22m | AutoUiDriver[39m[0m
+[  28% ] [90m[1mupdate_scripts_classes[22m | DebugHarness[39m[0m
+[  29% ] [90m[1mupdate_scripts_classes[22m | DebugOptions[39m[0m
+[  30% ] [90m[1mupdate_scripts_classes[22m | LineupShowcase[39m[0m
+[  32% ] [90m[1mupdate_scripts_classes[22m | RamDriver[39m[0m
+[  33% ] [90m[1mupdate_scripts_classes[22m | UiShotRunner[39m[0m
+[  34% ] [90m[1mupdate_scripts_classes[22m | InputActions[39m[0m
+[  35% ] [90m[1mupdate_scripts_classes[22m | InputBindings[39m[0m
+[  37% ] [90m[1mupdate_scripts_classes[22m | PlayerInputDriver[39m[0m
+[  38% ] [90m[1mupdate_scripts_classes[22m | ItemManager[39m[0m
+[  39% ] [90m[1mupdate_scripts_classes[22m | KartWire[39m[0m
+[  40% ] [90m[1mupdate_scripts_classes[22m | NetHandshake[39m[0m
+[  41% ] [90m[1mupdate_scripts_classes[22m | NetOptions[39m[0m
+[  43% ] [90m[1mupdate_scripts_classes[22m | NetSession[39m[0m
+[  44% ] [90m[1mupdate_scripts_classes[22m | NetStats[39m[0m
+[  45% ] [90m[1mupdate_scripts_classes[22m | RemoteKart[39m[0m
+[  46% ] [90m[1mupdate_scripts_classes[22m | Racer[39m[0m
+[  48% ] [90m[1mupdate_scripts_classes[22m | RaceRanking[39m[0m
+[  49% ] [90m[1mupdate_scripts_classes[22m | ChaseCamera[39m[0m
+[  50% ] [90m[1mupdate_scripts_classes[22m | LapCounter[39m[0m
+[  51% ] [90m[1mupdate_scripts_classes[22m | MaterialPrewarm[39m[0m
+[  53% ] [90m[1mupdate_scripts_classes[22m | TrackData[39m[0m
+[  54% ] [90m[1mupdate_scripts_classes[22m | TrackMesh[39m[0m
+[  55% ] [90m[1mupdate_scripts_classes[22m | TrackModel[39m[0m
+[  56% ] [90m[1mupdate_scripts_classes[22m | HazardManager[39m[0m
+[  58% ] [90m[1mupdate_scripts_classes[22m | MoverView[39m[0m
+[  59% ] [90m[1mupdate_scripts_classes[22m | TrackBranch[39m[0m
+[  60% ] [90m[1mupdate_scripts_classes[22m | TrackHazard[39m[0m
+[  61% ] [90m[1mupdate_scripts_classes[22m | TrackLibrary[39m[0m
+[  62% ] [90m[1mupdate_scripts_classes[22m | TrackMover[39m[0m
+[  64% ] [90m[1mupdate_scripts_classes[22m | TrackPad[39m[0m
+[  65% ] [90m[1mupdate_scripts_classes[22m | TrackRamp[39m[0m
+[  66% ] [90m[1mupdate_scripts_classes[22m | TrackScenery[39m[0m
+[  67% ] [90m[1mupdate_scripts_classes[22m | TrackSurface[39m[0m
+[  69% ] [90m[1mupdate_scripts_classes[22m | TrackTheme[39m[0m
+[  70% ] [90m[1mupdate_scripts_classes[22m | TrackWallOpening[39m[0m
+[  71% ] [90m[1mupdate_scripts_classes[22m | BindingText[39m[0m
+[  72% ] [90m[1mupdate_scripts_classes[22m | ControlsMenu[39m[0m
+[  74% ] [90m[1mupdate_scripts_classes[22m | CycleRow[39m[0m
+[  75% ] [90m[1mupdate_scripts_classes[22m | KartPreview[39m[0m
+[  76% ] [90m[1mupdate_scripts_classes[22m | LobbyScreen[39m[0m
+[  77% ] [90m[1mupdate_scripts_classes[22m | LobbyState[39m[0m
+[  79% ] [90m[1mupdate_scripts_classes[22m | MainMenu[39m[0m
+[  80% ] [90m[1mupdate_scripts_classes[22m | PauseMenu[39m[0m
+[  81% ] [90m[1mupdate_scripts_classes[22m | RaceFlowUi[39m[0m
+[  82% ] [90m[1mupdate_scripts_classes[22m | RaceHud[39m[0m
+[  83% ] [90m[1mupdate_scripts_classes[22m | RecentHosts[39m[0m
+[  85% ] [90m[1mupdate_scripts_classes[22m | ResultsScreen[39m[0m
+[  86% ] [90m[1mupdate_scripts_classes[22m | UiScreen[39m[0m
+[  87% ] [90m[1mupdate_scripts_classes[22m | KartDriver[39m[0m
+[  88% ] [90m[1mupdate_scripts_classes[22m | KartInput[39m[0m
+[  90% ] [90m[1mupdate_scripts_classes[22m | KartSim[39m[0m
+[  91% ] [90m[1mupdate_scripts_classes[22m | KartVisual[39m[0m
+[  92% ] [90m[1mupdate_scripts_classes[22m | ModelBatcher[39m[0m
+[  93% ] [90m[1mupdate_scripts_classes[22m | Pennant[39m[0m
+[  95% ] [90m[1mupdate_scripts_classes[22m | StartSequence[39m[0m
+[  96% ] [90m[1mupdate_scripts_classes[22m | VehicleSet[39m[0m
+[  97% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[92m[ DONE ][39m [1mupdate_scripts_classes[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importando Recursos (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[   0% ] [90m[1mreimport[22m | Executando operações pré-reimportação...[39m[0m
+[   0% ] [90m[1mreimport[22m | logo.png[39m[0m
+[  50% ] [90m[1mreimport[22m | Finalizando Importação de Recursos...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importando Recursos (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Executando operações pós-reimportação...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Started Carregando editor (5 steps)[39m[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Carregando layout do editor...[39m[0m
+[  16% ] [90m[1mloading_editor_layout[22m | Carregando abas...[39m[0m
+[92m[ DONE ][39m [1mloading_editor_layout[22m
+[0m

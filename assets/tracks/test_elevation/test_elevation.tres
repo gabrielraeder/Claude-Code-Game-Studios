@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="TrackData" load_steps=11 format=3]
 
-[ext_resource type="Script" path="res://src/test_track/track_data.gd" id="1_track"]
-[ext_resource type="Script" path="res://src/track/track_ramp.gd" id="2_ramp"]
-[ext_resource type="Script" path="res://src/track/track_pad.gd" id="3_pad"]
-[ext_resource type="Script" path="res://src/track/track_hazard.gd" id="4_hazard"]
+[ext_resource type="Script" path="res://src/legacy/test_track/track_data.gd" id="1_track"]
+[ext_resource type="Script" path="res://src/legacy/track/track_ramp.gd" id="2_ramp"]
+[ext_resource type="Script" path="res://src/legacy/track/track_pad.gd" id="3_pad"]
+[ext_resource type="Script" path="res://src/legacy/track/track_hazard.gd" id="4_hazard"]
 
 [sub_resource type="Resource" id="Ramp_east"]
 script = ExtResource("2_ramp")

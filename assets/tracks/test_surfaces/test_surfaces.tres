@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="TrackData" load_steps=23 format=3]
 
-[ext_resource type="Script" path="res://src/test_track/track_data.gd" id="1_track"]
-[ext_resource type="Script" path="res://src/track/track_surface.gd" id="2_surf"]
-[ext_resource type="Script" path="res://src/track/track_wall_opening.gd" id="3_open"]
-[ext_resource type="Script" path="res://src/track/track_pad.gd" id="4_pad"]
+[ext_resource type="Script" path="res://src/legacy/test_track/track_data.gd" id="1_track"]
+[ext_resource type="Script" path="res://src/legacy/track/track_surface.gd" id="2_surf"]
+[ext_resource type="Script" path="res://src/legacy/track/track_wall_opening.gd" id="3_open"]
+[ext_resource type="Script" path="res://src/legacy/track/track_pad.gd" id="4_pad"]
 
 [sub_resource type="Resource" id="Z_0"]
 script = ExtResource("2_surf")

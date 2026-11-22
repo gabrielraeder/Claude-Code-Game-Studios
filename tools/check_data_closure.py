@@ -25,7 +25,7 @@ def _code(text):
     # Drop comments and string contents so a word in a doc line is not a reference.
     out = []
     for line in text.splitlines():
-        line = re.sub(r"\"(?:[^\"\]|\.)*\"", "\"\"", line)
+        line = re.sub(r'"(?:[^"\\]|\\.)*"', '""', line)
         out.append(line.split("#", 1)[0])
     return "\n".join(out)
 

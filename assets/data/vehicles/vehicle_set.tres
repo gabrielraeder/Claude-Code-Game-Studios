@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="VehicleSet" load_steps=5 format=3]
 
-[ext_resource type="Script" path="res://src/vehicle/vehicle_set.gd" id="1_set"]
-[ext_resource type="Script" path="res://src/vehicle/vehicle_stats.gd" id="2_stats"]
+[ext_resource type="Script" path="res://src/legacy/vehicle/vehicle_set.gd" id="1_set"]
+[ext_resource type="Script" path="res://src/data/vehicle_stats.gd" id="2_stats"]
 [ext_resource type="Resource" path="res://assets/data/vehicles/armored_cart.tres" id="3_cart"]
 [ext_resource type="Resource" path="res://assets/data/vehicles/war_bike.tres" id="4_bike"]
 

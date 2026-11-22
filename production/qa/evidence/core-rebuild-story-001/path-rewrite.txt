@@ -1,0 +1,26 @@
+rewrote project.godot
+rewrote .godot\global_script_class_cache.cfg
+rewrote src\legacy\main.tscn
+rewrote src\legacy\test_track\test_loop.tres
+rewrote src\legacy\track\track_library.gd
+rewrote src\legacy\vehicle\pennant.gd
+rewrote assets\data\ai\bot_set.tres
+rewrote assets\data\audio\audio_set.tres
+rewrote assets\data\items\item_set.tres
+rewrote assets\data\net\net_config.tres
+rewrote assets\data\racers\racer_set.tres
+rewrote assets\data\surfaces\surface_set.tres
+rewrote assets\data\ui\ui_theme.tres
+rewrote assets\data\vehicles\armored_cart.tres
+rewrote assets\data\vehicles\vehicle_set.tres
+rewrote assets\data\vehicles\war_bike.tres
+rewrote assets\tracks\castle_circuit\castle_circuit.tres
+rewrote assets\tracks\castle_circuit\castle_theme.tres
+rewrote assets\tracks\dungeon_depths\dungeon_depths.tres
+rewrote assets\tracks\dungeon_depths\dungeon_theme.tres
+rewrote assets\tracks\test_elevation\test_elevation.tres
+rewrote assets\tracks\test_surfaces\test_surfaces.tres
+rewrote tools\gen_castle_circuit.py
+rewrote tools\gen_dungeon_depths.py
+rewrote tools\gen_test_surfaces.py
+files rewritten: 25

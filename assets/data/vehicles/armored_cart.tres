@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="VehicleStats" load_steps=8 format=3]
 
-[ext_resource type="Script" path="res://src/vehicle/vehicle_stats.gd" id="1_stats"]
+[ext_resource type="Script" path="res://src/data/vehicle_stats.gd" id="1_stats"]
 
-[ext_resource type="Script" path="res://src/vehicle/hit_slowdown_profile.gd" id="2_hsp"]
-[ext_resource type="Script" path="res://src/vehicle/vehicle_visual_stats.gd" id="3_vis"]
+[ext_resource type="Script" path="res://src/data/hit_slowdown_profile.gd" id="2_hsp"]
+[ext_resource type="Script" path="res://src/data/vehicle_visual_stats.gd" id="3_vis"]
 
 [sub_resource type="Resource" id="Resource_light"]
 script = ExtResource("2_hsp")

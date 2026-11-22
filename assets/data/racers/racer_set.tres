@@ -1,8 +1,8 @@
 [gd_resource type="Resource" script_class="RacerSet" load_steps=12 format=3]
 
-[ext_resource type="Script" path="res://src/vehicle/racer_set.gd" id="1_set"]
-[ext_resource type="Script" path="res://src/vehicle/racer_def.gd" id="2_def"]
-[ext_resource type="Script" path="res://src/vehicle/pennant_style.gd" id="3_pen"]
+[ext_resource type="Script" path="res://src/data/racer_set.gd" id="1_set"]
+[ext_resource type="Script" path="res://src/data/racer_def.gd" id="2_def"]
+[ext_resource type="Script" path="res://src/data/pennant_style.gd" id="3_pen"]
 
 [sub_resource type="Resource" id="Resource_r0"]
 script = ExtResource("2_def")

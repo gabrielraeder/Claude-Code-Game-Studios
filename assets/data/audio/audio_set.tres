@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="AudioSet" load_steps=58 format=3]
 
-[ext_resource type="Script" path="res://src/audio/audio_set.gd" id="1_set"]
-[ext_resource type="Script" path="res://src/audio/audio_event_def.gd" id="2_def"]
+[ext_resource type="Script" path="res://src/data/audio_set.gd" id="1_set"]
+[ext_resource type="Script" path="res://src/data/audio_event_def.gd" id="2_def"]
 [ext_resource type="AudioStream" path="res://assets/audio/boost.wav" id="s_boost"]
 [ext_resource type="AudioStream" path="res://assets/audio/bump.wav" id="s_bump"]
 [ext_resource type="AudioStream" path="res://assets/audio/drift_loop.wav" id="s_drift_loop"]

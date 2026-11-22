@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="BotSet" load_steps=11 format=3]
 
-[ext_resource type="Script" path="res://src/ai/bot_set.gd" id="1_set"]
-[ext_resource type="Script" path="res://src/ai/bot_personality.gd" id="2_per"]
+[ext_resource type="Script" path="res://src/legacy/ai/bot_set.gd" id="1_set"]
+[ext_resource type="Script" path="res://src/data/bot_personality.gd" id="2_per"]
 
 [sub_resource type="Resource" id="p_hothead"]
 script = ExtResource("2_per")

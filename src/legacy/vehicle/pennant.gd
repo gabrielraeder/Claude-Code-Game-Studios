@@ -7,7 +7,7 @@ extends Node3D
 ## small shader waves the cloth, more with speed. Presentation only.
 ## Implements design/game-brief.md, Features item 6 ("each vehicle flies its racer's pennant").
 
-const FLAG_SHADER: Shader = preload("res://src/vehicle/spatial_vehicle_pennant_flag.gdshader")
+const FLAG_SHADER: Shader = preload("res://src/legacy/vehicle/spatial_vehicle_pennant_flag.gdshader")
 
 ## Palette ids returned by [method pattern_at].
 const BASE: int = 0

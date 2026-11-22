@@ -1,14 +1,14 @@
 [gd_resource type="Resource" script_class="TrackData" load_steps=53 format=3]
 
-[ext_resource type="Script" path="res://src/test_track/track_data.gd" id="1_data"]
-[ext_resource type="Script" path="res://src/track/track_branch.gd" id="2_branch"]
+[ext_resource type="Script" path="res://src/legacy/test_track/track_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://src/legacy/track/track_branch.gd" id="2_branch"]
 [ext_resource type="Resource" path="res://assets/tracks/dungeon_depths/dungeon_theme.tres" id="3_theme"]
-[ext_resource type="Script" path="res://src/track/track_hazard.gd" id="4_hazard"]
-[ext_resource type="Script" path="res://src/track/track_pad.gd" id="5_pad"]
-[ext_resource type="Script" path="res://src/track/track_ramp.gd" id="6_ramp"]
-[ext_resource type="Script" path="res://src/track/track_mover.gd" id="7_mover"]
-[ext_resource type="Script" path="res://src/track/track_surface.gd" id="8_surf"]
-[ext_resource type="Script" path="res://src/track/track_wall_opening.gd" id="9_open"]
+[ext_resource type="Script" path="res://src/legacy/track/track_hazard.gd" id="4_hazard"]
+[ext_resource type="Script" path="res://src/legacy/track/track_pad.gd" id="5_pad"]
+[ext_resource type="Script" path="res://src/legacy/track/track_ramp.gd" id="6_ramp"]
+[ext_resource type="Script" path="res://src/legacy/track/track_mover.gd" id="7_mover"]
+[ext_resource type="Script" path="res://src/legacy/track/track_surface.gd" id="8_surf"]
+[ext_resource type="Script" path="res://src/legacy/track/track_wall_opening.gd" id="9_open"]
 
 [sub_resource type="Resource" id="Branch_hl"]
 script = ExtResource("2_branch")

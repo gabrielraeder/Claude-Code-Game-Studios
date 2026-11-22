@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="SurfaceSet" load_steps=9 format=3]
 
-[ext_resource type="Script" path="res://src/track/surface_set.gd" id="1_set"]
-[ext_resource type="Script" path="res://src/track/surface_type.gd" id="2_type"]
+[ext_resource type="Script" path="res://src/data/surface_set.gd" id="1_set"]
+[ext_resource type="Script" path="res://src/data/surface_type.gd" id="2_type"]
 
 [sub_resource type="Resource" id="T_grass"]
 script = ExtResource("2_type")

@@ -136,10 +136,10 @@ def v2(points):
 
 
 lines = ['[gd_resource type="Resource" script_class="TrackData" load_steps=%d format=3]\n' % (len(surfaces) + len(openings) + 6),
-         '[ext_resource type="Script" path="res://src/test_track/track_data.gd" id="1_track"]',
-         '[ext_resource type="Script" path="res://src/track/track_surface.gd" id="2_surf"]',
-         '[ext_resource type="Script" path="res://src/track/track_wall_opening.gd" id="3_open"]',
-         '[ext_resource type="Script" path="res://src/track/track_pad.gd" id="4_pad"]\n']
+         '[ext_resource type="Script" path="res://src/legacy/test_track/track_data.gd" id="1_track"]',
+         '[ext_resource type="Script" path="res://src/legacy/track/track_surface.gd" id="2_surf"]',
+         '[ext_resource type="Script" path="res://src/legacy/track/track_wall_opening.gd" id="3_open"]',
+         '[ext_resource type="Script" path="res://src/legacy/track/track_pad.gd" id="4_pad"]\n']
 for i, (zid, kind, poly, h) in enumerate(surfaces):
     lines.append('[sub_resource type="Resource" id="Z_%d"]\nscript = ExtResource("2_surf")\nid = &"%s"\nkind = &"%s"\npolygon = %s\nheight = %s\n'
                  % (i, zid, kind, v2(poly), h))

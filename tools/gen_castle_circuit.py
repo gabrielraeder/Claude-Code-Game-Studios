@@ -1076,7 +1076,7 @@ def v3(lst):
 
 
 _root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-for _need in ("src/track/track_hazard.gd", "src/track/track_pad.gd", "src/track/track_mover.gd"):
+for _need in ("src/legacy/track/track_hazard.gd", "src/legacy/track/track_pad.gd", "src/legacy/track/track_mover.gd"):
     if not os.path.exists(os.path.join(_root, _need)):
         raise SystemExit("refusing to write: %s does not exist yet (round-2 model not in place)" % _need)
 out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "tracks", "castle_circuit")
@@ -1334,15 +1334,15 @@ depth = %.2f
 
 TRES = """[gd_resource type="Resource" script_class="TrackData" load_steps=%d format=3]
 
-[ext_resource type="Script" path="res://src/test_track/track_data.gd" id="1_data"]
-[ext_resource type="Script" path="res://src/track/track_branch.gd" id="2_branch"]
+[ext_resource type="Script" path="res://src/legacy/test_track/track_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://src/legacy/track/track_branch.gd" id="2_branch"]
 [ext_resource type="Resource" path="res://assets/tracks/castle_circuit/castle_theme.tres" id="3_theme"]
-[ext_resource type="Script" path="res://src/track/track_hazard.gd" id="4_hazard"]
-[ext_resource type="Script" path="res://src/track/track_pad.gd" id="5_pad"]
-[ext_resource type="Script" path="res://src/track/track_ramp.gd" id="6_ramp"]
-[ext_resource type="Script" path="res://src/track/track_mover.gd" id="7_mover"]
-[ext_resource type="Script" path="res://src/track/track_surface.gd" id="8_surf"]
-[ext_resource type="Script" path="res://src/track/track_wall_opening.gd" id="9_open"]
+[ext_resource type="Script" path="res://src/legacy/track/track_hazard.gd" id="4_hazard"]
+[ext_resource type="Script" path="res://src/legacy/track/track_pad.gd" id="5_pad"]
+[ext_resource type="Script" path="res://src/legacy/track/track_ramp.gd" id="6_ramp"]
+[ext_resource type="Script" path="res://src/legacy/track/track_mover.gd" id="7_mover"]
+[ext_resource type="Script" path="res://src/legacy/track/track_surface.gd" id="8_surf"]
+[ext_resource type="Script" path="res://src/legacy/track/track_wall_opening.gd" id="9_open"]
 
 %s
 [resource]
@@ -1401,7 +1401,7 @@ zr = {"tourney": (ts("free_a"), ts("moat_sweep")), "moat": (ts("moat_sweep"), ts
 print("zones (main s):", {k: (round(v[0]), round(v[1])) for k, v in zr.items()})
 THEME = """[gd_resource type="Resource" script_class="TrackTheme" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://src/track/track_theme.gd" id="1_theme"]
+[ext_resource type="Script" path="res://src/legacy/track/track_theme.gd" id="1_theme"]
 
 [resource]
 script = ExtResource("1_theme")
