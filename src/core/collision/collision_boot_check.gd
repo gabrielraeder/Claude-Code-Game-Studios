@@ -41,6 +41,8 @@ class CheckedQuery:
 const ENGINE_SETTING: String = "physics/3d/physics_engine"
 ## Physics-on-a-separate-thread setting (ADR-0002: queries run on the main thread).
 const SEPARATE_THREAD_SETTING: String = "physics/3d/run_on_separate_thread"
+## Jolt face-index setting ground surface ids need (ADR-0002): with it off, Jolt reports no face index.
+const FACE_INDEX_SETTING: String = "physics/jolt_physics_3d/queries/enable_ray_cast_face_index"
 ## Tick rate setting (ADR-0001 section 5). Read from Engine, the runtime value.
 const TICKS_SETTING: String = "physics/common/physics_ticks_per_second"
 ## Catch-up cap setting (ADR-0001 section 5). Read from Engine, the runtime value.
@@ -54,7 +56,7 @@ const JITTER_FIX_SETTING: String = "physics/common/physics_jitter_fix"
 ## the ADRs, not tuning: changing one is an ADR change.
 const PINNED_SETTINGS: Dictionary[String, Variant] = {
 	ENGINE_SETTING: "Jolt Physics",
-	CollisionQuery.FACE_INDEX_SETTING: true,
+	FACE_INDEX_SETTING: true,
 	SEPARATE_THREAD_SETTING: false,
 	TICKS_SETTING: 60,
 	MAX_STEPS_SETTING: 8,
@@ -64,7 +66,7 @@ const PINNED_SETTINGS: Dictionary[String, Variant] = {
 ## The ADR that pins each key of PINNED_SETTINGS, for the failure message.
 const PINNED_BY: Dictionary[String, String] = {
 	ENGINE_SETTING: "ADR-0002",
-	CollisionQuery.FACE_INDEX_SETTING: "ADR-0002",
+	FACE_INDEX_SETTING: "ADR-0002",
 	SEPARATE_THREAD_SETTING: "ADR-0002",
 	TICKS_SETTING: "ADR-0001 section 5",
 	MAX_STEPS_SETTING: "ADR-0001 section 5",
@@ -82,7 +84,7 @@ const PINNED_BY: Dictionary[String, String] = {
 static func current_settings() -> Dictionary[String, Variant]:
 	var now: Dictionary[String, Variant] = {}
 	now[ENGINE_SETTING] = ProjectSettings.get_setting(ENGINE_SETTING, "")
-	now[CollisionQuery.FACE_INDEX_SETTING] = ProjectSettings.get_setting(CollisionQuery.FACE_INDEX_SETTING, false)
+	now[FACE_INDEX_SETTING] = ProjectSettings.get_setting(FACE_INDEX_SETTING, false)
 	now[SEPARATE_THREAD_SETTING] = ProjectSettings.get_setting(SEPARATE_THREAD_SETTING, true)
 	now[TICKS_SETTING] = Engine.physics_ticks_per_second
 	now[MAX_STEPS_SETTING] = Engine.max_physics_steps_per_frame
@@ -135,7 +137,7 @@ static func assert_boot_settings() -> String:
 ## disposes a failing query; call this directly only with a query you built yourself (tests,
 ## tools). Allocates: load time only. Main thread only.
 ## [codeblock]
-## var query: CollisionQuery = CollisionQuery.new(data)  # tools/ and tests/ only
+## var query: CollisionQuery = CollisionQuery.create(data.pack_native())  # tools/ and tests/ only
 ## var problem: String = CollisionBootCheck.load_error(query, data, surfaces, walls, limits.probe_max_drop_m)
 ## if not problem.is_empty():
 ##     query.dispose()  # never keep, or drop without dispose(), a query that failed its check
@@ -159,7 +161,7 @@ static func load_error(query: CollisionQuery, data: TrackCollisionData, surfaces
 	return ""
 
 
-## Builds the CollisionQuery of [param data] and runs load_error() on it (ADR-0002 "Boot and load
+## Builds the CollisionQuery of [param data] (CollisionQuery.validate_packed, then create) and runs load_error() on it (ADR-0002 "Boot and load
 ## checks"; story 006 LP review). On success returns a CheckedQuery holding the query and an empty
 ## problem; on failure disposes the query (bodies, shapes, space) and returns a CheckedQuery with a
 ## null query and the reason. It never push_errors or asserts itself: the caller (composition root,
@@ -176,7 +178,23 @@ static func load_error(query: CollisionQuery, data: TrackCollisionData, surfaces
 static func checked_query(data: TrackCollisionData, surfaces: SurfaceSet, walls: WallAttrSet,
 		probe_max_drop: float) -> CheckedQuery:
 	var result: CheckedQuery = CheckedQuery.new()
-	var query: CollisionQuery = CollisionQuery.new(data)
+	if data == null:
+		result.problem = "load check: no TrackCollisionData"
+		return result
+	var layout: String = data.layout_error()
+	if not layout.is_empty():
+		# A rejected layout builds no query (the native create refuses it), so no probe ran.
+		result.problem = "load check: TrackCollisionData layout: %s; no query built (layout rejected)" % layout
+		return result
+	var packed: Dictionary = data.pack_native()
+	var packed_problem: String = CollisionQuery.validate_packed(packed)
+	if not packed_problem.is_empty():
+		result.problem = "load check: native packed data: %s" % packed_problem
+		return result
+	var query: CollisionQuery = CollisionQuery.create(packed)
+	if query == null:
+		result.problem = "load check: CollisionQuery.create failed (see the engine error)"
+		return result
 	var problem: String = load_error(query, data, surfaces, walls, probe_max_drop)
 	if not problem.is_empty():
 		query.dispose()

@@ -1,0 +1,20 @@
+PASS no Dictionary query forms in src/core src/gameplay (ADR-0002) (scanned: src/core; absent: src/gameplay)
+FAIL CollisionQuery.new( / .create( only in CollisionBootCheck under src (story 006, 067) (1 lines; scanned: src; allowed in: src/core/collision/collision_boot_check\.gd)
+  src/planted.gd:5:	CollisionQuery.create({})
+FAIL native suites call the shared hash helper (NOT RUN: no suite under tests/unit names a native class, so the rule checked nothing; classes: DogworksCore|ToolchainProbe|GroundHit|WallHit|QueryCursor|CollisionQuery)
+PASS ToolchainProbe.crash_for_test is not called from tests (story 066) (scanned: tests)
+PASS nothing under src/ outside src/legacy/ loads the legacy tools, their output or src/legacy/ (story 008) (src/legacy/ is gone: nothing left to load)
+FAIL no Dictionary query forms in native/ (ADR-0002, story 067) (1 lines)
+  native/src/collision/planted.cpp:10:	state->intersect_ray(params);
+FAIL CollisionQuery is constructed only in collision_query.cpp (story 067) (2 lines)
+  native/src/collision/planted2.cpp:2:	Ref<CollisionQuery> q = memnew(CollisionQuery);
+  native/src/collision/planted2.cpp:3:	auto r = CollisionQuery::create(d);
+FAIL no allocation, *_create( or String/Variant/Dictionary in native per-tick regions (story 067) (4 lines)
+  native/src/collision/planted.cpp:3: 	auto s = String("x");
+  native/src/collision/planted.cpp:4: 	auto m = memnew(Foo);
+  native/src/collision/planted.cpp:5: 	auto b = ps->body_create();
+  native/src/collision/planted.cpp:6: 	Dictionary d;
+FAIL mover keys (key_pos) are read only inside the collision code (story 067)
+  src/planted.gd:3:var k = key_pos
+FAIL no class_name under src/ or tests/ matches a native class name (story 067)
+  src/planted.gd:1:class_name CollisionQuery

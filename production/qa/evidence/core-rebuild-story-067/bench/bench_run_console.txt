@@ -1,0 +1,55 @@
+== native castle run 1
+   exit 0
+== native castle run 2
+   exit 0
+== native castle run 3
+   exit 0
+== native worst run 1
+   exit 0
+== native worst run 2
+   exit 0
+== native worst run 3
+   exit 0
+== native static run 1
+   exit 0
+== native static run 2
+   exit 0
+== native static run 3
+   exit 0
+# native: median across 3 runs of each run's median_us and p95_us
+AGG layout=castle section=all median_of_medians_us=96 median_of_p95_us=114 runs_median=[ 96 96 96 ] runs_p95=[ 114 113 114 ]
+AGG layout=castle section=curve median_of_medians_us=94 median_of_p95_us=113 runs_median=[ 94 94 94 ] runs_p95=[ 114 109 113 ]
+AGG layout=castle section=climb median_of_medians_us=97 median_of_p95_us=109 runs_median=[ 97 97 97 ] runs_p95=[ 115 109 109 ]
+AGG layout=castle section=crossover median_of_medians_us=106 median_of_p95_us=118 runs_median=[ 106 106 106 ] runs_p95=[ 117 118 120 ]
+AGG layout=castle section=movers median_of_medians_us=94 median_of_p95_us=108 runs_median=[ 95 94 94 ] runs_p95=[ 108 105 111 ]
+AGG layout=castle section=ramp median_of_medians_us=94 median_of_p95_us=102 runs_median=[ 94 94 94 ] runs_p95=[ 102 100 103 ]
+castle: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+castle: VERDICT_INPUTS worst_section_p95_us=117 budget_us=300 alloc_unchanged=true
+castle: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+castle: VERDICT_INPUTS worst_section_p95_us=118 budget_us=300 alloc_unchanged=true
+castle: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+castle: VERDICT_INPUTS worst_section_p95_us=120 budget_us=300 alloc_unchanged=true
+AGG layout=worst section=all median_of_medians_us=97 median_of_p95_us=115 runs_median=[ 97 97 96 ] runs_p95=[ 115 114 115 ]
+AGG layout=worst section=curve median_of_medians_us=95 median_of_p95_us=114 runs_median=[ 95 95 94 ] runs_p95=[ 113 114 116 ]
+AGG layout=worst section=climb median_of_medians_us=99 median_of_p95_us=113 runs_median=[ 99 99 99 ] runs_p95=[ 113 111 115 ]
+AGG layout=worst section=crossover median_of_medians_us=108 median_of_p95_us=120 runs_median=[ 108 108 107 ] runs_p95=[ 125 120 120 ]
+AGG layout=worst section=movers median_of_medians_us=90 median_of_p95_us=97 runs_median=[ 90 90 91 ] runs_p95=[ 97 99 97 ]
+AGG layout=worst section=ramp median_of_medians_us=96 median_of_p95_us=102 runs_median=[ 96 96 95 ] runs_p95=[ 102 103 102 ]
+worst: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+worst: VERDICT_INPUTS worst_section_p95_us=125 budget_us=300 alloc_unchanged=true
+worst: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+worst: VERDICT_INPUTS worst_section_p95_us=120 budget_us=300 alloc_unchanged=true
+worst: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+worst: VERDICT_INPUTS worst_section_p95_us=120 budget_us=300 alloc_unchanged=true
+AGG layout=static section=all median_of_medians_us=93 median_of_p95_us=110 runs_median=[ 93 93 93 ] runs_p95=[ 110 108 110 ]
+AGG layout=static section=curve median_of_medians_us=90 median_of_p95_us=106 runs_median=[ 90 90 90 ] runs_p95=[ 112 106 104 ]
+AGG layout=static section=climb median_of_medians_us=94 median_of_p95_us=106 runs_median=[ 94 94 94 ] runs_p95=[ 108 104 106 ]
+AGG layout=static section=crossover median_of_medians_us=102 median_of_p95_us=113 runs_median=[ 102 102 103 ] runs_p95=[ 113 113 113 ]
+AGG layout=static section=movers median_of_medians_us=90 median_of_p95_us=102 runs_median=[ 90 90 90 ] runs_p95=[ 102 100 104 ]
+AGG layout=static section=ramp median_of_medians_us=92 median_of_p95_us=102 runs_median=[ 92 91 92 ] runs_p95=[ 105 99 102 ]
+static: ALLOC OBJECT_COUNT start=1659.0 tick600=1659.0 end=1659.0 unchanged
+static: VERDICT_INPUTS worst_section_p95_us=113 budget_us=300 alloc_unchanged=true
+static: ALLOC OBJECT_COUNT start=1659.0 tick600=1659.0 end=1659.0 unchanged
+static: VERDICT_INPUTS worst_section_p95_us=113 budget_us=300 alloc_unchanged=true
+static: ALLOC OBJECT_COUNT start=1659.0 tick600=1659.0 end=1659.0 unchanged
+static: VERDICT_INPUTS worst_section_p95_us=113 budget_us=300 alloc_unchanged=true

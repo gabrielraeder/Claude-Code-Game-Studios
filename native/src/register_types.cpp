@@ -1,5 +1,9 @@
 #include "register_types.h"
 
+#include "collision/collision_query.h"
+#include "collision/ground_hit.h"
+#include "collision/query_cursor.h"
+#include "collision/wall_hit.h"
 #include "core/dogworks_core.h"
 #include "core/toolchain_probe.h"
 
@@ -20,6 +24,11 @@ static void initialize_dogworks_core(ModuleInitializationLevel p_level) {
 	}
 	GDREGISTER_CLASS(DogworksCore);
 	GDREGISTER_CLASS(ToolchainProbe);
+	// Result and base types before the class whose API uses them (ADR-0007 section 4).
+	GDREGISTER_CLASS(GroundHit);
+	GDREGISTER_CLASS(WallHit);
+	GDREGISTER_CLASS(QueryCursor);
+	GDREGISTER_CLASS(CollisionQuery);
 	dogworks::g_servers_alive = true;
 }
 
@@ -32,6 +41,8 @@ static void uninitialize_dogworks_core(ModuleInitializationLevel p_level) {
 		return;
 	}
 	ToolchainProbe::release_all_server_objects();
+	CollisionQuery::release_all_server_objects();
+	QueryCursor::release_all_engine_objects();
 	dogworks::g_servers_alive = false;
 }
 

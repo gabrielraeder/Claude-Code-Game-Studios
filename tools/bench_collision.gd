@@ -66,7 +66,11 @@ const WORST_AMPLITUDE: float = 5.0
 const SLIDE_START: PackedFloat64Array = [0.0, 0.5, 0.75]
 const SLIDE_LEN: PackedFloat64Array = [1.0, 0.5, 0.25]
 ## Untimed warm-up ticks (cycling through every section) before the allocation baseline.
-const WARMUP_TICKS: int = 60
+const WARMUP_TICKS: int = 300
+## The captured sweep whose rest check misses at the cast's unsafe point (collision_unsafe_point_retry_test.gd):
+## run once, untimed, at tick 0 so the cast, rest and 0.001 m retry paths are warm before the measured windows.
+const RETRY_FROM: Vector3 = Vector3(213.37308, -0.99377036, -13.371248)
+const RETRY_TO: Vector3 = Vector3(213.40935, -1.0054376, -12.961111)
 ## Timed ticks per section (default; --ticks= overrides).
 const TICKS_PER_SECTION: int = 300
 ## The allocation window of the story: monitors compared at measured tick 0 and 600.
@@ -169,6 +173,8 @@ var _done: bool = false
 var _stages: bool = false
 ## --stages: per measured tick and stage, microseconds (stage-major).
 var _stage_us: PackedInt64Array = PackedInt64Array()
+## --baseline: the same tick loop with no query call (measures the bench's own MEMORY_STATIC growth).
+var _baseline: bool = false
 ## Raw-call cursors for the --stages reference (masks as QueryCursor sets them).
 var _raw: QueryCursor = null
 
@@ -182,6 +188,8 @@ func _initialize() -> void:
 			_out = a.substr("--out=".length())
 		elif a == "--stages":
 			_stages = true
+		elif a == "--baseline":
+			_baseline = true
 		elif a.begins_with("--ticks="):
 			_ticks_per_section = int(a.substr("--ticks=".length()))
 	if _ticks_per_section < 1:
@@ -283,6 +291,9 @@ func _on_tick() -> void:
 	if measured >= total:
 		_finish(_snapshot())
 		return
+	if _tick == 0 and not _baseline:
+		# Untimed warm-up pass of the cast, rest and retry paths (the first call of each path is slower).
+		_query.sweep_walls(_cursors[0], RETRY_FROM, RETRY_TO, 1.0, 0.0, _wall_hits[0])
 	_prepare(sec, t)
 	var base: int = sec * 5
 	var ray_hits: int = 0
@@ -291,7 +302,7 @@ func _on_tick() -> void:
 	var sweep_movers: int = 0
 	var inside: int = 0
 	var t0: int = Time.get_ticks_usec()
-	for i in KARTS:
+	for i in (0 if _baseline else KARTS):
 		var cursor: QueryCursor = _cursors[i]
 		var ground: GroundHit = _ground_hits[i]
 		var wall: WallHit = _wall_hits[i]
@@ -309,7 +320,7 @@ func _on_tick() -> void:
 					sweep_movers += 1
 				if wall.started_inside:
 					inside += 1
-	for m in _mover_ids.size():
+	for m in (0 if _baseline else _mover_ids.size()):
 		_query.mover_pose(_mover_ids[m], t)
 	var us: int = Time.get_ticks_usec() - t0
 	if measured >= 0:
@@ -456,6 +467,9 @@ func _finish(snap_end: PackedFloat64Array) -> void:
 		lines.append("COUNTS layout=%s section=%s per_tick ray_hits=%.2f ray_mover_hits=%.2f sweep_hits=%.2f sweep_mover_contacts=%.2f started_inside=%.2f" % [
 			_layout, SECTION_NAMES[sec], float(_counts[b]) / _ticks_per_section, float(_counts[b + 1]) / _ticks_per_section,
 			float(_counts[b + 2]) / _ticks_per_section, float(_counts[b + 3]) / _ticks_per_section, float(_counts[b + 4]) / _ticks_per_section])
+	var fallbacks: int = _query.blocked_fallback_count()
+	lines.append("FALLBACK blocked_fallback_count=%d %s" % [fallbacks, "ok" if fallbacks == 0 else "NONZERO"])
+	lines.append("CROSSINGS per_tick bound_calls=%d (%d karts x (%d rays + %d sweeps)) + %d mover_pose" % [KARTS * (RAYS_PER_KART + SWEEPS_PER_KART) + _mover_ids.size(), KARTS, RAYS_PER_KART, SWEEPS_PER_KART, _mover_ids.size()])
 	var alloc_ok: bool = true
 	for k in SNAP_NAMES.size():
 		var at_window: float = _snap_window[k] if _snap_window.size() > k else NAN
@@ -484,7 +498,7 @@ func _finish(snap_end: PackedFloat64Array) -> void:
 			file.close()
 	_query.dispose()
 	_query = null
-	quit(0)
+	quit(0 if fallbacks == 0 else 3)
 
 
 ## Basis of the track frame at (s, lateral): x = right, y = up, z = -forward (a proper rotation).

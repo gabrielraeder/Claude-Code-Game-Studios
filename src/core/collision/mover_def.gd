@@ -32,6 +32,14 @@ const MIN_KEYS: int = 2
 ## to ~1e-7). A numerical tolerance, not tuning.
 const UNIT_QUAT_TOLERANCE: float = 0.00001
 
+## Schema version of pack_native(); the native CollisionQuery asserts the same number
+## (CollisionQuery.PACKED_SCHEMA_VERSION). A format number, not tuning.
+const NATIVE_SCHEMA_VERSION: int = 1
+
+## Largest mover id: the native CollisionQuery stores ids as int32 (CollisionQuery.MAX_MOVER_ID). A format
+## limit, not tuning.
+const MAX_MOVER_ID: int = 2147483647
+
 ## Mover id, >= 1 for a valid mover (0 always means static geometry; 0 here = not set).
 @export var id: int = 0
 ## Loop length of the pose curve, seconds (> 0 for a valid mover).
@@ -66,7 +74,7 @@ const UNIT_QUAT_TOLERANCE: float = 0.00001
 
 ## Checks this mover's own layout (ADR-0002 Geometry layout; Track Collision GDD 4.4; story 003
 ## review). Returns "" when sound, otherwise one sentence naming the first problem: id < 1;
-## period not > 0 or not finite; surface_id or wall_attr_id outside 0..255 (their registry
+## id above MAX_MOVER_ID (2147483647); period not > 0 or not finite; surface_id or wall_attr_id outside 0..255 (their registry
 ## membership is the story 006 load check); shape not BOX / CAPSULE / CYLINDER; extents invalid for
 ## the shape (BOX: every half extent > 0; CAPSULE: radius > 0 and half_height >= 0, 0 being a
 ## sphere; CYLINDER: radius > 0 and half_height > 0); key arrays of different lengths or fewer than
@@ -81,6 +89,8 @@ const UNIT_QUAT_TOLERANCE: float = 0.00001
 func layout_error() -> String:
 	if id < 1:
 		return "id is %d (mover ids are >= 1; 0 means static geometry)" % id
+	if id > MAX_MOVER_ID:
+		return "id is %d (mover ids are <= %d, the native int32 limit)" % [id, MAX_MOVER_ID]
 	if not (period > 0.0) or not is_finite(period):
 		return "period is %s (must be > 0)" % period
 	if surface_id < 0 or surface_id > SurfaceSet.MAX_ID:
@@ -133,6 +143,34 @@ func mirrored() -> MoverDef:
 		rot[i] = Vector4(q.x, -q.y, -q.z, q.w)
 	out.key_rot = rot
 	return out
+
+
+## The plain data the native CollisionQuery consumes (ADR-0007 section 2: native code never reads a
+## script property). A Dictionary of fixed keys, in this order: schema_version (int), id (int),
+## period (float, s), solid (bool), surface_id (int), wall_attr_id (int), shape (int: 0 BOX, 1 CAPSULE,
+## 2 CYLINDER), half_extents (Vector3, m), radius (float, m), half_height (float, m), key_t
+## (PackedFloat32Array, s), key_pos (PackedVector3Array, m), key_rot (PackedVector4Array, unit
+## quaternions x, y, z, w). The arrays are shared copy-on-write, not copied. Load time only. A new
+## @export field is added here, in the native validation and in tests/unit/collision/pack_native_test.gd.
+## [codeblock]
+## var packed: Dictionary = mover.pack_native()
+## [/codeblock]
+func pack_native() -> Dictionary:
+	return {
+		"schema_version": NATIVE_SCHEMA_VERSION,
+		"id": id,
+		"period": period,
+		"solid": solid,
+		"surface_id": surface_id,
+		"wall_attr_id": wall_attr_id,
+		"shape": int(shape),
+		"half_extents": half_extents,
+		"radius": radius,
+		"half_height": half_height,
+		"key_t": key_t,
+		"key_pos": key_pos,
+		"key_rot": key_rot,
+	}
 
 
 ## The shape part of layout_error(): "" or the first problem with the shape value or its extents.

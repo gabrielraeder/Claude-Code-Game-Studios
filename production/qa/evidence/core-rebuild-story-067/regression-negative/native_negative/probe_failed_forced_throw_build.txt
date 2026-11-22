@@ -1,0 +1,2 @@
+refusing to build: cannot tell whether a Godot process holds the DLL:
+PROBE_FAILED forced failure (DOG_FORCE_PROBE_THROW)

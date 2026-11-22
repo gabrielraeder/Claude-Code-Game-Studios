@@ -26,7 +26,7 @@ Phase A Sequencing in `docs/architecture/architecture.md`: freeze and oracle →
 | 6 | 006 | Collision load checks, mirror and boundary greps | Logic | Complete | ADR-0002, ADR-0001 |
 | 7 | 007 | Collision benchmark (<= 0.3 ms p95, 12 karts) | Integration | Complete | ADR-0002 |
 | 8 | 066 | Native toolchain, dogworks_core skeleton and stale-DLL guard | Integration | Complete | ADR-0007 |
-| 9 | 067 | CollisionQuery port to C++ with the GDScript oracle | Logic | In Progress | ADR-0007 |
+| 9 | 067 | CollisionQuery port to C++ with the GDScript oracle | Logic | Complete | ADR-0007 |
 | 10 | 068 | RaceSim skeleton: stages, buffers, stage timers, slot roles | Logic | Ready | ADR-0007 |
 | 11 | 008 | Legacy track extractor and generator-baked test mesh | Integration | In Progress | ADR-0004, ADR-0002, ADR-0005 |
 | 12 | 009 | Core vehicle data fork, KartIntent and KartSnapshot | Logic | Ready | ADR-0003 |

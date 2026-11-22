@@ -2,17 +2,17 @@ extends GdUnitTestSuite
 ## Core-rebuild story 007 review: edge cases of the optimised mover code in CollisionQuery (pass
 ## order, non-solid skipping, pose cache, velocity of the winning slot, data-order ties), the touch
 ## rule (a mover touch needs the end in contact, within MOVER_SWEEP_TOLERANCE), the fail-closed
-## Newton cap, and the static RID-proxy scan (no server *_create( call outside the build and init
-## functions). Movers are built in code (collision_fixtures.gd): no randomness, no clock.
-## Filesystem exception: test_no_server_create_calls_outside_build_functions reads the two source
-## files it scans (as test_no_key_pos_use_outside_core_collision does); it runs from source only.
+## Newton cap. Movers are built in code (collision_fixtures.gd): no randomness, no clock. The static
+## RID-proxy scan (no *_create( call in a per-tick method) is now a tools/core_greps.sh rule over native/
+## (story 067).
 
+const _GUARD = preload("res://tests/unit/native/native_test_guard.gd")
 const Fixtures = preload("res://tests/unit/collision/collision_fixtures.gd")
 
 const ID: int = 3
 const ID_2: int = 8
 const R: float = Fixtures.SWEEP_RADIUS
-const TOL: float = CollisionQuery.MOVER_SWEEP_TOLERANCE
+const TOL: float = OracleCollisionQuery.MOVER_SWEEP_TOLERANCE
 const HIT_TOLERANCE: float = 0.001
 const VELOCITY_TOLERANCE: float = 0.001
 const UNIT_BOX: Vector3 = Vector3(1.0, 1.0, 1.0)
@@ -31,18 +31,19 @@ const GRAZE_END_GAP: float = 0.5
 ## inside contact) and the half length of the motion.
 const LONG_OFFSET: float = 1.995
 const LONG_HALF: float = 500.0
-## The two source files of the static scan, and the functions allowed to create server objects.
-const SCANNED: PackedStringArray = ["res://src/core/collision/collision_query.gd", "res://src/core/collision/query_cursor.gd"]
-const BUILD_FUNCTIONS: PackedStringArray = ["_init", "_make_concave_shape", "_make_static_body"]
+
+
+func before() -> void:
+	assert_str(_GUARD.problem()).is_empty()
 
 
 func _movers_query(movers: Array[MoverDef]) -> CollisionQuery:
-	return CollisionQuery.new(Fixtures.movers_only(movers))
+	return CollisionQuery.create(Fixtures.movers_only(movers).pack_native())
 
 
 ## Signed gap (distance - R) of the sphere centred at world [param p] to mover [param id] at [param t].
 func _gap_at(query: CollisionQuery, mover: MoverDef, t: float, p: Vector3) -> float:
-	return query._closest_local(mover, query.mover_pose(mover.id, t).affine_inverse() * p) - R
+	return query.closest_local(mover.id, query.mover_pose(mover.id, t).affine_inverse() * p) - R
 
 
 # --- touch rule ---------------------------------------------------------------------------------
@@ -119,7 +120,7 @@ func test_one_kilometre_grazing_sweep_past_cylinder_hits() -> void:
 	var contact_x: float = -sqrt(pow(1.0 + R, 2.0) - LONG_OFFSET * LONG_OFFSET)
 	# Act
 	var did_hit: bool = query.sweep_walls(QueryCursor.new(), from, to, R, 0.0, hit)
-	var capped: bool = query._cap_error_reported
+	var capped: bool = query.cap_error_reported()
 	query.dispose()
 	# Assert
 	assert_bool(did_hit).is_true()
@@ -131,7 +132,7 @@ func test_mover_sweep_at_newton_cap_fails_closed_with_blocking_hit_at_safe_fract
 	# Arrange: an oblique approach to a capsule needs several Newton steps; the cap is lowered to 1.
 	var capsule: MoverDef = Fixtures.still_round(ID, MoverDef.Shape.CAPSULE, Vector3.ZERO, 0.5, 1.0)
 	var capped_query: CollisionQuery = _movers_query([capsule])
-	capped_query._newton_cap = 1
+	capped_query.set_newton_cap(1)
 	var normal_query: CollisionQuery = _movers_query([capsule])
 	var from: Vector3 = Vector3(6.0, 2.5, 3.0)
 	var to: Vector3 = Vector3(-4.0, -0.5, -1.0)
@@ -140,7 +141,7 @@ func test_mover_sweep_at_newton_cap_fails_closed_with_blocking_hit_at_safe_fract
 	# Act
 	var capped_did: bool = capped_query.sweep_walls(QueryCursor.new(), from, to, R, 0.0, capped_hit)
 	var normal_did: bool = normal_query.sweep_walls(QueryCursor.new(), from, to, R, 0.0, normal_hit)
-	var reported: bool = capped_query._cap_error_reported
+	var reported: bool = capped_query.cap_error_reported()
 	var gap: float = _gap_at(capped_query, capsule, 0.0, from.lerp(to, capped_hit.fraction))
 	capped_query.dispose()
 	normal_query.dispose()
@@ -227,10 +228,10 @@ func test_cast_ground_at_two_times_on_one_query_matches_fresh_queries() -> void:
 	# Arrange: a spinning bar; one query cast at t1 then t2, against a fresh query per time.
 	var movers: Array[MoverDef] = [Fixtures.spinner_box(ID, Vector3.ZERO, BAR)]
 	var data: TrackCollisionData = Fixtures.movers_only(movers)
-	var reused: CollisionQuery = CollisionQuery.new(data)
+	var reused: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var origin: Vector3 = Vector3(2.0, CAST_Y, 0.1)
 	for t in [0.0, Fixtures.SPIN_STEP_TIME * 0.5, 0.0, Fixtures.SPIN_STEP_TIME * 1.25]:
-		var fresh: CollisionQuery = CollisionQuery.new(data)
+		var fresh: CollisionQuery = CollisionQuery.create(data.pack_native())
 		var a: GroundHit = GroundHit.new()
 		var b: GroundHit = GroundHit.new()
 		# Act
@@ -287,31 +288,3 @@ func test_exact_mover_sweep_fraction_tie_goes_to_data_order() -> void:
 	assert_float(hit_a.fraction).is_equal(hit_b.fraction)
 	assert_int(hit_a.collider_id).is_equal(ID)
 	assert_int(hit_b.collider_id).is_equal(ID_2)
-
-
-# --- static RID proxy ---------------------------------------------------------------------------
-
-func test_no_server_create_calls_outside_build_functions() -> void:
-	# Arrange: every PhysicsServer3D / RenderingServer *_create( call must sit in a build or init
-	# function (so no query method creates a server object, the RID-count proxy of story 007).
-	var pattern: RegEx = RegEx.create_from_string("\\b(PhysicsServer3D|RenderingServer)\\.\\w*_create\\s*\\(")
-	var func_re: RegEx = RegEx.create_from_string("^(static\\s+)?func\\s+(\\w+)")
-	var offenders: Array[String] = []
-	var creates: int = 0
-	for path in SCANNED:
-		# Act
-		var lines: PackedStringArray = FileAccess.get_file_as_string(path).split("\n")
-		var current: String = ""
-		for i in lines.size():
-			var line: String = lines[i]
-			var m: RegExMatch = func_re.search(line)
-			if m != null:
-				current = m.get_string(2)
-			if line.strip_edges().begins_with("#") or pattern.search(line) == null:
-				continue
-			creates += 1
-			if not (current in BUILD_FUNCTIONS):
-				offenders.append("%s:%d in %s: %s" % [path, i + 1, current, line.strip_edges()])
-	# Assert: the scan saw the known create calls (space, concave shape, body), and none elsewhere.
-	assert_int(creates).is_greater_equal(3)
-	assert_array(offenders).is_empty()

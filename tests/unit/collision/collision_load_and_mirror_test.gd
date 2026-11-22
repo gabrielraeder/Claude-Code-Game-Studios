@@ -55,6 +55,7 @@ extends GdUnitTestSuite
 ## cylinder axis point, a box centre plane), whose fixed RIGHT normal is not mirror-symmetric
 ## (story 005 LP review).
 
+const _GUARD = preload("res://tests/unit/native/native_test_guard.gd")
 const Fixtures = preload("res://tests/unit/collision/collision_fixtures.gd")
 
 ## Position / normal / velocity / fraction tolerance of a mirrored hit against M x the source hit.
@@ -107,6 +108,10 @@ const MOVER_COPIED_FIELDS: Array[StringName] = [
 
 # --- hooks --------------------------------------------------------------------------------------
 
+func before() -> void:
+	assert_str(_GUARD.problem()).is_empty()
+
+
 ## Undoes whatever a test may have left behind, even after a failed assert: the round-trip files,
 ## the face-index and interpolation settings, and the Engine tick values.
 func after_test() -> void:
@@ -116,8 +121,8 @@ func after_test() -> void:
 			CollisionBootCheck.PINNED_SETTINGS[CollisionBootCheck.INTERPOLATION_SETTING])
 	Engine.physics_ticks_per_second = CollisionBootCheck.PINNED_SETTINGS[CollisionBootCheck.TICKS_SETTING]
 	Engine.max_physics_steps_per_frame = CollisionBootCheck.PINNED_SETTINGS[CollisionBootCheck.MAX_STEPS_SETTING]
-	if ProjectSettings.get_setting(CollisionQuery.FACE_INDEX_SETTING) != true:
-		ProjectSettings.set_setting(CollisionQuery.FACE_INDEX_SETTING, true)
+	if ProjectSettings.get_setting(CollisionBootCheck.FACE_INDEX_SETTING) != true:
+		ProjectSettings.set_setting(CollisionBootCheck.FACE_INDEX_SETTING, true)
 		await get_tree().process_frame
 
 
@@ -179,7 +184,7 @@ func _registries() -> Array:
 ## load_error of [param data] on a fresh query, the query disposed afterwards.
 func _load_error(data: TrackCollisionData) -> String:
 	var regs: Array = _registries()
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var problem: String = CollisionBootCheck.load_error(query, data, regs[0], regs[1], Fixtures.PROBE_MAX_DROP)
 	query.dispose()
 	return problem
@@ -230,26 +235,26 @@ func test_load_check_with_face_index_setting_off_fails_naming_the_setting() -> v
 	# Arrange: the ADR-0002 procedure: set the setting, await a frame, build a new query.
 	var data: TrackCollisionData = Fixtures.mirror_fixture()
 	var regs: Array = _registries()
-	ProjectSettings.set_setting(CollisionQuery.FACE_INDEX_SETTING, false)
+	ProjectSettings.set_setting(CollisionBootCheck.FACE_INDEX_SETTING, false)
 	await get_tree().process_frame
 	# Act
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var probe_hit: GroundHit = GroundHit.new()
 	var hit_with_setting_off: bool = query.cast_ground(QueryCursor.new(), data.probe_point, Vector3.DOWN,
-			Fixtures.PROBE_MAX_DROP, CollisionQuery.PROBE_T, probe_hit)
+			Fixtures.PROBE_MAX_DROP, CollisionQuery.probe_t(), probe_hit)
 	var problem: String = CollisionBootCheck.load_error(query, data, regs[0], regs[1], Fixtures.PROBE_MAX_DROP)
 	query.dispose()
 	# Restore before asserting, then show the same data passes again.
-	ProjectSettings.set_setting(CollisionQuery.FACE_INDEX_SETTING, true)
+	ProjectSettings.set_setting(CollisionBootCheck.FACE_INDEX_SETTING, true)
 	await get_tree().process_frame
 	var problem_restored: String = _load_error(data)
 	# Assert
 	assert_bool(hit_with_setting_off).is_true()
 	assert_int(probe_hit.surface_id).is_equal(CollisionQuery.SURFACE_NONE)
 	assert_str(problem).contains("no face index")
-	assert_str(problem).contains(CollisionQuery.FACE_INDEX_SETTING)
+	assert_str(problem).contains(CollisionBootCheck.FACE_INDEX_SETTING)
 	assert_str(problem_restored).is_empty()
-	assert_bool(ProjectSettings.get_setting(CollisionQuery.FACE_INDEX_SETTING)).is_true()
+	assert_bool(ProjectSettings.get_setting(CollisionBootCheck.FACE_INDEX_SETTING)).is_true()
 
 
 # --- AC 2: mirror -------------------------------------------------------------------------------
@@ -257,8 +262,8 @@ func test_load_check_with_face_index_setting_off_fails_naming_the_setting() -> v
 func test_mirrored_ground_casts_hit_mirrored_points_with_same_surface_ids() -> void:
 	# Arrange
 	var data: TrackCollisionData = Fixtures.mirror_fixture()
-	var source: CollisionQuery = CollisionQuery.new(data)
-	var mirror: CollisionQuery = CollisionQuery.new(data.mirrored())
+	var source: CollisionQuery = CollisionQuery.create(data.pack_native())
+	var mirror: CollisionQuery = CollisionQuery.create(data.mirrored().pack_native())
 	var cursor_a: QueryCursor = QueryCursor.new()
 	var cursor_b: QueryCursor = QueryCursor.new()
 	var hit_a: GroundHit = GroundHit.new()
@@ -302,8 +307,8 @@ func test_mirrored_ground_casts_hit_mirrored_points_with_same_surface_ids() -> v
 func test_mirrored_wall_sweeps_hit_mirrored_points_with_same_wall_attr_ids() -> void:
 	# Arrange
 	var data: TrackCollisionData = Fixtures.mirror_fixture()
-	var source: CollisionQuery = CollisionQuery.new(data)
-	var mirror: CollisionQuery = CollisionQuery.new(data.mirrored())
+	var source: CollisionQuery = CollisionQuery.create(data.pack_native())
+	var mirror: CollisionQuery = CollisionQuery.create(data.mirrored().pack_native())
 	var cursor_a: QueryCursor = QueryCursor.new()
 	var cursor_b: QueryCursor = QueryCursor.new()
 	var hit_a: WallHit = WallHit.new()
@@ -347,8 +352,8 @@ func test_mirrored_wall_sweeps_hit_mirrored_points_with_same_wall_attr_ids() -> 
 func test_mirrored_mover_poses_are_m_b_m() -> void:
 	# Arrange
 	var data: TrackCollisionData = Fixtures.mirror_fixture()
-	var source: CollisionQuery = CollisionQuery.new(data)
-	var mirror: CollisionQuery = CollisionQuery.new(data.mirrored())
+	var source: CollisionQuery = CollisionQuery.create(data.pack_native())
+	var mirror: CollisionQuery = CollisionQuery.create(data.mirrored().pack_native())
 	var m: Basis = _mirror_basis()
 	var problems: Array[String] = []
 	# Act
@@ -609,23 +614,16 @@ func test_load_check_reports_unknown_id() -> void:
 
 # --- AC 3: boot asserts: probe -------------------------------------------------------------------
 
-func test_load_probe_on_rejected_layout_runs_and_names_no_geometry() -> void:
-	# Arrange: one surface id short: CollisionQuery push_errors and builds nothing.
+func test_load_check_on_rejected_layout_builds_no_query_and_names_the_layout() -> void:
+	# Arrange: one surface id short: the native create refuses the layout, so no query exists.
 	var data: TrackCollisionData = Fixtures.mirror_fixture()
 	data.surface_of_face.resize(data.surface_of_face.size() - 1)
 	var regs: Array = _registries()
-	var out: Array[CollisionQuery] = []
-	await assert_error(func() -> void: out.append(CollisionQuery.new(data))).is_push_error(
-			"CollisionQuery: surface_of_face has 9 entries for 10 ground triangles; the query has no geometry")
-	var query: CollisionQuery = out[0]
 	# Act
-	var probe: String = query.probe_error(data.probe_point, data.probe_surface_id, Fixtures.PROBE_MAX_DROP)
-	var problem: String = CollisionBootCheck.load_error(query, data, regs[0], regs[1], Fixtures.PROBE_MAX_DROP)
-	query.dispose()
+	var checked: CollisionBootCheck.CheckedQuery = CollisionBootCheck.checked_query(data, regs[0], regs[1], Fixtures.PROBE_MAX_DROP)
 	# Assert
-	assert_str(probe).contains("the query has no geometry")
-	assert_str(problem).starts_with("load check: TrackCollisionData layout: surface_of_face has 9 entries for 10 ground triangles; ")
-	assert_str(problem).ends_with(probe)
+	assert_object(checked.query).is_null()
+	assert_str(checked.problem).is_equal("load check: TrackCollisionData layout: surface_of_face has 9 entries for 10 ground triangles; no query built (layout rejected)")
 
 
 func test_load_check_on_data_without_geometry_fails_naming_no_geometry() -> void:
@@ -641,14 +639,14 @@ func test_load_check_on_data_without_geometry_fails_naming_no_geometry() -> void
 func test_load_check_on_null_data_fails() -> void:
 	# Arrange
 	var regs: Array = _registries()
-	var out: Array[CollisionQuery] = []
-	await assert_error(func() -> void: out.append(CollisionQuery.new(null))).is_push_error(
-			"CollisionQuery: data is null; the query has no geometry")
+	var unbuilt: CollisionQuery = CollisionQuery.new()
 	# Act
-	var problem: String = CollisionBootCheck.load_error(out[0], null, regs[0], regs[1], Fixtures.PROBE_MAX_DROP)
-	out[0].dispose()
+	var problem: String = CollisionBootCheck.load_error(unbuilt, null, regs[0], regs[1], Fixtures.PROBE_MAX_DROP)
+	var checked: CollisionBootCheck.CheckedQuery = CollisionBootCheck.checked_query(null, regs[0], regs[1], Fixtures.PROBE_MAX_DROP)
 	# Assert
 	assert_str(problem).is_equal("load check: no TrackCollisionData")
+	assert_str(checked.problem).is_equal("load check: no TrackCollisionData")
+	assert_object(checked.query).is_null()
 
 
 func test_load_probe_on_wrong_surface_fails_naming_both_ids() -> void:
@@ -695,7 +693,7 @@ func test_load_probe_runs_at_t0_not_while_a_mover_passes_later() -> void:
 	slider.surface_id = Fixtures.MIRROR_MOVER_SURFACE_IDS[0]
 	slider.wall_attr_id = Fixtures.MIRROR_MOVER_WALL_IDS[0]
 	data.movers.append(slider)
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var hit: GroundHit = GroundHit.new()
 	# Act
 	var later_hit: bool = query.cast_ground(QueryCursor.new(), data.probe_point, Vector3.DOWN,
@@ -708,17 +706,17 @@ func test_load_probe_runs_at_t0_not_while_a_mover_passes_later() -> void:
 	assert_str(probe).is_empty()
 
 
-func test_has_geometry_false_when_rejected_and_after_dispose() -> void:
+func test_has_geometry_by_content_and_a_disposed_query_is_unbuilt() -> void:
 	# Arrange
-	var sound: CollisionQuery = CollisionQuery.new(Fixtures.mirror_fixture())
-	var movers: CollisionQuery = CollisionQuery.new(Fixtures.movers_only([Fixtures.still_box(1, Vector3.ZERO, Vector3.ONE)]))
-	var empty: CollisionQuery = CollisionQuery.new(TrackCollisionData.new())
+	var sound: CollisionQuery = CollisionQuery.create(Fixtures.mirror_fixture().pack_native())
+	var movers: CollisionQuery = CollisionQuery.create(Fixtures.movers_only([Fixtures.still_box(1, Vector3.ZERO, Vector3.ONE)]).pack_native())
+	var empty: CollisionQuery = CollisionQuery.create(TrackCollisionData.new().pack_native())
 	# Act
 	var sound_before: bool = sound.has_geometry()
 	sound.dispose()
 	# Assert
 	assert_bool(sound_before).is_true()
-	assert_bool(sound.has_geometry()).is_false()
+	assert_bool(sound.is_built()).is_false()
 	assert_bool(movers.has_geometry()).is_true()
 	assert_bool(empty.has_geometry()).is_false()
 	movers.dispose()
@@ -730,7 +728,7 @@ func test_query_of_only_non_solid_movers_has_geometry_but_fails_the_probe() -> v
 	var ghost: MoverDef = Fixtures.still_box(1, Vector3.DOWN * (Fixtures.PROBE_HEIGHT / 2.0),
 			Vector3.ONE * (Fixtures.PROBE_HEIGHT / 8.0))
 	ghost.solid = false
-	var query: CollisionQuery = CollisionQuery.new(Fixtures.movers_only([ghost]))
+	var query: CollisionQuery = CollisionQuery.create(Fixtures.movers_only([ghost]).pack_native())
 	# Act
 	var geometry: bool = query.has_geometry()
 	var probe: String = query.probe_error(Vector3.ZERO, 0, Fixtures.PROBE_MAX_DROP)
@@ -758,17 +756,24 @@ func test_checked_query_of_sound_data_returns_the_query() -> void:
 
 
 func test_checked_query_of_failing_data_disposes_and_returns_the_reason() -> void:
-	# Arrange: an unknown surface id (no push_error at construction, so the only possible log entry
-	# is the PREDELETE "freed without dispose()" warning of a query that was not disposed).
+	# Arrange: an unknown surface id: the query builds, the id check fails, so checked_query must dispose it.
+	# The ADR-0002 "warns when a query is dropped without dispose()" behaviour is intentionally gone (the native
+	# destructor frees silently), so the proof is the live server-RID count, not the absence of a warning.
 	var data: TrackCollisionData = Fixtures.mirror_fixture()
 	data.surface_of_face[0] = UNKNOWN_ID
 	var regs: Array = _registries()
-	var out: Array[CollisionBootCheck.CheckedQuery] = []
-	# Act / Assert: no warning, so the failing query was disposed before it was dropped.
-	await assert_error(func() -> void: out.append(CollisionBootCheck.checked_query(data, regs[0], regs[1],
-			Fixtures.PROBE_MAX_DROP))).is_success()
-	assert_object(out[0].query).is_null()
-	assert_str(out[0].problem).is_equal("load check: surface_of_face[0] is 99, not a surface id of the SurfaceSet")
+	var baseline: int = CollisionQuery.live_rid_count()
+	# Act
+	var checked: CollisionBootCheck.CheckedQuery = CollisionBootCheck.checked_query(data, regs[0], regs[1], Fixtures.PROBE_MAX_DROP)
+	var after: int = CollisionQuery.live_rid_count()
+	# Assert: the failing query is gone before checked_query returned, and a sound one holds RIDs while alive.
+	assert_object(checked.query).is_null()
+	assert_str(checked.problem).is_equal("load check: surface_of_face[0] is 99, not a surface id of the SurfaceSet")
+	assert_int(after).is_equal(baseline)
+	var sound: CollisionBootCheck.CheckedQuery = CollisionBootCheck.checked_query(Fixtures.mirror_fixture(), regs[0], regs[1], Fixtures.PROBE_MAX_DROP)
+	assert_int(CollisionQuery.live_rid_count()).is_greater(baseline)
+	sound.query.dispose()
+	assert_int(CollisionQuery.live_rid_count()).is_equal(baseline)
 
 
 # --- AC 3: boot asserts: settings ----------------------------------------------------------------
@@ -850,11 +855,11 @@ func test_boot_settings_each_wrong_pinned_value_fails_naming_it() -> void:
 func test_boot_settings_missing_value_fails_naming_it() -> void:
 	# Arrange
 	var settings: Dictionary[String, Variant] = CollisionBootCheck.PINNED_SETTINGS.duplicate()
-	settings.erase(CollisionQuery.FACE_INDEX_SETTING)
+	settings.erase(CollisionBootCheck.FACE_INDEX_SETTING)
 	# Act
 	var problem: String = CollisionBootCheck.settings_error(settings)
 	# Assert
-	assert_str(problem).is_equal("boot: %s is not set (pinned to true, ADR-0002)" % CollisionQuery.FACE_INDEX_SETTING)
+	assert_str(problem).is_equal("boot: %s is not set (pinned to true, ADR-0002)" % CollisionBootCheck.FACE_INDEX_SETTING)
 
 
 # --- story 003 engine check: binary .res round trip ---------------------------------------------

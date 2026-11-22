@@ -24,11 +24,12 @@ extends GdUnitTestSuite
 ## feature of the shape (box face / edge / corner, cylinder side / cap / rim, capsule side / cap),
 ## classified by the mover-local normal. The counts are printed.
 
+const _GUARD = preload("res://tests/unit/native/native_test_guard.gd")
 const Fixtures = preload("res://tests/unit/collision/collision_fixtures.gd")
 
 ## Sweep sphere radius (m) and the sweep tolerance (m).
 const R: float = Fixtures.SWEEP_RADIUS
-const TOL: float = CollisionQuery.MOVER_SWEEP_TOLERANCE
+const TOL: float = OracleCollisionQuery.MOVER_SWEEP_TOLERANCE
 ## Float slack (m) for float32 positions a few metres from the origin.
 const FLOAT_SLACK: float = 0.00001
 ## Allowed differences (see the header): fraction x length (m), contact point (m), normal (rad).
@@ -72,6 +73,10 @@ const SPIN_TIMES: PackedFloat64Array = [0.0, 0.4, 1.25, 3.5]
 const TUMBLE_PERIOD: float = 3.0
 const TUMBLE_STEP: float = 2.0
 const TUMBLE_AXIS: Vector3 = Vector3(0.3, 1.0, 0.5)
+
+
+func before() -> void:
+	assert_str(_GUARD.problem()).is_empty()
 
 
 ## Shape bound of [param mover] (radius of a sphere about its origin holding the shape).
@@ -119,14 +124,14 @@ func _ref_find_contact(q: CollisionQuery, mover: MoverDef, local_from: Vector3, 
 	var b: float = 1.0
 	var c: float = b - INV_PHI * (b - a)
 	var d: float = a + INV_PHI * (b - a)
-	var fc: float = q._closest_local(mover, local_from + local_motion * c) - radius
+	var fc: float = q.closest_local(mover.id, local_from + local_motion * c) - radius
 	if fc <= 0.0:
 		return c
-	var fd: float = q._closest_local(mover, local_from + local_motion * d) - radius
+	var fd: float = q.closest_local(mover.id, local_from + local_motion * d) - radius
 	if fd <= 0.0:
 		return d
 	var iterations: int = 0
-	while (b - a) * length > CollisionQuery.MOVER_SWEEP_TOLERANCE and iterations < CollisionQuery.MOVER_SWEEP_MAX_ITERATIONS:
+	while (b - a) * length > OracleCollisionQuery.MOVER_SWEEP_TOLERANCE and iterations < OracleCollisionQuery.MOVER_SWEEP_MAX_ITERATIONS:
 		if maxf(fc, fd) > (b - a) * length:
 			return -1.0
 		if fc < fd:
@@ -134,7 +139,7 @@ func _ref_find_contact(q: CollisionQuery, mover: MoverDef, local_from: Vector3, 
 			d = c
 			fd = fc
 			c = b - INV_PHI * (b - a)
-			fc = q._closest_local(mover, local_from + local_motion * c) - radius
+			fc = q.closest_local(mover.id, local_from + local_motion * c) - radius
 			if fc <= 0.0:
 				return c
 		else:
@@ -142,7 +147,7 @@ func _ref_find_contact(q: CollisionQuery, mover: MoverDef, local_from: Vector3, 
 			c = d
 			fc = fd
 			d = a + INV_PHI * (b - a)
-			fd = q._closest_local(mover, local_from + local_motion * d) - radius
+			fd = q.closest_local(mover.id, local_from + local_motion * d) - radius
 			if fd <= 0.0:
 				return d
 		iterations += 1
@@ -152,7 +157,7 @@ func _ref_find_contact(q: CollisionQuery, mover: MoverDef, local_from: Vector3, 
 ## Story 005's _sweep_local (reference only). Returns [] on a miss, else [fraction, local point,
 ## local normal].
 func _ref_sweep(q: CollisionQuery, mover: MoverDef, local_from: Vector3, local_motion: Vector3, length: float, radius: float, gap0: float) -> Array:
-	var gap1: float = q._closest_local(mover, local_from + local_motion) - radius
+	var gap1: float = q.closest_local(mover.id, local_from + local_motion) - radius
 	var hi: float = 1.0
 	if gap1 > 0.0:
 		if gap0 + gap1 > length:
@@ -162,9 +167,9 @@ func _ref_sweep(q: CollisionQuery, mover: MoverDef, local_from: Vector3, local_m
 			return []
 	var lo: float = 0.0
 	var iterations: int = 0
-	while (hi - lo) * length > CollisionQuery.MOVER_SWEEP_TOLERANCE and iterations < CollisionQuery.MOVER_SWEEP_MAX_ITERATIONS:
+	while (hi - lo) * length > OracleCollisionQuery.MOVER_SWEEP_TOLERANCE and iterations < OracleCollisionQuery.MOVER_SWEEP_MAX_ITERATIONS:
 		var mid: float = (lo + hi) * 0.5
-		if q._closest_local(mover, local_from + local_motion * mid) - radius <= 0.0:
+		if q.closest_local(mover.id, local_from + local_motion * mid) - radius <= 0.0:
 			hi = mid
 		else:
 			lo = mid
@@ -172,8 +177,8 @@ func _ref_sweep(q: CollisionQuery, mover: MoverDef, local_from: Vector3, local_m
 	var fraction: float = lo
 	if gap1 <= 0.0 and hi == 1.0:
 		fraction = 1.0
-	q._closest_local(mover, local_from + local_motion * fraction)
-	return [fraction, q._cl_point, q._cl_normal]
+	q.closest_local(mover.id, local_from + local_motion * fraction)
+	return [fraction, q.closest_point(), q.closest_normal()]
 
 
 ## Minimum of the convex gap along the motion (golden-section; ambiguity filter only).
@@ -183,11 +188,11 @@ func _min_gap(q: CollisionQuery, mover: MoverDef, local_from: Vector3, local_mot
 	for _n in MIN_GAP_ITERATIONS:
 		var c: float = b - INV_PHI * (b - a)
 		var d: float = a + INV_PHI * (b - a)
-		if q._closest_local(mover, local_from + local_motion * c) < q._closest_local(mover, local_from + local_motion * d):
+		if q.closest_local(mover.id, local_from + local_motion * c) < q.closest_local(mover.id, local_from + local_motion * d):
 			b = d
 		else:
 			a = c
-	return q._closest_local(mover, local_from + local_motion * (a + b) * 0.5) - R
+	return q.closest_local(mover.id, local_from + local_motion * (a + b) * 0.5) - R
 
 
 ## Checks one compared hit of the new routine against the reference [param ref]; appends failures.
@@ -204,7 +209,7 @@ func _check_hit(q: CollisionQuery, mover: MoverDef, pose: Transform3D, local_fro
 	if hit.started_inside or hit.collider_id != ID:
 		failures.append("%s: started_inside %s collider %d" % [label, hit.started_inside, hit.collider_id])
 	# Safety: a blocking hit leaves the sphere clear at its fraction (computed as the query does).
-	if hit.fraction < 1.0 and q._closest_local(mover, local_from + local_motion * hit.fraction) - R <= 0.0:
+	if hit.fraction < 1.0 and q.closest_local(mover.id, local_from + local_motion * hit.fraction) - R <= 0.0:
 		failures.append("%s: not clear at the reported fraction %s" % [label, hit.fraction])
 
 
@@ -213,7 +218,7 @@ func _check_hit(q: CollisionQuery, mover: MoverDef, pose: Transform3D, local_fro
 ## failures}.
 func _compare(mover: MoverDef, times: PackedFloat64Array) -> Dictionary:
 	var movers: Array[MoverDef] = [mover]
-	var query: CollisionQuery = CollisionQuery.new(Fixtures.movers_only(movers))
+	var query: CollisionQuery = CollisionQuery.create(Fixtures.movers_only(movers).pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit: WallHit = WallHit.new()
 	var failures: Array[String] = []
@@ -238,8 +243,8 @@ func _compare(mover: MoverDef, times: PackedFloat64Array) -> Dictionary:
 					var local_from: Vector3 = inv * from
 					var local_motion: Vector3 = inv.basis * (to - from)
 					var length: float = (to - from).length()
-					var gap0: float = query._closest_local(mover, local_from) - R
-					var gap1: float = query._closest_local(mover, local_from + local_motion) - R
+					var gap0: float = query.closest_local(mover.id, local_from) - R
+					var gap1: float = query.closest_local(mover.id, local_from + local_motion) - R
 					if gap0 <= AMBIGUOUS_GAP or absf(gap1) < AMBIGUOUS_GAP or absf(_min_gap(query, mover, local_from, local_motion)) < AMBIGUOUS_GAP:
 						continue
 					var ref: Array = _ref_sweep(query, mover, local_from, local_motion, length, R, gap0)
@@ -322,8 +327,8 @@ func test_new_sweep_same_inputs_give_bit_identical_results() -> void:
 	# Arrange: a spinning box; one sweep that hits it, run on two fresh queries and twice on one.
 	var movers: Array[MoverDef] = [Fixtures.spinner_box(ID, AT, BOX_HALF)]
 	var data: TrackCollisionData = Fixtures.movers_only(movers)
-	var a: CollisionQuery = CollisionQuery.new(data)
-	var b: CollisionQuery = CollisionQuery.new(data)
+	var a: CollisionQuery = CollisionQuery.create(data.pack_native())
+	var b: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var from: Vector3 = AT + Vector3(4.0, 0.2, 0.5)
 	var to: Vector3 = AT + Vector3(-1.0, 0.2, 0.3)
@@ -353,10 +358,10 @@ func test_cached_pose_equals_fresh_query_pose_at_each_time() -> void:
 	# per time (no cache). Spinner times cover a key time and the loop segment.
 	var movers: Array[MoverDef] = [Fixtures.spinner_box(ID, AT, BOX_HALF)]
 	var data: TrackCollisionData = Fixtures.movers_only(movers)
-	var cached: CollisionQuery = CollisionQuery.new(data)
+	var cached: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var probe: Vector3 = AT + Vector3(1.0, 0.0, 0.5)
 	for t in [0.0, 1.0, 1.0, 2.5, 3.5, 0.0, 3.999]:
-		var fresh: CollisionQuery = CollisionQuery.new(data)
+		var fresh: CollisionQuery = CollisionQuery.create(data.pack_native())
 		# Act
 		var pose_cached: Transform3D = cached.mover_pose(ID, t)
 		var vel_cached: Vector3 = cached.mover_point_velocity(ID, t, probe)

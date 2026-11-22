@@ -1,0 +1,2 @@
+refusing --bench: cannot tell whether a Godot process is open:
+PROBE_FAILED no_such_powershell_for_this_test not found

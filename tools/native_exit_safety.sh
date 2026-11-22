@@ -55,4 +55,26 @@ for mode in exit_clean exit_rid exit_leak; do
 		bad=$((bad + 1))
 	fi
 done
+
+# Story 067: a built CollisionQuery, a QueryCursor, a GroundHit and a WallHit held in static vars at quit
+# (tools/collision_exit_probe.gd, run with --verbose). Exit 0, the sentinel, no ERROR: line and no leak line.
+if [ ! -f "$DLL" ]; then
+	echo "NOT RUN native_exit collision (the debug DLL is missing: $DLL)"
+	bad=$((bad + 1))
+else
+	timeout "$TIMEOUT" "$GODOT" --headless --verbose --path . -s res://tools/collision_exit_probe.gd > "$OUT/collision.txt" 2>&1
+	code=$?
+	ran=$(grep -c '^PROBE_RAN ' "$OUT/collision.txt")
+	errors=$(grep -c 'ERROR:' "$OUT/collision.txt")
+	leaks=$(grep -cE "$LEAK_LINES" "$OUT/collision.txt")
+	if [ "$ran" != 1 ] || [ "$code" = 124 ]; then
+		echo "NOT RUN native_exit collision (exit $code, sentinel PROBE_RAN not seen; see $OUT/collision.txt)"
+		bad=$((bad + 1))
+	elif [ "$code" = 0 ] && [ "$errors" = 0 ] && [ "$leaks" = 0 ]; then
+		echo "PASS native_exit collision (exit 0, sentinel seen, no ERROR: line, no leak line; CollisionQuery + QueryCursor + hits held at quit)"
+	else
+		echo "FAIL native_exit collision (exit $code, $errors ERROR: line(s), $leaks leak line(s), see $OUT/collision.txt)"
+		bad=$((bad + 1))
+	fi
+fi
 [ $bad = 0 ]

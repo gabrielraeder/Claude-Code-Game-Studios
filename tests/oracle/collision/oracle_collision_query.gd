@@ -1,5 +1,6 @@
-class_name CollisionQuery
+class_name OracleCollisionQuery
 extends RefCounted
+## FROZEN ORACLE (core-rebuild story 067, ADR-0007 section 5): the GDScript implementation as it stood when the native port was made. Test-only parity reference for the native classes; never changed after this point and never loaded by game code.
 ## The track's collision queries (ADR-0002; core-rebuild story 003: construction, cast_ground,
 ## dispose; story 004: sweep_walls; story 005: movers). Jolt Physics, used only through
 ## PhysicsServer3D: this object creates and owns a private space (never activated: an inactive space
@@ -24,23 +25,23 @@ extends RefCounted
 ##
 ## Threading: main thread only. The mover code keeps per-object scratch fields and a pose cache
 ## (each mover's pose, inverse and velocities at the last t it was evaluated at; story 007) shared by
-## every query method, so no two queries of one CollisionQuery may run at once. The setting
+## every query method, so no two queries of one OracleCollisionQuery may run at once. The setting
 ## physics/3d/run_on_separate_thread stays false (pinned in project.godot).
 ## Needs physics/jolt_physics_3d/queries/enable_ray_cast_face_index = true (pinned in project.godot;
 ## asserted at boot by CollisionBootCheck.assert_boot_settings(), story 006), otherwise every ground
 ## hit reports SURFACE_NONE. At track load the composition root runs CollisionBootCheck.load_error(),
 ## whose probe cast (probe_error) catches that and a missing mirror winding flip.
 ## [codeblock]
-## var query: CollisionQuery = CollisionQuery.new(track_data)
-## var cursor: QueryCursor = QueryCursor.new()      # once per kart
-## var hit: GroundHit = GroundHit.new()             # once per probe
+## var query: OracleCollisionQuery = OracleCollisionQuery.new(track_data)
+## var cursor: OracleQueryCursor = OracleQueryCursor.new()      # once per kart
+## var hit: OracleGroundHit = OracleGroundHit.new()             # once per probe
 ## if query.cast_ground(cursor, wheel_origin, Vector3.DOWN, max_drop, t, hit):
 ##     surface_ids[n_hit] = hit.surface_id
 ##     hit_points[n_hit] = hit.point
 ##     n_hit += 1
-## var kart_surface: int = CollisionQuery.majority_surface(surface_ids, hit_points, n_hit,
+## var kart_surface: int = OracleCollisionQuery.majority_surface(surface_ids, hit_points, n_hit,
 ##         centre_of_mass, kart_up, previous_surface)
-## var wall: WallHit = WallHit.new()                # once per kart
+## var wall: OracleWallHit = OracleWallHit.new()                # once per kart
 ## if query.sweep_walls(cursor, from, to, kart_radius, t, wall):
 ##     var wall_attr: int = wall.wall_attr          # WallAttr.id of the wall hit
 ## var gate_pose: Transform3D = query.mover_pose(gate_id, t)   # presentation, hazards
@@ -200,17 +201,17 @@ var _sm_velocity: Vector3 = Vector3.ZERO
 ## never to wrong surfaces.
 ## Allocates (server objects, one-off): call at track load, not per tick. Main thread only.
 ## [codeblock]
-## var query: CollisionQuery = CollisionQuery.new(data)
+## var query: OracleCollisionQuery = OracleCollisionQuery.new(data)
 ## [/codeblock]
 func _init(data: TrackCollisionData) -> void:
 	_space = PhysicsServer3D.space_create()
 	_state = PhysicsServer3D.space_get_direct_state(_space)
 	if data == null:
-		push_error("CollisionQuery: data is null; the query has no geometry")
+		push_error("OracleCollisionQuery: data is null; the query has no geometry")
 		return
 	var problem: String = data.layout_error()
 	if not problem.is_empty():
-		push_error("CollisionQuery: %s; the query has no geometry" % problem)
+		push_error("OracleCollisionQuery: %s; the query has no geometry" % problem)
 		return
 	_surface_of_face = data.surface_of_face
 	_wall_attr_ids = data.wall_attr_ids
@@ -228,12 +229,12 @@ func _init(data: TrackCollisionData) -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE and not _disposed:
-		push_warning("CollisionQuery freed without dispose(); disposing now (call dispose() at track unload)")
+		push_warning("OracleCollisionQuery freed without dispose(); disposing now (call dispose() at track unload)")
 		# During PREDELETE a RefCounted's self is already a null instance, so an instance method
 		# (dispose()) cannot be called here; the static helper only needs the RIDs.
 		_disposed = true
 		_state = null
-		CollisionQuery._free_server_objects(_bodies, _shapes, _space)
+		OracleCollisionQuery._free_server_objects(_bodies, _shapes, _space)
 
 
 ## Frees every server object this query owns, in the fixed order bodies, then shapes, then the
@@ -250,7 +251,7 @@ func dispose() -> void:
 		return
 	_disposed = true
 	_state = null
-	CollisionQuery._free_server_objects(_bodies, _shapes, _space)
+	OracleCollisionQuery._free_server_objects(_bodies, _shapes, _space)
 	_bodies.clear()
 	_shapes.clear()
 	_space = RID()
@@ -296,7 +297,7 @@ func is_disposed() -> bool:
 ## review). Main thread only.
 ## [codeblock]
 ## if not query.has_geometry():
-##     push_error("the track has no collision: see the CollisionQuery error above")
+##     push_error("the track has no collision: see the OracleCollisionQuery error above")
 ## [/codeblock]
 func has_geometry() -> bool:
 	return _ground_body.is_valid() or _wall_body.is_valid() or not _movers.is_empty()
@@ -312,7 +313,7 @@ func has_geometry() -> bool:
 ## solid mover (the authoring rule above); a hit with no face index (SURFACE_NONE: names
 ## FACE_INDEX_SETTING and its current value); another surface id; a normal that is not up.
 ## It runs on every load, an empty query included, and also warms Jolt's lazily built broadphase.
-## Allocates one QueryCursor and one GroundHit: load time only. Main thread only.
+## Allocates one OracleQueryCursor and one OracleGroundHit: load time only. Main thread only.
 ## [codeblock]
 ## var problem: String = query.probe_error(data.probe_point, data.probe_surface_id, limits.probe_max_drop_m)
 ## assert(problem.is_empty(), problem)
@@ -322,10 +323,10 @@ func probe_error(probe_point: Vector3, probe_surface_id: int, max_drop: float) -
 		return "load probe: the query is disposed"
 	if not (max_drop > 0.0):
 		return "load probe: max_drop is %s (must be > 0)" % max_drop
-	var hit: GroundHit = GroundHit.new()
-	if not cast_ground(QueryCursor.new(), probe_point, Vector3.DOWN, max_drop, PROBE_T, hit):
+	var hit: OracleGroundHit = OracleGroundHit.new()
+	if not cast_ground(OracleQueryCursor.new(), probe_point, Vector3.DOWN, max_drop, PROBE_T, hit):
 		if not has_geometry():
-			return "load probe at %s missed: the query has no geometry (its data was null or rejected; see the CollisionQuery error)" % probe_point
+			return "load probe at %s missed: the query has no geometry (its data was null or rejected; see the OracleCollisionQuery error)" % probe_point
 		return "load probe at %s found no ground within %s m below (ground missing there, or facing away: a mirror without the winding flip; has_geometry() counts non-solid movers, which the probe never hits)" % [probe_point, max_drop]
 	if hit.collider_id != 0:
 		return "load probe at %s hit mover %d at t = %s (no solid mover may stand over the probe point at t = 0)" % [probe_point, hit.collider_id, PROBE_T]
@@ -357,15 +358,15 @@ func probe_error(probe_point: Vector3, probe_surface_id: int, max_drop: float) -
 ## if down_hit and hit.collider_id != 0:
 ##     var deck_id: int = hit.collider_id   # standing on a mover
 ## [/codeblock]
-func cast_ground(cursor: QueryCursor, origin: Vector3, dir: Vector3, max_dist: float, t: float, out: GroundHit) -> bool:
-	assert(not _disposed, "CollisionQuery.cast_ground after dispose()")
-	assert(dir.is_normalized(), "CollisionQuery.cast_ground: dir must be unit length")
+func cast_ground(cursor: OracleQueryCursor, origin: Vector3, dir: Vector3, max_dist: float, t: float, out: OracleGroundHit) -> bool:
+	assert(not _disposed, "OracleCollisionQuery.cast_ground after dispose()")
+	assert(dir.is_normalized(), "OracleCollisionQuery.cast_ground: dir must be unit length")
 	if _disposed:
 		return false
 	var params: PhysicsRayQueryParameters3D = cursor.ray_params
 	params.from = origin
 	params.to = origin + dir * max_dist
-	# collision_mask (GROUND_LAYER) and hit_back_faces (false) are fixed once by QueryCursor._init.
+	# collision_mask (GROUND_LAYER) and hit_back_faces (false) are fixed once by OracleQueryCursor._init.
 	var result: PhysicsIntersectRayResult3D = cursor.ray_result
 	var static_hit: bool = _state.intersect_ray_into(params, result)
 	var best_dist: float = max_dist
@@ -419,15 +420,15 @@ func cast_ground(cursor: QueryCursor, origin: Vector3, dir: Vector3, max_dist: f
 ##     elif wall.fraction < 1.0:
 ##         kart_centre += motion * wall.fraction  # then slide along wall.normal
 ## [/codeblock]
-func sweep_walls(cursor: QueryCursor, from: Vector3, to: Vector3, radius: float, t: float, out: WallHit) -> bool:
-	assert(not _disposed, "CollisionQuery.sweep_walls after dispose()")
-	assert(radius > 0.0, "CollisionQuery.sweep_walls: radius must be > 0")
+func sweep_walls(cursor: OracleQueryCursor, from: Vector3, to: Vector3, radius: float, t: float, out: OracleWallHit) -> bool:
+	assert(not _disposed, "OracleCollisionQuery.sweep_walls after dispose()")
+	assert(radius > 0.0, "OracleCollisionQuery.sweep_walls: radius must be > 0")
 	if _disposed:
 		return false
 	var params: PhysicsShapeQueryParameters3D = cursor.shape_params
 	if cursor.sphere.radius != radius:
 		cursor.sphere.radius = radius
-	# collision_mask (WALL_LAYER) is fixed once by QueryCursor._init, and motion is zero between
+	# collision_mask (WALL_LAYER) is fixed once by OracleQueryCursor._init, and motion is zero between
 	# calls (only _sweep_static sets it, and resets it right after its cast).
 	params.transform = Transform3D(Basis.IDENTITY, from)
 	var rest: PhysicsGetRestInfoResult3D = cursor.rest_result
@@ -470,12 +471,12 @@ func sweep_walls(cursor: QueryCursor, from: Vector3, to: Vector3, radius: float,
 ## gate_mesh.global_transform = gate_pose
 ## [/codeblock]
 func mover_pose(id: int, t: float) -> Transform3D:
-	assert(not _disposed, "CollisionQuery.mover_pose after dispose()")
+	assert(not _disposed, "OracleCollisionQuery.mover_pose after dispose()")
 	if _disposed:
 		return Transform3D.IDENTITY
 	var k: int = _slot_of(id)
 	if k < 0:
-		push_error("CollisionQuery.mover_pose: no mover with id %d" % id)
+		push_error("OracleCollisionQuery.mover_pose: no mover with id %d" % id)
 		return Transform3D.IDENTITY
 	_eval_slot(k, t)
 	return _pc_pose[k]
@@ -492,12 +493,12 @@ func mover_pose(id: int, t: float) -> Transform3D:
 ## var push: Vector3 = query.mover_point_velocity(hammer_id, t, contact_point)
 ## [/codeblock]
 func mover_point_velocity(id: int, t: float, p: Vector3) -> Vector3:
-	assert(not _disposed, "CollisionQuery.mover_point_velocity after dispose()")
+	assert(not _disposed, "OracleCollisionQuery.mover_point_velocity after dispose()")
 	if _disposed:
 		return Vector3.ZERO
 	var k: int = _slot_of(id)
 	if k < 0:
-		push_error("CollisionQuery.mover_point_velocity: no mover with id %d" % id)
+		push_error("OracleCollisionQuery.mover_point_velocity: no mover with id %d" % id)
 		return Vector3.ZERO
 	_eval_slot(k, t)
 	return _pc_lin[k] + _ang_of(k).cross(p - _pc_pose[k].origin)
@@ -517,9 +518,9 @@ func mover_point_velocity(id: int, t: float, p: Vector3) -> Vector3:
 ## var ids: PackedInt32Array = PackedInt32Array([0, 1, 1, 1])   # road, grass, grass, grass
 ## var pts: PackedVector3Array = PackedVector3Array([Vector3(-0.5, 0, -0.7), Vector3(0.5, 0, -0.7),
 ##         Vector3(-0.5, 0, 0.7), Vector3(0.5, 0, 0.7)])
-## CollisionQuery.majority_surface(ids, pts, 4, Vector3.ZERO, Vector3.UP, 0)   # 1 (grass)
+## OracleCollisionQuery.majority_surface(ids, pts, 4, Vector3.ZERO, Vector3.UP, 0)   # 1 (grass)
 ## ids = PackedInt32Array([1, 0, 0, 1])                          # 2-2 tie
-## CollisionQuery.majority_surface(ids, pts, 4, Vector3(0.4, 0, -0.5), Vector3.UP, 0)
+## OracleCollisionQuery.majority_surface(ids, pts, 4, Vector3(0.4, 0, -0.5), Vector3.UP, 0)
 ## # 0: front-right (road) is nearest the centre of mass
 ## [/codeblock]
 static func majority_surface(ids: PackedInt32Array, points: PackedVector3Array, count: int,
@@ -599,7 +600,7 @@ static func _votes(ids: PackedInt32Array, n: int, id: int) -> int:
 
 ## Writes a static ground hit from [param result] (a ray cast that returned true) into every field
 ## of [param out]. surface_id is _surface_of_face[face_index] (SURFACE_NONE when out of range).
-func _write_ground_contact(result: PhysicsIntersectRayResult3D, out: GroundHit) -> void:
+func _write_ground_contact(result: PhysicsIntersectRayResult3D, out: OracleGroundHit) -> void:
 	var face: int = result.collider_face_index
 	out.point = result.position
 	out.normal = result.normal
@@ -614,7 +615,7 @@ func _write_ground_contact(result: PhysicsIntersectRayResult3D, out: GroundHit) 
 ## ADR-0002 sweep steps 2-4 against the static walls (the sphere did not overlap at [param from];
 ## [param motion] is not zero). Writes every field of [param out] and returns true on a blocking hit
 ## or a touch at [param to]; returns false and leaves [param out] untouched otherwise.
-func _sweep_static(cursor: QueryCursor, from: Vector3, to: Vector3, motion: Vector3, radius: float, out: WallHit) -> bool:
+func _sweep_static(cursor: OracleQueryCursor, from: Vector3, to: Vector3, motion: Vector3, radius: float, out: OracleWallHit) -> bool:
 	var params: PhysicsShapeQueryParameters3D = cursor.shape_params
 	# Step 2: the cast.
 	params.motion = motion
@@ -640,7 +641,7 @@ func _sweep_static(cursor: QueryCursor, from: Vector3, to: Vector3, motion: Vect
 ## finds it), the hit is kept so the sphere is blocked rather than let through: a contact
 ## straight ahead along [param motion], wall_attr = WALL_ATTR_NONE, and a push_warning in debug
 ## builds.
-func _write_blocked_hit(cursor: QueryCursor, from: Vector3, motion: Vector3, radius: float, out: WallHit) -> void:
+func _write_blocked_hit(cursor: OracleQueryCursor, from: Vector3, motion: Vector3, radius: float, out: OracleWallHit) -> void:
 	var params: PhysicsShapeQueryParameters3D = cursor.shape_params
 	var cast: PhysicsCastMotionResult3D = cursor.cast_result
 	var safe: float = cast.safe_fraction
@@ -657,7 +658,7 @@ func _write_blocked_hit(cursor: QueryCursor, from: Vector3, motion: Vector3, rad
 		_write_wall_contact(cursor.rest_result, safe, false, out)
 		return
 	if OS.is_debug_build():
-		push_warning("CollisionQuery.sweep_walls: no rest contact at the unsafe point; reporting a blocking hit with WALL_ATTR_NONE")
+		push_warning("OracleCollisionQuery.sweep_walls: no rest contact at the unsafe point; reporting a blocking hit with WALL_ATTR_NONE")
 	var dir: Vector3 = motion.normalized()
 	out.point = unsafe_centre + dir * radius
 	out.normal = -dir
@@ -670,7 +671,7 @@ func _write_blocked_hit(cursor: QueryCursor, from: Vector3, motion: Vector3, rad
 
 ## Writes a static-wall contact from [param rest] (a rest check that returned true) into
 ## [param out]. wall_attr is _wall_attr_ids[collider_shape] (WALL_ATTR_NONE when out of range).
-func _write_wall_contact(rest: PhysicsGetRestInfoResult3D, fraction: float, started_inside: bool, out: WallHit) -> void:
+func _write_wall_contact(rest: PhysicsGetRestInfoResult3D, fraction: float, started_inside: bool, out: OracleWallHit) -> void:
 	var shape: int = rest.collider_shape
 	out.point = rest.point
 	out.normal = rest.normal
@@ -687,7 +688,7 @@ func _write_wall_contact(rest: PhysicsGetRestInfoResult3D, fraction: float, star
 ## Writes a mover contact (world point, normal and point velocity) of mover slot [param slot] into
 ## every field of [param out]; wall_attr is that mover's MoverDef.wall_attr_id.
 func _write_mover_wall_contact(slot: int, point: Vector3, normal: Vector3, velocity: Vector3,
-		fraction: float, started_inside: bool, out: WallHit) -> void:
+		fraction: float, started_inside: bool, out: OracleWallHit) -> void:
 	var mover: MoverDef = _movers[slot]
 	out.point = point
 	out.normal = normal
@@ -817,7 +818,7 @@ func _ang_of(k: int) -> Vector3:
 	var q1: Quaternion = Quaternion(r1.x, r1.y, r1.z, r1.w)
 	if q0.dot(q1) < 0.0:
 		q1 = Quaternion(-q1.x, -q1.y, -q1.z, -q1.w)
-	var ang: Vector3 = CollisionQuery._angular_velocity(q0, q1, _pc_span[k])
+	var ang: Vector3 = OracleCollisionQuery._angular_velocity(q0, q1, _pc_span[k])
 	_pc_ang[k] = ang
 	_pc_ang_ok[k] = 1
 	return ang
@@ -1099,7 +1100,7 @@ func _ray_capsule(r: float, hh: float, o: Vector3, d: Vector3, max_dist: float) 
 				best_n = Vector3(o.x + d.x * s, 0.0, o.z + d.z * s) / r
 	for end in 2:
 		var centre: Vector3 = Vector3(0.0, hh if end == 1 else -hh, 0.0)
-		var s2: float = CollisionQuery._ray_sphere(o - centre, d, r)
+		var s2: float = OracleCollisionQuery._ray_sphere(o - centre, d, r)
 		if s2 < best:
 			best = s2
 			best_n = (o - centre + d * s2) / r
@@ -1214,7 +1215,7 @@ func _sweep_local(mover: MoverDef, local_from: Vector3, local_motion: Vector3, l
 	if hi == NEWTON_CAPPED:
 		if not _cap_error_reported:
 			_cap_error_reported = true
-			push_error("CollisionQuery: the mover sweep reached its iteration cap against mover %d; reporting a blocking hit at the last safe fraction %s (reported once per query)" % [mover.id, lo])
+			push_error("OracleCollisionQuery: the mover sweep reached its iteration cap against mover %d; reporting a blocking hit at the last safe fraction %s (reported once per query)" % [mover.id, lo])
 		_sw_fraction = lo
 		_closest_local(mover, local_from + local_motion * lo)
 		_sw_point = _cl_point

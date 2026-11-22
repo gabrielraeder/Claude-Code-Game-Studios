@@ -1,0 +1,16 @@
+final import 1 exit 0 extension_list.cfg_seeded=yes (pre-seeded as tools/build_native.sh does)
+default_value_warnings=0
+IMPORT_HOOK plugin entered, native class exists=true
+final import 2 exit 0 extension_list.cfg_seeded=yes (pre-seeded as tools/build_native.sh does)
+default_value_warnings=0
+IMPORT_HOOK plugin entered, native class exists=true
+final import 3 (sample changed, importer runs) exit 0 extension_list.cfg pre-seeded=yes
+default_value_warnings=0
+IMPORT_HOOK plugin entered, native class exists=true
+IMPORT_HOOK _import ran, CollisionQuery exists=true, validate_packed=[], create returned true, has_geometry=true, owned_rids=3
+Notes: the earlier logs (fresh-clone-import-1/2.log) carried 6 "Instantiated ... used as default value for QueryCursor's ... property"
+warnings each: the engine builds a default QueryCursor to read property defaults, and the read-only Resource properties
+were listed with PROPERTY_USAGE_DEFAULT (STORAGE|EDITOR), so each default instance held instantiated Resources. The properties now use
+PROPERTY_USAGE_NONE (no storage, no editor): 0 warnings in the final logs. The first --import of a project with NO
+.godot/extension_list.cfg segfaults at exit (139) on 4.8-beta3 (story 066 engine bug); every run here pre-seeds the list the way
+tools/build_native.sh does.

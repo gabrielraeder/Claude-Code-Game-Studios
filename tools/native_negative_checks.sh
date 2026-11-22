@@ -145,7 +145,11 @@ echo "== core_greps native-suite rule on scratch trees"
 G="$TMP/greps"
 mk_tree() {  # name registered(1/0) suite_text
 	local d="$G/$1"
-	mkdir -p "$d/native/src" "$d/tests/unit/native" "$d/src/core"
+	mkdir -p "$d/native/src/collision" "$d/tests/unit/native" "$d/src/core"
+	# Story 067: the per-tick-region rule FAILS on a tree with no region, so every scratch tree carries an empty one.
+	printf '// PER_TICK_BEGIN
+// PER_TICK_END
+' > "$d/native/src/collision/stub.cpp"
 	if [ "$2" = 1 ]; then printf 'GDREGISTER_CLASS(DogworksCore);\n' > "$d/native/src/register_types.cpp"; fi
 	if [ "$2" = 0 ]; then printf '// nothing registered\n' > "$d/native/src/register_types.cpp"; fi
 	if [ -n "$3" ]; then printf '%b' "$3" > "$d/tests/unit/native/x_test.gd"; fi
@@ -162,6 +166,64 @@ case_run greps_zero_suites_is_not_run 1 "NOT RUN: no suite" bash tools/core_grep
 case_run greps_comment_only_mention 1 "FAIL native suites call the shared hash helper .*does not preload" bash tools/core_greps.sh "$G/comment_only"
 case_run greps_name_without_call 1 "FAIL native suites call the shared hash helper .*does not preload" bash tools/core_greps.sh "$G/name_only"
 case_run greps_real_call_passes 0 "PASS native suites call the shared hash helper" bash tools/core_greps.sh "$G/real_call"
+
+echo "== story 067: the native core_greps rules fail on planted violations, and a clean tree passes"
+P="$TMP/plants"
+mk_plant() {  # name relpath content(%b): a scratch tree with the register list and an empty per-tick region
+	local d="$P/$1"
+	mkdir -p "$d/native/src/collision" "$d/tests/unit/native" "$d/src/core"
+	printf 'GDREGISTER_CLASS(CollisionQuery);\n' > "$d/native/src/register_types.cpp"
+	printf '// PER_TICK_BEGIN\n// PER_TICK_END\n' > "$d/native/src/collision/stub.cpp"
+	if [ -n "${2:-}" ]; then mkdir -p "$(dirname "$d/$2")"; printf '%b' "$3" > "$d/$2"; fi
+}
+# Every case here wants exit 1: the scratch tree has no suites, so the native-suite rule fails whatever the plant.
+mk_plant clean "" ""
+case_run plant_clean_tree_per_tick_rule_passes 1 "PASS no allocation, \*_create\( or String" bash tools/core_greps.sh "$P/clean"
+tick_n=0
+while IFS= read -r snippet; do
+	tick_n=$((tick_n + 1))
+	mk_plant "tick$tick_n" native/src/collision/planted.cpp "// PER_TICK_BEGIN\nvoid f() {\n\t$snippet\n}\n// PER_TICK_END\n"
+	case_run "plant_per_tick_$tick_n" 1 "FAIL no allocation, .*per-tick regions" bash tools/core_greps.sh "$P/tick$tick_n"
+done <<'SNIPPETS'
+auto a = memnew(Foo);
+auto a = new Foo();
+String s;
+StringName n;
+Variant v;
+Dictionary d;
+Array a;
+TypedArray<RID> a;
+x.instantiate();
+ERR_PRINT("x");
+print_line("x");
+UtilityFunctions::print("x");
+auto b = ps->body_create();
+v.push_back(1);
+v.emplace_back(1);
+v.assign(a, b);
+v.insert(it, 1);
+std::vector<int> v;
+auto p = std::make_unique<int>();
+v.resize(3);
+v.reserve(3);
+std::unordered_map<int, int> m;
+int r = rand();
+SNIPPETS
+mk_plant dict native/src/collision/planted.cpp "void g() { state->intersect_ray(params); }\n"
+case_run plant_dictionary_query_form 1 "FAIL no Dictionary query forms in native" bash tools/core_greps.sh "$P/dict"
+mk_plant ctor native/src/collision/planted.cpp "void g() { Ref<CollisionQuery> q = memnew(CollisionQuery); }\n"
+case_run plant_collision_query_construction 1 "FAIL CollisionQuery is constructed only" bash tools/core_greps.sh "$P/ctor"
+mk_plant keypos native/src/kart/planted.cpp "int g() { return key_pos; }\n"
+case_run plant_key_pos_outside_collision 1 "FAIL mover keys" bash tools/core_greps.sh "$P/keypos"
+mk_plant clash src/planted.gd "class_name CollisionQuery\nextends RefCounted\n"
+case_run plant_class_name_clash_register_list 1 "FAIL no class_name under src" bash tools/core_greps.sh "$P/clash"
+mk_plant gdcreate src/planted.gd "func f():\n\tCollisionQuery.create({})\n"
+case_run plant_gdscript_collision_query_create 1 "FAIL CollisionQuery.new\( / .create\(" bash tools/core_greps.sh "$P/gdcreate"
+"$GODOT" --headless --path . -s res://tools/native_class_list.gd > "$OUT/native_classes_from_classdb.txt" 2>&1
+case_run classdb_list_lists_the_native_classes 0 "NATIVE_CLASS CollisionQuery" cat "$OUT/native_classes_from_classdb.txt"
+case_run classdb_fed_greps_on_the_real_tree_pass 0 "PASS no class_name under src/ or tests/ matches a native class name .*ClassDB" env NATIVE_CLASSES_FILE="$OUT/native_classes_from_classdb.txt" bash tools/core_greps.sh
+mk_plant clash_classdb src/planted.gd "class_name GroundHit\nextends RefCounted\n"
+case_run plant_class_name_clash_classdb_fed 1 "FAIL no class_name under src" env NATIVE_CLASSES_FILE="$OUT/native_classes_from_classdb.txt" bash tools/core_greps.sh "$P/clash_classdb"
 
 echo "== exit-safety check that cannot run is NOT RUN, never PASS"
 case_run exit_safety_missing_godot_is_not_run 1 "NOT RUN native_exit exit_clean" env GODOT=C:/no/such/godot.exe TIMEOUT=5 bash tools/native_exit_safety.sh "$OUT/exit_safety_missing"

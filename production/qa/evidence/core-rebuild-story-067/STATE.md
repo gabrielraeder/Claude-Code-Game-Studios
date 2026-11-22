@@ -1,0 +1,43 @@
+# Story 067 STATE (resume from here)
+- Coordinator hold: NO bench_collision.sh until coordinator says "bench ok" (owner GUI test CPU load). Build/gdUnit OK.
+- [x] step 0: read story, query gd, resources, toolchain
+- [ ] step 1: write native/src/collision/*.{h,cpp}, register_types
+- [ ] step 2: pack_native() in GDScript resources; boot check factory; git mv oracle
+- [ ] step 3: build, retarget tests, parity, greps, bench (after bench ok), TD-012
+Design: pack_native -> Dictionary(schema_version, ground_faces, surface_of_face, wall_faces(Array), wall_attr_ids, movers(Array of mover Dictionaries)).
+- [x] step 1 written: native/src/collision/{collision_constants.h,ground_hit,wall_hit,query_cursor,collision_query}.{h,cpp}, register_types.cpp edited. NOT YET BUILT.
+  API: CollisionQuery.create/validate_packed(Dictionary), methods as oracle + test seams set_newton_cap/cap_error_reported/closest_local(mover_id,p)/closest_point/closest_normal, statics ray_sphere/angular_velocity/mover_sweep_tolerance()/probe_t()/unsafe_retry_length(); FACE_INDEX_SETTING const must move to CollisionBootCheck.
+  per-tick regions marked // PER_TICK_BEGIN/END in collision_query.cpp (for core_greps)
+- [x] build passes (debug/release/bench) 
+- [x] step 2: git mv oracle -> tests/oracle/collision/oracle_*.gd (renamed, FROZEN header); pack_native in MoverDef/TrackCollisionData; CollisionBootCheck.checked_query uses validate_packed+create; FACE_INDEX_SETTING const moved to CollisionBootCheck
+- [ ] TODO: --import, tools/spline_mesh_equivalence.gd & bench_collision.gd retarget, tests retarget (CollisionQuery.new( -> create(data.pack_native())), pack/schema/parity tests, core_greps, TD-012
+- [x] tests retargeted mechanically (.new( -> create(pack_native)); special tests rewritten; scan tests removed; NEXT: add native_test_guard before() to each suite, new tests (unbuilt refusals, dispose, pack schema, validate negative, parity), --import, run gdUnit
+- [x] new tests written: collision_native_surface_test, collision_pack_native_test, collision_native_parity_test (not yet run). guard added to old suites. NEXT: wait for no Godot (story 008 legacy_test_bake running), --import, gdUnit, bench, core_greps native rules, TD-012
+- [x] core_greps native rules + tools/native_class_list.gd written; negative run evidence negative_greps.txt (all 6 rules fail on plants)
+- BLOCKED (18:00): story 008's legacy_test_bake Godot (pids 12972/13452, running since 17:32) holds the project; no Godot run is safe (--import, gdUnit, bench). Resume when `Get-Process Godot*` is empty (the owner's editor-test clone is separate).
+- NEXT on resume, in order: (1) bash tools/build_native.sh --check; (2) godot --headless --path . --import (twice, check exit 0); (3) gdUnit: GdUnitCmdTool -a res://tests/unit/collision -a res://tests/unit/native, port 24690, fix compile errors/test failures (expect: error-message strings of refusals, unknown-id messages in movers tests 'no mover with id %d' now 'no mover with that id', has_geometry after dispose, oracle parity); (4) tools/bench_collision.gd retarget check (uses owned_rids/space_rid fine; --stages uses cursor.ray_params, unbound: drop --stages); build_native.sh --bench, bench_collision.sh OUT native 3 castle worst static, build_native.sh --restore; (5) NATIVE_CLASSES_FILE run of tools/native_class_list.gd; (6) alloc/exit checks (tools/native_exit_safety.sh, --verbose); (7) TD-012 in docs/tech-debt-register.md, story status/evidence, parity counts from 'PARITY' print lines.
+- [x] --import x2 exit 0 clean (18:xx). NEXT gdUnit
+- [x] gdUnit collision+native: 281 tests 0 failures (gdunit4.txt). parity excluded counts all 0 (PARITY lines). NEXT: bench gate
+- [x] BUDGET GATE PASS: bench/native-aggregate.txt. castle all p95 114 (worst section 120 crossover), worst layout all p95 115 (max section 125 crossover; movers section 97), static 110. alloc OBJECT_COUNT unchanged. restored debug DLL. NEXT: exit safety, alloc static mem, TD-012, fresh-clone, greps, recount, commands.test, regression
+- [x] exit_probe clean (exit_probe.txt), 600-tick no-alloc test added+pass (24 tests surface file), native_classes.txt + greps PASS via NATIVE_CLASSES_FILE. NEXT: fresh-clone check, TD-012, commands.test, regression.sh
+- [x] fresh-clone-import-1/2.log exit 0 with import-time CollisionQuery create; TD-012 marked Resolved. NEXT: commands.test literal, regression.sh, recount
+- [x] commands.test literal: 293 cases 0 failures (gdunit-commands-test.log). RUNNING regression.sh -> production/qa/evidence/core-rebuild-story-067/regression-full (txt: regression-full.txt)
+- regression full run (regression-full.txt): 9/10 PASS incl traces vs golden; native_negative NOT RUN/FAIL only because story 008 Godot processes were open (DLL busy). Re-running CHECKS=native_negative when no Godot.
+- [x] regression.sh full: 9/10 PASS (regression-full.txt; native_negative refused while 008's Godot was open). native_negative re-run alone with no Godot: PASS (regression-negative3.txt) after tools/native_negative_checks.sh mk_tree got an empty PER_TICK stub (the new per-tick rule FAILs a tree without a region).
+- [x] .new( recount (tests/unit+tools+src, oracle excluded): CollisionQuery.new 19 (unbuilt refusals), CollisionQuery.create 81, QueryCursor.new 103, GroundHit.new 45, WallHit.new 69 = 317 sites incl. new tests; oracle's own .new 16.
+- [x] per-tick awk rule re-checked: PASS on real tree (1 region), FAIL on plants (negative_greps.txt).
+- ALL gdUnit and regression runs finished. 067 machine free.
+- REVIEW PASS 2 started (coordinator list A1-A10,B11-14,C15-17,D18-22). Write code first; build only when no Godot.
+- [x] A1-A10 C++ edits applied (edit1.py): cursor registry+guards, probe_error guard, id<=INT32_MAX, release guards, null state, radius cache, fallback counter+seam, live_rid_count, local_point seam, majority_surface in PER_TICK. NOT BUILT.
+- [x] edit2: MoverDef id limit, checked_query msg, tests (surface/pack/load_mirror) updated. NEXT: parity test rewrite, greps tick rule, negative checks plants, exit probe, bench, docs
+- [x] edit3: core_greps portable tick rule, native_negative plants, exit probe+exit_safety collision mode, bench warmup/baseline/fallback. parity test rewritten. NEXT: docs (native-code.md, evidence md), then build when no Godot
+- [x] docs: native-code.md exception, adr-0007-4-exception.md, deviations.md. NEXT: build + tests
+- 067 build done (debug/release/bench DLLs built 18:xx with review-pass-2 code; --check PASS). Story 008 may use the new DLL.
+- [x] gdunit8: 298 cases 0 failures (collision+native). parity pins: fallbacks ground_with_walls 8, attr_walls 5, inner_corner 1, others 0 (bench 0); MOVER_RAY_TOLERANCE 5e-5 (observed max 4.685e-5 bench); LOCAL_TRANSFORM 32/400 local_point + 47/400 pose bit mismatches worst 4.3e-5 at 300 m. NEXT bench x3
+- bench2-INVALID-debug-dll-with-load: first bench attempt ran while story 008 Godot was open (--bench refused, so debug DLL) -> discarded; redo gated
+- bench gate script started in background (waits for no Godot, then --bench, 3x3 runs, --restore) -> bench2/console.txt
+- bench2 contended (castle valid 114; worst/static inflated by 008's spline_mesh_equivalence Godot): kept as bench2-castle-clean-worst-static-contended. bench3 started with other_godot_samples.txt sampler
+- [x] bench3 clean-ish: castle all 121 / worst 121 / static 113 (median of run p95), worst single run section 167 castle crossover; fallback 0 all; MEMORY_STATIC +104B/600 ticks identical in all layouts; baseline run memstatic_baseline.txt
+- [x] commands.test final: 311 cases 0 failures (gdunit-commands-test-final.log); parse-check-final.txt; fresh-clone-final-*.log; NEXT: full regression.sh
+- regression.sh final run started -> regression-final.txt
+- [x] regression.sh final: RESULT PASS 10/10 (regression-final.txt). commands.test 311/0. ALL Godot runs done. 067 machine free.

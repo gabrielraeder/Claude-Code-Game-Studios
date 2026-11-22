@@ -1,0 +1,1 @@
+PASS flag scan: 1 compile line(s) scanned in /c/writechoice/Claude-Code-Game-Studios/native/obj/negative_tmp/flags_ok.txt, none has /fp:fast, /arch: or /MD, all have /fp:precise and /MT

@@ -1,6 +1,7 @@
-class_name QueryCursor
+class_name OracleQueryCursor
 extends RefCounted
-## The reused query objects of one caller (one kart, one projectile, one tool) for CollisionQuery
+## FROZEN ORACLE (core-rebuild story 067, ADR-0007 section 5): the GDScript implementation as it stood when the native port was made. Test-only parity reference for the native classes; never changed after this point and never loaded by game code.
+## The reused query objects of one caller (one kart, one projectile, one tool) for OracleCollisionQuery
 ## (ADR-0002 "Reuse rules"; core-rebuild stories 003-004). Built once, passed to every query, so
 ## per-tick collision code allocates nothing: PhysicsRayQueryParameters3D.create() and the
 ## Dictionary query forms are forbidden in per-tick code.
@@ -12,15 +13,15 @@ extends RefCounted
 ## Not thread-safe: a cursor belongs to one caller on the main thread; never share one between two
 ## callers that interleave queries.
 ## [codeblock]
-## var cursor: QueryCursor = QueryCursor.new()   # once per kart, at setup
-## var ground: GroundHit = GroundHit.new()
-## var wall: WallHit = WallHit.new()
+## var cursor: OracleQueryCursor = OracleQueryCursor.new()   # once per kart, at setup
+## var ground: OracleGroundHit = OracleGroundHit.new()
+## var wall: OracleWallHit = OracleWallHit.new()
 ## query.cast_ground(cursor, origin, Vector3.DOWN, max_drop, t, ground)
 ## query.sweep_walls(cursor, from, to, stats.radius, t, wall)
 ## [/codeblock]
 
-## Ray parameters, reused. CollisionQuery sets from and to on every cast; collision_mask
-## (CollisionQuery.GROUND_LAYER) and the flags are fixed here once (ground rays never hit back faces,
+## Ray parameters, reused. OracleCollisionQuery sets from and to on every cast; collision_mask
+## (OracleCollisionQuery.GROUND_LAYER) and the flags are fixed here once (ground rays never hit back faces,
 ## ADR-0002 Geometry layout; story 007 moved the mask here from every cast). Never change them.
 var ray_params: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.new()
 ## Ray result, reused. Only valid right after a cast that returned true (a miss leaves the
@@ -29,7 +30,7 @@ var ray_result: PhysicsIntersectRayResult3D = PhysicsIntersectRayResult3D.new()
 ## The sweep sphere, reused. sweep_walls sets its radius (only when it changes).
 var sphere: SphereShape3D = SphereShape3D.new()
 ## Shape-query parameters for sweep_walls, reused. Its shape is [member sphere] and its
-## collision_mask CollisionQuery.WALL_LAYER (both set once here; never change them); CollisionQuery
+## collision_mask OracleCollisionQuery.WALL_LAYER (both set once here; never change them); OracleCollisionQuery
 ## sets transform on every sweep and motion only around its cast, resetting it to zero right
 ## after, so motion is zero between calls (story 007: sweep_walls relies on it). margin stays 0.
 var shape_params: PhysicsShapeQueryParameters3D = PhysicsShapeQueryParameters3D.new()
@@ -40,13 +41,13 @@ var rest_result: PhysicsGetRestInfoResult3D = PhysicsGetRestInfoResult3D.new()
 
 
 func _init() -> void:
-	ray_params.collision_mask = CollisionQuery.GROUND_LAYER
+	ray_params.collision_mask = OracleCollisionQuery.GROUND_LAYER
 	ray_params.hit_back_faces = false
 	ray_params.hit_from_inside = false
 	ray_params.collide_with_areas = false
 	ray_params.collide_with_bodies = true
 	shape_params.shape = sphere
-	shape_params.collision_mask = CollisionQuery.WALL_LAYER
+	shape_params.collision_mask = OracleCollisionQuery.WALL_LAYER
 	shape_params.margin = 0.0
 	shape_params.collide_with_areas = false
 	shape_params.collide_with_bodies = true

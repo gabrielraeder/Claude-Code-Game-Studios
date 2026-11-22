@@ -1,0 +1,3 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+BOOT_CHECK problem='native extension is not loaded (class DogworksCore is missing); run tools/build_native.sh' hash_usec=0

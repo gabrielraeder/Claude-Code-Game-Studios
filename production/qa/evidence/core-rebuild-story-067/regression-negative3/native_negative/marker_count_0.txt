@@ -1,0 +1,6 @@
+SH 8aaff7ce13ff46d7b92219601bb56f3f81d28b7a8a42b2b32ca65e5be2e5a6a0
+PASS no bench.lock
+FAIL debug: found 0 build markers in addons/dogworks_core/bin/dogworks_core.windows.template_debug.x86_64.dll (need exactly 1)
+PASS release (1 marker, sh and fh match)
+PASS bench (1 marker, sh and fh match)
+CHECK FAIL (1)

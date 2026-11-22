@@ -1,0 +1,6 @@
+SH a29025b06cf09393b96245c80c1a752013b1810abec45d29a0cc6f5c9435950a
+PASS no bench.lock
+FAIL debug: stale DLL, source hash differs (DLL 8aaff7ce13ff46d7b92219601bb56f3f81d28b7a8a42b2b32ca65e5be2e5a6a0, sources a29025b06cf09393b96245c80c1a752013b1810abec45d29a0cc6f5c9435950a); run tools/build_native.sh
+FAIL release: stale DLL, source hash differs (DLL 8aaff7ce13ff46d7b92219601bb56f3f81d28b7a8a42b2b32ca65e5be2e5a6a0, sources a29025b06cf09393b96245c80c1a752013b1810abec45d29a0cc6f5c9435950a); run tools/build_native.sh
+FAIL bench: stale DLL, source hash differs (DLL 8aaff7ce13ff46d7b92219601bb56f3f81d28b7a8a42b2b32ca65e5be2e5a6a0, sources a29025b06cf09393b96245c80c1a752013b1810abec45d29a0cc6f5c9435950a); run tools/build_native.sh
+CHECK FAIL (3)

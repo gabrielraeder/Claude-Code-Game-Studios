@@ -41,6 +41,7 @@ extends GdUnitTestSuite
 ## "not found" value (RID(), SHAPE_CUSTOM, null) and prints one engine "Parameter ... is null"
 ## ERROR line each: those lines in the log are expected.
 
+const _GUARD = preload("res://tests/unit/native/native_test_guard.gd")
 const Fixtures = preload("res://tests/unit/collision/collision_fixtures.gd")
 
 ## Repeats of the tie cases (Track Collision AC-4).
@@ -54,6 +55,10 @@ const PREVIOUS_ID: int = 99
 
 
 # --- helpers ------------------------------------------------------------------------------------
+
+func before() -> void:
+	assert_str(_GUARD.problem()).is_empty()
+
 
 ## Registry id of [param kind] in the fixture registry.
 func _id(kind: StringName) -> int:
@@ -87,9 +92,9 @@ func _pts4() -> PackedVector3Array:
 
 
 ## Builds a query from [param data], records its RIDs into [param rids] and drops the only
-## reference without dispose() (exercises the NOTIFICATION_PREDELETE fallback).
+## reference without dispose() (exercises the native destructor).
 func _drop_query_without_dispose(data: TrackCollisionData, rids: Array[RID]) -> void:
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	rids.append_array(query.owned_rids())
 	query = null
 
@@ -131,7 +136,7 @@ func test_query_owns_inactive_private_space_with_ground_and_wall_bodies() -> voi
 	# Arrange
 	var data: TrackCollisionData = Fixtures.ground_with_walls([0, 0, 0, 0])
 	# Act
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var space: RID = query.space_rid()
 	var ground: RID = query.ground_body_rid()
 	var walls: RID = query.wall_body_rid()
@@ -154,7 +159,7 @@ func test_query_owns_inactive_private_space_with_ground_and_wall_bodies() -> voi
 func test_query_shapes_are_one_sided_concave() -> void:
 	# Arrange
 	var data: TrackCollisionData = Fixtures.ground_with_walls([0, 0, 0, 0])
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var rids: Array[RID] = query.owned_rids()
 	# Act: the shapes sit between the 2 bodies and the space.
 	var shapes: Array[RID] = rids.slice(2, rids.size() - 1)
@@ -167,31 +172,31 @@ func test_query_shapes_are_one_sided_concave() -> void:
 	query.dispose()
 
 
-func test_query_from_broken_layout_push_errors_and_misses() -> void:
+func test_broken_layout_is_refused_by_validate_packed_and_create_returns_null() -> void:
 	# Arrange: 8 ground triangles but only 7 surface ids.
 	var data: TrackCollisionData = Fixtures.quadrant_ground([0, 0, 0, 0])
 	data.surface_of_face.resize(data.surface_of_face.size() - 1)
+	var packed: Dictionary = data.pack_native()
 	var out: Array[CollisionQuery] = []
-	# Act / Assert
-	await assert_error(func() -> void: out.append(CollisionQuery.new(data))).is_push_error(
-			"CollisionQuery: surface_of_face has 7 entries for 8 ground triangles; the query has no geometry")
-	var query: CollisionQuery = out[0]
-	var hit: GroundHit = GroundHit.new()
-	assert_bool(query.cast_ground(QueryCursor.new(), Vector3.UP, Vector3.DOWN, Fixtures.CAST_LENGTH, T, hit)).is_false()
-	assert_bool(query.ground_body_rid().is_valid()).is_false()
-	assert_int(query.owned_rids().size()).is_equal(1)  # the space only
-	query.dispose()
+	# Act
+	var problem: String = CollisionQuery.validate_packed(packed)
+	await assert_error(func() -> void: out.append(CollisionQuery.create(packed))).is_push_error(
+			"Method/function failed. Returning: Ref<CollisionQuery>()")
+	# Assert: the message names the key; no query was built.
+	assert_str(problem).contains("surface_of_face")
+	assert_object(out[0]).is_null()
 
 
-func test_query_from_null_data_push_errors_and_misses() -> void:
+func test_empty_packed_data_is_refused_and_create_returns_null() -> void:
 	# Arrange
 	var out: Array[CollisionQuery] = []
-	# Act / Assert
-	await assert_error(func() -> void: out.append(CollisionQuery.new(null))).is_push_error(
-			"CollisionQuery: data is null; the query has no geometry")
-	var query: CollisionQuery = out[0]
-	assert_bool(query.cast_ground(QueryCursor.new(), Vector3.UP, Vector3.DOWN, Fixtures.CAST_LENGTH, T, GroundHit.new())).is_false()
-	query.dispose()
+	# Act
+	var problem: String = CollisionQuery.validate_packed({})
+	await assert_error(func() -> void: out.append(CollisionQuery.create({}))).is_push_error(
+			"Method/function failed. Returning: Ref<CollisionQuery>()")
+	# Assert
+	assert_str(problem).contains("schema_version")
+	assert_object(out[0]).is_null()
 
 
 # --- Story AC 2 (GDD AC-1): ground surface ids ----------------------------------------------------------------------
@@ -199,7 +204,7 @@ func test_query_from_null_data_push_errors_and_misses() -> void:
 func test_cast_ground_on_each_kind_returns_registered_id_not_index() -> void:
 	# Arrange
 	var surfaces: SurfaceSet = Fixtures.non_contiguous_registry()
-	var query: CollisionQuery = CollisionQuery.new(Fixtures.one_triangle_per_kind(surfaces))
+	var query: CollisionQuery = CollisionQuery.create(Fixtures.one_triangle_per_kind(surfaces).pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit: GroundHit = GroundHit.new()
 	for face in surfaces.types.size():
@@ -224,7 +229,7 @@ func test_cast_ground_after_degenerate_triangles_keeps_face_ids_aligned() -> voi
 	# Arrange: four different kinds, with degenerate triangles at face index 0 and 5.
 	var kinds: Array[int] = [_id(&"road"), _id(&"grass"), _id(&"mud"), _id(&"sand")]
 	var data: TrackCollisionData = Fixtures.quadrant_ground_with_degenerates(kinds)
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit: GroundHit = GroundHit.new()
 	for k in Fixtures.PROBE_POINTS.size():
@@ -240,7 +245,7 @@ func test_cast_ground_after_degenerate_triangles_keeps_face_ids_aligned() -> voi
 
 func test_cast_ground_from_below_misses_back_face() -> void:
 	# Arrange
-	var query: CollisionQuery = CollisionQuery.new(Fixtures.quadrant_ground([0, 0, 0, 0]))
+	var query: CollisionQuery = CollisionQuery.create(Fixtures.quadrant_ground([0, 0, 0, 0]).pack_native())
 	var origin: Vector3 = Fixtures.PROBE_POINTS[0] + Vector3.DOWN * Fixtures.CAST_HEIGHT
 	# Act
 	var did_hit: bool = query.cast_ground(QueryCursor.new(), origin, Vector3.UP, Fixtures.CAST_LENGTH, T, GroundHit.new())
@@ -252,7 +257,7 @@ func test_cast_ground_from_below_misses_back_face() -> void:
 func test_cast_ground_ignores_wall_layer_and_hits_ground() -> void:
 	# Arrange: a wall-layer quad at WALL_TOP_Y covers the whole ground.
 	var grass: int = _id(&"grass")
-	var query: CollisionQuery = CollisionQuery.new(Fixtures.ground_with_walls([grass, grass, grass, grass]))
+	var query: CollisionQuery = CollisionQuery.create(Fixtures.ground_with_walls([grass, grass, grass, grass]).pack_native())
 	var hit: GroundHit = GroundHit.new()
 	var origin: Vector3 = Fixtures.PROBE_POINTS[1] + Vector3.UP * Fixtures.CAST_HEIGHT
 	# Act
@@ -266,7 +271,7 @@ func test_cast_ground_ignores_wall_layer_and_hits_ground() -> void:
 
 func test_cast_ground_miss_returns_false_and_leaves_hit_untouched() -> void:
 	# Arrange
-	var query: CollisionQuery = CollisionQuery.new(Fixtures.quadrant_ground([0, 0, 0, 0]))
+	var query: CollisionQuery = CollisionQuery.create(Fixtures.quadrant_ground([0, 0, 0, 0]).pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit: GroundHit = GroundHit.new()
 	var sentinel: Vector3 = Vector3(1.0, 2.0, 3.0)
@@ -289,7 +294,7 @@ func test_probes_road_grass_grass_grass_give_grass() -> void:
 	# matter (no tie).
 	var road: int = _id(&"road")
 	var grass: int = _id(&"grass")
-	var query: CollisionQuery = CollisionQuery.new(Fixtures.quadrant_ground([road, grass, grass, grass]))
+	var query: CollisionQuery = CollisionQuery.create(Fixtures.quadrant_ground([road, grass, grass, grass]).pack_native())
 	var com: Vector3 = Fixtures.PROBE_POINTS[0]
 	# Act
 	var surface: int = _probe_majority(query, QueryCursor.new(), GroundHit.new(), Fixtures.PROBE_POINTS,
@@ -304,8 +309,8 @@ func test_probes_two_two_tie_gives_kind_nearest_centre_of_mass() -> void:
 	# give road (id 0) then grass (id 7), so no id order can pass either.
 	var road: int = _id(&"road")
 	var grass: int = _id(&"grass")
-	var a_query: CollisionQuery = CollisionQuery.new(Fixtures.quadrant_ground([grass, road, road, grass]))
-	var b_query: CollisionQuery = CollisionQuery.new(Fixtures.quadrant_ground([road, grass, grass, road]))
+	var a_query: CollisionQuery = CollisionQuery.create(Fixtures.quadrant_ground([grass, road, road, grass]).pack_native())
+	var b_query: CollisionQuery = CollisionQuery.create(Fixtures.quadrant_ground([road, grass, grass, road]).pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit: GroundHit = GroundHit.new()
 	var ids: PackedInt32Array = PackedInt32Array([0, 0, 0, 0])
@@ -325,8 +330,8 @@ func test_bike_one_one_tie_gives_kind_nearest_centre_of_mass() -> void:
 	# Arrange: 2 probes (front, rear); CoM toward the rear, so "lowest index" (front) disagrees.
 	var road: int = _id(&"road")
 	var mud: int = _id(&"mud")
-	var mud_front: CollisionQuery = CollisionQuery.new(Fixtures.bike_ground(mud, road))
-	var road_front: CollisionQuery = CollisionQuery.new(Fixtures.bike_ground(road, mud))
+	var mud_front: CollisionQuery = CollisionQuery.create(Fixtures.bike_ground(mud, road).pack_native())
+	var road_front: CollisionQuery = CollisionQuery.create(Fixtures.bike_ground(road, mud).pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit: GroundHit = GroundHit.new()
 	var ids: PackedInt32Array = PackedInt32Array([0, 0])
@@ -346,8 +351,8 @@ func test_probes_equidistant_tie_gives_lowest_index_probe_kind() -> void:
 	# Arrange: CoM exactly between the probes (cart: all four equidistant; bike: both).
 	var road: int = _id(&"road")
 	var grass: int = _id(&"grass")
-	var cart: CollisionQuery = CollisionQuery.new(Fixtures.quadrant_ground([grass, road, road, grass]))
-	var bike: CollisionQuery = CollisionQuery.new(Fixtures.bike_ground(road, grass))
+	var cart: CollisionQuery = CollisionQuery.create(Fixtures.quadrant_ground([grass, road, road, grass]).pack_native())
+	var bike: CollisionQuery = CollisionQuery.create(Fixtures.bike_ground(road, grass).pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit: GroundHit = GroundHit.new()
 	# Act
@@ -366,8 +371,8 @@ func test_ties_resolve_identically_over_1000_repeats() -> void:
 	# Arrange: the off-centre CoM cases, whose C12 answer differs from the lowest-index answer.
 	var road: int = _id(&"road")
 	var grass: int = _id(&"grass")
-	var cart: CollisionQuery = CollisionQuery.new(Fixtures.quadrant_ground([grass, road, road, grass]))
-	var bike: CollisionQuery = CollisionQuery.new(Fixtures.bike_ground(grass, road))
+	var cart: CollisionQuery = CollisionQuery.create(Fixtures.quadrant_ground([grass, road, road, grass]).pack_native())
+	var bike: CollisionQuery = CollisionQuery.create(Fixtures.bike_ground(grass, road).pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit: GroundHit = GroundHit.new()
 	var ids4: PackedInt32Array = PackedInt32Array([0, 0, 0, 0])
@@ -461,7 +466,7 @@ func test_majority_surface_equal_distance_goes_to_lowest_index() -> void:
 func test_dispose_frees_every_rid_bodies_then_shapes_then_space() -> void:
 	# Arrange
 	var data: TrackCollisionData = Fixtures.ground_with_walls([0, 0, 0, 0])
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var rids: Array[RID] = query.owned_rids()
 	var space: RID = query.space_rid()
 	var n_bodies: int = 2
@@ -480,8 +485,7 @@ func test_dispose_frees_every_rid_bodies_then_shapes_then_space() -> void:
 	# Assert: nothing is left on the server (orphan check). Each getter prints an expected
 	# "Parameter ... is null" engine error and returns its not-found value.
 	assert_bool(query.is_disposed()).is_true()
-	assert_array(query.owned_rids()).is_empty()
-	assert_bool(query.space_rid().is_valid()).is_false()
+	assert_bool(query.is_built()).is_false()
 	for i in n_bodies:
 		assert_bool(PhysicsServer3D.body_get_space(rids[i]).is_valid()).override_failure_message(
 				"body %d still exists" % i).is_false()
@@ -499,7 +503,7 @@ func test_dispose_returns_object_count_to_baseline() -> void:
 	var origin: Vector3 = Fixtures.PROBE_POINTS[0] + Vector3.UP * Fixtures.CAST_HEIGHT
 	var baseline: int = int(Performance.get_monitor(Performance.OBJECT_COUNT))
 	# Act: load, query, unload.
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var loaded: int = int(Performance.get_monitor(Performance.OBJECT_COUNT))
 	var did_hit: bool = query.cast_ground(cursor, origin, Vector3.DOWN, Fixtures.CAST_LENGTH, T, hit)
 	var query_ref: WeakRef = weakref(query)
@@ -517,40 +521,36 @@ func test_dispose_returns_object_count_to_baseline() -> void:
 
 func test_dispose_twice_is_safe() -> void:
 	# Arrange
-	var query: CollisionQuery = CollisionQuery.new(Fixtures.ground_with_walls([0, 0, 0, 0]))
+	var query: CollisionQuery = CollisionQuery.create(Fixtures.ground_with_walls([0, 0, 0, 0]).pack_native())
 	query.dispose()
 	# Act / Assert: the second call logs nothing and changes nothing.
 	await assert_error(func() -> void: query.dispose()).is_success()
 	assert_bool(query.is_disposed()).is_true()
-	assert_array(query.owned_rids()).is_empty()
-	assert_bool(query.space_rid().is_valid()).is_false()
+	assert_bool(query.is_built()).is_false()
 
 
-func test_cast_ground_after_dispose_asserts_in_debug_or_misses() -> void:
+func test_cast_ground_after_dispose_refuses_and_leaves_hit_untouched() -> void:
 	# Arrange
-	var query: CollisionQuery = CollisionQuery.new(Fixtures.quadrant_ground([0, 0, 0, 0]))
+	var query: CollisionQuery = CollisionQuery.create(Fixtures.quadrant_ground([0, 0, 0, 0]).pack_native())
 	query.dispose()
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit: GroundHit = GroundHit.new()
 	hit.surface_id = PREVIOUS_ID
 	var origin: Vector3 = Fixtures.PROBE_POINTS[0] + Vector3.UP * Fixtures.CAST_HEIGHT
 	var out: Array = []
-	# Act / Assert: debug builds stop at assert(not _disposed); release builds strip the assert and
-	# return false. Either way nothing is read from the freed space and the hit is untouched.
-	if OS.is_debug_build():
-		await assert_error(func() -> void: out.append(query.cast_ground(cursor, origin, Vector3.DOWN, Fixtures.CAST_LENGTH, T, hit))).is_runtime_error(
-				"Assertion failed: CollisionQuery.cast_ground after dispose()")
-	else:
-		assert_bool(query.cast_ground(cursor, origin, Vector3.DOWN, Fixtures.CAST_LENGTH, T, hit)).is_false()
+	# Act / Assert: a disposed query is unbuilt: the built guard refuses, in debug and release alike.
+	await assert_error(func() -> void: out.append(query.cast_ground(cursor, origin, Vector3.DOWN, Fixtures.CAST_LENGTH, T, hit))).is_push_error(
+			"Condition \"!built\" is true. Returning: false")
+	assert_bool(out[0]).is_false()
 	assert_int(hit.surface_id).is_equal(PREVIOUS_ID)
 
 
-func test_query_dropped_without_dispose_warns_and_frees_rids() -> void:
+func test_query_dropped_without_dispose_frees_rids_silently() -> void:
 	# Arrange
 	var data: TrackCollisionData = Fixtures.quadrant_ground([0, 0, 0, 0])
 	var rids: Array[RID] = []
 	# Act: the only reference drops inside the callable, without dispose().
-	await assert_error(_drop_query_without_dispose.bind(data, rids)).is_push_warning("CollisionQuery freed without dispose(); disposing now (call dispose() at track unload)")
+	await assert_error(_drop_query_without_dispose.bind(data, rids)).is_success()
 	# Assert: ground body, ground shape and space, all freed by the fallback.
 	assert_int(rids.size()).is_equal(3)
 	assert_bool(PhysicsServer3D.body_get_space(rids[0]).is_valid()).is_false()

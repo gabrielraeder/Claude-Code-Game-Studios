@@ -1,6 +1,7 @@
-class_name WallHit
+class_name OracleWallHit
 extends RefCounted
-## The result of one CollisionQuery.sweep_walls (ADR-0002 "Queries per kart per tick"; core-rebuild
+## FROZEN ORACLE (core-rebuild story 067, ADR-0007 section 5): the GDScript implementation as it stood when the native port was made. Test-only parity reference for the native classes; never changed after this point and never loaded by game code.
+## The result of one OracleCollisionQuery.sweep_walls (ADR-0002 "Queries per kart per tick"; core-rebuild
 ## stories 004-005). The caller allocates one per kart once and reuses it every tick: sweep_walls writes
 ## every field when it returns true, and leaves them untouched on a miss.
 ##
@@ -12,9 +13,9 @@ extends RefCounted
 ##     contact with the wall at `to`. The caller does not slide (ADR-0003 touch rule).
 ##   - started_inside = false, 0 <= fraction < 1: a blocking hit. The sphere can move fraction x the
 ##     motion without touching; point / normal are the first contact.
-## Not thread-safe: one WallHit belongs to one caller on the main thread.
+## Not thread-safe: one OracleWallHit belongs to one caller on the main thread.
 ## [codeblock]
-## var hit: WallHit = WallHit.new()            # once, at setup
+## var hit: OracleWallHit = OracleWallHit.new()            # once, at setup
 ## if query.sweep_walls(cursor, from, to, radius, t, hit):
 ##     if hit.started_inside:
 ##         pass  # push out along hit.normal, then sweep again
@@ -37,10 +38,10 @@ var point: Vector3 = Vector3.ZERO
 var normal: Vector3 = Vector3.ZERO
 ## Stable wall-attribute id (WallAttr.id) of the wall hit: TrackCollisionData.wall_attr_ids of the
 ## wall shape hit; for a mover (collider_id >= 1) that mover's MoverDef.wall_attr_id; or
-## CollisionQuery.WALL_ATTR_NONE (-1) when the engine gave no usable static contact.
+## OracleCollisionQuery.WALL_ATTR_NONE (-1) when the engine gave no usable static contact.
 ## WALL_ATTR_NONE means "use the default wall attribute"; the normal is unreliable then (it is the
 ## reverse of the motion, not the wall normal). Never a shape index or a WallAttrSet array index.
-var wall_attr: int = CollisionQuery.WALL_ATTR_NONE
+var wall_attr: int = OracleCollisionQuery.WALL_ATTR_NONE
 ## Fraction (0..1) of the motion from -> to the sphere can travel before the contact: 0 when
 ## started_inside, 1.0 for a touch, otherwise the engine's safe fraction.
 ## A touch (fraction 1.0) does not guarantee zero depth: the sphere at `to` may overlap the wall
@@ -53,7 +54,7 @@ var started_inside: bool = false
 ## collider_id.
 var collider_id: int = 0
 ## Velocity of the collider at the contact point (zero for static walls; for a mover,
-## CollisionQuery.mover_point_velocity(collider_id, t, point)).
+## OracleCollisionQuery.mover_point_velocity(collider_id, t, point)).
 var collider_velocity: Vector3 = Vector3.ZERO
 
 
@@ -64,7 +65,7 @@ var collider_velocity: Vector3 = Vector3.ZERO
 func clear() -> void:
 	point = Vector3.ZERO
 	normal = Vector3.ZERO
-	wall_attr = CollisionQuery.WALL_ATTR_NONE
+	wall_attr = OracleCollisionQuery.WALL_ATTR_NONE
 	fraction = 1.0
 	started_inside = false
 	collider_id = 0

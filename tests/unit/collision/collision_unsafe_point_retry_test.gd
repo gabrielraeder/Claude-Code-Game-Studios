@@ -7,6 +7,7 @@ extends GdUnitTestSuite
 ## wall. The same 22 wall triangles alone do NOT reproduce it (the whole mesh does), so the test
 ## builds the bench mesh (tools/bench_track_fixture.gd, deterministic, code-built: no file I/O).
 
+const _GUARD = preload("res://tests/unit/native/native_test_guard.gd")
 const BenchFixture = preload("res://tools/bench_track_fixture.gd")
 
 ## The captured sweep (float32-exact values) and its radius.
@@ -19,11 +20,15 @@ const SAFE_FRACTION: float = 0.25
 const FRACTION_TOLERANCE: float = 0.0001
 
 
+func before() -> void:
+	assert_str(_GUARD.problem()).is_empty()
+
+
 func test_sweep_whose_unsafe_point_rest_check_misses_reports_the_wall_attr() -> void:
 	# Arrange
 	var fixture: BenchFixture = BenchFixture.new()
 	fixture.build()
-	var query: CollisionQuery = CollisionQuery.new(fixture.data)
+	var query: CollisionQuery = CollisionQuery.create(fixture.data.pack_native())
 	var hit: WallHit = WallHit.new()
 	# Act
 	var did_hit: bool = query.sweep_walls(QueryCursor.new(), FROM, TO, RADIUS, 0.0, hit)

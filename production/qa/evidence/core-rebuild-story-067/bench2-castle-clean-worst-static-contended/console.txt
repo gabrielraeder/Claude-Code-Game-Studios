@@ -1,0 +1,82 @@
+== build_native.sh --bench
+bench DLL is now in the debug slot; bench.lock written. Restore with tools/build_native.sh --restore
+bench swap exit 0
+godot processes after swap: 0
+== native castle run 1
+   exit 0
+== native castle run 2
+   exit 0
+== native castle run 3
+   exit 0
+== native worst run 1
+   exit 0
+== native worst run 2
+   exit 0
+== native worst run 3
+   exit 0
+== native static run 1
+   exit 0
+== native static run 2
+   exit 0
+== native static run 3
+   exit 0
+# native: median across 3 runs of each run's median_us and p95_us
+AGG layout=castle section=all median_of_medians_us=97 median_of_p95_us=114 runs_median=[ 97 98 97 ] runs_p95=[ 114 119 114 ]
+AGG layout=castle section=curve median_of_medians_us=95 median_of_p95_us=106 runs_median=[ 95 96 95 ] runs_p95=[ 105 112 106 ]
+AGG layout=castle section=climb median_of_medians_us=98 median_of_p95_us=112 runs_median=[ 97 99 98 ] runs_p95=[ 109 119 112 ]
+AGG layout=castle section=crossover median_of_medians_us=107 median_of_p95_us=123 runs_median=[ 107 110 107 ] runs_p95=[ 123 133 118 ]
+AGG layout=castle section=movers median_of_medians_us=96 median_of_p95_us=109 runs_median=[ 95 97 96 ] runs_p95=[ 107 111 109 ]
+AGG layout=castle section=ramp median_of_medians_us=95 median_of_p95_us=104 runs_median=[ 95 96 95 ] runs_p95=[ 104 104 101 ]
+castle: FALLBACK blocked_fallback_count=0 ok
+castle: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+castle: ALLOC MEMORY_STATIC start=98219392.0 tick600=98219496.0 end=98219600.0 changed (not gated)
+castle: VERDICT_INPUTS worst_section_p95_us=123 budget_us=300 alloc_unchanged=true
+castle: FALLBACK blocked_fallback_count=0 ok
+castle: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+castle: ALLOC MEMORY_STATIC start=98219392.0 tick600=98219496.0 end=98219600.0 changed (not gated)
+castle: VERDICT_INPUTS worst_section_p95_us=133 budget_us=300 alloc_unchanged=true
+castle: FALLBACK blocked_fallback_count=0 ok
+castle: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+castle: ALLOC MEMORY_STATIC start=98219392.0 tick600=98219496.0 end=98219600.0 changed (not gated)
+castle: VERDICT_INPUTS worst_section_p95_us=118 budget_us=300 alloc_unchanged=true
+AGG layout=worst section=all median_of_medians_us=114 median_of_p95_us=136 runs_median=[ 114 115 114 ] runs_p95=[ 137 136 135 ]
+AGG layout=worst section=curve median_of_medians_us=113 median_of_p95_us=128 runs_median=[ 114 113 113 ] runs_p95=[ 135 128 127 ]
+AGG layout=worst section=climb median_of_medians_us=116 median_of_p95_us=134 runs_median=[ 116 117 116 ] runs_p95=[ 136 134 133 ]
+AGG layout=worst section=crossover median_of_medians_us=129 median_of_p95_us=142 runs_median=[ 129 129 128 ] runs_p95=[ 142 143 142 ]
+AGG layout=worst section=movers median_of_medians_us=107 median_of_p95_us=117 runs_median=[ 106 108 107 ] runs_p95=[ 115 117 117 ]
+AGG layout=worst section=ramp median_of_medians_us=114 median_of_p95_us=123 runs_median=[ 114 114 113 ] runs_p95=[ 123 125 121 ]
+worst: FALLBACK blocked_fallback_count=0 ok
+worst: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+worst: ALLOC MEMORY_STATIC start=98210704.0 tick600=98210808.0 end=98210912.0 changed (not gated)
+worst: VERDICT_INPUTS worst_section_p95_us=142 budget_us=300 alloc_unchanged=true
+worst: FALLBACK blocked_fallback_count=0 ok
+worst: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+worst: ALLOC MEMORY_STATIC start=98210704.0 tick600=98210808.0 end=98210912.0 changed (not gated)
+worst: VERDICT_INPUTS worst_section_p95_us=143 budget_us=300 alloc_unchanged=true
+worst: FALLBACK blocked_fallback_count=0 ok
+worst: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+worst: ALLOC MEMORY_STATIC start=98210704.0 tick600=98210808.0 end=98210912.0 changed (not gated)
+worst: VERDICT_INPUTS worst_section_p95_us=142 budget_us=300 alloc_unchanged=true
+AGG layout=static section=all median_of_medians_us=110 median_of_p95_us=130 runs_median=[ 110 111 110 ] runs_p95=[ 130 131 129 ]
+AGG layout=static section=curve median_of_medians_us=108 median_of_p95_us=126 runs_median=[ 108 109 108 ] runs_p95=[ 128 126 122 ]
+AGG layout=static section=climb median_of_medians_us=112 median_of_p95_us=129 runs_median=[ 110 112 112 ] runs_p95=[ 126 129 129 ]
+AGG layout=static section=crossover median_of_medians_us=122 median_of_p95_us=137 runs_median=[ 122 124 122 ] runs_p95=[ 138 137 135 ]
+AGG layout=static section=movers median_of_medians_us=107 median_of_p95_us=120 runs_median=[ 107 107 106 ] runs_p95=[ 120 124 120 ]
+AGG layout=static section=ramp median_of_medians_us=108 median_of_p95_us=117 runs_median=[ 108 110 107 ] runs_p95=[ 117 119 117 ]
+static: FALLBACK blocked_fallback_count=0 ok
+static: ALLOC OBJECT_COUNT start=1659.0 tick600=1659.0 end=1659.0 unchanged
+static: ALLOC MEMORY_STATIC start=98204676.0 tick600=98204780.0 end=98204884.0 changed (not gated)
+static: VERDICT_INPUTS worst_section_p95_us=138 budget_us=300 alloc_unchanged=true
+static: FALLBACK blocked_fallback_count=0 ok
+static: ALLOC OBJECT_COUNT start=1659.0 tick600=1659.0 end=1659.0 unchanged
+static: ALLOC MEMORY_STATIC start=98204676.0 tick600=98204780.0 end=98204884.0 changed (not gated)
+static: VERDICT_INPUTS worst_section_p95_us=137 budget_us=300 alloc_unchanged=true
+static: FALLBACK blocked_fallback_count=0 ok
+static: ALLOC OBJECT_COUNT start=1659.0 tick600=1659.0 end=1659.0 unchanged
+static: ALLOC MEMORY_STATIC start=98204676.0 tick600=98204780.0 end=98204884.0 changed (not gated)
+static: VERDICT_INPUTS worst_section_p95_us=135 budget_us=300 alloc_unchanged=true
+== build_native.sh --restore
+debug DLL restored from backup; bench.lock removed
+PASS bench (1 marker, sh and fh match)
+CHECK PASS
+GATE: done

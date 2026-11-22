@@ -41,7 +41,7 @@ agg="$OUTABS/$LABEL-aggregate.txt"
 				return a[int((k + 1) / 2)]
 			}
 			END { for (i = 1; i <= n; i++) printf "AGG layout=%s section=%s median_of_medians_us=%s median_of_p95_us=%s runs_median=[%s ] runs_p95=[%s ]\n", L, order[i], med(meds[order[i]]), med(p95s[order[i]]), meds[order[i]], p95s[order[i]] }'
-		grep -h '^ALLOC OBJECT_COUNT\|^VERDICT_INPUTS' "$OUTABS/$LABEL-$layout-"*.txt | sed "s/^/$layout: /"
+		grep -h '^ALLOC OBJECT_COUNT\|^ALLOC MEMORY_STATIC\|^VERDICT_INPUTS\|^FALLBACK' "$OUTABS/$LABEL-$layout-"*.txt | sed "s/^/$layout: /"
 	done
 } > "$agg"
 cat "$agg"

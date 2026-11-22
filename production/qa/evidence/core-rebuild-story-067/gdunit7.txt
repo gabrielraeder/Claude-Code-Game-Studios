@@ -1,0 +1,489 @@
+ERROR: Remote Debugger: Unable to connect. Status: 1.
+   at: _try_connect (core/debugger/remote_debugger_peer.cpp:190)
+ERROR: Condition "_try_connect(stream)" is true. Returning: nullptr
+   at: create_tcp (core/debugger/remote_debugger_peer.cpp:248)
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+[2J[H
+--------------------------------------------------------------------------------------------------
+GdUnit4 Comandline Tool
+--------------------------------------------------------------------------------------------------
+
+Headless mode is ignored by option '--ignoreHeadlessMode'"
+
+Please note that tests that use UI interaction do not work correctly in headless mode.
+Godot 'InputEvents' are not transported by the Godot engine in headless mode and therefore
+have no effect in the test!
+
+Installing GdUnit4 session system hooks.
+Session hook 'GdUnitHtmlTestReporter' installed.
+Session hook 'GdUnitXMLTestReporter' installed.
+Run Test Suite: res://tests/unit/collision/collision_native_parity_test.gd
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_on_the_mirror_fixture_with_all_mover_shapes STARTED
+PARITY fixture=mirror_fixture rays=1500 ray_hits=69 ray_mover_hits=33 excluded_rays=0 sweeps=1500 sweep_hits=127 sweep_mover_hits=124 sweep_static_hits=3 started_inside=49 excluded_sweeps=0 poses=600 mover_ray_max=0.00000047683716 static_ray_max=0.0 blocked_fallbacks=0 failures=0
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_on_the_mirror_fixture_with_all_mover_shapes PASSED 45ms
+
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_on_the_mirrored_mirror_fixture STARTED
+PARITY fixture=mirrored_mirror_fixture rays=1500 ray_hits=71 ray_mover_hits=24 excluded_rays=0 sweeps=1500 sweep_hits=133 sweep_mover_hits=124 sweep_static_hits=9 started_inside=50 excluded_sweeps=0 poses=600 mover_ray_max=0.00000143051147 static_ray_max=0.0 blocked_fallbacks=0 failures=0
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_on_the_mirrored_mirror_fixture PASSED 44ms
+
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_on_ground_with_walls STARTED
+WARNING: OracleCollisionQuery.sweep_walls: no rest contact at the unsafe point; reporting a blocking hit with WALL_ATTR_NONE
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] _write_blocked_hit (res://tests/oracle/collision/oracle_collision_query.gd:661)
+       [1] _sweep_static (res://tests/oracle/collision/oracle_collision_query.gd:627)
+       [2] sweep_walls (res://tests/oracle/collision/oracle_collision_query.gd:453)
+       [3] _run (res://tests/unit/collision/collision_native_parity_test.gd:205)
+       [4] test_parity_on_ground_with_walls (res://tests/unit/collision/collision_native_parity_test.gd:276)
+       [5] _execute_test_case (res://addons/gdUnit4/src/core/_TestCase.gd:79)
+       [6] execute (res://addons/gdUnit4/src/core/_TestCase.gd:40)
+       [7] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [8] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [9] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:17)
+       [10] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [11] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:24)
+       [12] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [13] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestSuiteExecutionStage.gd:38)
+       [14] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [15] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:31)
+       [16] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [17] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:28)
+       [18] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [19] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [20] execute (res://addons/gdUnit4/src/core/_TestCase.gd:41)
+       [21] test_completed (res://addons/gdUnit4/src/core/_TestCase.gd:86)
+WARNING: OracleCollisionQuery.sweep_walls: no rest contact at the unsafe point; reporting a blocking hit with WALL_ATTR_NONE
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] _write_blocked_hit (res://tests/oracle/collision/oracle_collision_query.gd:661)
+       [1] _sweep_static (res://tests/oracle/collision/oracle_collision_query.gd:627)
+       [2] sweep_walls (res://tests/oracle/collision/oracle_collision_query.gd:453)
+       [3] _run (res://tests/unit/collision/collision_native_parity_test.gd:205)
+       [4] test_parity_on_ground_with_walls (res://tests/unit/collision/collision_native_parity_test.gd:276)
+       [5] _execute_test_case (res://addons/gdUnit4/src/core/_TestCase.gd:79)
+       [6] execute (res://addons/gdUnit4/src/core/_TestCase.gd:40)
+       [7] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [8] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [9] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:17)
+       [10] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [11] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:24)
+       [12] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [13] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestSuiteExecutionStage.gd:38)
+       [14] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [15] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:31)
+       [16] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [17] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:28)
+       [18] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [19] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [20] execute (res://addons/gdUnit4/src/core/_TestCase.gd:41)
+       [21] test_completed (res://addons/gdUnit4/src/core/_TestCase.gd:86)
+WARNING: OracleCollisionQuery.sweep_walls: no rest contact at the unsafe point; reporting a blocking hit with WALL_ATTR_NONE
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] _write_blocked_hit (res://tests/oracle/collision/oracle_collision_query.gd:661)
+       [1] _sweep_static (res://tests/oracle/collision/oracle_collision_query.gd:627)
+       [2] sweep_walls (res://tests/oracle/collision/oracle_collision_query.gd:453)
+       [3] _run (res://tests/unit/collision/collision_native_parity_test.gd:205)
+       [4] test_parity_on_ground_with_walls (res://tests/unit/collision/collision_native_parity_test.gd:276)
+       [5] _execute_test_case (res://addons/gdUnit4/src/core/_TestCase.gd:79)
+       [6] execute (res://addons/gdUnit4/src/core/_TestCase.gd:40)
+       [7] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [8] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [9] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:17)
+       [10] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [11] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:24)
+       [12] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [13] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestSuiteExecutionStage.gd:38)
+       [14] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [15] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:31)
+       [16] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [17] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:28)
+       [18] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [19] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [20] execute (res://addons/gdUnit4/src/core/_TestCase.gd:41)
+       [21] test_completed (res://addons/gdUnit4/src/core/_TestCase.gd:86)
+WARNING: OracleCollisionQuery.sweep_walls: no rest contact at the unsafe point; reporting a blocking hit with WALL_ATTR_NONE
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] _write_blocked_hit (res://tests/oracle/collision/oracle_collision_query.gd:661)
+       [1] _sweep_static (res://tests/oracle/collision/oracle_collision_query.gd:627)
+       [2] sweep_walls (res://tests/oracle/collision/oracle_collision_query.gd:453)
+       [3] _run (res://tests/unit/collision/collision_native_parity_test.gd:205)
+       [4] test_parity_on_ground_with_walls (res://tests/unit/collision/collision_native_parity_test.gd:276)
+       [5] _execute_test_case (res://addons/gdUnit4/src/core/_TestCase.gd:79)
+       [6] execute (res://addons/gdUnit4/src/core/_TestCase.gd:40)
+       [7] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [8] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [9] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:17)
+       [10] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [11] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:24)
+       [12] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [13] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestSuiteExecutionStage.gd:38)
+       [14] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [15] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:31)
+       [16] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [17] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:28)
+       [18] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [19] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [20] execute (res://addons/gdUnit4/src/core/_TestCase.gd:41)
+       [21] test_completed (res://addons/gdUnit4/src/core/_TestCase.gd:86)
+WARNING: OracleCollisionQuery.sweep_walls: no rest contact at the unsafe point; reporting a blocking hit with WALL_ATTR_NONE
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] _write_blocked_hit (res://tests/oracle/collision/oracle_collision_query.gd:661)
+       [1] _sweep_static (res://tests/oracle/collision/oracle_collision_query.gd:627)
+       [2] sweep_walls (res://tests/oracle/collision/oracle_collision_query.gd:453)
+       [3] _run (res://tests/unit/collision/collision_native_parity_test.gd:205)
+       [4] test_parity_on_ground_with_walls (res://tests/unit/collision/collision_native_parity_test.gd:276)
+       [5] _execute_test_case (res://addons/gdUnit4/src/core/_TestCase.gd:79)
+       [6] execute (res://addons/gdUnit4/src/core/_TestCase.gd:40)
+       [7] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [8] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [9] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:17)
+       [10] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [11] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:24)
+       [12] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [13] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestSuiteExecutionStage.gd:38)
+       [14] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [15] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:31)
+       [16] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [17] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:28)
+       [18] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [19] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [20] execute (res://addons/gdUnit4/src/core/_TestCase.gd:41)
+       [21] test_completed (res://addons/gdUnit4/src/core/_TestCase.gd:86)
+WARNING: OracleCollisionQuery.sweep_walls: no rest contact at the unsafe point; reporting a blocking hit with WALL_ATTR_NONE
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] _write_blocked_hit (res://tests/oracle/collision/oracle_collision_query.gd:661)
+       [1] _sweep_static (res://tests/oracle/collision/oracle_collision_query.gd:627)
+       [2] sweep_walls (res://tests/oracle/collision/oracle_collision_query.gd:453)
+       [3] _run (res://tests/unit/collision/collision_native_parity_test.gd:205)
+       [4] test_parity_on_ground_with_walls (res://tests/unit/collision/collision_native_parity_test.gd:276)
+       [5] _execute_test_case (res://addons/gdUnit4/src/core/_TestCase.gd:79)
+       [6] execute (res://addons/gdUnit4/src/core/_TestCase.gd:40)
+       [7] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [8] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [9] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:17)
+       [10] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [11] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:24)
+       [12] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [13] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestSuiteExecutionStage.gd:38)
+       [14] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [15] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:31)
+       [16] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [17] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:28)
+       [18] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [19] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [20] execute (res://addons/gdUnit4/src/core/_TestCase.gd:41)
+       [21] test_completed (res://addons/gdUnit4/src/core/_TestCase.gd:86)
+WARNING: OracleCollisionQuery.sweep_walls: no rest contact at the unsafe point; reporting a blocking hit with WALL_ATTR_NONE
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] _write_blocked_hit (res://tests/oracle/collision/oracle_collision_query.gd:661)
+       [1] _sweep_static (res://tests/oracle/collision/oracle_collision_query.gd:627)
+       [2] sweep_walls (res://tests/oracle/collision/oracle_collision_query.gd:453)
+       [3] _run (res://tests/unit/collision/collision_native_parity_test.gd:205)
+       [4] test_parity_on_ground_with_walls (res://tests/unit/collision/collision_native_parity_test.gd:276)
+       [5] _execute_test_case (res://addons/gdUnit4/src/core/_TestCase.gd:79)
+       [6] execute (res://addons/gdUnit4/src/core/_TestCase.gd:40)
+       [7] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [8] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [9] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:17)
+       [10] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [11] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:24)
+       [12] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [13] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestSuiteExecutionStage.gd:38)
+       [14] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [15] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:31)
+       [16] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [17] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:28)
+       [18] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [19] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [20] execute (res://addons/gdUnit4/src/core/_TestCase.gd:41)
+       [21] test_completed (res://addons/gdUnit4/src/core/_TestCase.gd:86)
+WARNING: OracleCollisionQuery.sweep_walls: no rest contact at the unsafe point; reporting a blocking hit with WALL_ATTR_NONE
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] _write_blocked_hit (res://tests/oracle/collision/oracle_collision_query.gd:661)
+       [1] _sweep_static (res://tests/oracle/collision/oracle_collision_query.gd:627)
+       [2] sweep_walls (res://tests/oracle/collision/oracle_collision_query.gd:453)
+       [3] _run (res://tests/unit/collision/collision_native_parity_test.gd:205)
+       [4] test_parity_on_ground_with_walls (res://tests/unit/collision/collision_native_parity_test.gd:276)
+       [5] _execute_test_case (res://addons/gdUnit4/src/core/_TestCase.gd:79)
+       [6] execute (res://addons/gdUnit4/src/core/_TestCase.gd:40)
+       [7] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [8] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [9] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:17)
+       [10] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [11] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:24)
+       [12] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [13] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestSuiteExecutionStage.gd:38)
+       [14] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [15] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:31)
+       [16] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [17] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:28)
+       [18] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [19] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [20] execute (res://addons/gdUnit4/src/core/_TestCase.gd:41)
+       [21] test_completed (res://addons/gdUnit4/src/core/_TestCase.gd:86)
+PARITY fixture=ground_with_walls rays=1500 ray_hits=131 ray_mover_hits=0 excluded_rays=0 sweeps=1500 sweep_hits=282 sweep_mover_hits=0 sweep_static_hits=282 started_inside=136 excluded_sweeps=0 poses=0 mover_ray_max=0.0 static_ray_max=0.0 blocked_fallbacks=8 failures=0
+FALLBACK_INPUT fixture=ground_with_walls from=(-2.707058, 1.008097, 1.729709) to=(3.292876, -0.769124, 6.605332) r=0.6172262430191 t=5.11666666666667 -> attr -1 fraction 0.01498413085938 normal (-0.756344, 0.224034, -0.614615) point (-2.14977, 0.843025, 2.182569)
+FALLBACK_INPUT fixture=ground_with_walls from=(-3.748471, 1.271148, -0.016606) to=(-0.40743, -0.031883, 5.824616) r=0.57418555021286 t=5.7 -> attr -1 fraction 0.368408203125 normal (-0.487443, 0.190106, -0.852208) point (-2.236906, 0.681626, 2.6261)
+FALLBACK_INPUT fixture=ground_with_walls from=(-0.64418, 1.740649, 3.880325) to=(-2.335679, 0.315006, 1.070679) r=0.35695189237595 t=0.55 -> attr -1 fraction 0.54248046875 normal (0.473015, 0.39867, 0.785696) point (-1.731455, 0.824264, 2.074319)
+FALLBACK_INPUT fixture=ground_with_walls from=(3.299209, 1.351358, 0.321071) to=(-1.936761, -0.991276, 5.774427) r=0.49525225162506 t=5.8 -> attr -1 fraction 0.1533203125 normal (0.66155, 0.295985, -0.689017) point (2.166876, 0.844739, 1.500415)
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_on_ground_with_walls PASSED 32ms
+
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_on_attribute_walls STARTED
+WARNING: OracleCollisionQuery.sweep_walls: no rest contact at the unsafe point; reporting a blocking hit with WALL_ATTR_NONE
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] _write_blocked_hit (res://tests/oracle/collision/oracle_collision_query.gd:661)
+       [1] _sweep_static (res://tests/oracle/collision/oracle_collision_query.gd:627)
+       [2] sweep_walls (res://tests/oracle/collision/oracle_collision_query.gd:453)
+       [3] _run (res://tests/unit/collision/collision_native_parity_test.gd:205)
+       [4] test_parity_on_attribute_walls (res://tests/unit/collision/collision_native_parity_test.gd:281)
+       [5] _execute_test_case (res://addons/gdUnit4/src/core/_TestCase.gd:79)
+       [6] execute (res://addons/gdUnit4/src/core/_TestCase.gd:40)
+       [7] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [8] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [9] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:17)
+       [10] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [11] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:24)
+       [12] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [13] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestSuiteExecutionStage.gd:38)
+       [14] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [15] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:31)
+       [16] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [17] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:28)
+       [18] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [19] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [20] execute (res://addons/gdUnit4/src/core/_TestCase.gd:41)
+       [21] test_completed (res://addons/gdUnit4/src/core/_TestCase.gd:86)
+WARNING: OracleCollisionQuery.sweep_walls: no rest contact at the unsafe point; reporting a blocking hit with WALL_ATTR_NONE
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] _write_blocked_hit (res://tests/oracle/collision/oracle_collision_query.gd:661)
+       [1] _sweep_static (res://tests/oracle/collision/oracle_collision_query.gd:627)
+       [2] sweep_walls (res://tests/oracle/collision/oracle_collision_query.gd:453)
+       [3] _run (res://tests/unit/collision/collision_native_parity_test.gd:205)
+       [4] test_parity_on_attribute_walls (res://tests/unit/collision/collision_native_parity_test.gd:281)
+       [5] _execute_test_case (res://addons/gdUnit4/src/core/_TestCase.gd:79)
+       [6] execute (res://addons/gdUnit4/src/core/_TestCase.gd:40)
+       [7] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [8] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [9] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:17)
+       [10] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [11] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:24)
+       [12] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [13] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestSuiteExecutionStage.gd:38)
+       [14] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [15] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:31)
+       [16] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [17] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:28)
+       [18] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [19] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [20] execute (res://addons/gdUnit4/src/core/_TestCase.gd:41)
+       [21] test_completed (res://addons/gdUnit4/src/core/_TestCase.gd:86)
+WARNING: OracleCollisionQuery.sweep_walls: no rest contact at the unsafe point; reporting a blocking hit with WALL_ATTR_NONE
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] _write_blocked_hit (res://tests/oracle/collision/oracle_collision_query.gd:661)
+       [1] _sweep_static (res://tests/oracle/collision/oracle_collision_query.gd:627)
+       [2] sweep_walls (res://tests/oracle/collision/oracle_collision_query.gd:453)
+       [3] _run (res://tests/unit/collision/collision_native_parity_test.gd:205)
+       [4] test_parity_on_attribute_walls (res://tests/unit/collision/collision_native_parity_test.gd:281)
+       [5] _execute_test_case (res://addons/gdUnit4/src/core/_TestCase.gd:79)
+       [6] execute (res://addons/gdUnit4/src/core/_TestCase.gd:40)
+       [7] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [8] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [9] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:17)
+       [10] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [11] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:24)
+       [12] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [13] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestSuiteExecutionStage.gd:38)
+       [14] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [15] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:31)
+       [16] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [17] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:28)
+       [18] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [19] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [20] execute (res://addons/gdUnit4/src/core/_TestCase.gd:41)
+       [21] test_completed (res://addons/gdUnit4/src/core/_TestCase.gd:86)
+WARNING: OracleCollisionQuery.sweep_walls: no rest contact at the unsafe point; reporting a blocking hit with WALL_ATTR_NONE
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] _write_blocked_hit (res://tests/oracle/collision/oracle_collision_query.gd:661)
+       [1] _sweep_static (res://tests/oracle/collision/oracle_collision_query.gd:627)
+       [2] sweep_walls (res://tests/oracle/collision/oracle_collision_query.gd:453)
+       [3] _run (res://tests/unit/collision/collision_native_parity_test.gd:205)
+       [4] test_parity_on_attribute_walls (res://tests/unit/collision/collision_native_parity_test.gd:281)
+       [5] _execute_test_case (res://addons/gdUnit4/src/core/_TestCase.gd:79)
+       [6] execute (res://addons/gdUnit4/src/core/_TestCase.gd:40)
+       [7] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [8] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [9] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:17)
+       [10] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [11] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:24)
+       [12] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [13] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestSuiteExecutionStage.gd:38)
+       [14] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [15] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:31)
+       [16] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [17] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:28)
+       [18] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [19] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [20] execute (res://addons/gdUnit4/src/core/_TestCase.gd:41)
+       [21] test_completed (res://addons/gdUnit4/src/core/_TestCase.gd:86)
+WARNING: OracleCollisionQuery.sweep_walls: no rest contact at the unsafe point; reporting a blocking hit with WALL_ATTR_NONE
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] _write_blocked_hit (res://tests/oracle/collision/oracle_collision_query.gd:661)
+       [1] _sweep_static (res://tests/oracle/collision/oracle_collision_query.gd:627)
+       [2] sweep_walls (res://tests/oracle/collision/oracle_collision_query.gd:453)
+       [3] _run (res://tests/unit/collision/collision_native_parity_test.gd:205)
+       [4] test_parity_on_attribute_walls (res://tests/unit/collision/collision_native_parity_test.gd:281)
+       [5] _execute_test_case (res://addons/gdUnit4/src/core/_TestCase.gd:79)
+       [6] execute (res://addons/gdUnit4/src/core/_TestCase.gd:40)
+       [7] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [8] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [9] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:17)
+       [10] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [11] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:24)
+       [12] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [13] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestSuiteExecutionStage.gd:38)
+       [14] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [15] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:31)
+       [16] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [17] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:28)
+       [18] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [19] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [20] execute (res://addons/gdUnit4/src/core/_TestCase.gd:41)
+       [21] test_completed (res://addons/gdUnit4/src/core/_TestCase.gd:86)
+PARITY fixture=attr_walls rays=1500 ray_hits=0 ray_mover_hits=0 excluded_rays=0 sweeps=1500 sweep_hits=247 sweep_mover_hits=0 sweep_static_hits=247 started_inside=122 excluded_sweeps=0 poses=0 mover_ray_max=0.0 static_ray_max=0.0 blocked_fallbacks=5 failures=0
+FALLBACK_INPUT fixture=attr_walls from=(0.663496, -1.326625, 43.28624) to=(-5.285983, 0.292418, 44.77729) r=1.13410472869873 t=0.6 -> attr -1 fraction 0.1192626953125 normal (0.937876, -0.255226, -0.235048) point (-1.111884, -0.843487, 43.73119)
+FALLBACK_INPUT fixture=attr_walls from=(1.717803, 5.847465, 29.33484) to=(-4.11106, 2.920003, 29.28443) r=0.89929699897766 t=2.75 -> attr -1 fraction 0.333984375 normal (0.8936, 0.448798, 0.007727) point (-1.033981, 4.465421, 29.31104)
+FALLBACK_INPUT fixture=attr_walls from=(1.555977, 5.786917, 22.59816) to=(-0.797786, 3.696415, 28.39668) r=0.32550737261772 t=1.95 -> attr -1 fraction 0.70849609375 normal (0.356741, 0.31684, -0.878834) point (-0.228351, 4.202161, 26.99387)
+FALLBACK_INPUT fixture=attr_walls from=(0.16057, -1.102212, 1.179181) to=(-1.819113, 0.506262, -4.665475) r=0.84692305326462 t=1.06666666666667 -> attr -1 fraction 0.170166015625 normal (0.31044, -0.25223, 0.916519) point (-0.439949, -0.614296, -0.593742)
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_on_attribute_walls PASSED 26ms
+
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_on_the_inner_corner STARTED
+WARNING: OracleCollisionQuery.sweep_walls: no rest contact at the unsafe point; reporting a blocking hit with WALL_ATTR_NONE
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] _write_blocked_hit (res://tests/oracle/collision/oracle_collision_query.gd:661)
+       [1] _sweep_static (res://tests/oracle/collision/oracle_collision_query.gd:627)
+       [2] sweep_walls (res://tests/oracle/collision/oracle_collision_query.gd:453)
+       [3] _run (res://tests/unit/collision/collision_native_parity_test.gd:205)
+       [4] test_parity_on_the_inner_corner (res://tests/unit/collision/collision_native_parity_test.gd:286)
+       [5] _execute_test_case (res://addons/gdUnit4/src/core/_TestCase.gd:79)
+       [6] execute (res://addons/gdUnit4/src/core/_TestCase.gd:40)
+       [7] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [8] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [9] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:17)
+       [10] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [11] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:24)
+       [12] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [13] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestSuiteExecutionStage.gd:38)
+       [14] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [15] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:31)
+       [16] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [17] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:28)
+       [18] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [19] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [20] execute (res://addons/gdUnit4/src/core/_TestCase.gd:41)
+       [21] test_completed (res://addons/gdUnit4/src/core/_TestCase.gd:86)
+PARITY fixture=inner_corner rays=1500 ray_hits=0 ray_mover_hits=0 excluded_rays=0 sweeps=1500 sweep_hits=267 sweep_mover_hits=0 sweep_static_hits=267 started_inside=109 excluded_sweeps=0 poses=0 mover_ray_max=0.0 static_ray_max=0.0 blocked_fallbacks=1 failures=0
+FALLBACK_INPUT fixture=inner_corner from=(11.74351, -0.604143, 0.806917) to=(9.525138, 0.886021, -2.383279) r=1.07056725025177 t=2.73333333333333 -> attr -1 fraction 0.315673828125 normal (0.533055, -0.358073, 0.766574) point (10.47202, 0.249967, -1.021593)
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_on_the_inner_corner PASSED 18ms
+
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_on_spinners_and_a_slider_over_ground STARTED
+PARITY fixture=movers_over_ground rays=1500 ray_hits=165 ray_mover_hits=68 excluded_rays=0 sweeps=1500 sweep_hits=335 sweep_mover_hits=335 sweep_static_hits=0 started_inside=153 excluded_sweeps=0 poses=800 mover_ray_max=0.00000047683716 static_ray_max=0.0 blocked_fallbacks=0 failures=0
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_on_spinners_and_a_slider_over_ground PASSED 54ms
+
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_on_the_bench_mesh_with_movers_and_walls STARTED
+PARITY fixture=bench_mesh rays=1500 ray_hits=1327 ray_mover_hits=32 excluded_rays=0 sweeps=1500 sweep_hits=610 sweep_mover_hits=108 sweep_static_hits=502 started_inside=97 excluded_sweeps=0 poses=800 mover_ray_max=0.00004684925079 static_ray_max=0.0 blocked_fallbacks=0 failures=0
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_on_the_bench_mesh_with_movers_and_walls PASSED 152ms
+
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_of_the_captured_unsafe_point_retry_sweep STARTED
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_of_the_captured_unsafe_point_retry_sweep PASSED 86ms
+
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_on_the_touch_boundary_of_a_still_box STARTED
+PARITY fixture=touch_boundary rays=200 ray_hits=153 ray_mover_hits=153 excluded_rays=0 sweeps=1500 sweep_hits=758 sweep_mover_hits=758 sweep_static_hits=0 started_inside=0 excluded_sweeps=0 poses=200 mover_ray_max=0.0 static_ray_max=0.0 blocked_fallbacks=0 failures=0
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_on_the_touch_boundary_of_a_still_box PASSED 28ms
+
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_at_the_newton_cap_fails_closed_the_same_way STARTED
+ERROR: CollisionQuery: the mover sweep reached its iteration cap against mover 3; reporting a blocking hit at the last safe fraction 0.4793593422487 (reported once per query)
+   at: godot::CollisionQuery::report_cap_error (src\collision\collision_query.cpp:647)
+   GDScript backtrace (most recent call first):
+       [0] _run (res://tests/unit/collision/collision_native_parity_test.gd:204)
+       [1] <anonymous lambda> (res://tests/unit/collision/collision_native_parity_test.gd:398)
+       [2] _execute (res://addons/gdUnit4/src/asserts/GdUnitGodotErrorAssertImpl.gd:23)
+       [3] is_push_error (res://addons/gdUnit4/src/asserts/GdUnitGodotErrorAssertImpl.gd:139)
+       [4] test_parity_at_the_newton_cap_fails_closed_the_same_way (res://tests/unit/collision/collision_native_parity_test.gd:398)
+       [5] _execute_test_case (res://addons/gdUnit4/src/core/_TestCase.gd:79)
+       [6] execute (res://addons/gdUnit4/src/core/_TestCase.gd:40)
+       [7] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [8] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [9] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:17)
+       [10] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [11] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:24)
+       [12] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [13] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestSuiteExecutionStage.gd:38)
+       [14] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [15] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:31)
+       [16] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [17] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:28)
+       [18] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [19] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [20] execute (res://addons/gdUnit4/src/core/_TestCase.gd:41)
+       [21] test_completed (res://addons/gdUnit4/src/core/_TestCase.gd:86)
+ERROR: OracleCollisionQuery: the mover sweep reached its iteration cap against mover 3; reporting a blocking hit at the last safe fraction 0.4793593422487 (reported once per query)
+   at: push_error (core/variant/variant_utility.cpp:1024)
+   GDScript backtrace (most recent call first):
+       [0] _sweep_local (res://tests/oracle/collision/oracle_collision_query.gd:1218)
+       [1] _test_movers_for_sweep (res://tests/oracle/collision/oracle_collision_query.gd:935)
+       [2] sweep_walls (res://tests/oracle/collision/oracle_collision_query.gd:444)
+       [3] _run (res://tests/unit/collision/collision_native_parity_test.gd:205)
+       [4] <anonymous lambda> (res://tests/unit/collision/collision_native_parity_test.gd:398)
+       [5] _execute (res://addons/gdUnit4/src/asserts/GdUnitGodotErrorAssertImpl.gd:23)
+       [6] is_push_error (res://addons/gdUnit4/src/asserts/GdUnitGodotErrorAssertImpl.gd:139)
+       [7] test_parity_at_the_newton_cap_fails_closed_the_same_way (res://tests/unit/collision/collision_native_parity_test.gd:398)
+       [8] _execute_test_case (res://addons/gdUnit4/src/core/_TestCase.gd:79)
+       [9] execute (res://addons/gdUnit4/src/core/_TestCase.gd:40)
+       [10] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [11] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [12] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:17)
+       [13] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [14] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:24)
+       [15] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [16] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestSuiteExecutionStage.gd:38)
+       [17] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [18] _execute (res://addons/gdUnit4/src/core/execution/stages/GdUnitTestCaseExecutionStage.gd:31)
+       [19] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [20] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleExecutionStage.gd:28)
+       [21] execute (res://addons/gdUnit4/src/core/execution/stages/IGdUnitExecutionStage.gd:19)
+       [22] _execute (res://addons/gdUnit4/src/core/execution/stages/single/GdUnitTestCaseSingleTestStage.gd:10)
+       [23] execute (res://addons/gdUnit4/src/core/_TestCase.gd:41)
+       [24] test_completed (res://addons/gdUnit4/src/core/_TestCase.gd:86)
+PARITY fixture=newton_cap_1 rays=50 ray_hits=40 ray_mover_hits=40 excluded_rays=0 sweeps=300 sweep_hits=300 sweep_mover_hits=300 sweep_static_hits=0 started_inside=0 excluded_sweeps=0 poses=200 mover_ray_max=0.0 static_ray_max=0.0 blocked_fallbacks=0 failures=0
+  res://tests/unit/collision/collision_native_parity_test.gd > test_parity_at_the_newton_cap_fails_closed_the_same_way FAILED 14ms
+  Report:
+  Expecting: push_error() is called.
+	expected: 'CollisionQuery: the mover sweep reached its iteration cap against mover 3; reporting a blocking hit at the last safe fraction * (reported once per query)'
+	current: 'CollisionQuery: the mover sweep reached its iteration cap against mover 3; reporting a blocking hit at the last safe fraction 0.4793593422487 (reported once per query)
+OracleCollisionQuery: the mover sweep reached its iteration cap against mover 3; reporting a blocking hit at the last safe fraction 0.4793593422487 (reported once per query)'
+	at 'test_parity_at_the_newton_cap_fails_closed_the_same_way' in res://tests/unit/collision/collision_native_parity_test.gd:398
+
+Statistics: 10 test cases | 0 errors | 1 failures | 0 flaky | 0 skipped | 0 orphans | FAILED 570ms
+
+
+Overall Summary: 10 test cases | 0 errors | 1 failures | 0 flaky | 0 skipped | 0 orphans |
+Executed test suites: (1/1)
+Executed test cases : (10/10)
+Total execution time: 570ms
+ Open XML Report at: file:///c:/writechoice/Claude-Code-Game-Studios/reports/report_80/results.xml
+Open HTML Report at: file:///c:/writechoice/Claude-Code-Game-Studios/reports/report_80/index.html
+Exit code: 100
+Run dispose test resources

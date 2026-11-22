@@ -2,9 +2,8 @@ extends GdUnitTestSuite
 ## Core-rebuild story 005: analytic moving colliders (ADR-0002 "Moving colliders", "Queries per kart
 ## per tick"; Track Collision GDD 3.4, 4.4). Movers are built in code (collision_fixtures.gd); no
 ## randomness, no time-dependent assertion.
-## Filesystem exception: test_no_key_pos_use_outside_core_collision is the one test that reads files
-## (the AC-15 scan of the res://src scripts). It runs from source only: an exported build has no .gd
-## sources to scan.
+## The AC-15 scan (mover keys read only inside the collision code) is a tools/core_greps.sh rule since
+## story 067.
 ##
 ## Story acceptance criteria (story order) -> GDD / ADR source -> tests:
 ##   Story AC 1  Pose curve                 (Track Collision AC-12; ADR-0002 Validation Criteria)
@@ -33,7 +32,6 @@ extends GdUnitTestSuite
 ##               test_static_wall_wins_exact_overlap_depth_tie
 ##   Story AC 4  One evaluator              (Track Collision AC-15)
 ##               test_mover_pose_same_t_is_bit_identical_across_calls_and_queries,
-##               test_no_key_pos_use_outside_core_collision
 ##   Ground casts against movers (ADR-0002 cast_ground: nearest wins; story 003 review note)
 ##               test_cast_ground_beside_mover_returns_static_ground,
 ##               test_cast_ground_static_ground_nearer_than_mover_wins,
@@ -76,6 +74,7 @@ extends GdUnitTestSuite
 ##               test_mover_point_velocity_of_unknown_id_push_errors_and_returns_zero,
 ##               test_mover_pose_after_dispose_asserts_in_debug_or_returns_identity
 
+const _GUARD = preload("res://tests/unit/native/native_test_guard.gd")
 const Fixtures = preload("res://tests/unit/collision/collision_fixtures.gd")
 
 ## Mover id of the single-mover tests (any id >= 1; 0 means static).
@@ -119,6 +118,10 @@ const AXIS_DISTANCE: float = 2.0
 
 
 # --- helpers ------------------------------------------------------------------------------------
+
+func before() -> void:
+	assert_str(_GUARD.problem()).is_empty()
+
 
 ## A WallHit holding sentinel values.
 func _sentinel_wall_hit() -> WallHit:
@@ -166,7 +169,7 @@ func _assert_ground_sentinel(hit: GroundHit) -> void:
 
 ## A query over [param movers] only.
 func _movers_query(movers: Array[MoverDef]) -> CollisionQuery:
-	return CollisionQuery.new(Fixtures.movers_only(movers))
+	return CollisionQuery.create(Fixtures.movers_only(movers).pack_native())
 
 
 ## The slide mover of AC 1 (box from the origin to +10 m along X over 2 s, back by 4 s).
@@ -198,20 +201,6 @@ func _fd_velocity(query: CollisionQuery, id: int, t: float, p: Vector3) -> Vecto
 func _layout_error_of(movers: Array[MoverDef]) -> String:
 	return Fixtures.movers_only(movers).layout_error()
 
-
-## Every .gd file under [param dir_path], recursively, into [param out].
-func _gd_files_under(dir_path: String, out: Array[String]) -> void:
-	var dir: DirAccess = DirAccess.open(dir_path)
-	if dir == null:
-		return
-	for f in dir.get_files():
-		if f.ends_with(".gd"):
-			out.append(dir_path.path_join(f))
-	for d in dir.get_directories():
-		_gd_files_under(dir_path.path_join(d), out)
-
-
-# --- Story AC 1: pose curve -------------------------------------------------------------------------
 
 func test_mover_pose_halfway_along_slide_is_at_five_metres() -> void:
 	# Arrange
@@ -396,7 +385,7 @@ func test_cast_ground_on_mover_top_returns_mover_hit_with_point_velocity() -> vo
 	var platform: MoverDef = Fixtures.spinner_box(ID, Vector3(0.0, 1.0, 0.0), Vector3(1.0, 0.25, 1.0))
 	var data: TrackCollisionData = Fixtures.quadrant_ground([0, 1, 2, 3])
 	data.movers = [platform]
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit: GroundHit = GroundHit.new()
 	var origin: Vector3 = Vector3(0.5, CAST_Y, 0.5)
@@ -466,7 +455,7 @@ func test_mover_deeper_than_static_wall_wins_overlap() -> void:
 	var data: TrackCollisionData = Fixtures.attr_walls(Fixtures.wall_registry())
 	var kart: Vector3 = Vector3(R - 0.2, Fixtures.SWEEP_Y, Fixtures.wall_centre_z(0))
 	data.movers = [Fixtures.still_box(ID, kart + Vector3.RIGHT * (R + 0.5 - 0.5), Vector3.ONE * 0.5)]
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit: WallHit = WallHit.new()
 	# Act
@@ -486,7 +475,7 @@ func test_static_wall_deeper_than_mover_wins_overlap() -> void:
 	var data: TrackCollisionData = Fixtures.attr_walls(Fixtures.wall_registry())
 	var kart: Vector3 = Vector3(R - 0.2, Fixtures.SWEEP_Y, Fixtures.wall_centre_z(0))
 	data.movers = [Fixtures.still_box(ID, kart + Vector3.RIGHT * (R + 0.5 - 0.1), Vector3.ONE * 0.5)]
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit: WallHit = WallHit.new()
 	var rough_id: int = Fixtures.WALL_REGISTRY_IDS[Fixtures.WALL_REGISTRY_NAMES.find(&"rough")]
@@ -508,7 +497,7 @@ func test_non_solid_mover_never_blocks_sweep_or_ground_cast() -> void:
 	barrel.solid = false
 	var data: TrackCollisionData = Fixtures.quadrant_ground([0, 1, 2, 3])
 	data.movers = [barrel]
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var inside: WallHit = _sentinel_wall_hit()
 	var through: WallHit = _sentinel_wall_hit()
@@ -537,8 +526,8 @@ func test_mover_pose_same_t_is_bit_identical_across_calls_and_queries() -> void:
 	# Arrange: "simulation" (query A, t = n x SIM_DT, twice) and "presentation" (query B over the same
 	# data, the same t).
 	var data: TrackCollisionData = Fixtures.movers_only([_tumbler()])
-	var sim: CollisionQuery = CollisionQuery.new(data)
-	var presentation: CollisionQuery = CollisionQuery.new(data)
+	var sim: CollisionQuery = CollisionQuery.create(data.pack_native())
+	var presentation: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var t: float = 77 * SIM_DT
 	var p: Vector3 = Vector3(0.3, 0.2, 0.1)
 	# Act
@@ -556,34 +545,13 @@ func test_mover_pose_same_t_is_bit_identical_across_calls_and_queries() -> void:
 	assert_bool(v_sim == v_shown).is_true()
 
 
-func test_no_key_pos_use_outside_core_collision() -> void:
-	# Arrange
-	var files: Array[String] = []
-	_gd_files_under("res://src", files)
-	var offenders: Array[String] = []
-	# Act
-	var unreadable: Array[String] = []
-	for path in files:
-		var text: String = FileAccess.get_file_as_string(path)
-		if FileAccess.get_open_error() != OK or text.is_empty():
-			unreadable.append(path)
-		if path.begins_with("res://src/core/collision/"):
-			continue
-		if text.contains("key_pos"):
-			offenders.append(path)
-	# Assert: every file was read, the scan saw the collision sources, nothing else reads mover keys.
-	assert_array(unreadable).is_empty()
-	assert_array(files).contains(["res://src/core/collision/collision_query.gd"])
-	assert_array(offenders).is_empty()
-
-
 # --- Ground casts against movers -------------------------------------------------------------------
 
 func test_cast_ground_beside_mover_returns_static_ground() -> void:
 	# Arrange
 	var data: TrackCollisionData = Fixtures.quadrant_ground([0, 1, 2, 3])
 	data.movers = [Fixtures.still_box(ID, Vector3(0.0, 1.0, 0.0), Vector3(1.0, 0.25, 1.0))]
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var hit: GroundHit = GroundHit.new()
 	# Act: x = 1.5 is beyond the box's half extent of 1.
 	var did_hit: bool = query.cast_ground(QueryCursor.new(), Vector3(1.5, CAST_Y, 1.5), Vector3.DOWN, Fixtures.CAST_LENGTH, 0.0, hit)
@@ -599,7 +567,7 @@ func test_cast_ground_static_ground_nearer_than_mover_wins() -> void:
 	# Arrange: the box lies below the ground.
 	var data: TrackCollisionData = Fixtures.quadrant_ground([0, 1, 2, 3])
 	data.movers = [Fixtures.still_box(ID, Vector3(0.0, -1.0, 0.0), Vector3(1.0, 0.25, 1.0))]
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var hit: GroundHit = GroundHit.new()
 	# Act
 	var did_hit: bool = query.cast_ground(QueryCursor.new(), Vector3(0.5, CAST_Y, 0.5), Vector3.DOWN, Fixtures.CAST_LENGTH, 0.0, hit)
@@ -659,7 +627,7 @@ func test_cast_ground_starting_inside_mover_misses_it() -> void:
 	# Arrange: the ray starts inside the box; ground lies below.
 	var data: TrackCollisionData = Fixtures.quadrant_ground([0, 1, 2, 3])
 	data.movers = [Fixtures.still_box(ID, Vector3(0.0, 1.0, 0.0), UNIT_BOX)]
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var hit: GroundHit = GroundHit.new()
 	# Act
 	var did_hit: bool = query.cast_ground(QueryCursor.new(), Vector3(0.5, 1.5, 0.5), Vector3.DOWN, Fixtures.CAST_LENGTH, 0.0, hit)
@@ -793,7 +761,7 @@ func test_sweep_mover_nearer_than_static_wall_wins() -> void:
 	var data: TrackCollisionData = Fixtures.attr_walls(Fixtures.wall_registry())
 	var z: float = Fixtures.wall_centre_z(0)
 	data.movers = [Fixtures.still_box(ID, Vector3(3.0, Fixtures.SWEEP_Y, z), Vector3.ONE * 0.5)]
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var hit: WallHit = WallHit.new()
 	# Act: from x = 6 to x = -2: box contact at centre x = 4.5 (1.5 / 8), wall at x = 1 (5 / 8).
 	var did_hit: bool = query.sweep_walls(QueryCursor.new(), Vector3(6.0, Fixtures.SWEEP_Y, z), Vector3(-2.0, Fixtures.SWEEP_Y, z), R, 0.0, hit)
@@ -810,7 +778,7 @@ func test_sweep_static_wall_nearer_than_mover_wins() -> void:
 	var data: TrackCollisionData = Fixtures.attr_walls(Fixtures.wall_registry())
 	var z: float = Fixtures.wall_centre_z(0)
 	data.movers = [Fixtures.still_box(ID, Vector3(-1.0, Fixtures.SWEEP_Y, z), Vector3.ONE * 0.5)]
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var hit: WallHit = WallHit.new()
 	var rough_id: int = Fixtures.WALL_REGISTRY_IDS[Fixtures.WALL_REGISTRY_NAMES.find(&"rough")]
 	# Act: from x = 6 to x = -2: wall contact at x = 1 (5 / 8), box at x = 0.5 (5.5 / 8).
@@ -957,7 +925,7 @@ func test_cast_ground_static_ground_wins_exact_distance_tie() -> void:
 	# Arrange: a box whose top is exactly the ground plane y = 0 (dyadic values: exact distances).
 	var data: TrackCollisionData = Fixtures.quadrant_ground([0, 1, 2, 3])
 	data.movers = [Fixtures.still_box(ID, Vector3(0.5, -0.5, 0.5), Vector3.ONE * 0.5)]
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var hit: GroundHit = GroundHit.new()
 	# Act
 	var did_hit: bool = query.cast_ground(QueryCursor.new(), Vector3(0.5, CAST_Y, 0.5), Vector3.DOWN, Fixtures.CAST_LENGTH, 0.0, hit)
@@ -974,7 +942,7 @@ func test_sweep_static_wall_wins_exact_fraction_tie() -> void:
 	var data: TrackCollisionData = Fixtures.attr_walls(Fixtures.wall_registry())
 	var z: float = Fixtures.wall_centre_z(0)
 	data.movers = [Fixtures.still_box(ID, Vector3(-0.5, Fixtures.SWEEP_Y, z), Vector3.ONE * 0.5)]
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var hit: WallHit = WallHit.new()
 	var rough_id: int = Fixtures.WALL_REGISTRY_IDS[Fixtures.WALL_REGISTRY_NAMES.find(&"rough")]
 	# Act
@@ -993,7 +961,7 @@ func test_static_wall_wins_exact_overlap_depth_tie() -> void:
 	var data: TrackCollisionData = Fixtures.attr_walls(Fixtures.wall_registry())
 	var z: float = Fixtures.wall_centre_z(0)
 	data.movers = [Fixtures.still_box(ID, Vector3(-0.5, Fixtures.SWEEP_Y, z), Vector3.ONE * 0.5)]
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var hit: WallHit = WallHit.new()
 	var kart: Vector3 = Vector3(0.75, Fixtures.SWEEP_Y, z)
 	var rough_id: int = Fixtures.WALL_REGISTRY_IDS[Fixtures.WALL_REGISTRY_NAMES.find(&"rough")]
@@ -1151,18 +1119,17 @@ func test_layout_error_rejects_null_mover() -> void:
 	assert_str(_layout_error_of(movers)).is_equal("movers[1] is null")
 
 
-func test_query_from_bad_mover_push_errors_and_has_no_movers() -> void:
-	# Arrange
+func test_bad_mover_is_refused_by_validate_packed_and_create_returns_null() -> void:
+	# Arrange: a mover with id 0 (static geometry's id): the layout is rejected.
 	var data: TrackCollisionData = Fixtures.movers_only([Fixtures.still_box(0, Vector3.ZERO, UNIT_BOX)])
 	var out: Array[CollisionQuery] = []
-	# Act / Assert
-	await assert_error(func() -> void: out.append(CollisionQuery.new(data))).is_push_error(
-			"CollisionQuery: movers[0]: id is 0 (mover ids are >= 1; 0 means static geometry); the query has no geometry")
-	var query: CollisionQuery = out[0]
-	var hit: WallHit = _sentinel_wall_hit()
-	assert_bool(query.sweep_walls(QueryCursor.new(), Vector3.ZERO, Vector3.ZERO, R, 0.0, hit)).is_false()
-	_assert_wall_sentinel(hit)
-	query.dispose()
+	# Act
+	var problem: String = CollisionQuery.validate_packed(data.pack_native())
+	await assert_error(func() -> void: out.append(CollisionQuery.create(data.pack_native()))).is_push_error(
+			"Method/function failed. Returning: Ref<CollisionQuery>()")
+	# Assert: the message names the mover and the key; no query exists.
+	assert_str(problem).contains("movers'[0]").contains("'id'")
+	assert_object(out[0]).is_null()
 
 
 # --- Reuse and lifetime -----------------------------------------------------------------------------
@@ -1175,7 +1142,7 @@ func test_mover_queries_create_no_objects_over_1000_queries() -> void:
 	var slider: MoverDef = Fixtures.slide_box(ID_2, Vector3(-5.0, 2.0, 0.0), Vector3.ONE * 0.5)
 	var capsule: MoverDef = Fixtures.still_round(9, MoverDef.Shape.CAPSULE, Vector3(1.0, 3.0, 1.0), 0.5, 0.5)
 	data.movers = [platform, slider, capsule]
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var ground: GroundHit = GroundHit.new()
 	var wall: WallHit = WallHit.new()
@@ -1216,22 +1183,20 @@ func test_mover_pose_of_unknown_id_push_errors_and_returns_identity() -> void:
 	var out: Array[Transform3D] = []
 	# Act / Assert
 	await assert_error(func() -> void: out.append(query.mover_pose(ID_2, 0.0))).is_push_error(
-			"CollisionQuery.mover_pose: no mover with id %d" % ID_2)
+			"Condition \"k < 0\" is true. Returning: Transform3D()")
 	query.dispose()
 	assert_bool(out[0] == Transform3D.IDENTITY).is_true()
 
 
-func test_mover_pose_after_dispose_asserts_in_debug_or_returns_identity() -> void:
+func test_mover_pose_after_dispose_refuses_and_returns_identity() -> void:
 	# Arrange
 	var query: CollisionQuery = _movers_query([_slide()])
 	query.dispose()
 	var out: Array[Transform3D] = []
-	# Act / Assert: debug builds stop at assert(not _disposed); release builds return the identity.
-	if OS.is_debug_build():
-		await assert_error(func() -> void: out.append(query.mover_pose(ID, 1.0))).is_runtime_error(
-				"Assertion failed: CollisionQuery.mover_pose after dispose()")
-	else:
-		assert_bool(query.mover_pose(ID, 1.0) == Transform3D.IDENTITY).is_true()
+	# Act / Assert: a disposed query is unbuilt: the built guard refuses, in debug and release alike.
+	await assert_error(func() -> void: out.append(query.mover_pose(ID, 1.0))).is_push_error(
+			"Condition \"!built\" is true. Returning: Transform3D()")
+	assert_bool(out[0] == Transform3D.IDENTITY).is_true()
 
 
 func test_mover_point_velocity_of_unknown_id_push_errors_and_returns_zero() -> void:
@@ -1240,7 +1205,7 @@ func test_mover_point_velocity_of_unknown_id_push_errors_and_returns_zero() -> v
 	var out: Array[Vector3] = []
 	# Act / Assert
 	await assert_error(func() -> void: out.append(query.mover_point_velocity(ID_2, 0.0, Vector3.ONE))).is_push_error(
-			"CollisionQuery.mover_point_velocity: no mover with id %d" % ID_2)
+			"Condition \"k < 0\" is true. Returning: Vector3()")
 	query.dispose()
 	assert_vector(out[0]).is_equal(Vector3.ZERO)
 

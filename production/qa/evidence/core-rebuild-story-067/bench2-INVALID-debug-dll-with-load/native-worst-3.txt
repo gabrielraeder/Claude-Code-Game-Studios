@@ -1,0 +1,24 @@
+[bench] layout=worst karts=12 rays_per_kart=4 sweeps_per_kart=3 movers=5 solid=5 ground_tris=48006 wall_tris=4800 ticks_per_section=300 build=debug engine=4.8-beta3 (official)
+BENCH layout=worst section=all median_us=118 p95_us=139 max_us=230
+SECTION layout=worst section=curve median_us=116 p95_us=130 max_us=180
+COUNTS layout=worst section=curve per_tick ray_hits=48.00 ray_mover_hits=0.00 sweep_hits=2.89 sweep_mover_contacts=0.00 started_inside=2.76
+SECTION layout=worst section=climb median_us=120 p95_us=136 max_us=146
+COUNTS layout=worst section=climb per_tick ray_hits=48.00 ray_mover_hits=0.00 sweep_hits=2.74 sweep_mover_contacts=0.00 started_inside=2.64
+SECTION layout=worst section=crossover median_us=131 p95_us=151 max_us=174
+COUNTS layout=worst section=crossover per_tick ray_hits=48.00 ray_mover_hits=0.00 sweep_hits=2.94 sweep_mover_contacts=0.00 started_inside=2.81
+SECTION layout=worst section=movers median_us=110 p95_us=121 max_us=230
+COUNTS layout=worst section=movers per_tick ray_hits=48.00 ray_mover_hits=5.85 sweep_hits=18.09 sweep_mover_contacts=18.09 started_inside=17.23
+SECTION layout=worst section=ramp median_us=117 p95_us=128 max_us=158
+COUNTS layout=worst section=ramp per_tick ray_hits=48.00 ray_mover_hits=0.00 sweep_hits=0.00 sweep_mover_contacts=0.00 started_inside=0.00
+FALLBACK blocked_fallback_count=0 ok
+CROSSINGS per_tick bound_calls=89 (12 karts x (4 rays + 3 sweeps)) + 5 mover_pose
+ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+ALLOC OBJECT_RESOURCE_COUNT start=10.0 tick600=10.0 end=10.0 unchanged
+ALLOC OBJECT_NODE_COUNT start=2.0 tick600=2.0 end=2.0 unchanged
+ALLOC OBJECT_ORPHAN_NODE_COUNT start=0.0 tick600=0.0 end=0.0 unchanged
+ALLOC MEMORY_STATIC start=98210704.0 tick600=98210808.0 end=98210912.0 changed (not gated)
+ALLOC PS3D_INFO_ACTIVE_OBJECTS start=0.0 tick600=0.0 end=0.0 unchanged
+ALLOC PS3D_INFO_COLLISION_PAIRS start=0.0 tick600=0.0 end=0.0 unchanged
+ALLOC PS3D_INFO_ISLAND_COUNT start=0.0 tick600=0.0 end=0.0 unchanged
+ALLOC query_owned_rids start=6.0 tick600=6.0 end=6.0 unchanged
+VERDICT_INPUTS worst_section_p95_us=151 budget_us=300 alloc_unchanged=true

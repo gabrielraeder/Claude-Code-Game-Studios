@@ -1,0 +1,2 @@
+refusing --bench: cannot tell whether a Godot process is open:
+PROBE_FAILED forced failure (DOG_FORCE_PROBE_THROW)

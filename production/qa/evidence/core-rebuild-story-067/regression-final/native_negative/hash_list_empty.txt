@@ -1,0 +1,1 @@
+hash_files: /c/writechoice/Claude-Code-Game-Studios/native/obj/negative_tmp/list_empty.txt lists nothing

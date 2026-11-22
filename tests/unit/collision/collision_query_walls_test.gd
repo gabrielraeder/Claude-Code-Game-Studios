@@ -40,6 +40,7 @@ extends GdUnitTestSuite
 ##               test_sweeps_create_no_objects,
 ##               test_sweep_walls_after_dispose_asserts_in_debug_or_misses
 
+const _GUARD = preload("res://tests/unit/native/native_test_guard.gd")
 const Fixtures = preload("res://tests/unit/collision/collision_fixtures.gd")
 
 ## Simulation time passed to sweep_walls (no movers in these fixtures).
@@ -68,6 +69,10 @@ const OBJECT_CHECK_REPEATS: int = 250
 
 # --- helpers ------------------------------------------------------------------------------------
 
+func before() -> void:
+	assert_str(_GUARD.problem()).is_empty()
+
+
 ## Id of wall [param wall_name] in the fixture wall registry.
 func _wall_id(wall_name: StringName) -> int:
 	return Fixtures.WALL_REGISTRY_IDS[Fixtures.WALL_REGISTRY_NAMES.find(wall_name)]
@@ -80,7 +85,7 @@ func _at(x: float, k: int) -> Vector3:
 
 ## A query over the attr_walls fixture (auto-disposed by the caller).
 func _attr_query() -> CollisionQuery:
-	return CollisionQuery.new(Fixtures.attr_walls(Fixtures.wall_registry()))
+	return CollisionQuery.create(Fixtures.attr_walls(Fixtures.wall_registry()).pack_native())
 
 
 ## A WallHit holding sentinel values, to check a miss leaves it untouched.
@@ -139,7 +144,7 @@ func test_sweep_into_rough_wall_returns_its_non_contiguous_id() -> void:
 func test_sweep_into_each_wall_shape_returns_that_shapes_wall_attr_id() -> void:
 	# Arrange
 	var data: TrackCollisionData = Fixtures.attr_walls(Fixtures.wall_registry())
-	var query: CollisionQuery = CollisionQuery.new(data)
+	var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit: WallHit = WallHit.new()
 	var got: Array[int] = []
@@ -442,7 +447,7 @@ func test_sweep_into_wall_from_wall_skin_gap_returns_near_zero_fraction_not_star
 func test_sweep_at_floor_wall_corner_returns_wall_not_floor() -> void:
 	# Arrange: the sphere overlaps the floor by 0.5 m all along the move (centre at y = 0.5) and
 	# reaches the side wall. With a combined mask the floor would be the rest contact (probe T3).
-	var query: CollisionQuery = CollisionQuery.new(Fixtures.ground_and_side_wall([0, 0, 0, 0]))
+	var query: CollisionQuery = CollisionQuery.create(Fixtures.ground_and_side_wall([0, 0, 0, 0]).pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit: WallHit = WallHit.new()
 	var y: float = 0.5
@@ -462,7 +467,7 @@ func test_sweep_at_floor_wall_corner_returns_wall_not_floor() -> void:
 
 func test_sweep_overlapping_ground_only_misses() -> void:
 	# Arrange: ground, no walls; the sphere is half sunk in the ground.
-	var query: CollisionQuery = CollisionQuery.new(Fixtures.quadrant_ground([0, 0, 0, 0]))
+	var query: CollisionQuery = CollisionQuery.create(Fixtures.quadrant_ground([0, 0, 0, 0]).pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit: WallHit = _sentinel_hit()
 	var from: Vector3 = Vector3(-1.0, 0.5, 0.0)
@@ -479,7 +484,7 @@ func test_sweep_overlapping_ground_only_misses() -> void:
 func test_started_inside_inner_corner_returns_deeper_wall() -> void:
 	# Arrange: overlapping both corner walls, once deeper into the x = 0 wall (rough), once deeper
 	# into the z = 0 wall (stone). Depths 0.8 and 0.4 (probe_adr3_rest.txt E).
-	var query: CollisionQuery = CollisionQuery.new(Fixtures.inner_corner(Fixtures.wall_registry()))
+	var query: CollisionQuery = CollisionQuery.create(Fixtures.inner_corner(Fixtures.wall_registry()).pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit_x: WallHit = WallHit.new()
 	var hit_z: WallHit = WallHit.new()
@@ -505,7 +510,7 @@ func test_started_inside_inner_corner_returns_deeper_wall() -> void:
 func test_sweep_into_inner_corner_hits_wall_reached_first() -> void:
 	# Arrange: two diagonal moves into the corner. Move A reaches x = R at fraction 0.75 while z is
 	# still 1.5 (rough wall first); move B reaches z = R at fraction 0.75 while x is 2.25 (stone).
-	var query: CollisionQuery = CollisionQuery.new(Fixtures.inner_corner(Fixtures.wall_registry()))
+	var query: CollisionQuery = CollisionQuery.create(Fixtures.inner_corner(Fixtures.wall_registry()).pack_native())
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit_a: WallHit = WallHit.new()
 	var hit_b: WallHit = WallHit.new()
@@ -595,7 +600,7 @@ func test_sweeps_create_no_objects() -> void:
 	assert_int(after).is_equal(baseline)
 
 
-func test_sweep_walls_after_dispose_asserts_in_debug_or_misses() -> void:
+func test_sweep_walls_after_dispose_refuses_and_misses() -> void:
 	# Arrange
 	var query: CollisionQuery = _attr_query()
 	query.dispose()
@@ -604,10 +609,8 @@ func test_sweep_walls_after_dispose_asserts_in_debug_or_misses() -> void:
 	var from: Vector3 = _at(START_DISTANCE, 0)
 	var to: Vector3 = _at(-START_DISTANCE, 0)
 	var out: Array = []
-	# Act / Assert: debug builds stop at assert(not _disposed); release builds return false.
-	if OS.is_debug_build():
-		await assert_error(func() -> void: out.append(query.sweep_walls(cursor, from, to, Fixtures.SWEEP_RADIUS, T, hit))).is_runtime_error(
-				"Assertion failed: CollisionQuery.sweep_walls after dispose()")
-	else:
-		assert_bool(query.sweep_walls(cursor, from, to, Fixtures.SWEEP_RADIUS, T, hit)).is_false()
+	# Act / Assert: a disposed query is unbuilt: the built guard refuses, in debug and release alike.
+	await assert_error(func() -> void: out.append(query.sweep_walls(cursor, from, to, Fixtures.SWEEP_RADIUS, T, hit))).is_push_error(
+			"Condition \"!built\" is true. Returning: false")
+	assert_bool(out[0]).is_false()
 	assert_int(hit.wall_attr).is_equal(SENTINEL_ATTR)

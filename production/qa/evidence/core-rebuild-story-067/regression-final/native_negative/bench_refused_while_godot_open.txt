@@ -1,0 +1,3 @@
+refusing --bench: a Godot process is open (an editor counts):
+pid 6352 Godot_v4.8-beta3_win64
+pid 22596 Godot_v4.8-beta3_win64_console

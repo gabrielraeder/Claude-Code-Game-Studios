@@ -1,0 +1,78 @@
+refusing --bench: a Godot process is open (an editor counts):
+pid 6740 Godot_v4.8-beta3_win64
+pid 45784 Godot_v4.8-beta3_win64_console
+== native castle run 1
+   exit 0
+== native castle run 2
+   exit 0
+== native castle run 3
+   exit 0
+== native worst run 1
+   exit 0
+== native worst run 2
+   exit 0
+== native worst run 3
+   exit 0
+== native static run 1
+   exit 0
+== native static run 2
+   exit 0
+== native static run 3
+   exit 0
+# native: median across 3 runs of each run's median_us and p95_us
+AGG layout=castle section=all median_of_medians_us=117 median_of_p95_us=138 runs_median=[ 117 117 118 ] runs_p95=[ 138 138 138 ]
+AGG layout=castle section=curve median_of_medians_us=114 median_of_p95_us=130 runs_median=[ 114 114 115 ] runs_p95=[ 130 130 128 ]
+AGG layout=castle section=climb median_of_medians_us=118 median_of_p95_us=135 runs_median=[ 118 117 118 ] runs_p95=[ 144 134 135 ]
+AGG layout=castle section=crossover median_of_medians_us=130 median_of_p95_us=145 runs_median=[ 130 130 130 ] runs_p95=[ 145 146 145 ]
+AGG layout=castle section=movers median_of_medians_us=115 median_of_p95_us=129 runs_median=[ 115 115 116 ] runs_p95=[ 128 129 133 ]
+AGG layout=castle section=ramp median_of_medians_us=115 median_of_p95_us=124 runs_median=[ 115 114 115 ] runs_p95=[ 124 123 126 ]
+castle: FALLBACK blocked_fallback_count=0 ok
+castle: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+castle: ALLOC MEMORY_STATIC start=98219392.0 tick600=98219496.0 end=98219600.0 changed (not gated)
+castle: VERDICT_INPUTS worst_section_p95_us=145 budget_us=300 alloc_unchanged=true
+castle: FALLBACK blocked_fallback_count=0 ok
+castle: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+castle: ALLOC MEMORY_STATIC start=98219392.0 tick600=98219496.0 end=98219600.0 changed (not gated)
+castle: VERDICT_INPUTS worst_section_p95_us=146 budget_us=300 alloc_unchanged=true
+castle: FALLBACK blocked_fallback_count=0 ok
+castle: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+castle: ALLOC MEMORY_STATIC start=98219392.0 tick600=98219496.0 end=98219600.0 changed (not gated)
+castle: VERDICT_INPUTS worst_section_p95_us=145 budget_us=300 alloc_unchanged=true
+AGG layout=worst section=all median_of_medians_us=116 median_of_p95_us=136 runs_median=[ 112 116 118 ] runs_p95=[ 129 136 139 ]
+AGG layout=worst section=curve median_of_medians_us=116 median_of_p95_us=130 runs_median=[ 116 116 116 ] runs_p95=[ 130 132 130 ]
+AGG layout=worst section=climb median_of_medians_us=118 median_of_p95_us=136 runs_median=[ 106 118 120 ] runs_p95=[ 129 136 136 ]
+AGG layout=worst section=crossover median_of_medians_us=130 median_of_p95_us=144 runs_median=[ 111 130 131 ] runs_p95=[ 125 144 151 ]
+AGG layout=worst section=movers median_of_medians_us=109 median_of_p95_us=119 runs_median=[ 94 109 110 ] runs_p95=[ 119 118 121 ]
+AGG layout=worst section=ramp median_of_medians_us=116 median_of_p95_us=128 runs_median=[ 116 116 117 ] runs_p95=[ 128 123 128 ]
+worst: FALLBACK blocked_fallback_count=0 ok
+worst: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+worst: ALLOC MEMORY_STATIC start=98210704.0 tick600=98210808.0 end=98210912.0 changed (not gated)
+worst: VERDICT_INPUTS worst_section_p95_us=130 budget_us=300 alloc_unchanged=true
+worst: FALLBACK blocked_fallback_count=0 ok
+worst: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+worst: ALLOC MEMORY_STATIC start=98210704.0 tick600=98210808.0 end=98210912.0 changed (not gated)
+worst: VERDICT_INPUTS worst_section_p95_us=144 budget_us=300 alloc_unchanged=true
+worst: FALLBACK blocked_fallback_count=0 ok
+worst: ALLOC OBJECT_COUNT start=1664.0 tick600=1664.0 end=1664.0 unchanged
+worst: ALLOC MEMORY_STATIC start=98210704.0 tick600=98210808.0 end=98210912.0 changed (not gated)
+worst: VERDICT_INPUTS worst_section_p95_us=151 budget_us=300 alloc_unchanged=true
+AGG layout=static section=all median_of_medians_us=95 median_of_p95_us=115 runs_median=[ 113 95 95 ] runs_p95=[ 133 112 115 ]
+AGG layout=static section=curve median_of_medians_us=94 median_of_p95_us=108 runs_median=[ 111 93 94 ] runs_p95=[ 132 108 105 ]
+AGG layout=static section=climb median_of_medians_us=96 median_of_p95_us=114 runs_median=[ 114 96 96 ] runs_p95=[ 130 114 109 ]
+AGG layout=static section=crossover median_of_medians_us=106 median_of_p95_us=131 runs_median=[ 125 106 106 ] runs_p95=[ 141 117 131 ]
+AGG layout=static section=movers median_of_medians_us=93 median_of_p95_us=106 runs_median=[ 110 93 92 ] runs_p95=[ 126 106 105 ]
+AGG layout=static section=ramp median_of_medians_us=94 median_of_p95_us=110 runs_median=[ 111 94 94 ] runs_p95=[ 120 101 110 ]
+static: FALLBACK blocked_fallback_count=0 ok
+static: ALLOC OBJECT_COUNT start=1659.0 tick600=1659.0 end=1659.0 unchanged
+static: ALLOC MEMORY_STATIC start=98204676.0 tick600=98204780.0 end=98204884.0 changed (not gated)
+static: VERDICT_INPUTS worst_section_p95_us=141 budget_us=300 alloc_unchanged=true
+static: FALLBACK blocked_fallback_count=0 ok
+static: ALLOC OBJECT_COUNT start=1659.0 tick600=1659.0 end=1659.0 unchanged
+static: ALLOC MEMORY_STATIC start=98204676.0 tick600=98204780.0 end=98204884.0 changed (not gated)
+static: VERDICT_INPUTS worst_section_p95_us=117 budget_us=300 alloc_unchanged=true
+static: FALLBACK blocked_fallback_count=0 ok
+static: ALLOC OBJECT_COUNT start=1659.0 tick600=1659.0 end=1659.0 unchanged
+static: ALLOC MEMORY_STATIC start=98204676.0 tick600=98204780.0 end=98204884.0 changed (not gated)
+static: VERDICT_INPUTS worst_section_p95_us=131 budget_us=300 alloc_unchanged=true
+no addons/dogworks_core/bin/bench.lock; nothing to restore
+CHECK PASS

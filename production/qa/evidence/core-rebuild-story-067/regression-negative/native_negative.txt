@@ -1,0 +1,77 @@
+== bad DLLs
+PASS native_negative stale_dll (exit 1, output matches 'FAIL debug: stale DLL')
+-- the same stale source seen by the other callers
+PASS native_negative stale_boot_check (exit 3, output matches 'stale native DLL.*tools/build_native.sh')
+PASS native_negative stale_test_helper (exit 100, output matches 'stale native DLL.*tools/build_native.sh')
+PASS native_negative stale_editor_plugin (exit 0, output matches 'ERROR: dogworks_core: stale native DLL.*tools/build_native.sh')
+PASS native_negative stale_test_command_stops_before_gdunit (exit 1, output matches 'FAIL debug: stale DLL')
+cp: cannot create regular file 'addons/dogworks_core/bin/dogworks_core.windows.template_debug.x86_64.dll': Device or resource busy
+FAIL native_negative bench_dll_in_debug_slot (exit 0, wanted 1; pattern 'bench DLL is in the debug slot'; see /c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-067/regression-negative/native_negative/bench_dll_in_debug_slot.txt)
+    SH 8aaff7ce13ff46d7b92219601bb56f3f81d28b7a8a42b2b32ca65e5be2e5a6a0
+    PASS no bench.lock
+    PASS debug (1 marker, sh and fh match)
+    PASS release (1 marker, sh and fh match)
+cp: cannot create regular file 'addons/dogworks_core/bin/dogworks_core.windows.template_debug.x86_64.dll': Device or resource busy
+tools/native_negative_checks.sh: line 79: addons/dogworks_core/bin/dogworks_core.windows.template_debug.x86_64.dll: Device or resource busy
+FAIL native_negative marker_count_2 (exit 0, wanted 1; pattern 'found 2 build markers'; see /c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-067/regression-negative/native_negative/marker_count_2.txt)
+    SH 8aaff7ce13ff46d7b92219601bb56f3f81d28b7a8a42b2b32ca65e5be2e5a6a0
+    PASS no bench.lock
+    PASS debug (1 marker, sh and fh match)
+    PASS release (1 marker, sh and fh match)
+cp: cannot create regular file 'addons/dogworks_core/bin/dogworks_core.windows.template_debug.x86_64.dll': Device or resource busy
+PASS native_negative marker_count_0 (exit 1, output matches 'found 0 build markers')
+PASS native_negative missing_extension_list (exit 1, output matches 'without extension_list.cfg.*tools/build_native.sh')
+== bench swap
+FAIL native_negative bench_swap (exit 2, wanted 0; pattern 'bench.lock written'; see /c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-067/regression-negative/native_negative/bench_swap.txt)
+    refusing --bench: a Godot process is open (an editor counts):
+    pid 26312 Godot_v4.8-beta3_win64
+    pid 39112 Godot_v4.8-beta3_win64_console
+FAIL native_negative check_fails_while_bench_lock_exists (exit 0, wanted 1; pattern 'bench.lock exists'; see /c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-067/regression-negative/native_negative/check_fails_while_bench_lock_exists.txt)
+    SH 8aaff7ce13ff46d7b92219601bb56f3f81d28b7a8a42b2b32ca65e5be2e5a6a0
+    PASS no bench.lock
+    PASS debug (1 marker, sh and fh match)
+    PASS release (1 marker, sh and fh match)
+FAIL native_negative bench_restore (exit 2, wanted 0; pattern 'bench.lock removed'; see /c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-067/regression-negative/native_negative/bench_restore.txt)
+    no addons/dogworks_core/bin/bench.lock; nothing to restore
+PASS native_negative check_passes_after_restore (exit 0, output matches 'CHECK PASS')
+PASS native_negative debug_dll_identical_after_restore
+== a Godot process is open (my own headless hold, 12 s)
+PASS native_negative bench_refused_while_godot_open (exit 2, output matches 'a Godot process is open')
+PASS native_negative build_refused_while_dll_held (exit 2, output matches 'a Godot process holds the DLL')
+== the process probe cannot answer
+PASS native_negative probe_failed_powershell_missing (exit 2, output matches 'PROBE_FAILED')
+PASS native_negative probe_failed_forced_throw_bench (exit 2, output matches 'PROBE_FAILED')
+PASS native_negative probe_failed_forced_throw_build (exit 2, output matches 'PROBE_FAILED')
+== bad hash list (both bash here; the GDScript side is in native_hash_parity_test.gd)
+PASS native_negative hash_list_unknown_kind (exit 1, output matches 'unknown line kind')
+PASS native_negative hash_list_missing_file (exit 1, output matches 'listed file is missing')
+PASS native_negative hash_list_missing_tree (exit 1, output matches 'listed tree is missing')
+PASS native_negative hash_list_empty_tree (exit 1, output matches 'tree holds no files')
+PASS native_negative hash_list_dot_only_tree (exit 1, output matches 'tree holds no files')
+PASS native_negative hash_list_empty (exit 1, output matches 'lists nothing')
+== forbidden compiler flags
+PASS native_negative flag_scan_accepts_pinned_flags (exit 0, output matches 'PASS flag scan')
+PASS native_negative flag_scan_rejects_fp_fast (exit 1, output matches 'forbidden flag')
+PASS native_negative flag_scan_rejects_arch (exit 1, output matches 'forbidden flag')
+PASS native_negative flag_scan_rejects_md (exit 1, output matches 'forbidden flag')
+PASS native_negative flag_scan_rejects_missing_fp_precise (exit 1, output matches 'lacks /fp:precise')
+== boot check with the extension absent (scratch project without the extension)
+PASS native_negative boot_extension_absent (exit 3, output matches 'native extension is not loaded.*tools/build_native.sh')
+== core_greps native-suite rule on scratch trees
+PASS native_negative greps_empty_class_list (exit 1, output matches 'FAIL native suites call the shared hash helper \(no GDREGISTER')
+PASS native_negative greps_missing_register_types (exit 1, output matches 'FAIL native suites call the shared hash helper \(native/src/register_types.cpp is missing')
+PASS native_negative greps_zero_suites_is_not_run (exit 1, output matches 'NOT RUN: no suite')
+PASS native_negative greps_comment_only_mention (exit 1, output matches 'FAIL native suites call the shared hash helper .*does not preload')
+PASS native_negative greps_name_without_call (exit 1, output matches 'FAIL native suites call the shared hash helper .*does not preload')
+FAIL native_negative greps_real_call_passes (exit 1, wanted 0; pattern 'PASS native suites call the shared hash helper'; see /c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-067/regression-negative/native_negative/greps_real_call_passes.txt)
+    PASS no Dictionary query forms in src/core src/gameplay (ADR-0002) (scanned: src/core; absent: src/gameplay)
+    PASS CollisionQuery.new( / .create( only in CollisionBootCheck under src (story 006, 067) (scanned: src; allowed in: src/core/collision/collision_boot_check\.gd)
+    PASS native suites call the shared hash helper (1 suite(s); classes: DogworksCore)
+    PASS ToolchainProbe.crash_for_test is not called from tests (story 066) (scanned: tests)
+== exit-safety check that cannot run is NOT RUN, never PASS
+PASS native_negative exit_safety_missing_godot_is_not_run (exit 1, output matches 'NOT RUN native_exit exit_clean')
+== integrity: everything damaged is back
+PASS native_negative source_restored_identical
+PASS native_negative debug_dll_restored_identical
+PASS native_negative no_bench_lock_left
+PASS native_negative final_check_passes (exit 0, output matches 'CHECK PASS')

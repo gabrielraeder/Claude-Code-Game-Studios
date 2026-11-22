@@ -2,7 +2,7 @@
 class_name TrackCollisionData
 extends Resource
 ## The collision geometry of one track (ADR-0002 "TrackCollisionData"; core-rebuild story 003), the
-## schema ADR-0005 bakes into a binary .res. CollisionQuery.new(data) builds the Jolt-side query
+## schema ADR-0005 bakes into a binary .res. CollisionQuery.create(data.pack_native()) builds the Jolt-side query
 ## from it. Never mutated after load (ResourceLoader caches it); a mirrored race uses mirrored()
 ## (story 006), which returns a new object. At load the composition root also runs
 ## CollisionBootCheck.load_error() (layout, ids against the core registries, probe cast).
@@ -13,7 +13,7 @@ extends Resource
 ## # (a, b, c) faces along (c - a) x (b - a).
 ## data.ground_faces = PackedVector3Array([Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 0, 1)])
 ## data.surface_of_face = PackedInt32Array([1])
-## var query: CollisionQuery = CollisionQuery.new(data)
+## var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 ## # ... race ...
 ## query.dispose()
 ## [/codeblock]
@@ -21,6 +21,10 @@ extends Resource
 ## Schema version; bumped on any schema change. Part of ADR-0005's bake_key. A format number, not
 ## tuning.
 const FORMAT_VERSION: int = 1
+
+## Schema version of pack_native(); the native CollisionQuery asserts the same number
+## (CollisionQuery.PACKED_SCHEMA_VERSION). A format number, not tuning.
+const NATIVE_SCHEMA_VERSION: int = 1
 
 ## Ground triangles: 3 vertices per triangle, Godot-front winding. All in ONE concave shape.
 @export var ground_faces: PackedVector3Array = PackedVector3Array()
@@ -41,6 +45,35 @@ const FORMAT_VERSION: int = 1
 @export var probe_point: Vector3 = Vector3.ZERO
 ## Surface id the load-check probe must find.
 @export var probe_surface_id: int = 0
+
+
+## The plain data the native CollisionQuery consumes (ADR-0007 section 2): CollisionQuery.create(packed)
+## and CollisionQuery.validate_packed(packed) take it. A Dictionary of fixed keys, in this order:
+## schema_version (int), ground_faces (PackedVector3Array, m, 3 per triangle), surface_of_face
+## (PackedInt32Array, one surface id per triangle), wall_faces (Array of PackedVector3Array, one per wall
+## shape), wall_attr_ids (PackedInt32Array, one per wall shape) and movers (Array of MoverDef.pack_native()
+## Dictionaries, in data order; a null mover packs as null, which validation refuses). The probe fields
+## are not packed: the probe is a GDScript argument of CollisionQuery.probe_error. The arrays are shared
+## copy-on-write, not copied. Load time only.
+## [codeblock]
+## var packed: Dictionary = data.pack_native()
+## var problem: String = CollisionQuery.validate_packed(packed)
+## [/codeblock]
+func pack_native() -> Dictionary:
+	var walls: Array = []
+	for faces in wall_faces:
+		walls.append(faces)
+	var packed_movers: Array = []
+	for mover in movers:
+		packed_movers.append(mover.pack_native() if mover != null else null)
+	return {
+		"schema_version": NATIVE_SCHEMA_VERSION,
+		"ground_faces": ground_faces,
+		"surface_of_face": surface_of_face,
+		"wall_faces": walls,
+		"wall_attr_ids": wall_attr_ids,
+		"movers": packed_movers,
+	}
 
 
 ## Number of ground triangles (ground_faces.size() / 3).
@@ -187,7 +220,7 @@ func _mover_id_error(surface_known: PackedByteArray, wall_known: PackedByteArray
 ## var data: TrackCollisionData = load(collision_path) as TrackCollisionData
 ## if race_config.mirror:
 ##     data = data.mirrored()  # the cached resource stays as it was
-## var query: CollisionQuery = CollisionQuery.new(data)
+## var query: CollisionQuery = CollisionQuery.create(data.pack_native())
 ## [/codeblock]
 func mirrored() -> TrackCollisionData:
 	var out: TrackCollisionData = TrackCollisionData.new()

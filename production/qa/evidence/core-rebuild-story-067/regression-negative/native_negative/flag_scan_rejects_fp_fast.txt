@@ -1,0 +1,2 @@
+FAIL flag scan: forbidden flag in /c/writechoice/Claude-Code-Game-Studios/native/obj/negative_tmp/flags_fast.txt:
+1:cl /Fox.obj /c x.cpp /MT /fp:precise /fp:fast

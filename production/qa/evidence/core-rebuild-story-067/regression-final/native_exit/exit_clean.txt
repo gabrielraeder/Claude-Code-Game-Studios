@@ -1,0 +1,4 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+exit_clean: probe held by a static var, rid_count=0
+PROBE_RAN mode=exit_clean

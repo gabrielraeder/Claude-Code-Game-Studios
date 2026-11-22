@@ -27,6 +27,7 @@ Source of truth: `docs/architecture/adr-0007-native-simulation-core.md` (section
 - Native classes take no `.new()` arguments. A class that needs arguments has a bound static `create(packed) -> Ref<Class>` (built with `instantiate()`, null on failure) and a bound static `validate_packed(packed) -> String` that calls the same C++ validation function.
 - `.new()` stays callable and gives an unbuilt object. Every bound method guards on the `built` flag with `ERR_FAIL_COND` / `ERR_FAIL_COND_V`. Test one refusal per bound method.
 - Constructors touch no server and create no RID; all server work is in `create()`.
+- **Named exception (story 067, ADR-0007 section 4 via `production/qa/evidence/core-rebuild-story-067/adr-0007-4-exception.md`):** engine Resources held by `Ref<>` own their RIDs (a `QueryCursor` builds a `SphereShape3D` and parameter/result Resources in its constructor); their holder is registered for release at SCENE uninit. `uninitialize_module(SCENE)` calls `QueryCursor::release_all_engine_objects()`, which unrefs them and clears `built` before `g_servers_alive` is cleared. Any new class that holds engine Resources joins such a registry.
 
 ## RID ownership and teardown
 - A RefCounted owner frees bodies, then shapes, then the space, through one static helper called from both `dispose()` and the destructor.

@@ -496,6 +496,7 @@ atan(0.5 / 1.0) = 26.57° sustained over a sample, so `slope_limit` matters only
 | E-22 | Slick tail onto a boost pad or trick ramp | Tail keeps counting (`driving-and-drift.md` E-15, D7). Requires Driving to treat the three new kinds by kind (C2). |
 | E-23 | Collision triangles between 120,000 and 160,000 | Import WARN (I12); above 160,000 FAIL. |
 | E-24 | `scrape_drag_mult` ≥ 75 | Speed factor negative (§4.2). Must be refused by a loader assert or clamped (C5). |
+| E-25 | Ground ray lands exactly on a vertex (or edge) shared by triangles with different surfaces | Any adjacent triangle is a valid answer: Jolt may report either face index (observed on the native `CollisionQuery`, story 008, 2026-11-22). No geometry fix is applied. Gameplay is unaffected because the kart's surface is the majority vote of its probes (§3, E-2), so one probe on a boundary cannot flip the result alone. Tests must not assert a surface id at an exact shared vertex. |
 
 ---
 
