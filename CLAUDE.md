@@ -53,7 +53,13 @@ Every task follows: **Question -> Options -> Decision -> Draft -> Approval**
   its orchestrating skill named; see `.claude/rules/agent-memory.md`)
 - Agents MUST show drafts or summaries before requesting approval
 - Multi-file changes require explicit approval for the full changeset
-- No commits without user instruction
+- No commits without user instruction (the owner authorized commits to main for this project)
+- **Owner authorization, 2026-11-21:** Claude may run the `/dev-story` and `/story-done`
+  workflows by itself, following the same phases, without the owner typing the command
+  (this overrides the skills' "start only when the person types them" line). Still asked
+  every time: the "own calls" keep-or-change question at close, the owner's look and feel
+  sign-off on Visual/Feel stories (a story without it stays open), file deletions, scope
+  changes and config/schema changes.
 - A skipped or dismissed question is not an answer: act on nothing, re-ask in
   plain text and wait
 - Started outside this file's folder? Warn first: hooks, deny rules and the
