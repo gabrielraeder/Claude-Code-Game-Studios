@@ -10,9 +10,10 @@ Proposed
 2026-11-22
 
 ## Decision Makers
-Claude (ai-programmer, autonomous mode, owner-authorized) drafted it from `architecture.md`, ADR-0001, ADR-0002 and a read of the frozen code. The frozen code was read as reference only.
+Claude (ai-programmer, autonomous mode, owner-authorized) drafted v1 from `architecture.md`, ADR-0001, ADR-0002 and a read of the frozen code. The frozen code was read as reference only. **v2 (2026-11-22)** is the revision after the joint TD-ADR review of ADR-0004 and ADR-0005 (technical-director: CONCERNS on both). It fixes the seam with ADR-0005 (Course Data owns the derivation: §14 `CourseBuilder`), and applies the owner-side decisions logged with that review.
 - **godot-specialist validation:** NOT ASSESSED. Not yet run.
-- **technical-director (TD-ADR):** NOT ASSESSED. Not yet run. `review_mode` is `full`, so both reviews are required before acceptance.
+- **technical-director (TD-ADR):** v1 CONCERNS (joint review with ADR-0005). v2 addresses every required item; a re-review of v2 is NOT ASSESSED. `review_mode` is `full`, so both reviews are required before acceptance.
+- **Owner approval pending:** the ADR-0001 §9 amendment in §15 (tools may run the frozen game to produce reference data).
 - **GDD sync:** NOT ASSESSED. No system GDD exists, and this ADR cites `design/gdd/systems-index.md` rows only.
 
 Acceptance needs the owner's confirmation.
@@ -21,7 +22,8 @@ Acceptance needs the owner's confirmation.
 The rebuilt core has no spline, so it needs its own data to answer "where is the line, the next checkpoint, the respawn" (architecture Principle 4). This data must stay separate from collision.
 
 This ADR fixes:
-- **The `CourseData` schema.** A binary `.res` that ADR-0005 bakes from Blender empties. It holds checkpoint gates (oriented quads with group ids and next links, plus key groups for laps), routes with baked per-sample tables and span tables, item-box poses, respawn poses and 12 grid poses.
+- **The `CourseData` schema.** A binary `.res`. It holds checkpoint gates (oriented quads with group ids and next links, plus key groups for laps), routes with baked per-sample tables and span tables, item-box poses, respawn poses, 12 grid poses and oriented `areas` (hazards, cannon triggers, fall boundaries).
+- **The derivation (§14).** A `CourseBuilder` (`@tool`, `src/core/course/`) turns a neutral `CourseAuthoring` plus a `CollisionQuery` into `CourseData` and check lines. ADR-0005 only parses Blender empties into `CourseAuthoring`.
 - **Per-kart `CourseProgress`.** It is computed by a sector cursor in O(1) amortised time, and it handles junctions, shortcuts, wrong-way driving and off-course flight.
 - **The boundaries.** Bots read only routes and tables, and never `CollisionQuery`. Mirror swaps every left/right field here.
 
@@ -35,16 +37,16 @@ This ADR fixes:
 | **Knowledge Risk** | HIGH (4.8 is post-cutoff and pre-release). The APIs this ADR uses are pre-cutoff: `Resource`, packed arrays, typed `Array`, `Transform3D`, `ResourceSaver` / `ResourceLoader` |
 | **References Consulted** | `docs/engine-reference/godot/VERSION.md`, `breaking-changes.md` (4.7: a packed-array element write no longer calls the property setter), `current-best-practices.md` and `deprecated-apis.md` (`duplicate_deep()`, 4.5). No engine probe was run for this ADR |
 | **Post-Cutoff APIs Used** | None. `mirrored()` builds new arrays explicitly and does not rely on `duplicate()` or `duplicate_deep()` semantics |
-| **Verification Required** | (1) On 4.8-beta3, a binary `.res` round-trip of a `Resource` with typed `Array[Transform3D]`, `Array[CourseRoute]` sub-resources and packed arrays must reload byte-equal and typed. UNVERIFIED. (2) Loading the same `.res` twice returns the cached instance, and `mirrored()` leaves it untouched (the same hazard ADR-0002 guards against). (3) The cost of `CourseProgress` and `RouteCursor` in a release export (see Performance Implications). All estimates there are UNVERIFIED |
+| **Verification Required** | (1) On 4.8-beta3, a binary `.res` round-trip of a `Resource` with typed `Array[Transform3D]`, `Array[CourseRoute]` sub-resources and packed arrays reloads equal and typed: **VERIFIED** (godot-specialist probe, `probe_adr45_res_roundtrip.txt`). A plain `var` is **not** saved (it reloaded as 0), and a re-save of a loaded copy is not byte-equal to the first save. (2) Loading the same `.res` twice returns the cached instance: **VERIFIED**. `duplicate(false)` shares route sub-resources with the cached instance, so `mirrored()` builds new objects, including new `CourseRoute` sub-resources (§11). (3) The cost of `CourseProgress` and `RouteCursor` in a release export (see Performance Implications). All estimates there are UNVERIFIED |
 
 ## ADR Dependencies
 
 | Field | Value |
 |-------|-------|
 | **Depends On** | ADR-0001 (Accepted). From it: axes, units, float32 vector precision and the ±2 km bound (§1), pose empties with +Y along travel (§2), step order and no global RNG (§6), mirror (§7). ADR-0002 (Proposed). From it: collision carries no left/right labels, so all left/right data lives here; `TrackCollisionData` and the `SurfaceSet` surface ids are what the bake and `track_check` validate against |
-| **Enables** | ADR-0005 (Blender track pipeline, drafted in parallel). It bakes this schema from empties and custom properties. ADR-0006 (network snapshot). It carries `lap` and `distance` from `CourseProgress` in place of today's `LAP` and `TRACK_S` |
+| **Enables** | ADR-0005 (Blender track pipeline). It parses empties and custom properties into `CourseAuthoring` and calls `CourseBuilder` (§14). ADR-0006 (network snapshot). It carries `lap` and `distance` from `CourseProgress` in place of today's `LAP` and `TRACK_S` |
 | **Blocks** | Story 023 (Course Data + mesh `track_check`). Story 025's lap-and-respawn, items and bots stories |
-| **Ordering Note** | ADR-0005 must bake exactly these fields. If it needs a different field, this ADR is amended first. ADR-0002 must be Accepted before story 023 implements the bake-time validation against collision |
+| **Ordering Note** | ADR-0005 authors exactly the `CourseAuthoring` fields of §14 and nothing derived. If it needs a different field, this ADR is amended first. ADR-0002 (v4: stable surface and wall ids, id 0 = road, `MoverDef` Resource) must be Accepted before story 023 implements the bake-time validation against collision |
 
 ## Context
 
@@ -87,13 +89,16 @@ The frozen game answers every "where" question from one spline (`TrackModel`): d
 ## Decision
 
 ### 1. Shape of the data
-`CourseData` is one `Resource` saved as binary **`.res`** inside the `TrackPackage` (ADR-0005). It holds five parts:
+`CourseData` is one `Resource` saved as binary **`.res`** inside the `TrackPackage` (ADR-0005). It holds six parts:
 
 1. **Gates:** checkpoints as oriented quads.
 2. **Routes:** `CourseRoute` sub-resources with baked tables.
 3. **Item boxes.**
 4. **Respawn poses.**
-5. **Grid poses.**
+5. **Grid poses** (exactly 12).
+6. **Areas:** oriented boxes in the style of KMP AREA entries (§14).
+
+`CourseData` is produced only by `CourseBuilder.build(authoring, query)` (§14). No other code fills its fields.
 
 Large per-element data is stored as **packed arrays (structure of arrays)**, not as one sub-resource per gate or per sample, because per-tick reads of packed arrays are cheaper in GDScript. Code lives in `src/core/course/`, with one `class_name` per file.
 
@@ -111,8 +116,9 @@ Large per-element data is stored as **packed arrays (structure of arrays)**, not
 | `gate_s` | `PackedFloat32Array` | Lap-reference distance of the gate (§3) |
 | `gate_next_start`, `gate_next` | `PackedInt32Array` ×2 | Next links in CSR form: the links of gate g are `gate_next[gate_next_start[g] .. gate_next_start[g+1])`, in authored order |
 | `gate_prev_start`, `gate_prev` | `PackedInt32Array` ×2 | Previous links, derived at bake, in the same form |
-| `gate_respawn` | `PackedInt32Array` | Respawn index per gate (§9) |
-| `key_groups` | `PackedInt32Array` | Key group ids in lap order, excluding group 0 |
+| `gate_respawn` | `PackedInt32Array` | Respawn index per gate (§9): the authored `kk_respawn`, or the nearest respawn behind the gate |
+| `gate_key` | `PackedInt32Array` | 1 when the gate is authored `kk_key`, else 0. Must agree across a group (§3) |
+| `key_groups` | `PackedInt32Array` | Key group ids in lap order, excluding group 0. Derived from `gate_key` |
 | `routes` | `Array[CourseRoute]` | Exactly one route has kind `main` |
 | `box_pose` | `Array[Transform3D]` | Item box: origin on the ground, Y = ground normal, −Z = travel |
 | `box_route`, `box_along` | `PackedInt32Array`, `PackedFloat32Array` | The route and the distance along it of each box (for item and bot logic) |
@@ -121,6 +127,11 @@ Large per-element data is stored as **packed arrays (structure of arrays)**, not
 | `respawn_fallback` | `PackedInt32Array` | A respawn on the main route at or behind this one (itself for main-route respawns) |
 | `grid_pose` | `Array[Transform3D]` | Exactly 12. Slot 0 is pole position |
 | `grid_sector_gate`, `grid_sector_link` | `PackedInt32Array` ×2 | The sector that holds each grid pose |
+| `area_xform` | `Array[Transform3D]` | Oriented box centre and frame per area |
+| `area_half` | `PackedVector3Array` | Half extents (x right, y up, z along −forward) per area |
+| `area_kind` | `PackedInt32Array` | `HAZARD_STATIC`, `HAZARD_SPEED_GATED`, `CANNON_TRIGGER`, `FALL_BOUNDARY` |
+| `area_param`, `area_ref` | `PackedFloat32Array`, `PackedInt32Array` | Kind-specific. `HAZARD_SPEED_GATED`: `param` = minimum crossing speed. `CANNON_TRIGGER`: `ref` = cannon id. `HAZARD_STATIC`: `ref` = hazard binding id (Track Hazards). `FALL_BOUNDARY`: unused |
+| `cannon_target_pose` | `Array[Transform3D]` | **Reserved.** Empty at MVP; indexed by a cannon trigger's `ref` once Track Features defines cannons |
 
 **`CourseRoute`** (a sub-resource, `src/core/course/course_route.gd`)
 
@@ -132,7 +143,8 @@ Large per-element data is stored as **packed arrays (structure of arrays)**, not
 | `closed` | `bool` | True for loops. `main` is always closed and starts at the line |
 | `length`, `spacing` | `float` | Route length. Sample spacing in metres (an ADR-0005 import setting, default 1.0 m). Sample i lies at along = i × `spacing`, and the last sample is at `length` |
 | `fork_route`, `fork_along`, `merge_route`, `merge_along` | `int`, `float` | Where an open route leaves and rejoins its parent route (−1 for closed routes) |
-| `min_speed`, `min_boost` | `float` | Entry requirements from custom properties: a speed-gated jump, a boost-cut. 0 means none |
+| `min_speed`, `min_boost` | `float` | Entry requirements, authored on the route header (§14): a speed-gated jump, a boost-cut. 0 means none |
+| `hint_flags`, `speed_cap` | `PackedInt32Array`, `PackedFloat32Array` | Optional per-sample CPU hints on `cpu` routes (§14, authored overrides only; empty when none). Bits: `NO_DRIFT`, `ITEM_HOLD`, `LANE_HOLD_LEFT`, `LANE_HOLD_RIGHT`. `speed_cap` 0 means none |
 | `pos`, `tangent`, `up` | `PackedVector3Array` | Per sample. right = `tangent.cross(up)`, and lateral is positive to the right |
 | `half_left`, `half_right` | `PackedFloat32Array` | Per sample: the lateral distance from the line to the end of the road surface on each side |
 | `clear_left`, `clear_right` | `PackedFloat32Array` | Per sample: the lateral distance to the first wall or drop within the bake's scan range, or the scan range itself when the side is clear |
@@ -141,19 +153,19 @@ Large per-element data is stored as **packed arrays (structure of arrays)**, not
 | `lane_count`, `lane_offset` | `int`, `PackedFloat32Array` | Optional lanes: `lane_count × n` lateral offsets, ordered **left to right** |
 | `span_next` | `PackedInt32Array` | Per sample: the first span whose `span_to` ≥ that sample's along |
 | `span_from`, `span_to`, `span_lat_lo`, `span_lat_hi`, `span_value` | `PackedFloat32Array` | Spans sorted by `span_from`: along range, lateral range (signed, + right) and a kind-specific value |
-| `span_kind`, `span_ref`, `span_side` | `PackedInt32Array` | Kind (below). `span_ref` is a surface id, hazard id, mover id, feature id or route index. `span_side` is −1 left, +1 right, 0 none |
+| `span_kind`, `span_ref`, `span_side` | `PackedInt32Array` | Kind (below). `span_ref` is a surface id (`SURFACE`, `RAMP`, `PAD`), an `areas` index (`HAZARD`), an ADR-0002 mover id (`MOVER`) or a route index (`JUNCTION`). `span_side` is −1 left, +1 right, 0 none |
 
 **Span kinds:**
 - `SURFACE`: a non-road surface on the road, such as a slick or sand patch. `ref` is the surface id.
-- `HAZARD`: a static hazard area. `value` is the minimum crossing speed, 0 for an ordinary hazard.
+- `HAZARD`: a route's crossing of a `HAZARD_STATIC` or `HAZARD_SPEED_GATED` area. `ref` is the area index. `value` is the area's minimum crossing speed, 0 for an ordinary hazard.
 - `MOVER`: a moving collider that meets the route, such as a drawbridge gate, a cart or barrels. `ref` is the ADR-0002 mover id.
-- `RAMP`: the lip is at `span_to`, and `value` is the lip height.
-- `PAD`: a boost pad.
+- `RAMP`: derived from collision triangles whose `SurfaceType.kind` is `trick_ramp` (ADR-0002 v4 stable ids). The lip is at `span_to`, and `value` is the lip height.
+- `PAD`: derived from collision triangles whose `SurfaceType.kind` is `boost_pad`.
 - `OPEN_EDGE`: a rail-less edge. `side` says which.
 - `WALL_OPENING`: a gap in the wall onto off-road. `side` says which.
 - `JUNCTION`: a fork or merge mouth. `ref` is the other route.
 
-**How the tables are filled.** The bake fills these tables by sampling the authored route against `TrackCollisionData` at import: lateral ground casts and wall sweeps, and mover pose curves swept against the route corridor. The algorithm is ADR-0005's. This ADR fixes what each field means.
+**How the tables are filled.** `CourseBuilder` (§14) fills these tables by sampling the authored route against a `CollisionQuery` built from `TrackCollisionData`: lateral ground casts and wall sweeps, and mover pose curves (`mover_point_velocity` and pose, ADR-0002 v4) swept against the route corridor. `PAD` / `RAMP` / `SURFACE` spans come from the hit surface kinds, never from authored boxes. This ADR owns the algorithm and what each field means; ADR-0005 only calls it.
 
 **Tuning.** The progress tuning values live in **`CourseTuning`** (a `Resource` script in `src/core/course/`, instance `assets/data/core/course_tuning.tres`):
 
@@ -161,15 +173,19 @@ Large per-element data is stored as **packed arrays (structure of arrays)**, not
 |---|---|---|
 | `progress_rate_cap` | 1.95 | Ported from the frozen game |
 | `progress_slack` | 0.03 m | Ported from the frozen game. It was a `const` there and becomes data here |
+| `offcourse_search_interval_ticks` | — | N: an off-course kart runs the full search at most once every N ticks, staggered by registry slot (§4) |
 | `wrong_way_distance` | — | Backward distance that sets the wrong-way flag |
 | `wrong_way_clear` | — | Forward distance that clears it |
 | `lost_distance` | — | Outside distance beyond which the kart is off course |
 | `locate_window_m` | — | Search window of `RouteCursor` |
 
-The defaults marked "—" are not chosen here. Story 023 sets them, starting from playtest values.
+The defaults marked "—" are not chosen here. Story 023 sets them, starting from playtest values. **There is one shared `CourseTuning` instance.** A per-track override can come later only through the `TrackDef` catalog entry (Race Flow); it is not part of this ADR.
 
 ### 3. Checkpoint model
-- **Gate.** A gate is a quad in the plane through `gate_xform.origin` with normal `fwd = −basis.z`. Its extents are ±`half.x` along right and ±`half.y` along up. Gates are authored as Blender empties: +Y along travel (ADR-0001 §2), with the scale giving the extents (ADR-0005).
+- **Gate.** A gate is a quad in the plane through `gate_xform.origin` with normal `fwd = −basis.z`. Its extents are ±`half.x` along right and ±`half.y` along up.
+  - **Authoring:** a gate is a pose (+Y along travel, ADR-0001 §2, scale always 1) with explicit `width` and `height` (Blender `kk_width`, `kk_height`). Its origin is authored **on the road**.
+  - **Lift:** `CourseBuilder` sets `gate_xform.origin = authored origin + up × height/2` and `gate_half = (width/2, height/2)`, so the quad stands on the road.
+  - **Links and keys:** `next` is an optional list of gate indices (default: index + 1, wrapping to 0 from the last gate). `key` is a bool, and it must agree across every gate of a group.
 - **Sector.** The sector (a, k) is the volume between gate a and its k-th next gate b.
   - **Bake rule:** every corner of b lies in front of a's plane, and every corner of a lies behind b's plane. This keeps the fraction in the next bullet monotone even for gates that are not parallel.
 - **Fraction inside a sector:**
@@ -184,7 +200,8 @@ The defaults marked "—" are not chosen here. Story 023 sets them, starting fro
 - **Groups.**
   - A group is one stage of the lap. Gates on alternative paths at the same stage share a group id.
   - Group ids are non-decreasing along every next link, except at the wrap into group 0.
-  - **Key groups** (`key_groups`, plus group 0) must be crossed by **every** legal path around the lap exactly once. The bake checks this on the link graph.
+  - **Key groups** (`key_groups`, plus group 0) must be crossed by **every** legal path around the lap exactly once. The bake checks this on the link graph. A group's key flag is the shared `gate_key` of its gates; gates of one group that disagree FAIL the bake.
+  - **`cpu`, `item`, `cut` and `branch` routes need no gates of their own.** Only legal lap paths need gate cover; a bot route that stays on a covered road adds nothing.
   - Non-key gates exist only to resolve progress, so a branch may have more or fewer of them than the main road over the same stretch.
 - **`gate_s`.** On main it is the along of the gate. On a branch it is `s_main` at the gate. Gate 0 has `s` = 0.
 - **Coverage.** Gates must cover every legal path, including airborne ones such as cannon arcs and jumps: tall gates, or a `branch` route with gates in the air. `track_check` samples the authored arcs.
@@ -216,6 +233,7 @@ Lap & Position reads these after the call. There are no signals on the per-tick 
 3. **Off course.** If the best outside distance is > `lost_distance`, set `off_course`, hold `s` and `distance`, and credit nothing.
    - On later ticks, search the sectors up to 2 links around the cursor.
    - If that fails, run a full search over all sectors. A full search credits no gate it skipped, so an illegal jump earns nothing.
+   - **Rate limit.** The full search runs at most once per kart every `offcourse_search_interval_ticks` (N), staggered by registry slot: a kart searches on ticks where `(tick + slot) mod N == 0`. Between searches the kart stays off course, held. This bounds the worst case (all 12 karts off course) to about 12 / N searches per tick instead of 12. N is chosen so the 12-off-course case fits `architecture.md` Performance Budgets (amended): the benchmark in Validation includes it.
 4. **Raw progress.** s = lerp(s_a, s_b, t), where s_b counts as `lap_length` when b is in group 0.
 5. **Smoothed race distance.**
    - raw = (lap − 1) × `lap_length` + s.
@@ -253,7 +271,7 @@ Lap & Position reads these after the call. There are no signals on the per-tick 
 - Finished karts come first, ordered by finish time.
 - The rest are ordered by `distance`, descending.
 - Ties are broken by `RacerRegistry` slot on every PC.
-- Remote karts are ranked from the wire's `lap` and `distance` (ADR-0006 decides the encoding; float32 `distance` resolves about 2 mm at 16 km). Receivers never recompute a remote kart's progress.
+- Remote karts are ranked from the wire's `lap` and `distance`. **Wire meaning only, here:** `lap` is a u8, and `distance` is a signed distance that is negative on the grid and continuous across laps (the encoding is ADR-0006's; float32 `distance` resolves about 2 mm at 16 km). Receivers never recompute a remote kart's progress.
 
 **Kart-pair broadphase.** Kart Physics' broadphase on route distance uses `distance`.
 
@@ -284,11 +302,13 @@ Lap & Position reads these after the call. There are no signals on the per-tick 
 | `on_ground_zone` (now) | the bot's own `KartSnapshot.surface_id` |
 | `on_ground_zone` (ahead, `_line_crosses_zone`) | `edge_flags` `OFFROAD` beyond `half_left/right` |
 | `ramp_lip_s`, `ramp_paths` | `RAMP` spans per route |
-| `hazard_gates`, `hazard_bounds` | `HAZARD` spans with `value` = minimum crossing speed |
+| `hazard_gates`, `hazard_bounds` | `HAZARD` spans (`ref` = area index) with `value` = minimum crossing speed, and the `areas` boxes |
 | `data.movers` (gate kind, path, path_from/to; travelers) | `MOVER` spans (mover id, along range). Timing comes from Track Hazards' pure functions of time, not from Course Data |
 | `respawn_pose`, `respawn_back_off` | §9 |
 
 **Lanes.** Lanes are optional baked offsets. When a route has none, bots keep computing lateral choices inside `clear − margin`, as the frozen barrel and slick lanes do.
+
+**CPU hints.** Bots **derive** their braking, drifting and lane choice from the tables by default. An author may override on `cpu` route points with `kk_hint_no_drift`, `kk_hint_speed_cap`, `kk_hint_lane_hold` (`left` / `right`) and `kk_hint_item_hold`. `CourseBuilder` bakes them into the per-sample `hint_flags` and `speed_cap` (interpolated by nearest preceding point, no blending). This is **specified now and implemented in the story 025 bots story only if playtests need it**; empty arrays mean "derive".
 
 ### 7. Bots read routes only
 - CPU Racers read `CourseData` routes, samples, spans and `CourseProgress`, their own `KartSnapshot`, other karts' snapshots through `RacerRegistry`, and Track Hazards' timing functions.
@@ -301,6 +321,7 @@ Lap & Position reads these after the call. There are no signals on the per-tick 
 - **Projectile collision** still uses `CollisionQuery` (Items is allowed to).
 
 ### 9. Respawn selection rule
+- **Respawn per gate (KMP CKPT style).** Each gate names its respawn with `kk_respawn`. When absent, `CourseBuilder` picks the nearest respawn **behind** the gate (largest respawn `s` that is ≤ `gate_s`). `respawn_fallback` stays a baked field (below).
 - **Which respawn.** `respawn_pose(p, fallback)` returns `respawn_pose[gate_respawn[p.safe_gate]]`. With `fallback = true` it returns that respawn's `respawn_fallback` entry instead.
 - **Who sets `fallback`.** Fall & Respawn sets it when the previous respawn failed (a sink within the respawn immunity) or when the sink was in a speed-gated hazard. This is the frozen `_repeat_sink` / `_gate_sink` rule.
 - **After the respawn.** The kart is relocated to that respawn's baked sector.
@@ -310,13 +331,15 @@ Lap & Position reads these after the call. There are no signals on the per-tick 
   - Every respawn is on road ground, outside hazards and movers' swept volumes (checked against collision by `track_check`).
 
 ### 10. Start grid
-- **Twelve poses**, `grid_pose[0..11]`, are baked. They are either explicit empties or generated by ADR-0005 from one start empty and a pattern.
+- **Twelve poses**, `grid_pose[0..11]`, are authored as exactly 12 explicit grid poses, one per slot. A generated pattern (one start pose plus a formula) is **future work**, not MVP.
 - **Who assigns slots.** Race Session maps racers to slots: registry order, or the previous result in a Grand Prix.
 - **Initial progress.** Each kart starts relocated to its baked sector with `lap = 0`, `key_next = key_groups.size()` and `distance = s − lap_length` (negative, behind the line). The first forward line crossing gives lap 1, as today.
 - **Bake checks:** every pose is behind gate 0, on road ground, and spaced at least 2 × the largest kart radius plus a margin from the others.
 
 ### 11. Mirror
 `CourseData.mirrored()` returns a **new** object built once at load. It never mutates the loaded resource (ResourceLoader caching).
+
+**It builds new `CourseRoute` sub-resource objects too.** `duplicate(false)` shares route sub-resources with the cached instance (verified), so a shallow copy would mutate the cache through them. Every route, and every array inside it, is constructed fresh.
 
 It applies ADR-0001 §7:
 - **Positions:** x → −x for every gate origin, sample position, box, respawn and grid pose.
@@ -325,6 +348,8 @@ It applies ADR-0001 §7:
 - **Left/right fields swap:** `half_left` ↔ `half_right`, `clear_left` ↔ `clear_right`, and the left and right nibbles of `edge_flags`.
 - **Spans:** lateral ranges become [−hi, −lo], and `span_side` is negated.
 - **Lanes:** order is reversed and offsets are negated.
+- **Hints:** `LANE_HOLD_LEFT` ↔ `LANE_HOLD_RIGHT` in `hint_flags`. `speed_cap`, `NO_DRIFT` and `ITEM_HOLD` are unchanged.
+- **Areas:** `area_xform` and cannon target poses follow the pose rule (M·B·M, x → −x); `area_half` is unchanged.
 - **Unchanged:** gate, group, link, route and span order; `s`, `along` and length values; extents.
 
 Because the mirrored gate basis stays a proper rotation (M·B·M), the right axis remains right of the mirrored travel direction, and all lateral values computed at run time are correct with no flag. This is the "left/right data lives in Course Data" half of ADR-0002's mirror paragraph.
@@ -346,12 +371,45 @@ Because the mirrored gate basis stays a proper rotation (M·B·M), the right axi
   - respawn and grid invariants;
   - every box, respawn and grid pose matching a ground cast within tolerance (position and normal);
   - routes inside the road;
-  - `span_next` consistent.
+  - `span_next` consistent;
+  - key flag agrees across every group; `kk_next` indices in range;
+  - areas: positive extents, a known kind, `ref` in range, and every `FALL_BOUNDARY` and `CANNON_TRIGGER` reachable;
+  - hint arrays empty or sized to the route's samples.
+
+These bake checks are `CourseBuilder`'s output lines (§14). ADR-0005 runs them at **every import** as its check I15, and a FAIL refuses the file.
+
+### 14. `CourseBuilder` and `CourseAuthoring`
+Course Data owns the derivation. ADR-0005 owns only the Blender-side parse.
+
+**`CourseAuthoring`** (`@tool`, `RefCounted`, `src/core/course/course_authoring.gd`) is a neutral description with no Blender or glTF in it:
+- **Gates:** pose (a Godot `Transform3D`, origin on the road), `index`, `group`, `width`, `height`, `next` (optional index list), `key` (bool), `respawn` (optional index), plus per-gate flags.
+- **Routes:** `id`, `kind` (`main`, `branch`, `cpu`, `item`, `cut`) and an ordered polyline of points, each with attributes. Header attributes: `branch_type`, `min_speed`, `min_boost`, `lanes`. Per-point attributes: the `kk_hint_*` overrides.
+- **Respawns:** pose and index. **Grid:** 12 poses by slot. **Item boxes:** poses and index.
+- **Areas:** oriented box (pose and half extents), `kind` (`hazard_static`, `hazard_speed_gated`, `cannon_trigger`, `fall_boundary`) and parameters. Authored as `kk_type = area` with `kk_area` (the kind) and its params.
+- **Settings:** sample spacing and the tuning it needs.
+
+**`CourseBuilder`** (`@tool`, `RefCounted`, `src/core/course/course_builder.gd`):
+```gdscript
+func build(authoring: CourseAuthoring, query: CollisionQuery, limits: TrackImportLimits) -> CourseBuildResult
+# CourseBuildResult: course: CourseData (null unless ok), lines: Array[CourseCheckLine], ok()
+```
+- It is **pure** (no file I/O, no state between calls) and deterministic (sorted by index, then id).
+- It does everything §2-§13 call "the bake": the gate lift (§3), defaults for `next` and `respawn`, key groups, sector assignment, route sampling and tables, spans (`PAD` and `RAMP` from surface kinds, `HAZARD` from areas), respawn and grid invariants, and every check of §13 as a PASS / WARN / FAIL / NOT_ASSESSED line.
+- It lives in the core because it needs `CollisionQuery` and must be unit-tested without Blender or the editor (`tests/unit/course/`).
+- A route authored as a Blender curve is expanded into points by ADR-0005's exporter before it reaches the builder. An optional auto-gate generator (a gate every N m along `main`, authored gates overriding) is also an exporter feature that produces `CourseAuthoring` gates.
+
+### 15. Legacy tracks and the generator-course path
+Story 023's oracle needs a course from a generator track (Castle Circuit, Dungeon Depths) without referencing `src/legacy/` from `src/`.
+- **One extractor:** `tools/legacy_track_export.gd` runs the frozen `TrackModel` headless and writes a neutral JSON **outside `assets/`**. Two consumers read that JSON:
+  1. a `tools/` test builder that produces `TrackCollisionData` plus `CourseAuthoring` and calls `CourseBuilder` (story 023's equivalence oracle);
+  2. `tools/blender/legacy_to_blend.py`, which bootstraps Castle and Dungeon `.blend` files. They then ship only through the Blender pipeline (ADR-0005).
+- **ADR-0001 §9 amendment, PENDING OWNER APPROVAL.** Proposed text: "tools under `tools/` may run or read the frozen game to produce reference data or bootstrap authoring sources; nothing under `src/` may load them, their output carries no `src/legacy` reference, and they are retired at A3." Until the owner approves it, nothing in this section may be implemented.
+- **Out of scope:** point-to-point (sprint) courses. `main` is always closed.
 
 ### Architecture Diagram
 
 ```
-Blender empties + curves ──glTF──▶ ADR-0005 import (samples against TrackCollisionData) ──▶ CourseData.res
+Blender empties + curves ──glTF──▶ ADR-0005 import (parse → CourseAuthoring) ──▶ CourseBuilder (+ CollisionQuery) ──▶ CourseData.res
                                                                                    │ mirrored()? new object, swap L/R
                                                                                    ▼
              CourseData (Resource, read-only at run time)
@@ -414,6 +472,8 @@ class_name RouteSample extends RefCounted      # position, tangent, up, right, h
 class_name CourseRoute extends Resource        # §2 table
 class_name CourseGate extends RefCounted       # xform, half, group, s, next links (tools and tests)
 class_name CourseTuning extends Resource       # §2 tuning fields, each @export with a ## comment
+@tool class_name CourseAuthoring extends RefCounted   # §14 neutral authoring description
+@tool class_name CourseBuilder extends RefCounted     # §14 build(authoring, query, limits) -> CourseBuildResult
 ```
 
 ### Implementation Guidelines
@@ -425,6 +485,7 @@ class_name CourseTuning extends Resource       # §2 tuning fields, each @export
 - Ranking **must** use `distance`, with ties broken by registry slot.
 - A full search **must never** credit a gate crossing.
 - `mirrored()` **must** return a new object, **must** swap every left/right field and lane order, and **must never** mutate the loaded resource. Code **must never** store a left/right fact outside these swapped fields.
+- **Every stored field** of `CourseData` and `CourseRoute` **must** be `@export` or `@export_storage`. A plain `var` is not saved: it reloaded as 0 in the probe. (The same rule applies to `TrackPackage` and `TrackCollisionData`.)
 - `CourseData` **must not** use property setters on its packed arrays. A 4.7+ element write would not call them anyway.
 - Tuning values **must** live in `CourseTuning` (`assets/data/core/course_tuning.tres`). Only named `const` safety bounds (`MAX_SECTOR_STEPS`, epsilons) may stay in code.
 - New code **must not** reference `src/legacy/`. The frozen `LapCounter`, `TrackModel.limit_progress` and `KartSim._respawn` rules are ported from this ADR's text and the golden traces.
@@ -484,12 +545,9 @@ class_name CourseTuning extends Resource       # §2 tuning fields, each @export
 - **Performance estimates are unmeasured** (see below). Mitigation: story 023's benchmark against the targets.
 - **The respawn fallback can be missing** on a track with no main-route respawn behind a branch respawn. Mitigation: a bake invariant (`respawn_fallback` always points to a main-route respawn).
 - **Wire precision** of `distance` as float32. About 2 mm at 16 km is enough, but ADR-0006 confirms the encoding.
-- **Open questions** (for the owner, ADR-0005 or story 023):
-  1. Do generator-made tracks (Castle Circuit, Dungeon Depths) get their gates and routes by an export to Blender empties (ADR-0005), or by a converter tool? A converter reading the frozen `TrackData` would need an ADR-0001 §9 exception.
-  2. Are per-track `CourseTuning` overrides needed, or is one shared instance enough?
-  3. Should the `cpu` routes carry authored per-point hints (no-drift, brake zone, like KMP's enemy-point settings), or do bots keep deriving them?
-  4. Point-to-point (sprint) courses are out of scope (`main` is always closed). Confirm for Alpha modes.
-  5. The defaults of `wrong_way_distance`, `wrong_way_clear`, `lost_distance` and `locate_window_m` are to be set in story 023.
+- **Off-course full-search spike** with many karts off course at once (a pile-up past a boundary). Mitigation: the rate limit in §4 and the 12-off-course benchmark.
+- **Decided in v2:** generator tracks go through the legacy extractor of §15 (needs the owner's ADR-0001 §9 amendment); one shared `CourseTuning`; CPU hints derive by default with optional authored overrides; point-to-point courses are out of scope.
+- **Open for story 023:** the defaults of `offcourse_search_interval_ticks`, `wrong_way_distance`, `wrong_way_clear`, `lost_distance` and `locate_window_m`.
 
 ## GDD Requirements Addressed
 
@@ -513,6 +571,7 @@ No system GDD exists yet. This table cites the systems-index rows and the archit
   - `progress` for 12 karts: **≤ 0.05 ms p95 per tick**, release export, owner's PC. Estimate: about 2-4 µs per kart for two plane distances, one frame lerp and rarely one crossing. UNVERIFIED.
   - Course Data reads for 11 bots (locate, three samples, spans ahead): **≤ 0.1 ms p95 per tick**, counted in CPU Racers' share. UNVERIFIED.
   - A full relocation search over about 300 sectors: ≤ 0.2 ms, once per teleport. UNVERIFIED.
+  - **Off-course full search:** rate-limited to one per kart per N ticks, staggered by slot (§4). The worst case, 12 karts off course, is within the `architecture.md` amended Performance Budgets for the simulation tick (the figure is read from there, not restated). UNVERIFIED until the benchmark runs.
 - **Memory:** about 64 bytes per route sample (3 × Vector3, 6 floats, flags, `span_next`), so about 128 KB per 2 km route at 1 m spacing. About 1-2 MB per track with 10 routes, which is negligible against 2 GB. Estimate, UNVERIFIED.
 - **Load time:** reading the `.res` takes a few ms (estimate). `mirrored()` is one linear pass over all arrays, also a few ms (estimate).
 - **Network:** progress on the wire is `lap` plus `distance` (about 5 bytes) in place of today's `LAP` and `TRACK_S` floats. ADR-0006 owns the encoding.
@@ -548,14 +607,15 @@ Nothing is migrated in place. The frozen game keeps its spline, `LapCounter` and
   - **Grid:** the 12 grid karts start at lap 0, and the first crossing gives lap 1.
   - **Mirror:** `mirrored()` swaps `half_left`/`half_right`, `clear_*`, edge nibbles, span sides and lane order, and leaves the source untouched. A mirrored drive of a recorded path gives the same `s` sequence.
   - **Determinism:** two runs give identical progress traces.
-- **Benchmark (story 023):** 12 karts' `progress` and 11 bots' reads inside a running tree, release export, against the targets above.
+- **Benchmark (story 023):** 12 karts' `progress` and 11 bots' reads inside a running tree, release export, against the targets above. **It includes the 12-off-course case** (all karts off course, full searches staggered by slot), against the amended Performance Budgets in `architecture.md`.
+- **Builder tests** (`tests/unit/course/`, no Blender): each check line of §13 is watched failing on a broken `CourseAuthoring`; the gate lift puts the quad centre half a height above the authored origin; a disagreeing `kk_key` in a group FAILs; the default `next` wraps; the default respawn is behind the gate; `PAD` / `RAMP` spans come from surface kinds.
 - **Equivalence:** on a course baked from a generator track, the new `CourseProgress.s` follows the golden traces' `track_s` (`production/qa/evidence/core-rebuild-story-001/golden/`, CSV columns `x`, `z`, `height`, `track_s`, `lap`) within a tolerance that story 023 sets. Lap counts must match exactly.
 - **Grep:** no `CollisionQuery` reference under `src/ai/`, and no `src/legacy/` reference under `src/core/course/`.
 
 ## Related
 - ADR-0001 (conventions: §1, §2, §6, §7, §9). Depends on it.
 - ADR-0002 (collision; its mirror paragraph says left/right data lives here; `TrackCollisionData` is the validation target). Depends on it.
-- ADR-0005 (Blender track pipeline; bakes this schema). Drafted in parallel, enabled by this ADR.
+- ADR-0005 (Blender track pipeline; parses empties into `CourseAuthoring` and calls `CourseBuilder`, §14). Enabled by this ADR.
 - ADR-0006 (network snapshot; `lap` and `distance` on the wire). Enabled by this ADR.
 - `docs/architecture/architecture.md`: Module Ownership (Course Data), Data Flow 1 and 6, API Boundaries › CourseData (refined here, see Key Interfaces), Performance Budgets.
 - `design/gdd/systems-index.md` rows 3, 7, 11, 12, 13, 15, 16, 27, 31.
