@@ -14,7 +14,7 @@
 **Requirement**: ADR-0004 §15 (consumer 2); ADR-0005 Migration Plan (Legacy tracks); Course Data AC1
 **Roadmap step**: `architecture.md` Phase A Sequencing step 6 (roadmap item 025: Castle Circuit rebuilt). Epic story numbers are not roadmap item numbers.
 
-**ADR Governing Implementation**: ADR-0005: Blender Track Pipeline (Proposed); ADR-0004: Course Data Format (Proposed)
+**ADR Governing Implementation**: ADR-0005: Blender Track Pipeline (Accepted); ADR-0004: Course Data Format (Accepted)
 **ADR Decision Summary**:
 - ADR-0005: Editor-time import: a headless Blender exporter (`tools/blender/export_track.py`) writes one `.glb` with `kk_*` custom properties; a Godot `EditorScenePostImport` script (`import_script/path`, also run headless with `--import`) validates it (I1-I16) and bakes a binary `TrackPackage` (`.res`); any failed check refuses the file and names the reason. Runtime `GLTFDocument` is kept only as a future front end for user tracks.
 - ADR-0004: A binary `CourseData` `.res` (checkpoint gates with group ids and next links plus key groups for laps, routes with baked per-sample and span tables, item-box, respawn and 12 grid poses, oriented `areas`) is built by a `@tool` `CourseBuilder` in `src/core/course/` from a neutral `CourseAuthoring` plus a `CollisionQuery`; per-kart `CourseProgress` runs a sector cursor in O(1) amortised time and handles junctions, shortcuts, wrong-way driving and off-course flight; bots read only routes and tables, never `CollisionQuery`; mirror swaps every left/right field.

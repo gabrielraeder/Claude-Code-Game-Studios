@@ -203,6 +203,7 @@ V3 verified what that means: clients see only peer 1, so every client message go
 - **Why an epoch, not a bit.** A teleport bit on one record is lost with that packet, and the next record would then streak. A 3-bit counter survives any loss shorter than 8 teleports.
   - A record is `teleported` when its epoch differs from the previous record buffered for that slot.
   - **The first record buffered for a slot is always a teleport.**
+- **Amended 2026-11-22 (ADR-0007): the epoch stays here, in the GDScript sender.** The native core only sets `teleported` in the snapshot (respawn, launch, `place`, resync hold). The sender reads `teleported` and `events` from the double-buffered `RaceSim.snapshots()` after `end_tick()`, and keeps the accumulators and the `teleport_epoch` counter as above. Nothing in the wire format changes.
 - **Clients** send one packet per send tick to the host (`rpc_id(1)`), holding their own record(s).
 - **The host owns bots.** On each send tick it sends one packet per client, holding:
   - its own kart and every bot;
@@ -512,6 +513,16 @@ func send_snapshots(bytes: PackedByteArray, to_peer: int) -> void    ## ch1 unre
 func send_event(bytes: PackedByteArray, to_peer: int) -> void        ## ch2 reliable
 ```
 
+**Superseded 2026-11-22 (ADR-0007), the simulation-facing calls only.** Where the simulation is native, the tick no longer takes `Array[KartSnapshot]` or `KartBody.apply_event`. Wire formats, `NetLink`, the codecs and `NetMetrics` are unchanged. The new form, beside the old:
+```gdscript
+# RemoteKartSet.sample_into(snaps: Array[KartSnapshot], t, consumer, out_state, contact_eligible)   <- superseded for the tick
+func RemoteKartSet.sample_into_packed(t: float, consumer: int, out_snaps: PackedFloat32Array, out_state: PackedByteArray) -> int   # returns the contact_eligible bitmask
+# The caller then passes both to RaceSim.set_remote(remote_snaps_packed, contact_eligible_mask) between step_bodies() and step_contact().
+# Received BUMP events (decoded by NetEventCodec) go in through RaceSim.apply_events(headers, payload) at the start of the tick.
+# Events out of the sim: RaceSim.event_headers() / event_payload() / event_count() / events_overflowed(), double-buffered.
+```
+The packed layout of the remote record rows is fixed by the `RaceSim` story. `contact_eligible` keeps its rules (STALE, EMPTY, over-extrapolated, FROZEN give 0). The host's bots go through the same stages as local karts.
+
 ### Implementation Guidelines
 - **Serialisation boundary.**
   - `SnapshotCodec` **must** be the only code that serialises a `KartSnapshot`.
@@ -542,6 +553,7 @@ func send_event(bytes: PackedByteArray, to_peer: int) -> void        ## ch2 reli
   - A BUMP **must** carry the pose tick on the victim's timeline.
   - The owner **must** drop it if `tick < last_teleport_tick` (ADR-0003 v4).
   - Otherwise it **must** apply at the start of the owner's next tick through `KartBody.apply_event`.
+  - **Amended 2026-11-22 (ADR-0007):** in the native core "apply at the start of the next tick" means `RaceSim.apply_events(headers, payload)` (stage 2). The rules above are unchanged. An item pickup roll still happens in GDScript and reaches the kart one tick later as a `pickup` event.
 - **Channels and routing.**
   - Snapshots **must** go on channel 1 `unreliable_ordered`.
   - Gameplay events **must** go on channel 2 `reliable`.
@@ -688,6 +700,7 @@ func send_event(bytes: PackedByteArray, to_peer: int) -> void        ## ch2 reli
    - wire `ClockSync` → `RaceClock` → target tick;
    - send snapshots on send ticks;
    - call `RemoteKartSet.sample_into` (SIM cursor, `contact_eligible`) in ADR-0003 v4's tick order;
+     - **Amended 2026-11-22 (ADR-0007):** the root runs the eight `RaceSim` stage calls, and does its network I/O between them: inbox events before `begin_tick`, `sample_into` then `set_remote` between `step_bodies` and `step_contact`, and the send and event encode after `end_tick`. `RaceSim` asserts the stage order.
    - clear the views on `race_go`.
 5. **Frozen game:** untouched. VERSION 9 stays in `src/legacy/net/`.
 6. **Follow-ups for other owners:**
@@ -767,6 +780,7 @@ func send_event(bytes: PackedByteArray, to_peer: int) -> void        ## ch2 reli
 - **Architecture:** `docs/architecture/architecture.md` (Data Flow 2-3, API Boundaries, Performance Budgets, line 82 follow-up); `docs/registry/architecture.yaml` (follow-up).
 - **Evidence:** `prototypes/collision-spike/out/probe_adr6_codec.txt`, `probe_adr6_net.txt`, `probe_adr6_net2.txt`.
 - **TD-010** (respawn teleports counted as prediction error): closed by §5 and §9 once implemented.
+- **Amended 2026-11-22** by ADR-0007 (native simulation core): the tick order as `RaceSim` stage calls, packed remote poses and the event pair, and the teleport epoch staying in the GDScript sender. Wire format unchanged.
 
 ## v2.1 note (TD-ADR re-review, 2026-11-22)
 - BUMP tick = sampled record's tick (above), mirrored in ADR-0003 §7.

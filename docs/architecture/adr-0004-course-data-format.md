@@ -104,6 +104,8 @@ The frozen game answers every "where" question from one spline (`TrackModel`): d
 
 Large per-element data is stored as **packed arrays (structure of arrays)**, not as one sub-resource per gate or per sample, because per-tick reads of packed arrays are cheaper in GDScript. Code lives in `src/core/course/`, with one `class_name` per file.
 
+**Amended 2026-11-22 (ADR-0007):** the packed-array rationale changes. The per-tick reads no longer run in GDScript: they run in a native `CourseRuntime` built once from `CourseData.pack_native()`, so "cheaper in GDScript" is no longer the reason. Packed arrays stay the storage form because they are compact, save as binary `.res`, and copy to native structs in one pass at track load (Alternative 4's reasoning is unchanged). `CourseData` is still a GDScript Resource, and the schema in §2 does not change.
+
 ### 2. `CourseData` schema
 
 **Top level**
@@ -482,6 +484,24 @@ class_name CourseTuning extends Resource       # §2 tuning fields, each @export
 @tool class_name CourseBuildSettings extends Resource # §14 builder settings, owned by Course Data
 ```
 
+**Superseded 2026-11-22 (ADR-0007), runtime methods only.** These `CourseData` methods above are superseded as run-time calls: `progress`, `relocate`, `route_sample`, `lane_offset`, `spans_ahead`, `along_for_s` and `respawn_pose`. They move, with the same semantics, to a native `CourseRuntime` built from the packed `CourseData`. The new form, beside the old:
+
+```gdscript
+func CourseData.pack_native() -> Dictionary                        # new; plain data with a schema version
+static func CourseRuntime.validate_packed(packed: Dictionary) -> String
+static func CourseRuntime.create(packed: Dictionary) -> CourseRuntime      # Ref; null on failure; no .new(args)
+# Same behaviour as the superseded methods, now on CourseRuntime (the CourseProgress argument is internal state inside RaceSim for the tick):
+func CourseRuntime.route_sample(r: int, along: float, out: RouteSample) -> void
+func CourseRuntime.lane_offset(r: int, along: float, lane: int) -> float
+func CourseRuntime.spans_ahead(r: int, along: float, look: float, kind_mask: int, out_idx: PackedInt32Array) -> int
+func CourseRuntime.along_for_s(r: int, s: float) -> float
+# progress, relocate and respawn_pose run inside RaceSim (CourseProgress updates in step_bodies(), respawn in stage 7); they are also bound for unit tests.
+```
+- **`CourseData` keeps** `mirrored()`, `validate_load()` and the accessors only tools use (`gate_count`, `checkpoint_into`, `main_route`, `route_count`, `route_at`, `item_box_*`, `grid_pose`). Which of the other runtime accessors (`relocate_search`, `init_grid_progress`, `respawn_sector`) move is decided by the `CourseRuntime` story and recorded here.
+- **Camera, HUD and tools call `CourseRuntime`,** so route sampling has a single implementation, in native code.
+- **`CourseBuilder`'s import-time baking is never reused at run time.** The route arrays it bakes (§6) are read by `CourseRuntime` after packing, and the builder is not called by any per-tick code.
+- `CourseRuntime` takes routes by index, not as `CourseRoute` Resources (no Resource crosses a per-tick call, ADR-0007 §2).
+
 ### Implementation Guidelines
 - Course Data **must** stay separate from collision. It **must never** hold triangles, and `CollisionQuery` **must never** be called at run time by Course Data or CPU Racers.
 - CPU Racers **must** read only `CourseData`, `CourseProgress`, snapshots, `RacerRegistry` and Track Hazards' timing functions. A missing bot input **must** be added to the baked tables, not answered by a ray.
@@ -623,6 +643,7 @@ Nothing is migrated in place. The frozen game keeps its spline, `LapCounter` and
 - ADR-0002 (collision; its mirror paragraph says left/right data lives here; `TrackCollisionData` is the validation target). Depends on it.
 - ADR-0005 (Blender track pipeline; parses empties into `CourseAuthoring` and calls `CourseBuilder`, §14). Enabled by this ADR.
 - ADR-0006 (network snapshot; `lap` and `distance` on the wire). Enabled by this ADR.
+- **Amended 2026-11-22** by ADR-0007 (native simulation core): §1 packed-array rationale; Key Interfaces (runtime methods move to native `CourseRuntime`, `CourseData.pack_native()`).
 - `docs/architecture/architecture.md`: Module Ownership (Course Data), Data Flow 1 and 6, API Boundaries › CourseData (refined here, see Key Interfaces), Performance Budgets.
 - `design/gdd/systems-index.md` rows 3, 7, 11, 12, 13, 15, 16, 27, 31.
 - Frozen references (read-only, never imported): `src/legacy/test_track/lap_counter.gd`, `track_model.gd` (`limit_progress`, `respawn_pose`, item box helpers), `src/legacy/vehicle/kart_sim.gd` (`_respawn`), `src/legacy/ai/bot_driver.gd`, `src/legacy/debug/autopilot_driver.gd`, `src/legacy/items/item_manager.gd`, `src/legacy/net/kart_wire.gd`, `src/legacy/main.gd` (`_rank_key`, grid formula).

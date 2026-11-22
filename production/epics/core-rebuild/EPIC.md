@@ -2,8 +2,8 @@
 
 > **Source**: `docs/architecture/architecture.md` (Rebuild Strategy, Phase A Sequencing), `design/gdd/systems-index.md`
 > **Layer**: Foundation / Core
-> **Engine**: Godot 4.8-beta3 (GDScript)
-> **Governing ADRs**: ADR-0001 (Accepted); ADR-0002 v5.1, ADR-0003 v4, ADR-0004 v3, ADR-0005 v3, ADR-0006 v2.1 (Accepted, owner 2026-11-22)
+> **Engine**: Godot 4.8-beta3 (GDScript; per-tick simulation in C++ via GDExtension, ADR-0007)
+> **Governing ADRs**: ADR-0001 (Accepted); ADR-0002 v5.1, ADR-0003 v4, ADR-0004 v3, ADR-0005 v3, ADR-0006 v2.1 (Accepted, owner 2026-11-22); ADR-0007 v2.1 native simulation core (Accepted, owner 2026-11-22)
 > **Numbering**: epic story numbers are not the roadmap item numbers (022 kart physics, 023 course data, 024 Blender pipeline, 025 Castle); each story has a Roadmap step line
 
 ## Goal
@@ -25,6 +25,9 @@ Phase A Sequencing in `docs/architecture/architecture.md`: freeze and oracle →
 | 005 | Analytic moving colliders | Logic | Complete | ADR-0002 |
 | 006 | Collision load checks, mirror and boundary greps | Logic | Complete | ADR-0002, ADR-0001 |
 | 007 | Collision benchmark (<= 0.3 ms p95, 12 karts) | Integration | Complete | ADR-0002 |
+| 066 | Native toolchain, dogworks_core skeleton and stale-DLL guard | Integration | Ready | ADR-0007 |
+| 067 | CollisionQuery port to C++ with the GDScript oracle | Logic | Ready | ADR-0007 |
+| 068 | RaceSim skeleton: stages, buffers, stage timers, slot roles | Logic | Ready | ADR-0007 |
 | 008 | Legacy track extractor and generator-baked test mesh | Integration | Ready | ADR-0004, ADR-0002, ADR-0005 |
 | 009 | Core vehicle data fork, KartIntent and KartSnapshot | Logic | Ready | ADR-0003 |
 | 010 | KartBody ground, ride spring and up | Logic | Ready | ADR-0003, ADR-0002 |

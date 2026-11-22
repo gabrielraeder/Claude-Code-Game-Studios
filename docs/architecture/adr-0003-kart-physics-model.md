@@ -225,6 +225,21 @@ The scalar yaw is derived only (`yaw_derived()`), as ADR-0001 requires.
 ### 4. Per-tick step order
 **Choice for bump-loss ordering:** the final snapshot is written **after contact**, and it is **refreshed after the queued remote events are applied**. With this, `drive()` always reads the body's current speed, and no bump loss (local or remote) or `bumped` bit is lost. Driving keeps reading `KartSnapshot` only.
 
+**Amended 2026-11-22 (ADR-0007): the steps below run natively as eight `RaceSim` stage calls; the order is unchanged.** `RaceSim` owns all state and refuses a stage called out of order. The composition root does the network I/O between the calls (ADR-0006).
+
+| Stage call | Steps below |
+|---|---|
+| `begin_tick(tick)` | start (native computes `t = tick × SIM_DT`; applies the `hold` mask) |
+| `apply_events(headers, payload)` | 1 |
+| `step_drive(driver_input_packed)` | 2 |
+| `step_bodies()` | 3 to 9, then **course progress for that slot** (step 10's `CourseProgress` update, per slot after each body step). Progress stays before contact because the §7 broadphase sorts by `CourseProgress` distance |
+| `set_remote(remote_snaps_packed, contact_eligible_mask)` | inputs of 11 (from `RemoteKartSet.sample_into`) |
+| `step_contact()` | 11 and 12 |
+| `step_progress_items_hazards()` | 13, plus ranking, laps, respawn and items |
+| `end_tick()` | swaps the double-buffered outputs |
+
+`safe` (step 10) is decided in native code from the surface id; `KartIntent` is internal to native code. FROZEN stays with Fall & Respawn (§8). The countdown and the resync hold use `hold(slot_mask)`: the pose is held and the body does not integrate, but driver rows still reach `DriveState`'s start logic (start boost). `place()` is for the start grid and debug only. The teleport epoch stays with ADR-0006's GDScript sender; native code only sets `teleported`.
+
 For tick n, for each racer simulated on this PC, in `RacerRegistry` slot order (ADR-0001 §6):
 
 1. **Received events.**
@@ -571,6 +586,29 @@ Usage example (doc-comment form, the composition root's tick):
 ## net.send_bumps(out_events, n_ev); hazards / pads on snaps
 ```
 
+**Superseded 2026-11-22 (ADR-0007), call surface only.** The signatures and the usage example above are superseded for the production tick; the field lists and behaviour stand. The new form, beside the old:
+
+```gdscript
+# Native classes in dogworks_core. No .new(args): a bound static factory takes packed data.
+static func KartBody.create(packed: Dictionary) -> KartBody       # replaces _init(stats, config, slot, slot_capacity); null on failure
+static func KartBody.validate_packed(packed: Dictionary) -> String
+# VehicleStats and KartPhysicsConfig stay GDScript Resources; each gets pack_native(). Per-tick calls take no Resource.
+
+# DriveState: stats are bound at configure time, the surface is passed by id, the input is a packed row.
+func DriveState.drive(input_row: PackedFloat32Array, surface_id: int, dt: float) -> void
+# Replaces: static func drive(state, input: DriverInput, snap: KartSnapshot, stats: VehicleStats, surface: SurfaceType, dt, out: KartIntent)
+# KartIntent is internal to native code and no longer a public type. The snapshot is read by DriveState internally.
+
+# Production tick: the eight RaceSim stage calls (ADR-0007 §3). Outputs are double-buffered:
+RaceSim.snapshots() -> PackedFloat32Array      # KartSnapshot fields per slot; replaces KartBody.snapshot(out) in the tick
+RaceSim.event_headers() -> PackedInt32Array    # KartEvent stream: header rows ...
+RaceSim.event_payload() -> PackedFloat32Array  # ... and float payload; event_count(), events_overflowed()
+RaceSim.progress() -> PackedFloat32Array
+RaceSim.place(slot, pose_packed)               # start grid and debug only; replaces KartBody.place in the tick
+RaceSim.hold(slot_mask: int)                   # countdown and resync hold
+```
+`KartContactSolver.resolve_all(...)` is internal to `step_contact()`. The per-object calls (`KartBody.step`, `apply_event`, `snapshot`) stay bound **for unit tests only**. Tests that depend on tick order go through `RaceSim`. The exact buffer layouts (fields per slot, driver-row columns, event encoding) are fixed by the `RaceSim` story and recorded here then.
+
 ### Implementation Guidelines
 - `KartBody` **must** be `RefCounted`, own no nodes, and run headless with no SceneTree physics frame.
 - `src/core/kart/` **must never** reference any of these:
@@ -805,6 +843,7 @@ The GDD sync check is **NOT ASSESSED** for v4. This pass read only the GDD's Ope
 - ADR-0005 Blender track pipeline (depends on: the generator bake path for parity meshes. Requirement on it: `track_check` enforces the step-up contract, §5)
 - ADR-0006 Network snapshot for 3D (enabled: encodes `KartSnapshot` including `distance`; bump `KartEvent` on the reliable channel)
 - ADR-0009 Anti-gravity and wall-riding (enabled: per-body gravity and up target)
+- **Amended 2026-11-22** by ADR-0007 (native simulation core): §4 tick order as `RaceSim` stages, Key Interfaces (`create(packed)`, `drive(...)` parameters, `KartIntent` internal, event pair), `hold`.
 - `docs/architecture/architecture.md` (API Boundaries: Kart Physics, Driving & Drift; Data Flow 1-3; Performance Budgets amended 2026-11-22)
 - `design/gdd/systems-index.md` rows 6, 9, 12, 13, 14, 26, 27
 - `production/qa/evidence/core-rebuild-story-001/perf-per-system.md`, `golden/`

@@ -3,7 +3,7 @@
 ## Document Status
 - Version: 2
 - Last Updated: 2026-11-21
-- Engine: Godot 4.8-beta3 (GDScript, Forward+). **3D physics backend not pinned** in `project.godot` (no `physics/3d/physics_engine` key; the shipped game uses no 3D physics). Pinning it is part of ADR-0002.
+- Engine: Godot 4.8-beta3 (GDScript, plus C++ GDExtension for the per-tick simulation per ADR-0007; Forward+). **3D physics backend not pinned** in `project.godot` (no `physics/3d/physics_engine` key; the shipped game uses no 3D physics). Pinning it is part of ADR-0002.
 - GDDs Covered: `design/gdd/game-concept.md` only. **No per-system GDDs exist yet** (`design/gdd/systems-index.md` lists 41 systems, 0 designed). This document is the blueprint the system GDDs are written against; it is revised when the Phase A GDDs are approved.
 - ADRs Referenced: none exist yet (see Required ADRs).
 - **Owner decision 2026-11-21: rebuild the core in this repository** (not a gradual migration, not a separate project). The 2.5D game is frozen at a git tag as the playable build and the reference.
@@ -74,6 +74,22 @@ Layers follow `design/gdd/systems-index.md`, which is the authority for each sys
 
 Folder layout and class names of the rebuilt core are fixed by ADR-0001 (ported modules get new role names, e.g. NetLink, SnapshotCodec, RemoteKartView, NetMetrics, DriverInput; shared data classes move to `src/data/`); "today" names the frozen file a module learns from or ports.
 
+**Amended 2026-11-22 (ADR-0007): the per-tick simulation is native C++ (GDExtension `dogworks_core`); everything else stays GDScript.** The tables below keep their ownership and exposed names. The "native" column, added here:
+
+| Module | Native (`native/src/`) | Stays GDScript |
+|---|---|---|
+| Track Collision & Surface Attributes | `CollisionQuery`, `GroundHit`, `WallHit`, `QueryCursor` | data Resources (`TrackCollisionData`, `MoverDef`, `SurfaceSet`, `WallAttrSet`), `CollisionBootCheck` |
+| Network Session & Sync | none | all (`NetLink`, codecs, `RemoteKartView`, `RemoteKartSet`, `NetMetrics`) |
+| Input & Bindings, Settings, Room Codes | none | all |
+| Kart Physics | `KartBody`, `KartContactSolver`, `KartSnapshot`, `KartEvent`, `KartIntent` (internal) | `KartPhysicsConfig` and vehicle Resources |
+| Course Data | `CourseRuntime`, `CourseProgress`, `RouteCursor`, ranking | `CourseData` (tool-only accessors, `mirrored()`, `validate_load()`), `CourseBuilder`, `CourseAuthoring` |
+| Race Session & Synced Clock | `RaceSim` (owns sim state and the stage order) | `RaceClock`, `ClockSync`, `RacerRegistry` setup, race flow |
+| Blender Track Pipeline | none | all (import time) |
+| Driving & Drift, Fall & Respawn, Track Features, Track Hazards, Items, CPU Racers | the per-tick rules and effects, items in flight, bot decisions | their data (`VehicleStats`, `ItemSet`, `BotPersonality`), the pickup odds roll, the network hit confirmation, UI |
+| Race Flow & Lobby, Presentation | none | all |
+
+The rule: C++ owns everything that runs per tick in the simulation; GDScript owns everything else.
+
 ### Foundation
 
 | Module | Owns | Exposes | Consumes | Engine APIs |
@@ -137,6 +153,16 @@ Render frame: own kart interpolates previous→current tick; remote karts are bu
 ```
 All on the main thread. A hit or sink detected this tick takes effect this tick (as in the frozen kart, which also skips the pad check on that tick); only events from other PCs (bumps, item hits) apply at the start of the owner's next tick.
 
+**Amended 2026-11-22 (ADR-0007): the tick above runs as eight per-stage `RaceSim` calls**, in ADR-0003 §4 order, with the composition root doing the network I/O between them:
+
+```
+begin_tick(tick) ── apply_events(headers, payload) ── step_drive(driver_rows) ── step_bodies()     # bodies, then CourseProgress per slot
+RemoteKartSet.sample_into ──▶ set_remote(remote_snaps, contact_eligible_mask) ── step_contact()
+step_progress_items_hazards() ── end_tick()
+snapshots() / event pair / progress() ──▶ SnapshotCodec send, NetEventCodec, HUD     (double-buffered)
+```
+`RaceSim` owns all simulation state and refuses a stage called out of order. An item picked up from a box reaches the kart one tick later (the odds roll runs in GDScript after `end_tick`).
+
 **2. Events.** Signals for one-to-many notifications; a connection that captures a RefCounted emitter uses `WeakRef` (`.claude/rules/godot-refcount.md`). Network events are RPCs on the `SceneMultiplayer` session: reliable for hits and item use; snapshots `unreliable_ordered` on channel 1 at `NetConfig.send_hz` (30 Hz), drawn with an adaptive view delay of 0.05-0.35 s.
 
 **3. Online.** Each PC simulates its own kart and sends snapshots; remote karts are interpolated, never simulated. The host also simulates all bots and decides shared events. Hazards, track dynamics and the race clock are computed locally from the synced race time.
@@ -151,6 +177,8 @@ All on the main thread. A hit or sink detected this tick takes effect this tick 
 ## API Boundaries
 
 GDScript pseudo-signatures; the ADRs fix the exact types. All are `RefCounted` or `Resource`, never nodes.
+
+**Amended 2026-11-22 (ADR-0007):** the simulation classes below are native (GDExtension) classes, still bound with these names. A native class takes **no `.new()` arguments**: it is built with a bound static `create(packed)` (and `validate_packed(packed)`), where `packed` comes from the Resource's `pack_native()`. Per-tick calls take no Resource: the surface goes by id, driver input is a packed row. The production tick uses the eight `RaceSim` stage calls (Data Flow 1); the per-object signatures below stay bound for unit tests. The signatures listed here that change are marked below, and detailed in the ADR-0002, ADR-0003 and ADR-0004 amendments.
 
 ### CollisionQuery (Track Collision)
 
@@ -189,6 +217,7 @@ func snapshot(out: KartSnapshot) -> void
 class_name DriveState extends RefCounted
 func drive(state: DriveState, input: DriverInput, snap: KartSnapshot, stats: VehicleStats, surface: SurfaceType, dt: float, out: KartIntent) -> void
 ```
+**Superseded 2026-11-22 (ADR-0007):** the signature above. New form: `DriveState.drive(input_row: PackedFloat32Array, surface_id: int, dt: float) -> void`. `VehicleStats` is bound at configure time (packed), the snapshot is internal, and `KartIntent` is internal to native code. See the ADR-0003 amendment.
 
 ### CourseData
 
@@ -204,6 +233,8 @@ func grid_pose(slot: int) -> Transform3D
 ```
 Bots read routes and baked tables only.
 
+**Superseded 2026-11-22 (ADR-0007), runtime methods:** `progress`, `route_sample`, `respawn_pose` (and `lane_offset`, `spans_ahead`, `along_for_s`, `relocate` from ADR-0004) move to a native `CourseRuntime` built from `CourseData.pack_native()`. `CourseData` keeps `mirrored()`, `validate_load()` and the accessors only tools use. The camera, HUD and tools call `CourseRuntime`, so route sampling has one implementation. See the ADR-0004 amendment.
+
 ### Hazards and items
 
 `HazardEffect.effect_at(collider_id, t) -> HazardOutcome` (pure); a hit is decided on the victim's PC. Item use is an event resolved by the owner and confirmed by the victim; projectiles use `CollisionQuery`; homing targets come from `RacerRegistry`.
@@ -214,7 +245,7 @@ Blender writes **only glTF** (meshes, custom properties, empties). The Godot imp
 
 ## ADR Audit
 
-ADR-0001 (simulation conventions and code layout) is Accepted (owner, 2026-11-21); ADR-0002…0006 Accepted (owner, 2026-11-22); ADR-0007…0010 remain to be written. At `standard` rigor, Foundation and Core ADRs are required before the stories that depend on them. Stories 001-011 (built at `minimal`) have none; their behaviour is the reference the rebuilt systems' GDDs document.
+ADR-0001 (simulation conventions and code layout) is Accepted (owner, 2026-11-21); ADR-0002…0006 Accepted (owner, 2026-11-22); ADR-0007 (native simulation core) is Accepted (owner, 2026-11-22); ADR-0008…0011 remain to be written. At `standard` rigor, Foundation and Core ADRs are required before the stories that depend on them. Stories 001-011 (built at `minimal`) have none; their behaviour is the reference the rebuilt systems' GDDs document.
 
 Technical Requirements Baseline: **deferred** (no system GDD exists to extract from). Provisional `TR-[system]-NNN` IDs are created as each GDD is approved and registered by `/architecture-review`; until then the ADRs cite the systems-index rows and this document.
 
@@ -229,7 +260,9 @@ Technical Requirements Baseline: **deferred** (no system GDD exists to extract f
 5. **ADR-0005 Blender track pipeline:** conventions, custom properties, editor-time import to baked resources (recommended) vs runtime `GLTFDocument`, validation hook; its round-trip prototype runs with ADR-0002's spike.
 6. **ADR-0006 Network snapshot for 3D:** `KartSnapshot` layout, VERSION 10, inbound event set, remote interpolation on 3D. Needed before checkpoint A2 (the online race).
 
-**Before the relevant system:** ADR-0007 Blender asset pipeline (rigged dogs, karts, props; before 027); ADR-0008 room codes and relay (before 021); ADR-0009 anti-gravity and wall-riding; ADR-0010 time-trial ghost format.
+7. **ADR-0007 Native simulation core** (added 2026-11-22, Accepted): the per-tick simulation as a C++ GDExtension, the per-stage `RaceSim` boundary, the build and stale-DLL rules. It amends ADR-0001 to ADR-0006 (see their amendment lines). Needed before story 009 and before the first kart code.
+
+**Before the relevant system:** ADR-0011 Blender asset pipeline (rigged dogs, karts, props; before 027; reserved as ADR-0007 until 2026-11-22); ADR-0008 room codes and relay (before 021); ADR-0009 anti-gravity and wall-riding; ADR-0010 time-trial ghost format.
 
 **Deferred to implementation:** per-feature visual techniques, audio bus layout.
 
@@ -287,7 +320,7 @@ Proposed 2026-11-21 from market research (Sonic Racing CrossWorlds' official Ste
 | **Recommended** | 1080p high (or 1440p), 60 fps | GTX 1660 Super / RTX 2060 / RX 6600 | Intel i5-10400 / Ryzen 5 3600 | 16 GB |
 | **Development reference** | the owner's PC (high-end) | — | — | — |
 
-- The host's CPU matters as much as the GPU: it simulates 12 karts and 11 bots in GDScript every tick (budget ≤ 3 ms/tick above), so the minimum CPU is the one the budget is measured against.
+- The host's CPU matters as much as the GPU: it simulates 12 karts and 11 bots every tick (budget ≤ 3 ms/tick above), so the minimum CPU is the one the budget is measured against. **Amended 2026-11-22 (ADR-0007):** the tick runs in native C++ (a Windows x86-64 DLL built with MSVC), not GDScript. The budgets in Performance Budgets are the same; native code is expected to use far less of them (collision projected 110–170 µs p95 in the worst layout). Windows x86-64 stays the only target.
 - Renderer stays Forward+. Intel integrated graphics (the owner's laptop) is below the minimum for Forward+ at this look; Godot's docs point to the Compatibility renderer for integrated GPUs. **Owner, 2026-11-21: the laptop is not a target**; no Compatibility-renderer path is planned.
 
 ## Test Harness and Regression Oracle
@@ -306,7 +339,10 @@ Today there is no `tests/` folder and no gdUnit4; evidence is `tools/track_check
 | 0 | Friends play session on the 2.5D build (owner, any time before step 4 closes) | — |
 | 1 | **Story: freeze and oracle.** Golden traces, perf baseline, `tools/regression.sh`, `/test-setup`; tag `v0.11-2.5d` | — |
 | 2 | **Spike:** collision backend + Blender round-trip on a generator-baked mesh (ADR-0002, ADR-0005 prototypes) | ADR-0001..0003 Accepted |
-| 3 | **022: Kart Physics + Driving & Drift** rebuilt test-first; one kart on the baked test mesh; traces compared with the frozen kart | **A1** owner signs drift parity |
+| 2a | **Amended 2026-11-22 (ADR-0007), new story: native toolchain.** `native/`, `tools/build_native.sh`, `--check`, `--bench`, the `.gdextension`, boot check, `native-code.md`, `godot-cpp.md`. Proves ADR-0007 Verification Required 1–9 | — |
+| 2b | **New story: CollisionQuery port** to C++, GDScript oracle moved to `tests/oracle/collision/`, parity tests, collision benchmark (TD-012) | — |
+| 2c | **New story: `RaceSim` skeleton** before story 012: the eight stages, double buffers, stage timers, slot roles | — |
+| 3 | **022: Kart Physics + Driving & Drift** rebuilt test-first (natively, ADR-0007); one kart on the baked test mesh; traces compared with the frozen kart | **A1** owner signs drift parity |
 | 4 | **023: Course Data** + mesh `track_check` | — |
 | 5 | **024: Blender track pipeline** end to end (a test track authored in Blender) | — |
 | 6 | **025: Castle Circuit rebuilt on the new core**, split into stories: race clock and registry, lap and respawn; features and hazards; items; bots; network (ADR-0006); HUD, camera, audio, visuals and race flow ported | **A2** Castle online with bots |

@@ -14,7 +14,7 @@
 **Requirement**: Kart Physics AC-22, AC-23, AC-24; ADR-0003 Validation Criteria (frozen mode, teleport drop, `contact_eligible`, remote broadphase key)
 **Roadmap step**: `architecture.md` Phase A Sequencing step 3 (roadmap item 022: Kart Physics + Driving & Drift, checkpoint A1). Epic story numbers are not roadmap item numbers.
 
-**ADR Governing Implementation**: ADR-0003: Kart Physics Model (Proposed)
+**ADR Governing Implementation**: ADR-0003: Kart Physics Model (Accepted)
 **ADR Decision Summary**: A custom kinematic `KartBody` (RefCounted, Core) is given a `KartIntent` each tick by the Gameplay-layer `DriveState` control law: a wall slide loop capped at 3 sweeps with bounded overlap push-out, then 2 to 4 ground rays, a single damped ride spring, and up from a smoothed normal; kart-vs-kart contact behind a course-distance broadphase with the snapshot written after contact; moving platforms carried by pose delta; lap-time parity measured above the harness's own noise floor. `CharacterBody3D` and `RigidBody3D` are rejected.
 
 **ADR Version**: ADR-0003 2026-11-22

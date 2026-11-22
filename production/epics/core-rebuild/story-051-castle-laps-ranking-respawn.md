@@ -14,7 +14,7 @@
 **Requirement**: Course Data AC10 to AC16 on Castle Circuit; ADR-0004 Migration Plan step 3 (Lap & Position and Fall & Respawn on `CourseProgress`)
 **Roadmap step**: `architecture.md` Phase A Sequencing step 6 (roadmap item 025: Castle Circuit rebuilt). Epic story numbers are not roadmap item numbers.
 
-**ADR Governing Implementation**: ADR-0004: Course Data Format (Proposed); ADR-0001: Simulation Conventions and Code Layout (Accepted)
+**ADR Governing Implementation**: ADR-0004: Course Data Format (Accepted); ADR-0001: Simulation Conventions and Code Layout (Accepted)
 **ADR Decision Summary**:
 - ADR-0004: A binary `CourseData` `.res` (checkpoint gates with group ids and next links plus key groups for laps, routes with baked per-sample and span tables, item-box, respawn and 12 grid poses, oriented `areas`) is built by a `@tool` `CourseBuilder` in `src/core/course/` from a neutral `CourseAuthoring` plus a `CollisionQuery`; per-kart `CourseProgress` runs a sector cursor in O(1) amortised time and handles junctions, shortcuts, wrong-way driving and off-course flight; bots read only routes and tables, never `CollisionQuery`; mirror swaps every left/right field.
 - ADR-0001: Godot Y-up, -Z forward, metres; the synced race time is authoritative and the 60 Hz tick follows it with a defined catch-up policy; a fixed step order and one seeded random stream per consumer; our own interpolation with a teleport flag; mirror mode is a proper reflection at track load; the frozen 2.5D game lives in `src/legacy/`, shared data classes in `src/data/`, new code in new folders.

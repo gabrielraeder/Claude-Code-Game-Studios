@@ -14,7 +14,7 @@
 **Requirement**: ADR-0003 Migration Plan order step 2 (measure body + `drive()` against 0.3 ms in the first slice); Kart Physics AC-28 (first half); `architecture.md` Performance Budgets
 **Roadmap step**: `architecture.md` Phase A Sequencing step 3 (roadmap item 022: Kart Physics + Driving & Drift, checkpoint A1). Epic story numbers are not roadmap item numbers.
 
-**ADR Governing Implementation**: ADR-0003: Kart Physics Model (Proposed)
+**ADR Governing Implementation**: ADR-0003: Kart Physics Model (Accepted)
 **ADR Decision Summary**: A custom kinematic `KartBody` (RefCounted, Core) is given a `KartIntent` each tick by the Gameplay-layer `DriveState` control law: a wall slide loop capped at 3 sweeps with bounded overlap push-out, then 2 to 4 ground rays, a single damped ride spring, and up from a smoothed normal; kart-vs-kart contact behind a course-distance broadphase with the snapshot written after contact; moving platforms carried by pose delta; lap-time parity measured above the harness's own noise floor. `CharacterBody3D` and `RigidBody3D` are rejected.
 
 **ADR Version**: ADR-0003 2026-11-22
@@ -74,5 +74,5 @@
 
 ## Dependencies
 
-- Depends on: `production/epics/core-rebuild/story-007-collision-benchmark.md`, `production/epics/core-rebuild/story-010-kart-body-ground-and-up.md`, `production/epics/core-rebuild/story-011-drive-state-speed-and-surfaces.md`
+- Depends on: `production/epics/core-rebuild/story-007-collision-benchmark.md`, `production/epics/core-rebuild/story-010-kart-body-ground-and-up.md`, `production/epics/core-rebuild/story-011-drive-state-speed-and-surfaces.md`, and `production/epics/core-rebuild/story-068-racesim-skeleton.md` (ADR-0007)
 - Unlocks: `production/epics/core-rebuild/story-013-kart-wall-slide-and-pushout.md`

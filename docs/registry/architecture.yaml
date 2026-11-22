@@ -127,6 +127,7 @@ interfaces:
     adr: docs/architecture/adr-0002-collision-backend-and-surface-attributes.md
     referenced_by:
       - docs/architecture/adr-0002-collision-backend-and-surface-attributes.md
+      - docs/architecture/adr-0007-native-simulation-core.md   # native implementation; create(packed) construction
     added: 2026-11-22
     revised: ""
   - contract: kart_snapshot_and_events
@@ -137,6 +138,7 @@ interfaces:
     adr: docs/architecture/adr-0003-kart-physics-model.md
     referenced_by:
       - docs/architecture/adr-0003-kart-physics-model.md
+      - docs/architecture/adr-0007-native-simulation-core.md   # snapshots and events leave RaceSim double-buffered
     added: 2026-11-22
     revised: ""
   - contract: network_wire_v10
@@ -371,6 +373,16 @@ api_decisions:
       - docs/architecture/adr-0005-blender-track-pipeline.md
     added: 2026-11-22
     revised: ""
+  - purpose: native_simulation_boundary
+    status: active
+    api: "Per-tick simulation in the C++ GDExtension dogworks_core. The composition root calls eight RaceSim stage calls per tick (begin_tick, apply_events, step_drive, step_bodies, set_remote, step_contact, step_progress_items_hazards, end_tick); RaceSim owns all sim state and asserts the stage order. Native classes are built with a bound static create(packed), never .new(args). Resources cross only at setup, as pack_native() data. Outputs are double-buffered packed arrays."
+    not: "per-kart native calls in a GDScript tick loop; Resources or script properties read in per-tick native code; .new() with arguments on native classes"
+    reason: "GDScript misses the tick budgets (868 us vs 300 us collision p95 in story 007); one state owner and a checked stage order"
+    adr: docs/architecture/adr-0007-native-simulation-core.md
+    referenced_by:
+      - docs/architecture/adr-0007-native-simulation-core.md
+    added: 2026-11-22
+    revised: ""
 
 # ─── FORBIDDEN PATTERNS ──────────────────────────────────────────────────────
 # Architecture anti-patterns explicitly banned by accepted ADRs.
@@ -382,7 +394,7 @@ api_decisions:
 
 forbidden_patterns:
   - pattern: global_random_in_simulation
-    status: active
+    status: "superseded_by: ADR-0007"
     description: "Simulation code must not call global randf, randi or randomize; it uses its per-consumer RandomNumberGenerator seeded from hash(race_seed, racer_slot, system_id)."
     why: "Global random breaks same-machine reproducibility and shifts every trace when one system adds a call."
     adr: docs/architecture/adr-0001-simulation-conventions-and-code-layout.md
@@ -445,5 +457,50 @@ forbidden_patterns:
     adr: docs/architecture/adr-0002-collision-backend-and-surface-attributes.md
     referenced_by:
       - docs/architecture/adr-0002-collision-backend-and-surface-attributes.md
+    added: 2026-11-22
+    revised: ""
+  - pattern: global_random_in_native_or_gdscript_simulation
+    status: active
+    description: "Simulation code, GDScript and native, must not use global randf, randi or randomize, and native per-tick code must not use rand(), <random>, std::random_device or iteration over unordered containers. It uses a per-consumer RandomNumberGenerator (godot-cpp in native code) created at setup and seeded from hash(race_seed, racer_slot, system_id) computed in GDScript."
+    why: "Global or unseeded random breaks same-machine reproducibility; extends global_random_in_simulation (ADR-0001), which this entry replaces, to native code."
+    adr: docs/architecture/adr-0007-native-simulation-core.md
+    referenced_by:
+      - docs/architecture/adr-0001-simulation-conventions-and-code-layout.md
+    added: 2026-11-22
+    revised: ""
+  - pattern: per_kart_native_calls_in_gdscript_tick_loop
+    status: active
+    description: "GDScript must not loop over karts calling native per-kart methods (KartBody.step, CollisionQuery.cast_ground and so on) in the production tick. It calls the eight RaceSim stage calls."
+    why: "Each crossing costs about 0.17 us and splits state ownership and stage order across the boundary."
+    adr: docs/architecture/adr-0007-native-simulation-core.md
+    referenced_by:
+      - docs/architecture/adr-0007-native-simulation-core.md
+    added: 2026-11-22
+    revised: ""
+  - pattern: per_tick_resource_read_in_native_code
+    status: active
+    description: "Per-tick native code must not read a Resource, Dictionary or Variant container. Data is packed once at setup (pack_native) into plain C++ structs."
+    why: "Per-tick Variant work allocates and costs the speed the port exists to gain."
+    adr: docs/architecture/adr-0007-native-simulation-core.md
+    referenced_by:
+      - docs/architecture/adr-0007-native-simulation-core.md
+    added: 2026-11-22
+    revised: ""
+  - pattern: committed_native_dlls
+    status: active
+    description: "Built DLLs, godot-cpp, the API dump and the SCons venv are not committed. Each clone builds with tools/build_native.sh, and tools/build_native.sh --check fails on a stale DLL."
+    why: "A committed DLL can silently disagree with its sources and cannot be reviewed."
+    adr: docs/architecture/adr-0007-native-simulation-core.md
+    referenced_by:
+      - docs/architecture/adr-0007-native-simulation-core.md
+    added: 2026-11-22
+    revised: ""
+  - pattern: gdscript_script_property_read_from_cpp
+    status: active
+    description: "Native code must not read a GDScript script property (Object::get on a script field). Resources pass their data through pack_native() with a checked schema."
+    why: "A renamed or missing field silently returns a null Variant, which becomes 0 in C++."
+    adr: docs/architecture/adr-0007-native-simulation-core.md
+    referenced_by:
+      - docs/architecture/adr-0007-native-simulation-core.md
     added: 2026-11-22
     revised: ""

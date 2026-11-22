@@ -43,7 +43,7 @@ The rebuilt core (Mario Kart architecture, `docs/architecture/architecture.md`) 
 | Field | Value |
 |-------|-------|
 | **Depends On** | None (first ADR of the rebuild) |
-| **Enables** | ADR-0002 collision backend, ADR-0003 kart physics model, ADR-0004 course data, ADR-0005 Blender track pipeline, ADR-0006 network snapshot, ADR-0007 asset pipeline |
+| **Enables** | ADR-0002 collision backend, ADR-0003 kart physics model, ADR-0004 course data, ADR-0005 Blender track pipeline, ADR-0006 network snapshot, ADR-0011 asset pipeline |
 | **Blocks** | Every Phase A rebuild story: freeze-and-oracle's folder move, 022, 023, 024, 025 |
 | **Ordering Note** | Must be Accepted before the freeze-and-oracle story moves the frozen code. ADR-0002 and ADR-0004 must each expose the mirror operation that section 7 defines. ADR-0006 must implement the clock rule (section 5) and the wire rules (sections 2 and 8). |
 
@@ -85,13 +85,14 @@ The new code also needs a place to live. That place must avoid the frozen code's
   - `Vector3`, `Basis`, `Quaternion` and `Transform3D` are **32-bit** in standard builds.
   - Track geometry must lie within **±2 km of the origin**. The import step checks this.
   - Times and the tick counter are scalars (`float` / `int`).
+  - **Amended 2026-11-22 (ADR-0007):** in the native simulation core (`native/`), **every scalar is `double`**, as GDScript `float` is. Race time, speeds, rates, angles and tuning values are all `double`. Vectors and bases stay godot-cpp float32 types, the same as the engine's. The rules above hold unchanged for GDScript.
 
 ### 2. Blender conventions
 - **Authoring units:** Blender is Z-up, 1 unit = 1 m. Transforms are applied before export, and the glTF exporter uses **+Y Up**.
 - **The mapping:** the exporter maps Blender (x, y, z) to glTF/Godot (x, z, -y). **Blender +Y becomes Godot -Z (forward).**
 - **Tracks:** track geometry has no front, so it is imported as is. The importer never rescales or rotates a whole track. A file that would need it is rejected with a message.
 - **Pose empties:** grid slots, respawns, checkpoint gates, item boxes and route points point their **local +Y axis along the direction of travel**. Use an arrows or single-arrow empty with +Y forward. Each therefore lands as a Godot pose facing -Z.
-- **Kart and character models** (ADR-0007):
+- **Kart and character models** (ADR-0011):
   - They are authored facing **Blender -Y**, the Blender "front" norm, so they arrive facing Godot **+Z** (glTF front).
   - The kart visual scene turns the model's child node **180° about Y**, once.
   - Simulation code never knows about this rotation.
@@ -118,6 +119,7 @@ The new code also needs a place to live. That place must avoid the frozen code's
   - `physics/common/physics_jitter_fix = 0.0` (Verification Required 2)
 - **Boot assertion:** the composition root **asserts** `Engine.physics_ticks_per_second == 60` and `Engine.max_physics_steps_per_frame == 8` at boot. The editor may strip default values when it re-saves `project.godot`, so a changed setting must fail loudly. *(Clarified 2026-11-22, story 006: `CollisionBootCheck.assert_boot_settings()` asserts every pinned value — ticks 60 and max steps 8 read from `Engine`, and physics_interpolation false, physics_jitter_fix 0.0, plus ADR-0002's Jolt engine, face index and run_on_separate_thread false read from `ProjectSettings`; it returns the reason so a release build can refuse to start. `physics_jitter_fix` exists in 4.8-beta3: Verification Required 2 closed.)*
 - **Fixed step:** the simulation runs in the composition root's `_physics_process` and steps every sim object with **`const SIM_DT: float = 1.0 / 60.0`**, never with `delta`.
+  - **Amended 2026-11-22 (ADR-0007):** the production tick runs as the eight per-stage `RaceSim` calls (ADR-0007 §3), and the composition root still calls them from `_physics_process`. There is **one `SIM_DT` value, held as two constants.** GDScript keeps `const SIM_DT: float = 1.0 / 60.0` as above. The native core has `constexpr int SIM_HZ = 60` and `constexpr double SIM_DT = 1.0 / SIM_HZ`, and binds a static `DogworksCore.sim_hz() -> int`. Class constants cannot be floats, and no GDScript const may read a native symbol (load order). `native_boot_check.gd` asserts `sim_hz() * SIM_DT == 1.0` and `sim_hz() == physics_ticks_per_second`. `begin_tick(tick)` takes only the tick; native computes `t = tick * SIM_DT`.
 - **The synced race time is authoritative.** Each PC computes a **target tick** = `floor(synced_race_time / SIM_DT)`. ADR-0006 owns clock sync and the start.
   - On each `_physics_process` call, the sim runs ticks until its local tick count reaches the target tick, at most `catch_up_ticks_max` per call (a `NetConfig` tuning value).
   - **Behind by more than `resync_ticks` after catch-up** (for example after a long hitch): the local tick jumps to the target. The own kart holds its state through the skipped ticks. That is a visible stall, accepted after a hitch, and the snapshot carries the teleport flag (section 8).
@@ -130,6 +132,7 @@ The new code also needs a place to live. That place must avoid the frozen code's
 - **Randomness:** simulation code draws from **one `RandomNumberGenerator` stream per consumer**. Each stream is seeded from `hash([race_seed, racer_slot, system_id])`.
   - The race seed is a 64-bit `int` chosen by the host and sent in the race config.
   - The global `randf`, `randi` and `randomize` are forbidden in simulation code.
+  - **Amended 2026-11-22 (ADR-0007):** the ban covers native code too. Native streams are godot-cpp `RandomNumberGenerator` instances created at setup, seeded by GDScript with the formula above (the seed is computed in GDScript and passed in the setup data, so one formula serves both sides). In per-tick native code `rand()`, anything from `<random>`, `std::random_device` and iteration over unordered containers are forbidden. Golden traces are never compared across PCs, and the debug and release DLLs must give the same trace hash on one machine.
 - **The aim:** same inputs and same seed give the same run on one machine. Cross-machine bit-exactness is not required.
 
 ### 7. Mirror mode
@@ -188,6 +191,9 @@ The new code also needs a place to live. That place must avoid the frozen code's
 | `src/pipeline/` | Editor-time import step and track loader (including mirror) | general rules |
 | `src/debug/` | Debug harness for the new core | general rules |
 | `tests/unit/<system>/`, `tests/integration/<system>/` | gdUnit4 tests | `test-standards.md` |
+| `native/` (`.gdignore`) | C++ sources of the `dogworks_core` GDExtension, one subfolder per system; godot-cpp, API dump and venv are fetched, never committed. **Added 2026-11-22 (ADR-0007)** | `.claude/rules/native-code.md` |
+| `addons/dogworks_core/` | The committed `.gdextension`, the editor hash-check plugin; built DLLs and `build_hash.txt` in `bin/` (gitignored). **Added 2026-11-22 (ADR-0007)** | `native-code.md` |
+| `tests/oracle/collision/` | The frozen GDScript collision oracle (`Oracle*` classes), test-only. **Added 2026-11-22 (ADR-0007)** | `test-standards.md` |
 
 - **Class names.**
   - A new or ported class **never reuses a frozen `class_name`**; the frozen classes keep their names in `src/legacy/`.
@@ -343,4 +349,5 @@ New code starts in the new folders from story 022 on.
 
 ## Related
 - `docs/architecture/architecture.md` (Rebuild Strategy, Data Flow, API Boundaries, Required ADRs item 1). Its ported class names follow section 9.
-- Enables ADR-0002 … ADR-0007.
+- Enables ADR-0002 … ADR-0006 and ADR-0011 (asset pipeline).
+- **Amended 2026-11-22** by ADR-0007 (native simulation core): §1 scalars, §5 `SIM_DT` and stage calls, §6 native randomness, §9 `native/` and `addons/dogworks_core/` rows.

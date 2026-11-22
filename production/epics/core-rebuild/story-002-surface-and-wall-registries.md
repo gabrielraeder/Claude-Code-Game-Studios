@@ -14,7 +14,7 @@
 **Requirement**: Track Collision AC-2, AC-3, AC-6 (registry half); ADR-0002 Decision (surface and wall-attribute ids, v5.1 core surface ids, `SurfaceType.neutral`, no wall `opening` field)
 **Roadmap step**: `architecture.md` Phase A Sequencing step 2-3 (spike follow-through; roadmap item 022 implements `CollisionQuery`, ADR-0002 Migration Plan). Epic story numbers are not roadmap item numbers.
 
-**ADR Governing Implementation**: ADR-0002: Collision Backend and Surface Attributes (Proposed)
+**ADR Governing Implementation**: ADR-0002: Collision Backend and Surface Attributes (Accepted)
 **ADR Decision Summary**: Jolt, used only through `PhysicsServer3D`: a RefCounted `CollisionQuery` owns a private space and server-created shapes and bodies, freed in a fixed order; ground is one concave shape whose surface id comes from the triangle `face_index`; walls are one body with one shape per wall attribute on their own layer; queries use the 4.8 non-allocating `_into` methods; moving colliders are evaluated analytically from keyframed pose curves. Budget: collision <= 0.3 ms p95 per tick for 12 karts (spike: 0.06 ms median).
 
 **ADR Version**: ADR-0002 2026-11-22

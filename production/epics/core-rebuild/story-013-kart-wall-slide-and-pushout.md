@@ -14,7 +14,7 @@
 **Requirement**: Kart Physics AC-6, AC-7, AC-8; ADR-0003 Validation Criteria (push-out, inner corner, wall-top guard, slide-loop counter, touch rule)
 **Roadmap step**: `architecture.md` Phase A Sequencing step 3 (roadmap item 022: Kart Physics + Driving & Drift, checkpoint A1). Epic story numbers are not roadmap item numbers.
 
-**ADR Governing Implementation**: ADR-0003: Kart Physics Model (Proposed); ADR-0002: Collision Backend and Surface Attributes (Proposed)
+**ADR Governing Implementation**: ADR-0003: Kart Physics Model (Accepted); ADR-0002: Collision Backend and Surface Attributes (Accepted)
 **ADR Decision Summary**:
 - ADR-0003: A custom kinematic `KartBody` (RefCounted, Core) is given a `KartIntent` each tick by the Gameplay-layer `DriveState` control law: a wall slide loop capped at 3 sweeps with bounded overlap push-out, then 2 to 4 ground rays, a single damped ride spring, and up from a smoothed normal; kart-vs-kart contact behind a course-distance broadphase with the snapshot written after contact; moving platforms carried by pose delta; lap-time parity measured above the harness's own noise floor. `CharacterBody3D` and `RigidBody3D` are rejected.
 - ADR-0002: Jolt, used only through `PhysicsServer3D`: a RefCounted `CollisionQuery` owns a private space and server-created shapes and bodies, freed in a fixed order; ground is one concave shape whose surface id comes from the triangle `face_index`; walls are one body with one shape per wall attribute on their own layer; queries use the 4.8 non-allocating `_into` methods; moving colliders are evaluated analytically from keyframed pose curves. Budget: collision <= 0.3 ms p95 per tick for 12 karts (spike: 0.06 ms median).

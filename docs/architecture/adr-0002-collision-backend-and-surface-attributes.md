@@ -102,6 +102,11 @@ It must serve 12 karts within budget. It needs per-triangle surface ids for trac
   - Query methods `assert(not _disposed)`.
   - A `_notification(NOTIFICATION_PREDELETE)` fallback frees the RIDs and `push_warning`s that the owner forgot to call `dispose()`. It calls a **static** `_free_server_objects(bodies, shapes, space)` shared with `dispose()`, because on 4.8-beta3 an instance method cannot be called from a RefCounted's PREDELETE (`self` is already a null instance; found in story 003, recorded in `.claude/rules/godot-refcount.md`).
   - The composition root calls `dispose()` at track unload.
+- **Amended 2026-11-22 (ADR-0007): the implementation language is native C++** (`native/src/collision/`, GDExtension `dogworks_core`). The backend decision above stands unchanged (Jolt through `PhysicsServer3D`, same layers, same `_into` queries, same behaviour). What changes:
+  - The native classes keep the names `CollisionQuery`, `QueryCursor`, `GroundHit` and `WallHit`. The GDScript versions move to `tests/oracle/collision/` as `Oracle*`, frozen at port time, and serve only as a parity oracle.
+  - A native class takes no `.new()` arguments (see Key Interfaces below).
+  - The GDScript `NOTIFICATION_PREDELETE` fallback and static `_free_server_objects` become a C++ destructor and one static helper shared with `dispose()`, guarded by a servers-alive flag. `dispose()` stays mandatory.
+  - Queries still run on the main thread only, and the space is still not activated.
 
 ### Geometry layout
 - **Ground (layer 1):**
@@ -216,6 +221,20 @@ const FORMAT_VERSION: int = 1                            ## bumped on any schema
 func mirrored() -> TrackCollisionData                    # new object; never mutates self
 ```
 
+**Superseded 2026-11-22 (ADR-0007), construction only.** `func _init(data: TrackCollisionData)` above is superseded: a native class cannot take Resources or `.new()` arguments. The query methods keep these signatures, and `TrackCollisionData` stays a GDScript Resource. The new form, beside the old:
+
+```gdscript
+# Native classes (dogworks_core). GroundHit, WallHit and QueryCursor are still built with no-argument .new().
+static func CollisionQuery.validate_packed(packed: Dictionary) -> String   # "" when valid, else the message naming the key
+static func CollisionQuery.create(packed: Dictionary) -> CollisionQuery    # Ref; null on failure; calls the same C++ validation
+# packed = TrackCollisionData.pack_native()  (new method: plain data with a schema version; ADR-0007 §2)
+# CollisionBootCheck.checked_query(...) stays the single GDScript construction site and wraps both calls.
+# .new() stays callable but gives an unbuilt object: every bound method refuses with ERR_FAIL_COND.
+func dispose() -> void                                   # unchanged; mandatory
+func cast_ground(cursor: QueryCursor, origin: Vector3, dir: Vector3, max_dist: float, t: float, out: GroundHit) -> bool   # unchanged
+func sweep_walls(cursor: QueryCursor, from: Vector3, to: Vector3, radius: float, t: float, out: WallHit) -> bool           # unchanged
+```
+
 ### Implementation Guidelines
 - Per-tick collision code **must** use the `_into` methods with reused objects. The Dictionary forms and `PhysicsRayQueryParameters3D.create()` are forbidden in per-tick code (allowed in tools).
 - Track collision **must not** use collision nodes. `PhysicsServer3D` shapes and bodies are created and freed by `CollisionQuery` only.
@@ -250,6 +269,7 @@ func mirrored() -> TrackCollisionData                    # new object; never mut
 
 ### Alternative 5: GDExtension BVH
 - **Rejection Reason**: Not needed. Jolt measured about 5× under this ADR's 0.3 ms budget.
+- **Amended 2026-11-22 (ADR-0007):** this rejection reason is **superseded for the implementation, not the backend.** A GDExtension now implements `CollisionQuery`, because the GDScript mover maths and wrapper overhead measured 868 µs p95 in the worst layout (story 007). Jolt through `PhysicsServer3D` is still the backend; no custom BVH is built.
 
 ## Consequences
 
@@ -311,3 +331,4 @@ The frozen 2.5D game keeps its spline model (`src/legacy/`). Story 022 implement
 - `prototypes/collision-spike/REPORT.md`, `out/probe_adr2.txt` (evidence)
 - ADR-0001 (conventions). ADR-0003 (kart physics: overlap resolution, sweep shape, slide loop). ADR-0004 (course data; left/right data and its mirror). ADR-0005 (import bakes `TrackCollisionData`, surface and wall-attribute registries).
 - `docs/architecture/architecture.md`: QQ-01, QQ-02 and QQ-04 are resolved by the spike.
+- **Amended 2026-11-22** by ADR-0007 (native simulation core): implementation language, construction (`create(packed)`), Alternative 5's rejection reason, teardown in C++.

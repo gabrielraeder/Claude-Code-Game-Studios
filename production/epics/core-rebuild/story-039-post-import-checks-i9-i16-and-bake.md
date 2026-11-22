@@ -14,7 +14,7 @@
 **Requirement**: ADR-0005 Validation Criteria (I9-I16, bake determinism); Track Collision AC-19; ADR-0005 checks I9 Wall normals, I10 Required empties, I11 Probe, I12 Triangle budget, I13 Movers, I14 No collision nodes, I15 Course, I16 Climbable
 **Roadmap step**: `architecture.md` Phase A Sequencing step 5 (roadmap item 024: Blender track pipeline end to end). Epic story numbers are not roadmap item numbers.
 
-**ADR Governing Implementation**: ADR-0005: Blender Track Pipeline (Proposed); ADR-0002: Collision Backend and Surface Attributes (Proposed); ADR-0004: Course Data Format (Proposed)
+**ADR Governing Implementation**: ADR-0005: Blender Track Pipeline (Accepted); ADR-0002: Collision Backend and Surface Attributes (Accepted); ADR-0004: Course Data Format (Accepted)
 **ADR Decision Summary**:
 - ADR-0005: Editor-time import: a headless Blender exporter (`tools/blender/export_track.py`) writes one `.glb` with `kk_*` custom properties; a Godot `EditorScenePostImport` script (`import_script/path`, also run headless with `--import`) validates it (I1-I16) and bakes a binary `TrackPackage` (`.res`); any failed check refuses the file and names the reason. Runtime `GLTFDocument` is kept only as a future front end for user tracks.
 - ADR-0002: Jolt, used only through `PhysicsServer3D`: a RefCounted `CollisionQuery` owns a private space and server-created shapes and bodies, freed in a fixed order; ground is one concave shape whose surface id comes from the triangle `face_index`; walls are one body with one shape per wall attribute on their own layer; queries use the 4.8 non-allocating `_into` methods; moving colliders are evaluated analytically from keyframed pose curves. Budget: collision <= 0.3 ms p95 per tick for 12 karts (spike: 0.06 ms median).

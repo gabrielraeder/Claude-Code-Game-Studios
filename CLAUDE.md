@@ -6,7 +6,7 @@ Each agent owns a specific domain, enforcing separation of concerns and quality.
 ## Technology Stack
 
 - **Engine**: Godot 4.8
-- **Language**: GDScript
+- **Language**: GDScript, plus C++ (GDExtension `dogworks_core`) for the per-tick simulation (ADR-0007)
 - **Version Control**: Git with trunk-based development
 - **Build System**: SCons (engine), Godot Export Templates
 - **Asset Pipeline**: Godot Import System + custom resource pipeline

@@ -34,7 +34,7 @@ modes:
 engine:
   name: "Godot"
   version: "4.8-beta3"
-  language: "GDScript"
+  language: "GDScript"  # scripting language; the per-tick simulation is C++ (GDExtension dogworks_core, ADR-0007), routed to specialists.additional
   rendering: "Forward+"
   physics: "Jolt"
   path: "C:/Godot/Godot_v4.8-beta3_win64_console.exe"

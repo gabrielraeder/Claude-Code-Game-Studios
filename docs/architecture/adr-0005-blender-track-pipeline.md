@@ -100,7 +100,7 @@ This ADR chooses an **editor-time import**:
 | Field | Value |
 |-------|-------|
 | **Depends On** | ADR-0001 (Accepted): axes, the ±2 km bound, the Blender axis rule, the mirror owner (`src/pipeline/`), `art_src/`. ADR-0002 (Proposed): the `TrackCollisionData` schema this ADR bakes, and the boot and load checks. ADR-0004 (Proposed v2): `CourseData`, `CourseAuthoring` and `CourseBuilder`, which owns the whole derivation; this ADR only parses the `kk_*` empties into `CourseAuthoring` |
-| **Enables** | ADR-0007 Blender asset pipeline (reuses the exporter conventions and the fixed export flags). ADR-0006 network snapshot (can put `TrackPackage.source_sha256` in the handshake). ADR-0009 anti-gravity (extends the schema) |
+| **Enables** | ADR-0011 Blender asset pipeline (reuses the exporter conventions and the fixed export flags). ADR-0006 network snapshot (can put `TrackPackage.source_sha256` in the handshake). ADR-0009 anti-gravity (extends the schema) |
 | **Blocks** | Story 024 (Blender track pipeline end to end). Story 025 (Castle Circuit on the new core) needs a working package |
 | **Ordering Note** | This ADR cannot be Accepted before ADR-0002 and ADR-0004. The course fields in the `kk_*` table below are the authoring contract for ADR-0004's `CourseAuthoring` (§14 there), and ADR-0004 owns their meaning. If ADR-0004 changes a field, `kk_schema` is bumped. Story 023 builds the mesh track_check that this ADR's package checks plug into. |
 
@@ -305,6 +305,11 @@ LoadedTrack: TrackCollisionData (mirrored() if asked) · CourseData (mirrored() 
 - **Forcing a reimport:** touching the `.glb` does not reimport, and deleting only `.godot/imported/<name>-<hash>.md5` was not enough in the NV-16 probe. `tools/track_build.sh` deletes the affected `.md5` files **and** `.godot/editor/filesystem_cache10` (the editor's file scan cache; it is rebuilt), then runs `--import`, and checks that the `TRACK_IMPORT RESULT` line appeared for every affected track (a missing line means it did not reimport).
 - **CI must not grep a bare `ERROR`:** `--import` prints RID-leak `ERROR` lines after a post-import script. CI greps `TRACK_IMPORT RESULT FAIL` and the missing `RESULT` line only.
 - **Every script the baker touches is `@tool`** (NV-7): `src/pipeline/*`, `CourseBuilder`, `CourseAuthoring`, `CourseData` and its parts, `CollisionQuery`, `TrackCollisionData`, and `src/data/surface_set.gd`, `surface_type.gd` and the wall-attribute set (marking those `@tool` is additive, ADR-0001 §9). `track_post_import.gd` loads them by `preload("res://…")` path, never by `class_name`. Story 024 proves this on a clean clone in CI (NV-15).
+- **Amended 2026-11-22 (ADR-0007): the import runs against the native `CollisionQuery`.**
+  - `CourseBuilder` runs at import and needs `CollisionQuery` (I11, I15). That class is now native (`dogworks_core`), and it is **not** an `@tool` script, so the NV-7 `@tool` rule does not apply to it. It is built through `CollisionQuery.create(packed)` with `TrackCollisionData.pack_native()`, not `.new(data)`.
+  - **Import order on a fresh clone:** `tools/build_native.sh` runs **before** the first `--import` (about 90 s cold). The extension must load during the first scan, before `.godot/extension_list.cfg` exists (ADR-0007 Verification Required 6). NV-15 and story 041 are extended for this: a clean clone is "build native, then import".
+  - A missing extension at import is a hard failure: the post-import script reports `TRACK_IMPORT FAIL` naming `tools/build_native.sh`, and writes no package. It does not use a GDScript fallback.
+  - The `.track.res` package is unchanged. `CourseBuilder`'s baking stays import-time only; run-time route reads use the native `CourseRuntime` (ADR-0004 amendment).
 - **`TrackBaker` is pure.** It does no file I/O and keeps no state between calls, and the registries arrive through the constructor. That makes it unit-testable with scenes built in code.
 - **It is deterministic:**
   - nodes are visited **sorted by name**, never in tree order;
@@ -510,7 +515,7 @@ tools/track_build.sh <id>       export (needs EXPORTED line) → preset → dele
 - **Description**: Export actions and convert the imported `AnimationPlayer` tracks to `MoverDef` keys.
 - **Pros**: The standard path; animators preview in Godot.
 - **Cons**: Animation import was not exercised by the spike. `export_optimize_animation_size` is on by default and drops keys. It needs a second conversion, and it leaves an `AnimationPlayer` that competes with `mover_pose`.
-- **Rejection Reason**: Keys sampled in Blender and carried as extras are exact and use only verified mechanisms. ADR-0007 exercises glTF animation for rigged assets; this can be revisited then.
+- **Rejection Reason**: Keys sampled in Blender and carried as extras are exact and use only verified mechanisms. ADR-0011 exercises glTF animation for rigged assets; this can be revisited then.
 
 ### Alternative 7: Commit the baked `.track.res`
 - **Pros**: A clone runs without an import. Reviewers see the package change.
@@ -602,6 +607,7 @@ Nothing existing is migrated. The frozen game keeps its generator tracks (`tools
 
 ## Related
 - `prototypes/collision-spike/REPORT.md` Q4 and Recommendations; `out/q4_post_import.txt`, `out/q4_runtime.txt` (evidence).
-- ADR-0001 (axes, Blender rule, mirror, layout; depends on). ADR-0002 (`TrackCollisionData`, `MoverDef`, registries, load check; depends on). ADR-0004 (`CourseData`, `CourseAuthoring`, `CourseBuilder`; depends on). ADR-0006 (track identity in the handshake). ADR-0007 (asset pipeline; reuses the exporter conventions). ADR-0009 (anti-gravity; extends I8 and the schema).
+- ADR-0001 (axes, Blender rule, mirror, layout; depends on). ADR-0002 (`TrackCollisionData`, `MoverDef`, registries, load check; depends on). ADR-0004 (`CourseData`, `CourseAuthoring`, `CourseBuilder`; depends on). ADR-0006 (track identity in the handshake). ADR-0011 (asset pipeline; reuses the exporter conventions). ADR-0009 (anti-gravity; extends I8 and the schema).
+- **Amended 2026-11-22** by ADR-0007 (native simulation core): the import uses the native `CollisionQuery`, and a fresh clone builds the native extension before its first `--import` (§4 NV-7 bullet).
 - `docs/architecture/architecture.md`: Tool layer, Data Flow 6, Module Ownership (Blender Track Pipeline). `design/gdd/systems-index.md` rows 2, 3, 7, 14, 24, 31 and the risk table.
 - `tools/blender/common.py` (conventions; its `export_glb` is deliberately not reused).

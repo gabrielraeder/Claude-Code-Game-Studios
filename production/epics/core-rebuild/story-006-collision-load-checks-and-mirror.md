@@ -14,7 +14,7 @@
 **Requirement**: Track Collision AC-17, AC-18; ADR-0002 Validation Criteria (mirror, face-index load check, Dictionary grep); ADR-0001 §7 (mirror is a reflection at track load)
 **Roadmap step**: `architecture.md` Phase A Sequencing step 2-3 (spike follow-through; roadmap item 022 implements `CollisionQuery`, ADR-0002 Migration Plan). Epic story numbers are not roadmap item numbers.
 
-**ADR Governing Implementation**: ADR-0002: Collision Backend and Surface Attributes (Proposed); ADR-0001: Simulation Conventions and Code Layout (Accepted)
+**ADR Governing Implementation**: ADR-0002: Collision Backend and Surface Attributes (Accepted); ADR-0001: Simulation Conventions and Code Layout (Accepted)
 **ADR Decision Summary**:
 - ADR-0002: Jolt, used only through `PhysicsServer3D`: a RefCounted `CollisionQuery` owns a private space and server-created shapes and bodies, freed in a fixed order; ground is one concave shape whose surface id comes from the triangle `face_index`; walls are one body with one shape per wall attribute on their own layer; queries use the 4.8 non-allocating `_into` methods; moving colliders are evaluated analytically from keyframed pose curves. Budget: collision <= 0.3 ms p95 per tick for 12 karts (spike: 0.06 ms median).
 - ADR-0001: Godot Y-up, -Z forward, metres; the synced race time is authoritative and the 60 Hz tick follows it with a defined catch-up policy; a fixed step order and one seeded random stream per consumer; our own interpolation with a teleport flag; mirror mode is a proper reflection at track load; the frozen 2.5D game lives in `src/legacy/`, shared data classes in `src/data/`, new code in new folders.

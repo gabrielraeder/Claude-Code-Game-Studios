@@ -14,7 +14,7 @@
 **Requirement**: ADR-0005 Validation Criteria (each of I1-I15 watched failing, NOT_ASSESSED, grep); ADR-0005 checks I1 Origin, I2 Schema, I3 Fields, I4 Bounds, I5 Ids known, I6 Collision transforms, I7 Pose empties, I8 Ground winding
 **Roadmap step**: `architecture.md` Phase A Sequencing step 5 (roadmap item 024: Blender track pipeline end to end). Epic story numbers are not roadmap item numbers.
 
-**ADR Governing Implementation**: ADR-0005: Blender Track Pipeline (Proposed)
+**ADR Governing Implementation**: ADR-0005: Blender Track Pipeline (Accepted)
 **ADR Decision Summary**: Editor-time import: a headless Blender exporter (`tools/blender/export_track.py`) writes one `.glb` with `kk_*` custom properties; a Godot `EditorScenePostImport` script (`import_script/path`, also run headless with `--import`) validates it (I1-I16) and bakes a binary `TrackPackage` (`.res`); any failed check refuses the file and names the reason. Runtime `GLTFDocument` is kept only as a future front end for user tracks.
 
 **ADR Version**: ADR-0005 2026-11-22

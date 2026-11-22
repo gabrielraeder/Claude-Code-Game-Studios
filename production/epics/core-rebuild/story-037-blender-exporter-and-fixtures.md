@@ -14,7 +14,7 @@
 **Requirement**: ADR-0005 Migration Plan step 3 and Validation Criteria (integration fixtures, NV-4, mover round trip, grep); ADR-0001 Validation Criteria (Blender axes)
 **Roadmap step**: `architecture.md` Phase A Sequencing step 5 (roadmap item 024: Blender track pipeline end to end). Epic story numbers are not roadmap item numbers.
 
-**ADR Governing Implementation**: ADR-0005: Blender Track Pipeline (Proposed); ADR-0001: Simulation Conventions and Code Layout (Accepted)
+**ADR Governing Implementation**: ADR-0005: Blender Track Pipeline (Accepted); ADR-0001: Simulation Conventions and Code Layout (Accepted)
 **ADR Decision Summary**:
 - ADR-0005: Editor-time import: a headless Blender exporter (`tools/blender/export_track.py`) writes one `.glb` with `kk_*` custom properties; a Godot `EditorScenePostImport` script (`import_script/path`, also run headless with `--import`) validates it (I1-I16) and bakes a binary `TrackPackage` (`.res`); any failed check refuses the file and names the reason. Runtime `GLTFDocument` is kept only as a future front end for user tracks.
 - ADR-0001: Godot Y-up, -Z forward, metres; the synced race time is authoritative and the 60 Hz tick follows it with a defined catch-up policy; a fixed step order and one seeded random stream per consumer; our own interpolation with a teleport flag; mirror mode is a proper reflection at track load; the frozen 2.5D game lives in `src/legacy/`, shared data classes in `src/data/`, new code in new folders.

@@ -14,7 +14,7 @@
 **Requirement**: Course Data AC3; ADR-0004 §14 and Validation Criteria (builder tests)
 **Roadmap step**: `architecture.md` Phase A Sequencing step 4 (roadmap item 023: Course Data + mesh `track_check`). Epic story numbers are not roadmap item numbers.
 
-**ADR Governing Implementation**: ADR-0004: Course Data Format (Proposed)
+**ADR Governing Implementation**: ADR-0004: Course Data Format (Accepted)
 **ADR Decision Summary**: A binary `CourseData` `.res` (checkpoint gates with group ids and next links plus key groups for laps, routes with baked per-sample and span tables, item-box, respawn and 12 grid poses, oriented `areas`) is built by a `@tool` `CourseBuilder` in `src/core/course/` from a neutral `CourseAuthoring` plus a `CollisionQuery`; per-kart `CourseProgress` runs a sector cursor in O(1) amortised time and handles junctions, shortcuts, wrong-way driving and off-course flight; bots read only routes and tables, never `CollisionQuery`; mirror swaps every left/right field.
 
 **ADR Version**: ADR-0004 2026-11-22
