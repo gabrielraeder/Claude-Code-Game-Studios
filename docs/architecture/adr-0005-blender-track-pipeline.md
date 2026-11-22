@@ -83,7 +83,7 @@ This ADR chooses an **editor-time import**:
 | NV-13 | `FileAccess.get_sha256(path)` on `res://` paths in editor and headless runs | `HashingContext` over the file bytes |
 | NV-14 | Negative-scale objects in Blender. How winding survives export and import is unknown, so the design forbids them and only the rejection is needed | None needed |
 | NV-15 | **Fresh-clone first import.** On a clean clone (no `.godot/`, no `*.track.res`), one headless `--import` registers the `@tool` scripts, runs the post-import script, bakes the package and saves it, with no second pass. Runs in CI | Two-pass import in `tools/track_build.sh` (script-class scan, then import); if that fails too, Git LFS for the baked package (Alternative 7) |
-| NV-16 | **`CollisionQuery` inside `_post_import`.** Running ADR-0002's `CollisionQuery` (private Jolt space, face-index setting) from the post-import script, under headless `--import` and on an editor reimport, is **unprobed** (a probe is running). I11, I15 and the builder depend on it | Return the parsed `CourseAuthoring` and collision data as Resource-valued root meta (it persists) and run I11, I15 and the builder in the `track_build` step from a headless `SceneTree`, which then writes the package |
+| NV-16 | **`CollisionQuery` inside `_post_import`: VERIFIED** (`prototypes/collision-spike/out/probe_adr5_nv16.txt`, script `scripts/probe_adr5_nv16_post_import.gd`). A private Jolt space with face index, built and queried inside `_post_import` under headless `--import`, returned correct face, shape, position and normal on a fresh import and on a forced reimport (36 checks, 0 fails each), on the main thread, with bodies → shapes → space freed cleanly. **Gotchas:** (1) `override.cfg` is ignored by editor `--import`; the face-index setting must be pinned in `project.godot` (ADR-0002 already requires it). (2) Deleting only `.godot/imported/<name>-<hash>.md5` did **not** reimport in this run; deleting `.godot/editor/filesystem_cache10` as well did | Not needed. Kept for reference: return the parsed data as Resource-valued root meta and run I11, I15 and the builder from a headless `SceneTree` in `track_build` |
 
 **Probe verdicts (godot-specialist, 2026-11-22; evidence in `prototypes/collision-spike/out/probe_adr45_*.txt`). Story 024 re-runs and retains them on the real pipeline:**
 - **VERIFIED:** NV-2, NV-3, NV-4, NV-6, NV-7, NV-8 (a 40 KB string extra arrives intact), NV-11, NV-13.
@@ -302,7 +302,7 @@ LoadedTrack: TrackCollisionData (mirrored() if asked) · CourseData (mirrored() 
 
   **On a failure** it writes no package, **deletes any existing `*.track.res`** (a build product) and returns `null` or a stripped scene carrying the failure as meta. Returning `null` is a **silent failure** (NV-5): no error is printed, `--import` exits 0, and over an earlier good import the old imported scene stays and keeps loading. Success is therefore decided **only from the `TRACK_IMPORT RESULT` line**.
 - **The post-import script has no `class_name`.** It is referenced by path in the preset, so its editor-only base class (`EditorScenePostImport`) is not registered in exported builds.
-- **Forcing a reimport:** touching the `.glb` does not reimport. `tools/track_build.sh` deletes `.godot/imported/<name>-<hash>.md5` for the affected `.glb` files first, then runs `--import`.
+- **Forcing a reimport:** touching the `.glb` does not reimport, and deleting only `.godot/imported/<name>-<hash>.md5` was not enough in the NV-16 probe. `tools/track_build.sh` deletes the affected `.md5` files **and** `.godot/editor/filesystem_cache10` (the editor's file scan cache; it is rebuilt), then runs `--import`, and checks that the `TRACK_IMPORT RESULT` line appeared for every affected track (a missing line means it did not reimport).
 - **CI must not grep a bare `ERROR`:** `--import` prints RID-leak `ERROR` lines after a post-import script. CI greps `TRACK_IMPORT RESULT FAIL` and the missing `RESULT` line only.
 - **Every script the baker touches is `@tool`** (NV-7): `src/pipeline/*`, `CourseBuilder`, `CourseAuthoring`, `CourseData` and its parts, `CollisionQuery`, `TrackCollisionData`, and `src/data/surface_set.gd`, `surface_type.gd` and the wall-attribute set (marking those `@tool` is additive, ADR-0001 §9). `track_post_import.gd` loads them by `preload("res://…")` path, never by `class_name`. Story 024 proves this on a clean clone in CI (NV-15).
 - **`TrackBaker` is pure.** It does no file I/O and keeps no state between calls, and the registries arrive through the constructor. That makes it unit-testable with scenes built in code.
@@ -455,7 +455,7 @@ class_name LoadedTrack extends RefCounted          # collision, course, visual: 
 ```
 tools/blender/export_track.py   blender … <id>.blend --python tools/blender/export_track.py -- [--out p] [--check]
 tools/track_import_preset.gd    godot --headless -s res://tools/track_import_preset.gd -- --track=<id>
-tools/track_build.sh <id>       export (needs EXPORTED line) → preset → delete .godot/imported/<name>-<hash>.md5 → godot --headless --import
+tools/track_build.sh <id>       export (needs EXPORTED line) → preset → delete .godot/imported/<name>-<hash>.md5 and .godot/editor/filesystem_cache10 → godot --headless --import → require a RESULT line per track
                                 → track_check; decides from the TRACK_IMPORT RESULT line, never a bare ERROR grep; exit 1 on fail
 ```
 
@@ -534,7 +534,7 @@ tools/track_build.sh <id>       export (needs EXPORTED line) → preset → dele
 - The schema is strict: a new field needs a schema bump and an edit to `track_schema.json`.
 - Applied transforms on collision meshes rule out instanced collision pieces. Instancing stays available for Visual.
 - The package is a build product: a machine that has not run `--import` has no track. The loader says so loudly.
-- Still unverified: NV-1 (the `.blend` import switch), NV-10, NV-15 (fresh-clone first import) and NV-16 (`CollisionQuery` inside `_post_import`). Story 024 may have to take a named fallback.
+- Still unverified: NV-1 (the `.blend` import switch), NV-10 and NV-15 (fresh-clone first import). NV-16 is verified. Story 024 may have to take a named fallback.
 
 ## Risks
 - **Import failure is not reported as a failure (NV-5).** Mitigation: `track_build.sh` and CI decide from the `TRACK_IMPORT RESULT` line and the package hash, never from the `--import` exit code alone.
@@ -545,7 +545,7 @@ tools/track_build.sh <id>       export (needs EXPORTED line) → preset → dele
 - **Fresh-clone first import (NV-15).** Mitigation: CI proof in story 024; two-pass import, then LFS for the package.
 - **A Blender upgrade changes exporter defaults.** Mitigation: every flag is explicit, the exporter warns when the version is not 5.3, and `probe_exporter.py` is re-run on each Blender upgrade (as the spike scripts are on each engine re-pin, ADR-0002).
 - **A reimport loop from the package save (NV-6).** The probe saw none (NV-6 verified); story 024 re-checks it on the real pipeline.
-- **`CollisionQuery` cannot run inside `_post_import` (NV-16).** Mitigation: the root-meta fallback in NV-16.
+- ~~`CollisionQuery` cannot run inside `_post_import` (NV-16).~~ Closed: verified on 4.8-beta3.
 - **A beta engine changes the scene importer.** Mitigation: the fixture integration tests below run on every re-pin.
 
 ## GDD Requirements Addressed

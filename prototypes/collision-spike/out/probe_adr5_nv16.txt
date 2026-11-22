@@ -1,0 +1,145 @@
+=== run 2026-11-22T01:09:23 source=res://import_adr45/nv16/fixture.glb engine=4.8-beta3 (official) editor_hint=true main_thread=true
+setting physics/3d/physics_engine=Jolt Physics enable_ray_cast_face_index=false server_class=PhysicsServer3D
+PhysicsIntersectRayResult3D props=["position", "normal", "collider_rid", "collider_id", "collider", "collider_shape", "collider_face_index"]
+mesh triangles=16 (from 16 owners), synthetic floor=2 deck=1
+rids space=RID(399453433364480) shapes=[RID(399462023299075), RID(399466318266372), RID(399470613233669)] bodies=[RID(399474908200963), RID(399479203168260)]
+direct state null=false
+query defaults hit_back_faces=true hit_from_inside=false
+  FAIL mesh f0 Barrier/s0/t0 front | got face=-1 shape=0 pos=(7.000854, 1.0, -26.66667) n=(-1.0, 0.0, 0.0) rid_match=n/a | expect face=0 shape=0 pos=(7.0, 1.0, -26.66667) n=(-1.0, 0.0, 0.0)
+  OK mesh f0 Barrier/s0/t0 back | got MISS | expect MISS
+  FAIL mesh f1 Barrier/s0/t1 front | got face=-1 shape=0 pos=(7.000854, 0.5, -13.33333) n=(-1.0, 0.0, 0.0) rid_match=n/a | expect face=1 shape=0 pos=(7.0, 0.5, -13.33333) n=(-1.0, 0.0, 0.0)
+  OK mesh f1 Barrier/s0/t1 back | got MISS | expect MISS
+  FAIL mesh f2 NegRoad/s0/t0 front | got face=-1 shape=0 pos=(18.66667, 0.0, -0.666667) n=(0.0, -1.0, 0.0) rid_match=n/a | expect face=2 shape=0 pos=(18.66667, 0.0, -0.666667) n=(0.0, -1.0, 0.0)
+  OK mesh f2 NegRoad/s0/t0 back | got MISS | expect MISS
+  FAIL mesh f3 NegRoad/s0/t1 front | got face=-1 shape=0 pos=(19.33333, 0.0, -1.333333) n=(0.0, -1.0, 0.0) rid_match=n/a | expect face=3 shape=0 pos=(19.33333, 0.0, -1.333333) n=(0.0, -1.0, 0.0)
+  OK mesh f3 NegRoad/s0/t1 back | got MISS | expect MISS
+  FAIL mesh f4 Plain/s0/t0 front | got face=-1 shape=0 pos=(30.66667, 0.0, -25.33333) n=(0.0, 1.0, 0.0) rid_match=n/a | expect face=4 shape=0 pos=(30.66667, 0.0, -25.33333) n=(0.0, 1.0, 0.0)
+  OK mesh f4 Plain/s0/t0 back | got MISS | expect MISS
+  FAIL mesh f5 Plain/s0/t1 front | got face=-1 shape=0 pos=(30.33333, 0.0, -25.66667) n=(0.0, 1.0, 0.0) rid_match=n/a | expect face=5 shape=0 pos=(30.33333, 0.0, -25.66667) n=(0.0, 1.0, 0.0)
+  OK mesh f5 Plain/s0/t1 back | got MISS | expect MISS
+  FAIL mesh f6 Road/s0/t0 front | got face=-1 shape=0 pos=(2.330316, 0.0, -13.34029) n=(0.0, 1.0, 0.0) rid_match=n/a | expect face=6 shape=0 pos=(2.330316, 0.0, -13.34029) n=(0.0, 1.0, 0.0)
+  OK mesh f6 Road/s0/t0 back | got MISS | expect MISS
+  FAIL mesh f7 Road/s0/t1 front | got face=-1 shape=0 pos=(-2.334842, 0.0, -26.68058) n=(0.0, 1.0, 0.0) rid_match=n/a | expect face=7 shape=0 pos=(-2.334842, 0.0, -26.68058) n=(0.0, 1.0, 0.0)
+  OK mesh f7 Road/s0/t1 back | got MISS | expect MISS
+  FAIL mesh f8 Road/s0/t2 front | got face=-1 shape=0 pos=(1998.365, 3.333333, -1903.76) n=(0.0, 1.0, 0.0) rid_match=n/a | expect face=8 shape=0 pos=(1998.365, 3.333333, -1903.76) n=(0.0, 1.0, 0.0)
+  OK mesh f8 Road/s0/t2 back | got MISS | expect MISS
+  FAIL mesh f9 Road/s0/t3 front | got face=-1 shape=0 pos=(1996.741, 3.333333, -1907.005) n=(0.0, 1.0, 0.0) rid_match=n/a | expect face=9 shape=0 pos=(1996.741, 3.333333, -1907.005) n=(0.0, 1.0, 0.0)
+  OK mesh f9 Road/s0/t3 back | got MISS | expect MISS
+  FAIL mesh f10 Road/s1/t0 front | got face=-1 shape=0 pos=(-8.672607, 0.0, -13.3366) n=(0.0, 1.0, 0.0) rid_match=n/a | expect face=10 shape=0 pos=(-8.672607, 0.0, -13.3366) n=(0.0, 1.0, 0.0)
+  OK mesh f10 Road/s1/t0 back | got MISS | expect MISS
+  FAIL mesh f11 Road/s1/t1 front | got face=-1 shape=0 pos=(-10.34521, 0.0, -26.6683) n=(0.0, 1.0, 0.0) rid_match=n/a | expect face=11 shape=0 pos=(-10.34521, 0.0, -26.6683) n=(0.0, 1.0, 0.0)
+  OK mesh f11 Road/s1/t1 back | got MISS | expect MISS
+  FAIL mesh f12 Road/s1/t2 front | got face=-1 shape=0 pos=(-1997.007, 0.0, 1996.492) n=(0.0, 1.0, 0.0) rid_match=n/a | expect face=12 shape=0 pos=(-1997.007, 0.0, 1996.492) n=(0.0, 1.0, 0.0)
+  OK mesh f12 Road/s1/t2 back | got MISS | expect MISS
+  FAIL mesh f13 Road/s1/t3 front | got face=-1 shape=0 pos=(-1998.498, 0.0, 1993.235) n=(0.0, 1.0, 0.0) rid_match=n/a | expect face=13 shape=0 pos=(-1998.498, 0.0, 1993.235) n=(0.0, 1.0, 0.0)
+  OK mesh f13 Road/s1/t3 back | got MISS | expect MISS
+  FAIL mesh f14 Thing/s0/t0 front | got face=-1 shape=0 pos=(30.66667, 0.0, -55.33333) n=(0.0, 1.0, 0.0) rid_match=n/a | expect face=14 shape=0 pos=(30.66667, 0.0, -55.33333) n=(0.0, 1.0, 0.0)
+  OK mesh f14 Thing/s0/t0 back | got MISS | expect MISS
+  FAIL mesh f15 Thing/s0/t1 front | got face=-1 shape=0 pos=(30.33333, 0.0, -55.66667) n=(0.0, 1.0, 0.0) rid_match=n/a | expect face=15 shape=0 pos=(30.33333, 0.0, -55.66667) n=(0.0, 1.0, 0.0)
+  OK mesh f15 Thing/s0/t1 back | got MISS | expect MISS
+  FAIL syn floor f0 | got face=-1 shape=0 pos=(-5.0, -50.0, -5.0) n=(0.0, 1.0, 0.0) rid_match=n/a | expect face=0 shape=0 pos=(-5.0, -50.0, -5.0) n=(0.0, 1.0, 0.0)
+  OK syn floor f1 | got MISS | expect MISS
+  FAIL syn deck f0 | got face=-1 shape=1 pos=(2.5, -48.0, -4.5) n=(0.0, 1.0, 0.0) rid_match=n/a | expect face=0 shape=1 pos=(2.5, -48.0, -4.5) n=(0.0, 1.0, 0.0)
+  OK syn miss | got MISS | expect MISS
+freed 2 bodies
+freed 3 shapes
+freed space
+RESULT checks=36 fails=18
+=== NOTE (harness): run above had override.cfg present; editor --import ignored it (setting read false). Next runs pin the setting temporarily in project.godot (restored after).
+=== RUN A: fresh import (.scn and .md5 deleted), face index pinned
+=== run 2026-11-22T01:10:00 source=res://import_adr45/nv16/fixture.glb engine=4.8-beta3 (official) editor_hint=true main_thread=true
+setting physics/3d/physics_engine=Jolt Physics enable_ray_cast_face_index=true server_class=PhysicsServer3D
+PhysicsIntersectRayResult3D props=["position", "normal", "collider_rid", "collider_id", "collider", "collider_shape", "collider_face_index"]
+mesh triangles=16 (from 16 owners), synthetic floor=2 deck=1
+rids space=RID(399221505130496) shapes=[RID(399230095065091), RID(399234390032388), RID(399238684999685)] bodies=[RID(399242979966979), RID(399247274934276)]
+direct state null=false
+query defaults hit_back_faces=true hit_from_inside=false
+  OK mesh f0 Barrier/s0/t0 front | got face=0 shape=0 pos=(7.000854, 1.0, -26.66667) n=(-1.0, 0.0, 0.0) rid_match=true | expect face=0 shape=0 pos=(7.0, 1.0, -26.66667) n=(-1.0, 0.0, 0.0)
+  OK mesh f0 Barrier/s0/t0 back | got MISS | expect MISS
+  OK mesh f1 Barrier/s0/t1 front | got face=1 shape=0 pos=(7.000854, 0.5, -13.33333) n=(-1.0, 0.0, 0.0) rid_match=true | expect face=1 shape=0 pos=(7.0, 0.5, -13.33333) n=(-1.0, 0.0, 0.0)
+  OK mesh f1 Barrier/s0/t1 back | got MISS | expect MISS
+  OK mesh f2 NegRoad/s0/t0 front | got face=2 shape=0 pos=(18.66667, 0.0, -0.666667) n=(0.0, -1.0, 0.0) rid_match=true | expect face=2 shape=0 pos=(18.66667, 0.0, -0.666667) n=(0.0, -1.0, 0.0)
+  OK mesh f2 NegRoad/s0/t0 back | got MISS | expect MISS
+  OK mesh f3 NegRoad/s0/t1 front | got face=3 shape=0 pos=(19.33333, 0.0, -1.333333) n=(0.0, -1.0, 0.0) rid_match=true | expect face=3 shape=0 pos=(19.33333, 0.0, -1.333333) n=(0.0, -1.0, 0.0)
+  OK mesh f3 NegRoad/s0/t1 back | got MISS | expect MISS
+  OK mesh f4 Plain/s0/t0 front | got face=4 shape=0 pos=(30.66667, 0.0, -25.33333) n=(0.0, 1.0, 0.0) rid_match=true | expect face=4 shape=0 pos=(30.66667, 0.0, -25.33333) n=(0.0, 1.0, 0.0)
+  OK mesh f4 Plain/s0/t0 back | got MISS | expect MISS
+  OK mesh f5 Plain/s0/t1 front | got face=5 shape=0 pos=(30.33333, 0.0, -25.66667) n=(0.0, 1.0, 0.0) rid_match=true | expect face=5 shape=0 pos=(30.33333, 0.0, -25.66667) n=(0.0, 1.0, 0.0)
+  OK mesh f5 Plain/s0/t1 back | got MISS | expect MISS
+  OK mesh f6 Road/s0/t0 front | got face=6 shape=0 pos=(2.330316, 0.0, -13.34029) n=(0.0, 1.0, 0.0) rid_match=true | expect face=6 shape=0 pos=(2.330316, 0.0, -13.34029) n=(0.0, 1.0, 0.0)
+  OK mesh f6 Road/s0/t0 back | got MISS | expect MISS
+  OK mesh f7 Road/s0/t1 front | got face=7 shape=0 pos=(-2.334842, 0.0, -26.68058) n=(0.0, 1.0, 0.0) rid_match=true | expect face=7 shape=0 pos=(-2.334842, 0.0, -26.68058) n=(0.0, 1.0, 0.0)
+  OK mesh f7 Road/s0/t1 back | got MISS | expect MISS
+  OK mesh f8 Road/s0/t2 front | got face=8 shape=0 pos=(1998.365, 3.333333, -1903.76) n=(0.0, 1.0, 0.0) rid_match=true | expect face=8 shape=0 pos=(1998.365, 3.333333, -1903.76) n=(0.0, 1.0, 0.0)
+  OK mesh f8 Road/s0/t2 back | got MISS | expect MISS
+  OK mesh f9 Road/s0/t3 front | got face=9 shape=0 pos=(1996.741, 3.333333, -1907.005) n=(0.0, 1.0, 0.0) rid_match=true | expect face=9 shape=0 pos=(1996.741, 3.333333, -1907.005) n=(0.0, 1.0, 0.0)
+  OK mesh f9 Road/s0/t3 back | got MISS | expect MISS
+  OK mesh f10 Road/s1/t0 front | got face=10 shape=0 pos=(-8.672607, 0.0, -13.3366) n=(0.0, 1.0, 0.0) rid_match=true | expect face=10 shape=0 pos=(-8.672607, 0.0, -13.3366) n=(0.0, 1.0, 0.0)
+  OK mesh f10 Road/s1/t0 back | got MISS | expect MISS
+  OK mesh f11 Road/s1/t1 front | got face=11 shape=0 pos=(-10.34521, 0.0, -26.6683) n=(0.0, 1.0, 0.0) rid_match=true | expect face=11 shape=0 pos=(-10.34521, 0.0, -26.6683) n=(0.0, 1.0, 0.0)
+  OK mesh f11 Road/s1/t1 back | got MISS | expect MISS
+  OK mesh f12 Road/s1/t2 front | got face=12 shape=0 pos=(-1997.007, 0.0, 1996.492) n=(0.0, 1.0, 0.0) rid_match=true | expect face=12 shape=0 pos=(-1997.007, 0.0, 1996.492) n=(0.0, 1.0, 0.0)
+  OK mesh f12 Road/s1/t2 back | got MISS | expect MISS
+  OK mesh f13 Road/s1/t3 front | got face=13 shape=0 pos=(-1998.498, 0.0, 1993.235) n=(0.0, 1.0, 0.0) rid_match=true | expect face=13 shape=0 pos=(-1998.498, 0.0, 1993.235) n=(0.0, 1.0, 0.0)
+  OK mesh f13 Road/s1/t3 back | got MISS | expect MISS
+  OK mesh f14 Thing/s0/t0 front | got face=14 shape=0 pos=(30.66667, 0.0, -55.33333) n=(0.0, 1.0, 0.0) rid_match=true | expect face=14 shape=0 pos=(30.66667, 0.0, -55.33333) n=(0.0, 1.0, 0.0)
+  OK mesh f14 Thing/s0/t0 back | got MISS | expect MISS
+  OK mesh f15 Thing/s0/t1 front | got face=15 shape=0 pos=(30.33333, 0.0, -55.66667) n=(0.0, 1.0, 0.0) rid_match=true | expect face=15 shape=0 pos=(30.33333, 0.0, -55.66667) n=(0.0, 1.0, 0.0)
+  OK mesh f15 Thing/s0/t1 back | got MISS | expect MISS
+  OK syn floor f0 | got face=0 shape=0 pos=(-5.0, -50.0, -5.0) n=(0.0, 1.0, 0.0) rid_match=true | expect face=0 shape=0 pos=(-5.0, -50.0, -5.0) n=(0.0, 1.0, 0.0)
+  OK syn floor f1 | got MISS | expect MISS
+  OK syn deck f0 | got face=0 shape=1 pos=(2.5, -48.0, -4.5) n=(0.0, 1.0, 0.0) rid_match=true | expect face=0 shape=1 pos=(2.5, -48.0, -4.5) n=(0.0, 1.0, 0.0)
+  OK syn miss | got MISS | expect MISS
+freed 2 bodies
+freed 3 shapes
+freed space
+RESULT checks=36 fails=0
+=== RUN B: reimport (.md5 deleted only), face index pinned
+=== NOTE (harness): RUN B with only the .md5 deleted did NOT reimport (no post_import, .md5 not recreated, exit 0). RUN B2: .md5 still deleted + .godot/editor/filesystem_cache10 deleted
+=== run 2026-11-22T01:10:37 source=res://import_adr45/nv16/fixture.glb engine=4.8-beta3 (official) editor_hint=true main_thread=true
+setting physics/3d/physics_engine=Jolt Physics enable_ray_cast_face_index=true server_class=PhysicsServer3D
+PhysicsIntersectRayResult3D props=["position", "normal", "collider_rid", "collider_id", "collider", "collider_shape", "collider_face_index"]
+mesh triangles=16 (from 16 owners), synthetic floor=2 deck=1
+rids space=RID(400243707346944) shapes=[RID(400252297281539), RID(400256592248836), RID(400260887216133)] bodies=[RID(400265182183427), RID(400269477150724)]
+direct state null=false
+query defaults hit_back_faces=true hit_from_inside=false
+  OK mesh f0 Barrier/s0/t0 front | got face=0 shape=0 pos=(7.000854, 1.0, -26.66667) n=(-1.0, 0.0, 0.0) rid_match=true | expect face=0 shape=0 pos=(7.0, 1.0, -26.66667) n=(-1.0, 0.0, 0.0)
+  OK mesh f0 Barrier/s0/t0 back | got MISS | expect MISS
+  OK mesh f1 Barrier/s0/t1 front | got face=1 shape=0 pos=(7.000854, 0.5, -13.33333) n=(-1.0, 0.0, 0.0) rid_match=true | expect face=1 shape=0 pos=(7.0, 0.5, -13.33333) n=(-1.0, 0.0, 0.0)
+  OK mesh f1 Barrier/s0/t1 back | got MISS | expect MISS
+  OK mesh f2 NegRoad/s0/t0 front | got face=2 shape=0 pos=(18.66667, 0.0, -0.666667) n=(0.0, -1.0, 0.0) rid_match=true | expect face=2 shape=0 pos=(18.66667, 0.0, -0.666667) n=(0.0, -1.0, 0.0)
+  OK mesh f2 NegRoad/s0/t0 back | got MISS | expect MISS
+  OK mesh f3 NegRoad/s0/t1 front | got face=3 shape=0 pos=(19.33333, 0.0, -1.333333) n=(0.0, -1.0, 0.0) rid_match=true | expect face=3 shape=0 pos=(19.33333, 0.0, -1.333333) n=(0.0, -1.0, 0.0)
+  OK mesh f3 NegRoad/s0/t1 back | got MISS | expect MISS
+  OK mesh f4 Plain/s0/t0 front | got face=4 shape=0 pos=(30.66667, 0.0, -25.33333) n=(0.0, 1.0, 0.0) rid_match=true | expect face=4 shape=0 pos=(30.66667, 0.0, -25.33333) n=(0.0, 1.0, 0.0)
+  OK mesh f4 Plain/s0/t0 back | got MISS | expect MISS
+  OK mesh f5 Plain/s0/t1 front | got face=5 shape=0 pos=(30.33333, 0.0, -25.66667) n=(0.0, 1.0, 0.0) rid_match=true | expect face=5 shape=0 pos=(30.33333, 0.0, -25.66667) n=(0.0, 1.0, 0.0)
+  OK mesh f5 Plain/s0/t1 back | got MISS | expect MISS
+  OK mesh f6 Road/s0/t0 front | got face=6 shape=0 pos=(2.330316, 0.0, -13.34029) n=(0.0, 1.0, 0.0) rid_match=true | expect face=6 shape=0 pos=(2.330316, 0.0, -13.34029) n=(0.0, 1.0, 0.0)
+  OK mesh f6 Road/s0/t0 back | got MISS | expect MISS
+  OK mesh f7 Road/s0/t1 front | got face=7 shape=0 pos=(-2.334842, 0.0, -26.68058) n=(0.0, 1.0, 0.0) rid_match=true | expect face=7 shape=0 pos=(-2.334842, 0.0, -26.68058) n=(0.0, 1.0, 0.0)
+  OK mesh f7 Road/s0/t1 back | got MISS | expect MISS
+  OK mesh f8 Road/s0/t2 front | got face=8 shape=0 pos=(1998.365, 3.333333, -1903.76) n=(0.0, 1.0, 0.0) rid_match=true | expect face=8 shape=0 pos=(1998.365, 3.333333, -1903.76) n=(0.0, 1.0, 0.0)
+  OK mesh f8 Road/s0/t2 back | got MISS | expect MISS
+  OK mesh f9 Road/s0/t3 front | got face=9 shape=0 pos=(1996.741, 3.333333, -1907.005) n=(0.0, 1.0, 0.0) rid_match=true | expect face=9 shape=0 pos=(1996.741, 3.333333, -1907.005) n=(0.0, 1.0, 0.0)
+  OK mesh f9 Road/s0/t3 back | got MISS | expect MISS
+  OK mesh f10 Road/s1/t0 front | got face=10 shape=0 pos=(-8.672607, 0.0, -13.3366) n=(0.0, 1.0, 0.0) rid_match=true | expect face=10 shape=0 pos=(-8.672607, 0.0, -13.3366) n=(0.0, 1.0, 0.0)
+  OK mesh f10 Road/s1/t0 back | got MISS | expect MISS
+  OK mesh f11 Road/s1/t1 front | got face=11 shape=0 pos=(-10.34521, 0.0, -26.6683) n=(0.0, 1.0, 0.0) rid_match=true | expect face=11 shape=0 pos=(-10.34521, 0.0, -26.6683) n=(0.0, 1.0, 0.0)
+  OK mesh f11 Road/s1/t1 back | got MISS | expect MISS
+  OK mesh f12 Road/s1/t2 front | got face=12 shape=0 pos=(-1997.007, 0.0, 1996.492) n=(0.0, 1.0, 0.0) rid_match=true | expect face=12 shape=0 pos=(-1997.007, 0.0, 1996.492) n=(0.0, 1.0, 0.0)
+  OK mesh f12 Road/s1/t2 back | got MISS | expect MISS
+  OK mesh f13 Road/s1/t3 front | got face=13 shape=0 pos=(-1998.498, 0.0, 1993.235) n=(0.0, 1.0, 0.0) rid_match=true | expect face=13 shape=0 pos=(-1998.498, 0.0, 1993.235) n=(0.0, 1.0, 0.0)
+  OK mesh f13 Road/s1/t3 back | got MISS | expect MISS
+  OK mesh f14 Thing/s0/t0 front | got face=14 shape=0 pos=(30.66667, 0.0, -55.33333) n=(0.0, 1.0, 0.0) rid_match=true | expect face=14 shape=0 pos=(30.66667, 0.0, -55.33333) n=(0.0, 1.0, 0.0)
+  OK mesh f14 Thing/s0/t0 back | got MISS | expect MISS
+  OK mesh f15 Thing/s0/t1 front | got face=15 shape=0 pos=(30.33333, 0.0, -55.66667) n=(0.0, 1.0, 0.0) rid_match=true | expect face=15 shape=0 pos=(30.33333, 0.0, -55.66667) n=(0.0, 1.0, 0.0)
+  OK mesh f15 Thing/s0/t1 back | got MISS | expect MISS
+  OK syn floor f0 | got face=0 shape=0 pos=(-5.0, -50.0, -5.0) n=(0.0, 1.0, 0.0) rid_match=true | expect face=0 shape=0 pos=(-5.0, -50.0, -5.0) n=(0.0, 1.0, 0.0)
+  OK syn floor f1 | got MISS | expect MISS
+  OK syn deck f0 | got face=0 shape=1 pos=(2.5, -48.0, -4.5) n=(0.0, 1.0, 0.0) rid_match=true | expect face=0 shape=1 pos=(2.5, -48.0, -4.5) n=(0.0, 1.0, 0.0)
+  OK syn miss | got MISS | expect MISS
+freed 2 bodies
+freed 3 shapes
+freed space
+RESULT checks=36 fails=0
