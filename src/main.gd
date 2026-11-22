@@ -1392,8 +1392,6 @@ func _net_log_tick(dt: float) -> void:
 	_perf_phys_max_ms = 0.0
 
 
-# Debug (netlog runs): one "[height]" line per kart, so two PCs can be compared on the same
-# race-clock second. h is the kart's drawn height, road the track surface under its position.
 ## Debug (autopilot runs): seconds between "[surface]" lines while the local kart is on a surface.
 const SURFACE_LOG_INTERVAL: float = 0.25
 var _surface_log_last: StringName = &"-"
@@ -1418,6 +1416,8 @@ func _log_surface(dt: float) -> void:
 			_sim.surface_effect.grip_mult if _sim.surface_effect != null else 1.0])
 
 
+# Debug (netlog runs): one "[height]" line per kart, so two PCs can be compared on the same
+# race-clock second. h is the kart's drawn height, road the track surface under its position.
 func _log_heights() -> void:
 	for r in _racers:
 		var q: TrackModel.Query = _track.query(r.sim.position, -1, r.sim.height)

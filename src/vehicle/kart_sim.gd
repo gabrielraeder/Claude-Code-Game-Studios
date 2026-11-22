@@ -661,6 +661,8 @@ func _update_surface(dt: float, track: TrackModel) -> void:
 		if surface.tail_time > 0.0:
 			_tail_type = surface
 			_tail_time = surface.tail_time
+		else:
+			_clear_surface_tail()   # new ground ends a slick's tail (TD-004)
 		surface_effect = surface
 	else:
 		_tail_time = maxf(_tail_time - dt, 0.0)
@@ -668,6 +670,12 @@ func _update_surface(dt: float, track: TrackModel) -> void:
 		if _tail_time <= 0.0:
 			_tail_type = null
 	surface_cap = _surface_cap_now()
+
+
+# Ends a slick's grip tail at once: on reaching other ground, and on a respawn (TD-004).
+func _clear_surface_tail() -> void:
+	_tail_type = null
+	_tail_time = 0.0
 
 
 ## Reads the surface under the kart without simulating (karts drawn from network data: the visual
@@ -1006,6 +1014,8 @@ func _respawn(track: TrackModel) -> void:
 	hit_immunity_time = track.data.respawn_immunity_time
 	spin_time = 0.0
 	sink_progress = 0.0
+	_clear_surface_tail()
+	surface_effect = null
 	var safe_road: TrackModel.Path = track.path_of(_safe_path)
 	var st: Vector2 = safe_road.seg_t_at(_safe_along - track.data.respawn_back_off)
 	var q: TrackModel.Query = track.query(position, track.hint_for(_safe_path, _safe_along),
