@@ -40,7 +40,7 @@
 #   unsupported layout, with its number.
 
 version: 1
-last_updated: ""
+last_updated: "2026-11-21"
 
 # ─── STATE OWNERSHIP ─────────────────────────────────────────────────────────
 # Who is the authoritative owner of each piece of shared game state.
@@ -53,7 +53,27 @@ last_updated: ""
 # interface: how other systems access this state (read-only property, method call,
 #   signal, shared resource, etc.) — this is the contract other ADRs depend on.
 
-state_ownership: []
+state_ownership:
+  - state: race_clock
+    status: active
+    owner_system: race-session-and-synced-clock
+    adr: docs/architecture/adr-0001-simulation-conventions-and-code-layout.md
+    interface: "Synced race time is authoritative; target tick = floor(synced_time / SIM_DT); simulation evaluates tick n at t = n * SIM_DT; continuous synced time for presentation only"
+    write_access: race-session-only
+    referenced_by:
+      - docs/architecture/adr-0001-simulation-conventions-and-code-layout.md
+    added: 2026-11-21
+    revised: ""
+  - state: kart_orientation
+    status: active
+    owner_system: kart-physics
+    adr: docs/architecture/adr-0001-simulation-conventions-and-code-layout.md
+    interface: "BodyState.basis (Basis, -Z heading, Y up, re-orthonormalised every tick); yaw is derived only; gravity is a per-body vector"
+    write_access: kart-physics-only
+    referenced_by:
+      - docs/architecture/adr-0001-simulation-conventions-and-code-layout.md
+    added: 2026-11-21
+    revised: ""
 
 # Example:
 #
@@ -141,7 +161,37 @@ performance_budgets: []
 # Register an API decision when the choice is non-obvious and other ADRs might
 # make a different choice for the same purpose without knowing this was decided.
 
-api_decisions: []
+api_decisions:
+  - purpose: simulation_timestep
+    status: active
+    api: "const SIM_DT = 1.0 / 60.0 in _physics_process, ticks pinned to 60, max steps 8, asserted at boot"
+    not: "the delta argument; Engine.get_physics_interpolation_fraction() for visuals"
+    adr: docs/architecture/adr-0001-simulation-conventions-and-code-layout.md
+    reason: "Reproducible ticks that follow the synced clock; fraction comes from the synced clock"
+    referenced_by:
+      - docs/architecture/adr-0001-simulation-conventions-and-code-layout.md
+    added: 2026-11-21
+    revised: ""
+  - purpose: world_axes_and_blender_export
+    status: active
+    api: "Godot +Y up, -Z forward, metres; Blender glTF export +Y Up (Blender +Y -> Godot -Z); pose empties +Y along travel; kart models authored facing Blender -Y and turned 180 deg in the kart scene"
+    not: "rotating or rescaling whole tracks at import"
+    adr: docs/architecture/adr-0001-simulation-conventions-and-code-layout.md
+    reason: "One convention from Blender to the wire"
+    referenced_by:
+      - docs/architecture/adr-0001-simulation-conventions-and-code-layout.md
+    added: 2026-11-21
+    revised: ""
+  - purpose: mirror_mode
+    status: active
+    api: "Once at track load: positions x -> -x, bases M*B*M with M = diag(-1,1,1), side data swapped, winding flipped; TrackCollision and CourseData expose mirrored()"
+    not: "per-tick mirroring or inverting steering"
+    adr: docs/architecture/adr-0001-simulation-conventions-and-code-layout.md
+    reason: "Mirror without a second set of track data"
+    referenced_by:
+      - docs/architecture/adr-0001-simulation-conventions-and-code-layout.md
+    added: 2026-11-21
+    revised: ""
 
 # Example:
 #
@@ -167,7 +217,25 @@ api_decisions: []
 # Register a pattern when an ADR explicitly bans it AND other ADRs might
 # unknowingly use it (i.e., it's a tempting but wrong approach for this project).
 
-forbidden_patterns: []
+forbidden_patterns:
+  - pattern: global_random_in_simulation
+    status: active
+    description: "Simulation code must not call global randf, randi or randomize; it uses its per-consumer RandomNumberGenerator seeded from hash(race_seed, racer_slot, system_id)."
+    why: "Global random breaks same-machine reproducibility and shifts every trace when one system adds a call."
+    adr: docs/architecture/adr-0001-simulation-conventions-and-code-layout.md
+    added: 2026-11-21
+  - pattern: stored_scalar_yaw_or_hardcoded_down
+    status: active
+    description: "New simulation code must not store a scalar yaw as state or hard-code Vector3.DOWN as gravity."
+    why: "Breaks walls, loops and anti-gravity."
+    adr: docs/architecture/adr-0001-simulation-conventions-and-code-layout.md
+    added: 2026-11-21
+  - pattern: new_code_referencing_legacy
+    status: active
+    description: "New code must not reference src/legacy/, reuse a frozen class_name, or read a frozen .tres instance; shared data classes live in src/data/ and change only additively."
+    why: "Keeps the frozen 2.5D game and its regression oracle unchanged until A3."
+    adr: docs/architecture/adr-0001-simulation-conventions-and-code-layout.md
+    added: 2026-11-21
 
 # Example:
 #
