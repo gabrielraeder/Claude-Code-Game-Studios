@@ -118,7 +118,7 @@ Boxes and the Blender Track Pipeline, not separate systems.
 | **MVP** | The core loop running on the new foundation: Phase A done, Castle and Dungeon migrated, every built system working again. **Rule: the 2.5D build stays playable and releasable on main until checkpoint A3 is signed by the owner** | Phase A complete | Design FIRST |
 | **Vertical Slice** | One cup-quality experience: Mario Kart-grade presentation, animation, scenery, pack racing, tricks | Phase A + presentation | Design SECOND |
 | **Alpha** | Every Phase B feature designed and landed one at a time to the quality bar (Alpha-1: Pillars 1 and 2 features; Alpha-2: modes and meta) | Phase B complete | Design THIRD |
-| **Full Vision** | Content-complete cups and polish, then battle and adventure modes | Release among friends | Design as needed |
+| **Full Vision** | 3 cups, 12 tracks (owner 2026-11-21) and polish, then battle and adventure modes | Release among friends | Design as needed |
 
 ---
 
@@ -279,7 +279,7 @@ above marked "Implemented (2.5D, migrate)" read as "rebuilt on the new core; the
 1. **Friends play session on the current 2.5D build before story 022 closes:** yes. The 2.5D game stays playable on main until A3.
 2. **Blender Asset Pipeline (027):** moved after the migration. Phase A order is now 022, 023, 024, 025; 027 follows 025 (Vertical Slice). Blender *tracks* (024) stay in Phase A.
 3. **Room Codes & Relay (021):** moved up to Vertical Slice, right after Phase A and before the graphics pass.
-4. Full Vision cup and track count is still unset (a provisional number would give that tier an end).
+4. Cups and tracks: full vision 3 cups / 12 tracks; MVP 1 cup / 4 tracks (owner, 2026-11-21).
 
 ---
 

@@ -242,6 +242,19 @@ From `.claude/docs/technical-preferences.md`: 60 fps, 16.6 ms frame, ≤ 2000 dr
 - **Bandwidth (estimate, verified with `NetStats`):** ~84 B × 30 Hz ≈ 2.5 KB/s per kart; ~30 KB/s down per client; ~330 KB/s host upload for 12 before overhead.
 - **Tools:** the mesh `track_check` samples rather than re-running the ~120,000 single-kart ticks of today's infield check.
 
+## Target Hardware
+
+Proposed 2026-11-21 from market research (Sonic Racing CrossWorlds' official Steam specs, Garfield Kart 2's, the October 2026 Steam Hardware Survey, Switch 2 GPU comparisons); to be confirmed by measurement on real hardware before release.
+
+| Tier | Target | GPU | CPU | RAM |
+|---|---|---|---|---|
+| **Minimum** | 1080p, low-medium, 60 fps, as host of 12 racers | GTX 1650 / RX 580 / Intel Arc A380, 4 GB VRAM | 6 cores, Intel i5-8400 / Ryzen 5 2600 | 8 GB |
+| **Recommended** | 1080p high (or 1440p), 60 fps | GTX 1660 Super / RTX 2060 / RX 6600 | Intel i5-10400 / Ryzen 5 3600 | 16 GB |
+| **Development reference** | the owner's PC (high-end) | — | — | — |
+
+- The host's CPU matters as much as the GPU: it simulates 12 karts and 11 bots in GDScript every tick (budget ≤ 3 ms/tick above), so the minimum CPU is the one the budget is measured against.
+- Renderer stays Forward+. Intel integrated graphics (the owner's laptop) is below the minimum for Forward+ at this look; Godot's docs point to the Compatibility renderer for integrated GPUs. Support for it is an owner decision (QQ-06).
+
 ## Test Harness and Regression Oracle
 
 Today there is no `tests/` folder and no gdUnit4; evidence is `tools/track_check.gd` and hand-run shell scripts. The rebuild is test-first:
@@ -273,6 +286,6 @@ Today there is no `tests/` folder and no gdUnit4; evidence is `tools/track_check
 | QQ-02 | Which backend meets ≤ 3 ms/tick for 12 karts? | ADR-0002 spike, measured |
 | QQ-03 | Does the rebuilt kart match the frozen kart's feel and lap times within tolerance? | Step 3 traces, then A1 (owner) |
 | QQ-04 | Can a space state be queried outside the physics frame / headless? (Moot if the own grid wins.) | ADR-0002 spike |
-| QQ-05 | Number of cups/tracks for the full vision | Owner |
-| QQ-06 | A named minimum-spec PC | Owner |
+| QQ-05 | ~~Number of cups/tracks~~ **Resolved 2026-11-21:** full vision 3 cups / 12 tracks; MVP 1 cup / 4 tracks | Owner |
+| QQ-06 | ~~A named minimum-spec PC~~ **Proposed 2026-11-21** (market research, see Target Hardware); laptop (Intel iGPU) support decided separately | Owner |
 | QQ-07 | Re-pin when Godot 4.8 stable ships | `/setup-engine refresh` at stable |
