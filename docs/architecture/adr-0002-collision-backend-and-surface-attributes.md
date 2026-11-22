@@ -135,7 +135,7 @@ It must serve 12 karts within budget. It needs per-triangle surface ids for trac
      - **When `started_inside` is set** (by this rest check or by the analytic mover overlap), `sweep_walls` **returns true at once**: point, normal, `wall_attr`, `collider_id` and `collider_velocity` come from the overlap, `fraction = 0`, and **no cast runs** (the cast is blind from an overlapped start: probe F in `prototypes/collision-spike/out/probe_adr3_rest.txt`). If a static wall and a mover both overlap, the **deeper** one wins. The caller (ADR-0003) pushes out and calls again.
   2. `cast_motion_into` from `from` to `to`.
   3. If it hits, a rest check at the unsafe point.
-  4. If the cast is clear, a rest check at `to`.
+  4. If the cast is clear, a rest check at `to`. A hit here is a **touch**: `WallHit` reports `fraction = 1.0` and `started_inside = false` (the move completes; the caller does not slide). The field is named `fraction` everywhere.
   5. Plus an analytic sweep test against the movers in range, which **also sets `started_inside`** when a mover overlaps the kart at the start of the tick (a mover that moved into it).
   - `WallHit` carries point, normal, `wall_attr`, `fraction`, `started_inside`, `collider_id` (mover id, or 0) and `collider_velocity` (point velocity at the contact; zero for static walls).
   - This closes the start-overlap tunnelling hole: Jolt casts ignore start overlaps, and `backface_collision` does not help (Verified 5). Resolving the overlap is ADR-0003's job.

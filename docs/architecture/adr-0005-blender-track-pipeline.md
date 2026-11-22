@@ -335,6 +335,7 @@ Thresholds live in `TrackImportLimits` (`assets/data/core/track_import_limits.tr
 | I13 | Movers | A shape outside the three; a size ≤ 0; fewer than 2 keys; times not strictly increasing; period ≤ 0; the t = 0 key ≠ the node transform (§2) | — |
 | I14 | No collision nodes | Any `CollisionShape3D`, `CollisionObject3D` or `NavigationRegion3D` in the imported scene (ADR-0002: no collision nodes; NV-3) | — |
 | I15 | Course | `CourseBuilder.build` (ADR-0004 §14) returns any FAIL or NOT_ASSESSED line: the ADR-0004 §13 bake checks (sector rule, key coverage, respawn and grid invariants, areas, routes inside the road). **Runs at every import**; its lines are printed as `TRACK_IMPORT <verdict> I15.<id> …`. A FAIL refuses the file. Needs I11's `CollisionQuery`; NOT_ASSESSED when I5 or I11 failed | ADR-0004's WARN lines |
+| I16 Climbable | Kart step-up limit (ADR-0003): along every drivable route, ground that rises more than `max_step_up` (= ADR-0003 `probe_lift`, 0.5 m) within one sample, or is steeper than the ground slope limit, must be on the wall layer; ground rays cannot climb it and the wall sweep does not see ground triangles | FAIL names the route, sample and height |
 
 - **NOT ASSESSED:** a check whose input is missing prints `NOT_ASSESSED` with the reason, and it refuses the file like a FAIL. For example, I9 with no route points, or I11 when I5 failed.
 - **It is ranked** below FAIL in the summary and above PASS.
