@@ -50,7 +50,7 @@ battle and adventure modes.
 | # | System Name | Category | Priority | Status | Design Doc | Depends On |
 |---|-------------|----------|----------|--------|------------|------------|
 | 1 | Input & Bindings | Core | MVP | Implemented | — | — |
-| 2 | Track Collision & Surface Attributes | Core | MVP | Not Started | — | — |
+| 2 | Track Collision & Surface Attributes | Core | MVP | In Review (owner and TD decisions open) | design/gdd/track-collision-and-surfaces.md | — |
 | 3 | Course Data (checkpoints, routes, respawns) | Core | MVP | In Review (owner decisions open) | design/gdd/course-data.md | Track Collision & Surface Attributes |
 | 4 | Network Session & Sync | Core | MVP | Implemented (migrate: 3D snapshot, wire version bump) | — | — |
 | 5 | Blender Asset Pipeline (dogs, karts, props; owner 2026-11-21: after the migration, story 027 follows 025) | Core | Vertical Slice | Not Started | — | — |
@@ -288,7 +288,7 @@ above marked "Implemented (2.5D, migrate)" read as "rebuilt on the new core; the
 | Metric | Count |
 |--------|-------|
 | Total systems identified | 41 |
-| Design docs started | 2 |
+| Design docs started | 3 |
 | Design docs reviewed | 0 |
 | Design docs approved | 0 |
 | MVP systems designed | 0/22 |
