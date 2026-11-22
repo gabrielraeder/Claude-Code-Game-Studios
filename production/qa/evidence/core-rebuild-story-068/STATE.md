@@ -11,3 +11,5 @@
 - [x] commands.test 426/0 (gdunit-commands-test.log); release-dll run done (release-dll-order-run*.{log,md}). NEXT: regression.sh, parse check, core_greps final
 - regression-full (1st): 9/10, native_negative FAIL greps_real_call_passes: scratch tree lacked race_sim.cpp (new story-068 rule). Fixed mk_tree stub. Re-running full -> regression-final.txt
 - [x] ALL DONE: --check PASS, commands.test 426/0, regression-final 10/10, parse ok, core_greps 12 PASS. Machine free.
+
+- 2026-11-22 ~20:50: owner APPROVED the ADR-0003 buffer-layout amendment (asked in session). Reviews saved: review-lp.md (CONCERNS), review-engine.md (1 defect D1 event-clear detach), review-ql.md (GAPS). NEXT SESSION: apply D1 first, then LP/QL/engine items, own calls, close.
