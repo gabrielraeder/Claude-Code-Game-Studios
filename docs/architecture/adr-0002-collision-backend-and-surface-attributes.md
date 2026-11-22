@@ -209,6 +209,7 @@ class_name WallHit     # point, normal, wall_attr (= wall_attr_ids[collider_shap
 class_name QueryCursor # reused PhysicsRayQueryParameters3D, PhysicsShapeQueryParameters3D, result objects, SphereShape3D
 class_name MoverDef    # id, shape, extents, period, keys
 class_name TrackCollisionData extends Resource
+const FORMAT_VERSION: int = 1                            ## bumped on any schema change; part of ADR-0005's bake_key
 func mirrored() -> TrackCollisionData                    # new object; never mutates self
 ```
 
