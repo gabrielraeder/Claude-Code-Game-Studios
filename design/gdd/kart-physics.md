@@ -387,7 +387,7 @@ end of tick); ADR-0006 owns the wire encoding.
 | `moved` | length of this tick's actual displacement, 0 on teleport (input to `CourseData.progress`) | body |
 | `teleported` | respawn, launch, resync hold | body |
 | `distance` | course distance (local: `CourseProgress`; remote: wire), for the broadphase | composition root |
-| `steer`, `accel` | pass-through from `KartIntent` | body |
+| `steer`, `throttle` | pass-through from `KartIntent` (`throttle` = throttle − brake in [−1, 1], ADR-0003 v4) | body |
 | `drift_state`, `boost`, `spin`, `sinking` | copied in from `DriveState` | controller |
 
 **Vehicle values — physics fields** (`assets/data/vehicles/*.tres`, forked unchanged to

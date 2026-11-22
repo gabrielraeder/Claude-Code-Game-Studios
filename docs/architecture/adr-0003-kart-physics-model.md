@@ -12,7 +12,25 @@ Proposed
 ## Decision Makers
 Drafted by engine-programmer (subagent, orchestrated run) from ADR-0001, ADR-0002 v5, ADR-0004, the amended performance budgets in `architecture.md`, the per-system profile of the frozen tick, and the frozen kart. The frozen sources were read for feel and for the network contact model only, never imported: `src/legacy/vehicle/kart_sim.gd`, `src/legacy/main.gd` (contacts, around lines 540-610).
 
-This is **v3**, after the TD-ADR re-review of v2, which found the bar met. Three text fixes were applied:
+This is **v4**, after two inputs.
+
+**From the ADR-0006 TD review:**
+- the event bits are pinned in a table, and the low 8 are on the wire, so renumbering them bumps VERSION;
+- `KartSnapshot.accel` is renamed to `throttle`;
+- `resolve_all` takes a contact-eligible mask;
+- the remote broadphase uses the `distance` sampled at the drawn pose;
+- stale bumps from before a teleport are dropped.
+
+**From the Kart Physics GDD (`design/gdd/kart-physics.md`, Open decisions; options chosen by the owner's delegate and logged):**
+- P1 wall rebound through `bump_knockback × bounce`;
+- P2 wall turnback;
+- P4 each kart uses its own restitution, and each pair is resolved once;
+- P5 the impact test is `>=`;
+- P6 frozen mode;
+- P8 the height gate uses the smaller value;
+- P9 the hop is an explicit takeoff.
+
+v3 came after the TD-ADR re-review of v2, which found the bar met. Three text fixes were applied:
 - air events reach `drive()` through `DriveState` (§4 step 13);
 - support velocity is converted on landing, and the one-tick carry after leaving a mover was dropped;
 - the touch rule is `fraction == 1.0`.
@@ -170,7 +188,10 @@ It must also keep the feel the owner tuned over stories 001-011. Story 022 canno
 | `wall_cooldown`, `wall_slide_time` | `float` | Frozen wall-impact timers |
 | `bump_cooldown` | `float` | Gates the speed loss and the `bumped` signal, as in the frozen kart |
 | `pair_bump_mag`, `pair_bump_timer` | `PackedFloat32Array` | One entry per racer slot (sized from `RacerRegistry` capacity at race start). The max-merge dedup memory (§7), replacing the frozen `Dictionary` |
-| `events` | `int` bit flags + payload floats | Accumulated from the start of tick n (received events) through contact. Bits: took-off, landed (airtime, impact), wall hit (hard, angle), bumped (strength), depenetrated, teleported. Cleared only after the end-of-tick snapshot is written (§4) |
+| `events` | `int` bit flags + payload floats | Accumulated from the start of tick n (received events) through contact. The bit numbers are pinned in the §8 table, and the low 8 bits go on the wire. Cleared only after the end-of-tick snapshot is written (§4) |
+| `mode` | `int` enum | `ACTIVE` or `FROZEN` (sinking or falling; Fall & Respawn owns the rule, §8) |
+| `turnback_rate`, `wall_tangent` | `float`, `Vector3` | Frozen wall turnback (§5): rad/s and the target direction on the up plane |
+| `last_teleport_tick` | `int` | Tick of the last respawn, launch or resync hold. Received bumps from an earlier tick are dropped (§7) |
 | `tick` | `int` | Last stepped tick |
 
 The scalar yaw is derived only (`yaw_derived()`), as ADR-0001 requires.
@@ -181,8 +202,8 @@ The scalar yaw is derived only (`yaw_derived()`), as ADR-0001 requires.
 | `yaw_rate` | rad/s about the body's up. Ground or air rate; Driving chooses it from `snapshot.grounded` |
 | `target_speed` | m/s, signed, along the heading (§1) |
 | `grip` | 1/s lateral grip rate. The body lerps the velocity toward `heading × speed` at `clamp(grip × dt, 0, 1)` (frozen model). Driving applies drift grip, surface `grip_mult` and bank gain. The body clamps it to `wall_slide_grip` while `wall_slide_time > 0`, because that is wall physics |
-| `hop` | bool. When grounded, the body adds `hop_speed` (new `VehicleStats` field) to `ride_velocity`, so any takeoff goes through the normal `air_takeoff_gap` path (§5). **`hop_speed` stays 0.0 (visual hop only) through parity.** A physical hop is the owner's decision after the A1 sign-off. If it is enabled, a flight that a hop alone started (`hop_airborne`) never counts as trick airtime. The trick window stays in Driving |
-| `steer`, `throttle` | Pass-through to the snapshot, for audio and visuals |
+| `hop` | bool. **Explicit takeoff (GDD P9).** When grounded and `hop_speed > 0` (new `VehicleStats` field), the body sets `ride_velocity = hop_speed` and takes off at once: `grounded = false`, `hop_airborne = true`, `EV_TOOK_OFF` and `EV_HOP_AIRBORNE` set. **For that tick only, the ride clamp (`ride_max_gap`) is bypassed**. Otherwise the spring clamps the gap at 0.3 m, below the 0.45 m `air_takeoff_gap`, and a hop could never leave the ground. From the next tick on, the normal air path and landing apply. **`hop_speed` stays 0.0 (visual hop only) through parity.** A physical hop is the owner's decision after the A1 sign-off. If it is enabled, a flight that a hop alone started never counts as trick airtime. The trick window stays in Driving |
+| `steer`, `throttle` | Pass-through to the snapshot, for audio and visuals. `steer` is in [−1, 1]. `throttle` is the signed `throttle − brake`, in [−1, 1] |
 
 **DriveState persistence.**
 - `DriveState` is one object per racer. It lives as long as the race and is owned by the racer's controller in Gameplay.
@@ -275,10 +296,18 @@ After every simulated kart has stepped:
      - sweep the remainder.
   3. The **first** contact each tick runs the frozen wall response on `speed` and `velocity`:
      - the angle between the velocity and the wall tangent;
-     - impact above `wall_impact_threshold_angle` when the cooldown allows: speed loss, `wall_slide_time`;
+     - impact when `angle >= wall_impact_threshold_angle` (`>=`, as frozen; GDD P5) and the cooldown allows: speed loss, `wall_slide_time`;
      - otherwise scrape drag, scaled by the `WallAttrSet` entry for `wall_attr` (ADR-0002);
-     - optional bounce, from the wall attribute.
-     The remaining motion and the velocity both lose their into-wall component.
+     - **rebound (GDD P1):** `velocity −= n_h × into × (1 + (bump_knockback − 1) × bounce)`.
+       - `into` is the into-wall speed.
+       - `bump_knockback` is the per-vehicle frozen field: 1.4 for the cart and 1.9 for the bike, so the effective rebound is 0.4 and 0.9 of the into-wall speed.
+       - `bounce` is the wall attribute's value (default 1.0).
+       - With bounce 1.0 this is exactly the frozen `velocity -= outward × into_wall × bump_knockback`. With bounce 0 the kart only loses its into-wall component.
+     - **turnback (GDD P2):** set `turnback_rate = lerp(wall_turnback_min_rate, wall_turnback_max_rate, clamp(angle / wall_impact_max_angle, 0, 1))`, 30-90°/s (frozen `_wall_contact`).
+       - While touching a wall, or while `wall_slide_time > 0`, with `speed > 0`, the body turns the heading about up toward `wall_tangent`. That is the wall tangent on the up plane closest to the heading, and the turn is at most `turnback_rate × dt` per tick.
+       - The rate resets to 0 on a tick with no wall contact and no slide time.
+       - The frozen kart turned toward the road tangent. The wall tangent is its mesh equivalent, and it protects the parity "no wall-stuck" check.
+     The remaining motion loses its into-wall component.
   4. **Touch rule:** a hit with `fraction == 1.0` (and `started_inside = false`) is a **touch**. Per the ADR-0002 amendment, this is how a clear cast with a rest hit at `to` is reported. A touch is handled like this:
      - the kart moves the full motion;
      - there is no slide;
@@ -345,7 +374,7 @@ This section ports the frozen owner-authoritative model (`main.gd` `_resolve_kar
 
 - **Shape:** each kart is a segment of half-length `bump_half_length` along its heading, inflated by `bump_radius`.
   - Closest points between segments come from an allocation-free helper in `src/core/kart/`.
-  - **Vertical gate:** if `|d·up_i| > bump_max_height_diff`, there is no contact (decks, jumps).
+  - **Vertical gate:** if `|d·up_i| > min(bump_max_height_diff_i, bump_max_height_diff_j)`, there is no contact (decks, jumps). It uses the smaller of the two values, which is symmetric and frozen (`levels_apart`; GDD P8).
   - The contact normal is projected onto the up plane of kart i.
 - **Which pairs:**
   - A pair is resolved only if **at least one kart is simulated on this PC**. Pairs of two remote karts are skipped.
@@ -355,13 +384,18 @@ This section ports the frozen owner-authoritative model (`main.gd` `_resolve_kar
 - **Broadphase on course distance:**
   1. The sort key is `distance` modulo the lap length:
      - for local karts, from their `CourseProgress`;
-     - for remote karts, from the `distance` in their latest snapshot (ADR-0004 / ADR-0006).
+     - for remote karts, from the `distance` **sampled at the tick, at the drawn pose**: the remote buffer interpolated at `n × SIM_DT − view_delay`, the same sample as the remote pose (ADR-0004 / ADR-0006). The latest received snapshot's `distance` is about 6 m ahead of the drawn pose and would break the 2 m window.
+  - **Contact-eligible mask.** `resolve_all` takes a `contact_eligible` mask, set by the composition root. A kart is excluded (mask 0) when it is:
+    - **STALE** (disconnected);
+    - **EMPTY** (an unfilled slot);
+    - remote and extrapolated past `contact_extrapolation_max` (0.1 s, a `NetConfig` value owned by ADR-0006);
+    - in the body's frozen mode (§8).
   2. A preallocated slot list is insertion-sorted by that key each tick. The list is nearly sorted from tick to tick, so this is O(n).
   3. Pairs are candidates when their key difference is at most `2 × max(bump_half_length + bump_radius) + broadphase_margin` (2.0 m). The list wraps at the lap end.
   4. Karts with invalid progress (off course, flying, or relocated this tick) are tested against all others.
      - **All-pairs fallback:** a course that crosses itself at the same height (a figure-eight) is resolved with all pairs. Two karts at the crossing have far-apart `s`, so the broadphase would miss them. The track flag comes from Course Data. Story 022's brute-force cross-check catches a course that needs the flag and does not have it.
   5. Candidate pair keys `(i, j)` with i < j are sorted ascending and resolved in that order, for determinism (ADR-0001 §6).
-  6. Sinking or respawning karts are skipped.
+  6. Karts excluded by the `contact_eligible` mask are skipped. That includes sinking, falling and respawning karts, which are in frozen mode.
 - **Remote pose:**
   - A remote kart is tested at the **interpolated pose that `RemoteKartView` draws, sampled at the tick**: its buffer evaluated at `n × SIM_DT − view_delay`.
   - The composition root writes that sample into a `KartSnapshot` and passes it in. Core never references `src/networking/`.
@@ -376,13 +410,15 @@ This section ports the frozen owner-authoritative model (`main.gd` `_resolve_kar
     - This replaces the frozen 3-pass `_separate_karts` with its wall re-clamps, which was 38% of the frozen tick.
     - The cost is an overlap that lasts at most one tick (16.7 ms).
   - **Knock, when the karts are closing:**
-    - kart i takes `−n × closing × share × (1 + bump_restitution)`;
-    - kart j takes the rest;
+    - **each pair is resolved once** (the frozen kart resolved each ordered pair, so twice), and **each kart uses its own `bump_restitution`** (GDD P4):
+      - kart i takes `−n × closing × share_i × (1 + bump_restitution_i)`;
+      - kart j takes `n × closing × share_j × (1 + bump_restitution_j)`, where share_j = 1 − share_i;
     - strength is `closing / bump_full_impact_speed`;
     - the speed loss `bump_speed_loss × strength` applies behind each kart's `bump_cooldown`.
 - **Against a kart another PC owns:**
   - (a) The local kart takes the **full separation** into its own `pending_push`. Only the **knock** is split by share.
-  - The other kart's share of the knock (`n × closing × (1 − share) × (1 + bump_restitution)`) and the strength go to its owner as a reliable `KartEvent` bump. The owner applies it at the **start of its next tick** (§4 step 1).
+  - The other kart's share of the knock (`n × closing × (1 − share) × (1 + bump_restitution_other)`, from its `KartContactShape`), the strength and the **tick** of detection go to its owner as a reliable `KartEvent` bump. The owner applies it at the **start of its next tick** (§4 step 1).
+  - **The owner drops a received bump whose tick is earlier than its own `last_teleport_tick`.** A bump detected against a pose from before a respawn or resync must not shove the respawned kart.
   - This keeps the frozen rule: local hits apply in the same tick, events from other PCs apply on the next tick.
 - **Dedup: the frozen max-merge, not first-wins.**
   - For each other kart's slot, `pair_bump_mag` holds the largest knock magnitude felt from that kart within `bump_cooldown`.
@@ -392,12 +428,34 @@ This section ports the frozen owner-authoritative model (`main.gd` `_resolve_kar
 
 ### 8. Events and teleports
 - `apply_event(e: KartEvent)` runs at the start of a tick only (§4 step 1) and is followed by a snapshot refresh. It covers:
-  - bump (impulse, strength, from slot) → max-merge knock, speed loss, `bumped` bit;
+  - bump (impulse, strength, from slot, tick) → dropped if `tick < last_teleport_tick`; otherwise max-merge knock, speed loss, `bumped` bit;
   - respawn (pose);
   - launch (velocity, for cannons);
   - hold, for a clock resync.
 - Spin and hit effects go to `DriveState` through the controller, not to the body.
-- **Respawn, launch and resync hold** set `teleported` in the next snapshot (ADR-0001 §8). Respawn and resync hold also clear `velocity`, `knock`, `pending_push`, the spring state, the support and the pair memory.
+- **Frozen mode (GDD P6).** `BodyState.mode` is `ACTIVE` or `FROZEN`. Fall & Respawn sets it with `set_frozen(true)` when a sink or fall starts, and clears it on respawn.
+  - While FROZEN, `step` runs no integration, no queries and no contacts.
+  - `speed`, `velocity`, `knock` and `pending_push` are held at zero, and the snapshot is still written each tick.
+  - **Fall & Respawn owns the rule for that time:** sink progress, the fall pose (written through `place`) and the respawn timing.
+  - Received bumps are dropped while FROZEN.
+  - Every place where the frozen kart's state is touched during a sink or fall (`kart_sim.gd` `tick()` top, `_respawn`) moves to Fall & Respawn.
+- **Respawn, launch and resync hold** set `teleported` in the next snapshot (ADR-0001 §8), and set `last_teleport_tick` to the current tick.
+- **Event bits (`KartSnapshot.events`), pinned.** ADR-0006 sends the low 8 bits on the wire. **Renumbering, reusing or moving any bit 0-7 bumps the wire VERSION (ADR-0006).** Bits 8 and above are local only (tests, debug counters, story 022 statistics).
+
+  | Bit | Name | Set by | Payload fields |
+  |---|---|---|---|
+  | 0 | `EV_TOOK_OFF` | §5 takeoff (also the hop takeoff) | — |
+  | 1 | `EV_LANDED` | §5 landing | `land_airtime`, `land_impact` |
+  | 2 | `EV_WALL_TOUCH` | §5 first wall contact, scrape or touch | `wall_angle` |
+  | 3 | `EV_WALL_IMPACT` | §5 impact (`angle >= threshold`) | `wall_angle` |
+  | 4 | `EV_BUMPED` | §7 contact, received bump | `bump_strength` |
+  | 5 | `EV_TELEPORTED` | §8 respawn, launch, resync hold | — |
+  | 6 | `EV_HOP_AIRBORNE` | §3 hop takeoff (mirrors `hop_airborne`) | — |
+  | 7 | reserved | must be 0 | — |
+  | 8 | `EV_DEPENETRATED` | §6 push-out (local) | — |
+  | 9 | `EV_DEPEN_GUARD` | §6 wall-top guard (local) | — |
+  | 10 | `EV_DEPEN_MOVER` | §6 mover overlap (local) | — |
+  | 11 | `EV_UNSWEPT_OVERLAP` | §6 `started_inside` attributed to last tick's unswept move (local) | — | Respawn and resync hold also clear `velocity`, `knock`, `pending_push`, the spring state, the support and the pair memory.
 
 ### 9. Moving platforms
 - **While grounded on a mover**, the kart is carried by the **platform's pose delta**, not by point velocity × dt.
@@ -466,7 +524,8 @@ var tick: int; var position: Vector3; var basis: Basis
 var velocity: Vector3                            # TOTAL world velocity: driving + knock + platform carry
 var grounded: bool; var surface_id: int; var support_id: int; var speed: float
 var drift_state: int; var boost: float; var spin: float; var sinking: bool   # copied in from DriveState by the controller
-var steer: float; var accel: float; var air_time: float; var hop_airborne: bool
+var steer: float; var throttle: float            # throttle − brake in [−1, 1]; renamed from `accel` (VehicleStats.accel is m/s²)
+var air_time: float; var hop_airborne: bool
 var events: int; var land_airtime: float; var land_impact: float; var wall_angle: float; var bump_strength: float
 var distance: float                              # from CourseProgress (local) or the wire (remote), for the broadphase
 var moved: float                                 # length of this tick's actual displacement (0 on teleport); input to CourseData.progress
@@ -485,8 +544,10 @@ func yaw_derived() -> float                                      # HUD / minimap
 class_name KartContactShape extends RefCounted  # half_length, radius, max_height_diff, push_mult (from VehicleStats)
 class_name KartContactSolver extends RefCounted # broadphase + pair resolution; preallocated lists
 func resolve_all(bodies: Array[KartBody], snaps: Array[KartSnapshot], shapes: Array[KartContactShape],
-        simulated_here: PackedByteArray, is_bot: PackedByteArray, out_events: Array[KartEvent]) -> int   # returns the event count
-class_name KartEvent extends RefCounted         # kind, from_slot, to_slot, impulse/velocity: Vector3, strength, pose: Transform3D
+        simulated_here: PackedByteArray, contact_eligible: PackedByteArray, is_bot: PackedByteArray,
+        out_events: Array[KartEvent]) -> int   # returns the event count; contact_eligible = 0 for STALE, EMPTY, over-extrapolated, FROZEN
+class_name KartEvent extends RefCounted         # kind, from_slot, to_slot, tick (of detection), impulse/velocity: Vector3, strength, pose: Transform3D
+# KartBody also: func set_frozen(frozen: bool) -> void   # Fall & Respawn only (§8)
 class_name KartPhysicsConfig extends Resource   # slide_max_sweeps, wall_skin, max_depenetration_per_tick, broadphase_margin, bot_push_mult
 
 # Gameplay (src/gameplay/driving/)
@@ -505,7 +566,7 @@ Usage example (doc-comment form, the composition root's tick):
 ##     bodies[slot].step(SIM_DT, intents[slot], query, cursors[slot], tick * SIM_DT)
 ##     bodies[slot].snapshot(snaps[slot])                                # pre-contact
 ## course.progress(...) per slot; remote_views.sample_into(snaps, tick * SIM_DT - view_delay)
-## var n_ev := contact_solver.resolve_all(bodies, snaps, shapes, simulated_here, is_bot, out_events)
+## var n_ev := contact_solver.resolve_all(bodies, snaps, shapes, simulated_here, contact_eligible, is_bot, out_events)
 ## for slot in registry.slots_simulated_here(): bodies[slot].snapshot(snaps[slot])   # end of tick
 ## net.send_bumps(out_events, n_ev); hazards / pads on snaps
 ```
@@ -536,7 +597,13 @@ Usage example (doc-comment form, the composition root's tick):
 - Kart-vs-kart separation **must** go through `pending_push` and the next tick's swept motion. It **must never** write `position` directly.
 - Against a kart another PC owns, the local kart **must** take the full separation and only its share of the knock. The rest **must** be sent as a `KartEvent` and applied only at the start of the owner's next tick.
 - Pairs with no kart simulated on this PC **must** be skipped.
-- Bump dedup **must** be the max-merge per other slot.
+- Bump dedup **must** be the max-merge per other slot. A received bump with `tick < last_teleport_tick` **must** be dropped.
+- Each pair **must** be resolved once, with each kart's own `bump_restitution`. The vertical gate **must** use the smaller `bump_max_height_diff`.
+- The wall impact test **must** be `angle >= wall_impact_threshold_angle`.
+- The wall rebound **must** be `1 + (bump_knockback − 1) × bounce` times the into-wall speed. The turnback **must** follow the frozen rate.
+- A FROZEN body **must** run no queries and no contacts. Only Fall & Respawn **may** set or clear the mode.
+- Event bits 0-7 **must never** be renumbered or reused without a wire VERSION bump (ADR-0006).
+- `resolve_all` **must** skip every kart whose `contact_eligible` is 0.
 - Contact pairs **must** be resolved with i < j, in ascending pair order, against pre-contact snapshots only.
 - Platform carry **must** use the mover's pose delta, never point velocity × dt.
 - Per-tick code **must** allocate nothing in steady state:
@@ -636,7 +703,9 @@ Each rejection stands on Principle 1, ADR-0001's tick ownership and feel parity.
 | architecture.md Data Flow 1 and 3 | Local hits apply in the same tick, remote events on the next tick; each PC simulates its own karts | §4 steps 1, 11-13; §7 remote contact |
 | architecture.md Performance Budgets (amended 2026-11-22) | Kart physics and driving 0.3 ms; contact 0.2 ms p95 for 12 | Bounded queries, zero-allocation step, broadphase (Performance Implications) |
 
-No system GDD exists yet. This table cites `design/gdd/systems-index.md` rows and `architecture.md`. The GDD sync check is **NOT ASSESSED**: there are no GDDs to compare names against.
+This table cites `design/gdd/systems-index.md` rows and `architecture.md`. The Kart Physics GDD (`design/gdd/kart-physics.md`) now exists. v4 folds in its Open decisions P1, P2, P4, P5, P6, P8 and P9; P3 and P7 are owned there.
+
+The GDD sync check is **NOT ASSESSED** for v4. This pass read only the GDD's Open decisions table, not its §3-§8. Whether its names match this ADR's Key Interfaces (for example `throttle`, the event bit names, `mode`) was not compared.
 
 ## Performance Implications
 - **CPU, kart physics and driving (budget 0.3 ms p95, 12 karts):**
@@ -679,7 +748,15 @@ No system GDD exists yet. This table cites `design/gdd/systems-index.md` rows an
   - a ramp lip at 26 m/s takes off, and the landing reports airtime and impact;
   - **trick boost (`tests/unit/driving/`):** a takeoff within `trick_window` of the hop press, then a landing with airtime ≥ `trick_min_airtime`, pays `trick_boost_time` exactly once. The events arrive through the step 13 copy into `DriveState`. A takeoff outside the window pays nothing. Frozen reference: `kart_sim.gd:916` sets `_trick_pending`, and `:931` pays it in `_land`;
   - leaving a moving platform and landing back on it: no velocity is double-counted (speed relative to the platform is unchanged within 1e-3 across the flight, with no driver input);
-  - with `hop_speed > 0` (test fixture only), a hop lifts through `ride_velocity`, takes off only past `air_takeoff_gap`, and its landing has `hop_airborne` set;
+  - with `hop_speed > 0` (test fixture only), a hop is an explicit takeoff on the same tick. The ride clamp is bypassed for that tick, and `EV_TOOK_OFF`, `EV_HOP_AIRBORNE` and, at landing, `hop_airborne` are set. A hop-only flight pays no trick boost;
+  - wall rebound: with bounce 1.0, the into-wall speed comes back at 0.4 (cart) and 0.9 (bike), matching the frozen `bump_knockback`. With bounce 0 it is removed only;
+  - wall impact at exactly `wall_impact_threshold_angle` counts as an impact (`>=`);
+  - turnback: a kart scraping a wall at 20° turns toward the wall tangent at no more than `turnback_rate × dt` per tick, and is not wall-stuck after 1 s;
+  - pair restitution: a cart-bike pair is resolved once, and each kart's knock uses its own `bump_restitution`. The vertical gate uses the smaller `bump_max_height_diff`;
+  - frozen mode: a FROZEN body runs no queries, holds zero speed, is excluded from contact, and drops received bumps;
+  - a received bump whose tick is earlier than `last_teleport_tick` is dropped;
+  - `contact_eligible` = 0 (STALE, EMPTY, extrapolated > 0.1 s) removes the kart from every pair;
+  - the remote broadphase key is the `distance` sampled at the drawn pose, not the latest snapshot's;
   - on a 30° bank, the basis' up equals the smoothed normal within 1e-4, and `basis` is orthonormal within 1e-5 after 36,000 ticks;
   - on a translating platform the kart is carried with zero relative drift;
   - **on a platform rotating at 1 rad/s, a parked kart 5 m from the axis keeps its radius within 1 mm over 600 ticks (10 s)**, and its heading turns with the platform;
