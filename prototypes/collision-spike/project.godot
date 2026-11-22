@@ -1,0 +1,16 @@
+; Engine configuration file.
+; PROTOTYPE - NOT FOR PRODUCTION (collision spike for ADR-0002 / ADR-0005)
+
+config_version=5
+
+[application]
+
+config/name="Collision spike (ADR-0002/0005)"
+config/features=PackedStringArray("4.8")
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+common/physics_ticks_per_second=60
+common/max_physics_steps_per_frame=8
+common/physics_interpolation=false
