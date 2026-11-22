@@ -12,7 +12,14 @@ Proposed
 ## Decision Makers
 Drafted by engine-programmer (subagent, orchestrated run) from ADR-0001, ADR-0002 v5, ADR-0004, the amended performance budgets in `architecture.md`, the per-system profile of the frozen tick, and the frozen kart. The frozen sources were read for feel and for the network contact model only, never imported: `src/legacy/vehicle/kart_sim.gd`, `src/legacy/main.gd` (contacts, around lines 540-610).
 
-This is **v2**, after the technical-director review (TD-ADR):
+This is **v3**, after the TD-ADR re-review of v2, which found the bar met. Three text fixes were applied:
+- air events reach `drive()` through `DriveState` (§4 step 13);
+- support velocity is converted on landing, and the one-tick carry after leaving a mover was dropped;
+- the touch rule is `fraction == 1.0`.
+
+The advisory items were also applied: who supplies `moved` and `safe`, the all-pairs fallback for self-crossing courses, the pair-order wording, and `CONTACT_POINT_EPSILON`.
+
+v2 came after the first technical-director review (TD-ADR):
 - **v1 CONCERNS applied:**
   - bump-loss ordering;
   - the owner-authoritative remote contact;
@@ -190,7 +197,7 @@ The scalar yaw is derived only (`yaw_derived()`), as ADR-0001 requires.
 - It is reset by the respawn and start events only.
 - Boost pads, trick boost on landing and surface changes enter through `drive()`'s inputs:
   - the pad test result;
-  - `snapshot.events` (landed, airtime, `hop_airborne`);
+  - the took-off and landed events (airtime, impact, `hop_airborne`), which the controller copies into `DriveState` at §4 step 13. `drive()` does not read them from `snapshot.events`;
   - `snapshot.surface_id`, looked up in the core `SurfaceSet` (ADR-0002).
 - `drive()` keeps the architecture signature, with the surface resolved by the caller: `drive(state, input, snap, stats, surface, dt, out)`.
 
@@ -210,7 +217,10 @@ For tick n, for each racer simulated on this PC, in `RacerRegistry` slot order (
       - lerp `velocity` toward `heading × speed` by grip;
       - remove the velocity component along up.
    3. When airborne: `velocity += gravity × dt`. There is no grip, throttle or drag (frozen).
-   4. The motion is `(velocity + knock) × dt + pending_push + carry`. Here `carry` is the support's pose-delta displacement when the kart stands on a mover (§9), or `support_velocity × dt` for one tick after leaving it; otherwise 0.
+   4. The motion is `(velocity + knock) × dt + pending_push + carry`.
+      - `carry` is the support's pose-delta displacement while the kart stands on a mover (§9). Otherwise it is 0.
+      - On a rotating mover, `velocity` is also rotated by `D.basis` each tick, so it stays fixed relative to the platform.
+      - There is no carry after leaving a mover. The support's velocity is folded into `velocity` once at takeoff (§5), so a carry term would count it twice.
 4. **Wall sweep slide loop** (§5). A sphere is swept from the current to the proposed point. Up to `slide_max_sweeps` (**3**) sweeps run, and the `started_inside` overlap resolution happens inside the loop (§6).
 5. **Ground cast** (2 to 4 rays, §5) at the resolved point.
 6. **Suspension, air and landing** (§5). The moves after the sweep are **not swept**: the ride spring's move along up, the landing snap and the up slerp. An overlap they create is resolved on the next tick as `started_inside`, by the unconditional rest check at `from` (ADR-0002) and §6. Story 022 counts `started_inside` by cause (wall start, mover, unswept move).
@@ -229,16 +239,22 @@ For tick n, for each racer simulated on this PC, in `RacerRegistry` slot order (
 
 After every simulated kart has stepped:
 
-10. **Course progress.** `CourseData.progress` runs per kart, in slot order (ADR-0004).
+10. **Course progress.** `CourseData.progress` runs per kart, in slot order (ADR-0004). Its two inputs:
+    - `moved` comes from the body: `KartSnapshot.moved` is the length of this tick's actual displacement, and it is 0 on a teleport;
+    - `safe` (grounded on a road surface, outside any hazard) is decided by the composition root, because surface classes are Gameplay knowledge (`SurfaceSet`).
 11. **Kart-vs-kart contact** (§7).
     - It reads only pre-contact snapshots: local karts from step 9, remote karts from the sampled remote poses.
-    - The results therefore do not depend on pair order.
+    - Results still depend on pair order, through the max-merge dedup and the knock cap. Determinism comes from the fixed ascending (i, j) pair order (§7).
     - It writes speed loss, knock, `pending_push` and the `bumped` bit into the local bodies.
 12. **End-of-tick snapshot.** `snapshot(snap)` again, for every simulated kart. Then `events` is cleared. Presentation, `SnapshotCodec` (ADR-0006) and ghosts copy this snapshot.
 13. **Same-tick local effects.**
     - Hazard hit tests (the victim decides) and pad tests run on the end-of-tick snapshot.
     - A spin or sink starts this tick, which matches the frozen behaviour (`architecture.md` Data Flow 1).
-    - Their effects reach Driving through `DriveState` and the next `drive()`.
+    - **Air events.** The controller copies the took-off and landed events from the end-of-tick snapshot into `DriveState`, the same way pads reach Driving:
+      - took-off arms the trick when the hop came inside `trick_window` (frozen `kart_sim.gd:916`);
+      - landed carries airtime, impact and `hop_airborne`, and pays the trick boost (frozen `_land`, `:931`).
+      - This is the **only** path by which air events reach Driving. `events` is cleared after step 12, so `drive()` never sees these bits in the snapshot.
+    - All these effects reach Driving through `DriveState` and the next `drive()`.
 
 **Deviations from the brief's suggested order (approved by the TD in TD-ADR v1):**
 - **Walls are swept before the ground cast.** If rays are cast at the point before the slide, a kart pressed against a wall reads the ground on the other side of it (a lower road, a drop, or nothing). That gives false takeoffs and wrong surface ids.
@@ -253,7 +269,7 @@ After every simulated kart has stepped:
 - **Slide loop:**
   1. Sweep from `from` to `to`.
   2. On a hit:
-     - move along the motion by `max(safe_fraction × L − wall_skin, 0)` metres, where L is the length of the remaining motion and `wall_skin` defaults to 0.02 m;
+     - move along the motion by `max(fraction × L − wall_skin, 0)` metres (`fraction` is the `WallHit` field), where L is the length of the remaining motion and `wall_skin` defaults to 0.02 m;
      - take the wall normal projected onto the up plane, normalised (a wall never lifts or presses the kart);
      - remove the normal component from the remaining motion, measured relative to the wall's `collider_velocity` for movers;
      - sweep the remainder.
@@ -263,7 +279,7 @@ After every simulated kart has stepped:
      - otherwise scrape drag, scaled by the `WallAttrSet` entry for `wall_attr` (ADR-0002);
      - optional bounce, from the wall attribute.
      The remaining motion and the velocity both lose their into-wall component.
-  4. **A hit reported at `to` when the cast was clear** (ADR-0002's rest check at `to`) is a **touch**:
+  4. **Touch rule:** a hit with `fraction == 1.0` (and `started_inside = false`) is a **touch**. Per the ADR-0002 amendment, this is how a clear cast with a rest hit at `to` is reported. A touch is handled like this:
      - the kart moves the full motion;
      - there is no slide;
      - the wall response runs as a scrape, if this is the first contact this tick;
@@ -296,7 +312,8 @@ After every simulated kart has stepped:
 - **Landing:**
   - When airborne and the gap reaches 0 or less, the kart snaps to the plane.
   - The impact speed is the into-ground speed relative to the support.
-  - The velocity component along the new up is removed, and `speed` = velocity·heading.
+  - On a mover, the up-plane part of `support_velocity` is subtracted from `velocity`, so `velocity` becomes relative to the support again. The carry (§9) moves the kart with the platform from then on.
+  - The velocity component along the new up is removed. Only then is `speed` taken: `speed` = velocity·heading.
   - The landed event carries airtime, impact and `hop_airborne`. Driving pays the trick boost from it.
 - **Up smoothing:**
   - `up_smoothing` (ground) and `air_up_smoothing` are new per-vehicle fields.
@@ -306,7 +323,7 @@ After every simulated kart has stepped:
 - **Contract (ADR-0002 v5 amendment, quoted from the coordinator's brief):** "When `started_inside` is set (by the rest check at `from` or by the analytic mover overlap), `sweep_walls` returns true at once. Point, normal, wall_attr, collider_id and collider_velocity come from the overlap, `fraction` = 0, and no cast runs. When a static wall and a mover both overlap, the deeper one wins." The reason is probe F: the cast is blind from an overlapped start.
 - Inside the slide loop, such a result triggers a push-out. Definitions: c = sphere centre, p = `hit.point`, n = raw rest normal, `n_h` = n projected onto the up plane, r = sweep radius.
 - **Wall-top guard (checked first):**
-  - It applies if `|n_h| < WALL_NORMAL_MIN` (a named const, 0.3) or `|c − p| < 1e-4`.
+  - It applies if `|n_h| < WALL_NORMAL_MIN` (a named const, 0.3) or `|c − p| < CONTACT_POINT_EPSILON` (a named const, 1e-4 m; a numeric guard, not tuning).
   - Then there is no horizontal push-out and no wall response on this sweep. The kart is over a wall top, and the ground cast or Fall & Respawn handles it.
   - The `depenetrated` event is still set, with a guard cause, so story 022 can count it.
   - The loop goes on with the remaining motion.
@@ -342,6 +359,7 @@ This section ports the frozen owner-authoritative model (`main.gd` `_resolve_kar
   2. A preallocated slot list is insertion-sorted by that key each tick. The list is nearly sorted from tick to tick, so this is O(n).
   3. Pairs are candidates when their key difference is at most `2 × max(bump_half_length + bump_radius) + broadphase_margin` (2.0 m). The list wraps at the lap end.
   4. Karts with invalid progress (off course, flying, or relocated this tick) are tested against all others.
+     - **All-pairs fallback:** a course that crosses itself at the same height (a figure-eight) is resolved with all pairs. Two karts at the crossing have far-apart `s`, so the broadphase would miss them. The track flag comes from Course Data. Story 022's brute-force cross-check catches a course that needs the flag and does not have it.
   5. Candidate pair keys `(i, j)` with i < j are sorted ascending and resolved in that order, for determinism (ADR-0001 §6).
   6. Sinking or respawning karts are skipped.
 - **Remote pose:**
@@ -451,6 +469,7 @@ var drift_state: int; var boost: float; var spin: float; var sinking: bool   # c
 var steer: float; var accel: float; var air_time: float; var hop_airborne: bool
 var events: int; var land_airtime: float; var land_impact: float; var wall_angle: float; var bump_strength: float
 var distance: float                              # from CourseProgress (local) or the wire (remote), for the broadphase
+var moved: float                                 # length of this tick's actual displacement (0 on teleport); input to CourseData.progress
 var teleported: bool
 
 class_name KartBody extends RefCounted
@@ -508,9 +527,12 @@ Usage example (doc-comment form, the composition root's tick):
   - **must** push along its up-plane projection by `d / (n·n̂_h) + wall_skin`;
   - **must** be capped at `max_depenetration_per_tick` per tick.
 - A mover's shove **must** go into `knock`.
-- When `|n_h| < WALL_NORMAL_MIN` or `|c − p| < 1e-4`, the loop **must** skip the horizontal push-out and the wall response for that sweep, and **must** set the `depenetrated` event with the guard cause. It **must never** divide by `n·n̂_h` in that case.
+- When `|n_h| < WALL_NORMAL_MIN` or `|c − p| < CONTACT_POINT_EPSILON`, the loop **must** skip the horizontal push-out and the wall response for that sweep, and **must** set the `depenetrated` event with the guard cause. It **must never** divide by `n·n̂_h` in that case.
 - The slerp of up **must** use the antiparallel guard (`UP_ANTIPARALLEL_DOT`).
-- A clear cast with a rest hit at `to` **must** be treated as a touch with no slide.
+- A wall hit with `fraction == 1.0` **must** be treated as a touch with no slide.
+- Took-off and landed events **must** reach Driving only through the controller's copy into `DriveState` at §4 step 13.
+- After leaving a mover, there **must** be no carry term. The support velocity is folded into `velocity` once, at takeoff.
+- On landing on a mover, `velocity` **must** lose the up-plane part of `support_velocity` before `speed` is taken.
 - Kart-vs-kart separation **must** go through `pending_push` and the next tick's swept motion. It **must never** write `position` directly.
 - Against a kart another PC owns, the local kart **must** take the full separation and only its share of the knock. The rest **must** be sent as a `KartEvent` and applied only at the start of the owner's next tick.
 - Pairs with no kart simulated on this PC **must** be skipped.
@@ -655,6 +677,8 @@ No system GDD exists yet. This table cites `design/gdd/systems-index.md` rows an
   - the antiparallel up guard: a target exactly opposite to up gives no NaN and an orthonormal basis;
   - the slide loop never runs more than 3 sweeps (counter);
   - a ramp lip at 26 m/s takes off, and the landing reports airtime and impact;
+  - **trick boost (`tests/unit/driving/`):** a takeoff within `trick_window` of the hop press, then a landing with airtime ≥ `trick_min_airtime`, pays `trick_boost_time` exactly once. The events arrive through the step 13 copy into `DriveState`. A takeoff outside the window pays nothing. Frozen reference: `kart_sim.gd:916` sets `_trick_pending`, and `:931` pays it in `_land`;
+  - leaving a moving platform and landing back on it: no velocity is double-counted (speed relative to the platform is unchanged within 1e-3 across the flight, with no driver input);
   - with `hop_speed > 0` (test fixture only), a hop lifts through `ride_velocity`, takes off only past `air_takeoff_gap`, and its landing has `hop_airborne` set;
   - on a 30° bank, the basis' up equals the smoothed normal within 1e-4, and `basis` is orthonormal within 1e-5 after 36,000 ticks;
   - on a translating platform the kart is carried with zero relative drift;

@@ -88,6 +88,8 @@ The frozen game answers every "where" question from one spline (`TrackModel`): d
 
 ## Decision
 
+> **Track flag `self_crossing: bool`** (`@export`, authored as `kk_self_crossing` on the `track` empty, default false): set when the course crosses itself at the same height, so route distance is not a valid contact broadphase key. ADR-0003 then tests all kart pairs on that track. Story 022's brute-force cross-check catches a track that needs the flag and lacks it.
+
 ### 1. Shape of the data
 `CourseData` is one `Resource` saved as binary **`.res`** inside the `TrackPackage` (ADR-0005). It holds six parts:
 
