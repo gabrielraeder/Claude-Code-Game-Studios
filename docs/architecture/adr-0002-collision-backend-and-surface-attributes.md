@@ -12,7 +12,7 @@ Proposed
 ## Decision Makers
 Claude (autonomous mode, owner-authorized) drafted it from the measured spike (`prototypes/collision-spike/REPORT.md`, `out/`). It has been through two reviews and is now v2:
 - **godot-specialist:** probe runs on 4.8-beta3, kept as `scripts/probe_adr2.gd` with output in `out/probe_adr2.txt`; four blocking items, all applied in v2.
-- **technical-director (TD-ADR):** v1 CONCERNS applied in v2; v2 CONCERNS (wall-attribute mapping, rotating-mover contacts) applied in v3; v4 amends ids and `MoverDef` from the joint ADR-0004/0005 review.
+- **technical-director (TD-ADR):** v1 CONCERNS applied in v2; v2 CONCERNS (wall-attribute mapping, rotating-mover contacts) applied in v3; v4 amends ids and `MoverDef` from the joint ADR-0004/0005 review; v5 makes `sweep_walls` return at once on `started_inside` (godot-specialist, ADR-0003 review).
 
 Acceptance needs the owner's confirmation.
 
@@ -132,6 +132,7 @@ It must serve 12 karts within budget. It needs per-triangle surface ids for trac
   - `GroundHit` carries point, normal, `surface_id`, `collider_id` (0 = static, otherwise the mover id; never Jolt's id) and `collider_velocity` (the **point velocity at the hit**; zero for static ground).
 - **`sweep_walls`:**
   1. **Unconditional rest check at `from`** (`get_rest_info_into`, mask 2), which sets `started_inside`. About 0.4 µs × 12 per tick.
+     - **When `started_inside` is set** (by this rest check or by the analytic mover overlap), `sweep_walls` **returns true at once**: point, normal, `wall_attr`, `collider_id` and `collider_velocity` come from the overlap, `fraction = 0`, and **no cast runs** (the cast is blind from an overlapped start: probe F in `prototypes/collision-spike/out/probe_adr3_rest.txt`). If a static wall and a mover both overlap, the **deeper** one wins. The caller (ADR-0003) pushes out and calls again.
   2. `cast_motion_into` from `from` to `to`.
   3. If it hits, a rest check at the unsafe point.
   4. If the cast is clear, a rest check at `to`.

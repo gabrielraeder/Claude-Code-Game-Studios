@@ -1,0 +1,68 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+engine=4.8-beta3 (official) physics=Jolt Physics R=1.0 q.margin=0.0
+A. vertical +X wall, depths (center x = R - depth); z=3.0 (off diagonal) and on the internal diagonal
+  A x= 1.05 c=(1.05, 2.0, 3.0)  rest=NONE  (true depth -0.0500)
+  A x= 1.00 c=(1.0, 2.0, 3.0) p=(0.0, 2.0, 3.0) n=(1.0, 0.0, 0.0) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.0000 true=0.0000 err=0.0000000 | adr_d(n_h)=0.0000 need_h=0.0000
+  A x= 0.99 c=(0.99, 2.0, 3.0) p=(0.0, 2.0, 3.0) n=(1.0, 0.0, 0.0) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.0100 true=0.0100 err=0.0000000 | adr_d(n_h)=0.0100 need_h=0.0100
+  A x= 0.98 c=(0.98, 2.0, 3.0) p=(0.0, 2.0, 3.0) n=(1.0, 0.0, 0.0) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.0200 true=0.0200 err=0.0000000 | adr_d(n_h)=0.0200 need_h=0.0200
+  A x= 0.90 c=(0.9, 2.0, 3.0) p=(0.0, 2.0, 3.0) n=(1.0, 0.0, 0.0) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.1000 true=0.1000 err=0.0000001 | adr_d(n_h)=0.1000 need_h=0.1000
+  A x= 0.70 c=(0.7, 2.0, 3.0) p=(0.0, 2.0, 3.0) n=(1.0, 0.0, 0.0) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.3000 true=0.3000 err=0.0000000 | adr_d(n_h)=0.3000 need_h=0.3000
+  A x= 0.50 c=(0.5, 2.0, 3.0) p=(0.0, 2.0, 3.0) n=(1.0, 0.0, 0.0) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.5000 true=0.5000 err=0.0000000 | adr_d(n_h)=0.5000 need_h=0.5000
+  A x= 0.30 c=(0.3, 2.0, 3.0) p=(0.0, 2.0, 3.0) n=(1.0, 0.0, 0.0) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.7000 true=0.7000 err=0.0000000 | adr_d(n_h)=0.7000 need_h=0.7000
+  A x= 0.10 c=(0.1, 2.0, 3.0) p=(0.0, 2.0, 3.0) n=(1.0, 0.0, 0.0) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.9000 true=0.9000 err=0.0000000 | adr_d(n_h)=0.9000 need_h=0.9000
+  A x= 0.01 c=(0.01, 2.0, 3.0) p=(0.0, 2.0, 3.0) n=(1.0, 0.0, 0.0) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.9900 true=0.9900 err=0.0000000 | adr_d(n_h)=0.9900 need_h=0.9900
+  A x= 0.00 c=(0.0, 2.0, 3.0) p=(0.0, 2.0, 3.0) n=(0.0, -1.0, 0.0) |n|=1.00000 n.plane=0.0000 p_off_plane=0.00000 | d_formula=1.0000 true=1.0000 err=0.0000000 | adr_d(n_h)=nan need_h=nan
+  A x=-0.01 c=(-0.01, 2.0, 3.0)  rest=NONE  (true depth 1.0100)
+  A x=-0.30 c=(-0.3, 2.0, 3.0)  rest=NONE  (true depth 1.3000)
+  A diag x=0.70 c=(0.7, 2.0, 0.0) p=(0.0, 2.0, 0.0) n=(1.0, 0.0, 0.0) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.3000 true=0.3000 err=0.0000000 | adr_d(n_h)=0.3000 need_h=0.3000
+  A diag x=0.30 c=(0.3, 2.0, 0.0) p=(0.0, 2.0, 0.0) n=(1.0, 0.0, 0.0) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.7000 true=0.7000 err=0.0000000 | adr_d(n_h)=0.7000 need_h=0.7000
+B. yawed vertical walls, depth 0.3 / 0.8
+  B yaw= 15.0 d=0.3 c=(6.11614, 2.0, -4.460901) p=(5.439992, 2.0, -4.642074) n=(0.965926, 0.0, 0.258819) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.3000 true=0.3000 err=0.0000001 | adr_d(n_h)=0.3000 need_h=0.3000
+  B yaw= 15.0 d=0.8 c=(5.633178, 2.0, -4.59031) p=(5.439992, 2.0, -4.642074) n=(0.965926, 0.0, 0.258819) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.8000 true=0.8000 err=0.0000002 | adr_d(n_h)=0.8000 need_h=0.8000
+  B yaw= 30.0 d=0.3 c=(6.456218, 2.0, -4.122243) p=(5.85, 2.0, -4.472243) n=(0.866025, 0.0, 0.5) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.3000 true=0.3000 err=0.0000004 | adr_d(n_h)=0.3000 need_h=0.3000
+  B yaw= 30.0 d=0.8 c=(6.023205, 2.0, -4.372243) p=(5.85, 2.0, -4.472243) n=(0.866025, 0.0, 0.5) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.8000 true=0.8000 err=0.0000006 | adr_d(n_h)=0.8000 need_h=0.8000
+  B yaw= 45.0 d=0.3 c=(6.697056, 2.0, -3.707107) p=(6.202082, 2.0, -4.202082) n=(0.707107, 0.0, 0.707107) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.3000 true=0.3000 err=0.0000001 | adr_d(n_h)=0.3000 need_h=0.3000
+  B yaw= 45.0 d=0.8 c=(6.343503, 2.0, -4.06066) p=(6.202082, 2.0, -4.202082) n=(0.707107, 0.0, 0.707107) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.8000 true=0.8000 err=0.0000000 | adr_d(n_h)=0.8000 need_h=0.8000
+  B yaw= 60.0 d=0.3 c=(6.822243, 2.0, -3.243782) p=(6.472243, 2.0, -3.85) n=(0.5, 0.0, 0.866025) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.3000 true=0.3000 err=0.0000000 | adr_d(n_h)=0.3000 need_h=0.3000
+  B yaw= 60.0 d=0.8 c=(6.572243, 2.0, -3.676795) p=(6.472243, 2.0, -3.85) n=(0.5, 0.0, 0.866025) |n|=1.00000 n.plane=1.0000 p_off_plane=-0.00000 | d_formula=0.8000 true=0.8000 err=0.0000000 | adr_d(n_h)=0.8000 need_h=0.8000
+  B yaw= 89.0 d=0.3 c=(6.711958, 2.0, -2.329776) p=(6.699741, 2.0, -3.029669) n=(0.017452, 0.0, 0.999848) |n|=1.00000 n.plane=1.0000 p_off_plane=-0.00000 | d_formula=0.3000 true=0.3000 err=0.0000003 | adr_d(n_h)=0.3000 need_h=0.3000
+  B yaw= 89.0 d=0.8 c=(6.703232, 2.0, -2.8297) p=(6.699741, 2.0, -3.029669) n=(0.017452, 0.0, 0.999848) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.8000 true=0.8000 err=0.0000000 | adr_d(n_h)=0.8000 need_h=0.8000
+  B yaw=137.0 d=0.3 c=(5.647449, 2.0, -1.2793) p=(6.159397, 2.0, -1.756699) n=(-0.731354, 0.0, 0.681998) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.3000 true=0.3000 err=0.0000000 | adr_d(n_h)=0.3000 need_h=0.3000
+  B yaw=137.0 d=0.8 c=(6.013126, 2.0, -1.620299) p=(6.159397, 2.0, -1.756699) n=(-0.731354, 0.0, 0.681998) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.8000 true=0.8000 err=0.0000000 | adr_d(n_h)=0.8000 need_h=0.8000
+C. sloped walls (normal tilt t from horizontal; negative = overhang), depth 0.3
+  C tilt= 10.0 c=(0.689365, 0.121554, 2.0) p=(0.0, 0.0, 2.0) n=(0.984808, 0.173648, 0.0) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.3000 true=0.3000 err=0.0000001 | adr_d(n_h)=0.3106 need_h=0.3046
+  C tilt= 30.0 c=(0.606218, 0.35, 2.0) p=(0.0, -0.0, 2.0) n=(0.866025, 0.5, 0.0) |n|=1.00000 n.plane=1.0000 p_off_plane=-0.00000 | d_formula=0.3000 true=0.3000 err=0.0000000 | adr_d(n_h)=0.3938 need_h=0.3464
+  C tilt= 45.0 c=(0.494975, 0.494975, 2.0) p=(0.0, 0.0, 2.0) n=(0.707107, 0.707107, 0.0) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.3000 true=0.3000 err=0.0000002 | adr_d(n_h)=0.5050 need_h=0.4243
+  C tilt= 60.0 c=(0.35, 0.606218, 2.0) p=(0.0, 0.0, 2.0) n=(0.5, 0.866025, 0.0) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.3000 true=0.3000 err=0.0000000 | adr_d(n_h)=0.6500 need_h=0.6000
+  C tilt=-30.0 c=(0.606218, -0.35, 2.0) p=(0.0, 0.0, 2.0) n=(0.866025, -0.5, 0.0) |n|=1.00000 n.plane=1.0000 p_off_plane=0.00000 | d_formula=0.3000 true=0.3000 err=0.0000000 | adr_d(n_h)=0.3938 need_h=0.3464
+D. near the wall top edge (y=4) and the end edge (z=10)
+  D c=(0.3, 4.3, 0.0) p=(0.0, 4.0, 0.0) n=(0.707107, 0.707107, 0.0) |n|=1.00000 n.plane=0.7071 p_off_plane=0.00000 | d_formula=0.5757 true=0.5757 err=0.0000000 | adr_d(n_h)=0.7000 need_h=0.8142
+      expected nearest=(0.0, 4.0, 0.0), (c-nearest).normalized()=(0.707107, 0.707107, 0.0)
+  D c=(0.05, 4.5, 0.0) p=(0.0, 4.0, 0.0) n=(0.099504, 0.995037, 0.0) |n|=1.00000 n.plane=0.0995 p_off_plane=0.00000 | d_formula=0.4975 true=0.4975 err=0.0000000 | adr_d(n_h)=0.9500 need_h=4.9999
+      expected nearest=(0.0, 4.0, 0.0), (c-nearest).normalized()=(0.099504, 0.995037, 0.0)
+  D c=(0.0, 4.6, 0.0) p=(0.0, 4.0, 0.0) n=(0.0, 1.0, 0.0) |n|=1.00000 n.plane=0.0000 p_off_plane=0.00000 | d_formula=0.4000 true=0.4000 err=0.0000000 | adr_d(n_h)=nan need_h=nan
+      expected nearest=(0.0, 4.0, 0.0), (c-nearest).normalized()=(0.0, 1.0, 0.0)
+  D c=(-0.2, 4.5, 0.0)  rest=NONE  (true depth 0.4615)
+  D c=(0.3, 2.0, 10.4) p=(0.0, 2.0, 10.0) n=(0.6, 0.0, 0.8) |n|=1.00000 n.plane=0.6000 p_off_plane=0.00000 | d_formula=0.5000 true=0.5000 err=0.0000000 | adr_d(n_h)=0.5000 need_h=0.5000
+      expected nearest=(0.0, 2.0, 10.0), (c-nearest).normalized()=(0.6, 0.0, 0.8)
+  D c=(0.3, 4.3, 10.3) p=(0.0, 4.0, 10.0) n=(0.57735, 0.57735, 0.57735) |n|=1.00000 n.plane=0.5774 p_off_plane=0.00000 | d_formula=0.4804 true=0.4804 err=0.0000000 | adr_d(n_h)=0.5757 need_h=0.5883
+      expected nearest=(0.0, 4.0, 10.0), (c-nearest).normalized()=(0.57735, 0.57735, 0.57735)
+E. inner corner: which contact does rest info return? (depth X=0.8, Z=0.4) and swapped
+  E one_shape c=(0.2, 2.0, 0.6) -> n=(1.0, 0.0, 0.0) p=(0.0, 2.0, 0.6) shape=0
+  E one_shape c=(0.6, 2.0, 0.2) -> n=(0.0, 0.0, 1.0) p=(0.6, 2.0, 0.0) shape=0
+  E one_shape c=(0.5, 2.0, 0.5) -> n=(1.0, 0.0, 0.0) p=(0.0, 2.0, 0.5) shape=0
+  E two_shapes_XZ c=(0.2, 2.0, 0.6) -> n=(1.0, 0.0, 0.0) p=(0.0, 2.0, 0.6) shape=0
+  E two_shapes_XZ c=(0.6, 2.0, 0.2) -> n=(0.0, 0.0, 1.0) p=(0.6, 2.0, 0.0) shape=1
+  E two_shapes_XZ c=(0.5, 2.0, 0.5) -> n=(0.0, 0.0, 1.0) p=(0.5, 2.0, 0.0) shape=1
+  E two_shapes_ZX c=(0.2, 2.0, 0.6) -> n=(1.0, 0.0, 0.0) p=(0.0, 2.0, 0.6) shape=1
+  E two_shapes_ZX c=(0.6, 2.0, 0.2) -> n=(0.0, 0.0, 1.0) p=(0.6, 2.0, 0.0) shape=0
+  E two_shapes_ZX c=(0.5, 2.0, 0.5) -> n=(1.0, 0.0, 0.0) p=(0.0, 2.0, 0.5) shape=1
+F. cast_motion from overlapped start (vertical +X wall, start x=0.7, depth 0.3)
+  into wall (-0.5,0,0): cast ret=false safe=1.0000 unsafe=1.0000
+  along wall (0,0,2): cast ret=false safe=1.0000 unsafe=1.0000
+  away (+0.5,0,0): cast ret=false safe=1.0000 unsafe=1.0000
+  after push-out to x=1.02, into wall (-0.5): cast ret=true safe=0.0391 unsafe=0.0420
+  after push-out to x=1.02 rest: NONE
+G. 2000 random overlaps (fixed seed): wall normal tilt in [-30,60] deg, yaw any, depth in (0, R)
+  misses=0 normal_not_face(<0.999)=0 max|d_formula-true|=0.0000067 max|point off plane|=0.0000048

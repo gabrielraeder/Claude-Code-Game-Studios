@@ -1,0 +1,12 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+engine=4.8-beta3 (official)
+PhysicsServer3D methods containing 'step': []
+PhysicsServer3D methods containing 'space_': ["space_create", "space_get_direct_state", "space_get_param", "space_is_active", "space_set_active", "space_set_param"]
+PhysicsServer3D methods containing 'active': ["set_active", "space_is_active", "space_set_active"]
+PhysicsDirectSpaceState3D methods: ["cast_motion", "cast_motion_into", "collide_shape", "collide_shape_into", "get_rest_info", "get_rest_info_into", "intersect_point", "intersect_point_into", "intersect_ray", "intersect_ray_into", "intersect_shape", "intersect_shape_into"]
+PhysicsGetRestInfoResult3D props: ["point:Vector3", "normal:Vector3", "collider_rid:RID", "collider_id:int", "collider_shape:int", "collider_velocity:Vector3"]
+PhysicsCastMotionResult3D props: ["safe_fraction:float", "unsafe_fraction:float"]
+PhysicsIntersectRayResult3D props: ["position:Vector3", "normal:Vector3", "collider_rid:RID", "collider_id:int", "collider:Object", "collider_shape:int", "collider_face_index:int"]
+Geometry3D segment methods: ["get_closest_point_to_segment", "get_closest_point_to_segment_uncapped", "get_closest_points_between_segments", "segment_intersects_convex", "segment_intersects_cylinder", "segment_intersects_sphere", "segment_intersects_triangle"]
+CharacterBody3D 'floor'/'safe_margin' props present: true true
