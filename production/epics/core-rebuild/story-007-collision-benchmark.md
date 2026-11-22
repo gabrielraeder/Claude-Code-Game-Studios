@@ -37,6 +37,8 @@
 
 ## Implementation Notes
 
+> **From story 005 (TD-012):** the analytic mover sweep measured 0.63 ms median / 1.08 ms p95 per tick with 12 karts all near 5 spinning movers (scratch benchmark). Measure a realistic layout (Castle's hazards: drawbridge, portcullis, barrels) and the worst case; if over 0.3 ms p95, replace the golden-section search with closed-form sphere-vs-capsule/cylinder/box sweeps or cut steps, and re-run. LP's candidates: cache each mover's pose and inverse per `t` (deterministic), compute omega lazily only on a hit, run an overlap pass before any mover sweep, closed-form sphere-vs-capsule/cylinder sweeps.
+
 - Mesh: the spike's generator-baked mesh under `prototypes/collision-spike/` loaded by the tool, or a code-built fixture of comparable size; do not wait on story 008.
 - Stage timing in the style of `tools/profile_tick.gd` (`Time.get_ticks_usec()` around the query block).
 

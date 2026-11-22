@@ -49,11 +49,16 @@ func ground_triangle_count() -> int:
 	return ground_faces.size() / 3
 
 
-## Checks the array layout only (not the ids, which the load check tests against the registries in
-## story 006). Returns "" when the layout is sound, otherwise one sentence naming the first problem:
-## ground_faces not a multiple of 3; surface_of_face not one entry per ground triangle; wall_faces
-## and wall_attr_ids of different lengths; or a wall entry empty or not a multiple of 3 (wall
-## shapes are dense, ADR-0002). Reads only; safe from any thread.
+## Checks the array layout only (not the surface and wall ids, which the load check tests against
+## the registries in story 006). Returns "" when the layout is sound, otherwise one sentence naming
+## the first problem: ground_faces not a multiple of 3; surface_of_face not one entry per ground
+## triangle; wall_faces and wall_attr_ids of different lengths; a wall entry empty or not a multiple
+## of 3 (wall shapes are dense, ADR-0002); a null mover; a mover whose MoverDef.layout_error() is
+## not empty (id >= 1, period > 0, extents valid for the shape, equal key arrays, key_t ascending
+## within [0, period), finite key positions, unit key rotations, surface_id and wall_attr_id in
+## 0..255; story 005); or two movers sharing an id.
+## Allocates (a small id set when there are movers): call at load, not per tick. Reads only; safe
+## from any thread.
 ## [codeblock]
 ## var problem: String = data.layout_error()
 ## if not problem.is_empty():
@@ -72,4 +77,21 @@ func layout_error() -> String:
 			return "wall_faces[%d] is empty (wall shapes are dense)" % k
 		if n % 3 != 0:
 			return "wall_faces[%d] has %d vertices, not a multiple of 3" % [k, n]
+	return _mover_error()
+
+
+## The mover part of layout_error(): "" or the first null mover, mover layout problem, or repeated
+## mover id.
+func _mover_error() -> String:
+	var slot_of_id: Dictionary[int, int] = {}
+	for k in movers.size():
+		var mover: MoverDef = movers[k]
+		if mover == null:
+			return "movers[%d] is null" % k
+		var problem: String = mover.layout_error()
+		if not problem.is_empty():
+			return "movers[%d]: %s" % [k, problem]
+		if slot_of_id.has(mover.id):
+			return "movers[%d] has id %d, already used by movers[%d] (mover ids are unique)" % [k, mover.id, slot_of_id[mover.id]]
+		slot_of_id[mover.id] = k
 	return ""

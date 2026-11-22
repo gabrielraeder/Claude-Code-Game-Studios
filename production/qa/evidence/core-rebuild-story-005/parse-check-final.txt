@@ -1,0 +1,8 @@
+ok: res://src/core/collision/collision_query.gd
+ok: res://src/core/collision/mover_def.gd
+ok: res://src/core/collision/track_collision_data.gd
+ok: res://src/core/collision/ground_hit.gd
+ok: res://src/core/collision/wall_hit.gd
+ok: res://tests/unit/collision/collision_fixtures.gd
+ok: res://tests/unit/collision/collision_movers_test.gd
+ok: res://tests/unit/collision/collision_query_ground_test.gd

@@ -1,7 +1,7 @@
 class_name GroundHit
 extends RefCounted
 ## The result of one CollisionQuery.cast_ground (ADR-0002 "Queries per kart per tick"; core-rebuild
-## story 003). The caller allocates one per probe once (usually inside its QueryCursor's owner) and
+## stories 003, 005). The caller allocates one per probe once (usually inside its QueryCursor's owner) and
 ## reuses it every tick: cast_ground writes the fields only when it returns true, and leaves them
 ## untouched on a miss.
 ## Not thread-safe: one GroundHit belongs to one caller on the main thread.
@@ -18,11 +18,14 @@ var point: Vector3 = Vector3.ZERO
 var normal: Vector3 = Vector3.UP
 ## Stable surface id (SurfaceType.id) of the triangle hit, or CollisionQuery.SURFACE_NONE when the
 ## face index is unavailable (the face-index project setting is off; the load check catches it).
+## For a mover hit (collider_id >= 1) it is that mover's MoverDef.surface_id.
 var surface_id: int = CollisionQuery.SURFACE_NONE
-## 0 = static ground; otherwise the id (>= 1) of the mover hit (movers: story 005). Never Jolt's
+## 0 = static ground; otherwise the id (>= 1) of the mover hit (MoverDef.id). Never Jolt's
 ## collider_id.
 var collider_id: int = 0
-## Velocity of the collider at the hit point (zero for static ground).
+## Velocity of the collider at the hit point (zero for static ground; for a mover,
+## CollisionQuery.mover_point_velocity(collider_id, t, point)). Informational: a kart riding a mover
+## is carried by the mover's pose delta (story 021, ADR-0003), not by integrating this.
 var collider_velocity: Vector3 = Vector3.ZERO
 
 

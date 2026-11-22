@@ -39,6 +39,8 @@
 
 ## Implementation Notes
 
+> **From the story 005 review (LP):** put a `MoverDef.mirrored()` next to its fields (keys map quaternion (x, y, z, w) to (x, -y, -z, w), positions x -> -x, ids copied) and test it by walking `get_property_list()` over every `@export` field so a future field cannot be silently dropped. The load-time `probe_point` cast takes a `t`: specify the probe time (t = 0) and the authoring rule that no solid mover stands over the probe point at that time. Degenerate exact-centre normals (fixed RIGHT) are not mirror-symmetric: keep them out of mirror-equivalence tests.
+
 > **Note from story 003 review (LP):** the id load check must be a blocking assert (a face with `SURFACE_NONE` = -1 would otherwise reach Driving), and the probe cast at `probe_point` must run on every load, including an empty query (bad data builds no geometry and only `push_error`s). Consider a `has_geometry()` accessor for a precise boot message.
 > **Note from story 003 engine check:** add a save/load round-trip test of `TrackCollisionData` to a binary `.res` (typed `Array[PackedVector3Array]` and `Array[MoverDef]`), comparing the arrays after reload; ADR-0005 bakes these.
 

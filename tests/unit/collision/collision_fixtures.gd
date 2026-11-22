@@ -1,5 +1,5 @@
 extends RefCounted
-## Fixtures for the core-rebuild story 003 (ground) and story 004 (walls) collision tests. Everything is built in code: no file
+## Fixtures for the core-rebuild story 003 (ground), story 004 (walls) and story 005 (movers) collision tests. Everything is built in code: no file
 ## I/O, no randomness. Preload it from a test:
 ## [codeblock]
 ## const Fixtures = preload("res://tests/unit/collision/collision_fixtures.gd")
@@ -70,6 +70,22 @@ const SWEEP_Y: float = 2.0
 const WALL_LENGTH: float = 10.0
 ## Distance (m) along Z between the starts of the attr_walls walls (gaps keep them apart).
 const WALL_SPACING: float = 20.0
+## Identity rotation key (quaternion x, y, z, w) of a mover.
+const ROT_IDENTITY: Vector4 = Vector4(0.0, 0.0, 0.0, 1.0)
+## Distance (m) the slide mover travels along +X (story 005 AC 1: 0 -> 10 m over 2 s).
+const SLIDE_DISTANCE: float = 10.0
+## Time (s) the slide mover takes to reach SLIDE_DISTANCE.
+const SLIDE_TIME: float = 2.0
+## Period (s) of the slide mover: out over SLIDE_TIME, back over the rest (the loop segment).
+const SLIDE_PERIOD: float = 4.0
+## Time (s) between the spinner's keys; it turns SPIN_STEP_ANGLE per step (story 005 AC 2: 90 deg
+## about +Y in 1 s).
+const SPIN_STEP_TIME: float = 1.0
+## Angle (rad) the spinner turns per key step.
+const SPIN_STEP_ANGLE: float = PI / 2.0
+## Number of spinner keys: one full turn over SPIN_KEYS * SPIN_STEP_TIME (the loop segment is the
+## last quarter turn, 270 deg -> 360 deg).
+const SPIN_KEYS: int = 4
 
 
 ## A SurfaceSet built in code with the kinds of REGISTRY_KINDS and the ids of REGISTRY_IDS.
@@ -269,3 +285,68 @@ static func _append_facing_triangle(faces: PackedVector3Array, a: Vector3, b: Ve
 static func _append_up_quad(faces: PackedVector3Array, x0: float, x1: float, z0: float, z1: float) -> void:
 	faces.append_array([Vector3(x0, 0.0, z0), Vector3(x1, 0.0, z0), Vector3(x0, 0.0, z1)])
 	faces.append_array([Vector3(x1, 0.0, z0), Vector3(x1, 0.0, z1), Vector3(x0, 0.0, z1)])
+
+
+## Quaternion key (x, y, z, w) of a rotation by [param angle] radians about unit [param axis].
+static func rot_key(axis: Vector3, angle: float) -> Vector4:
+	var q: Quaternion = Quaternion(axis, angle)
+	return Vector4(q.x, q.y, q.z, q.w)
+
+
+## A mover with the given keys (extents left zero: set them, or use the shaped helpers below).
+static func mover(id: int, shape: MoverDef.Shape, period: float, key_t: Array[float], key_pos: Array[Vector3],
+		key_rot: Array[Vector4]) -> MoverDef:
+	var m: MoverDef = MoverDef.new()
+	m.id = id
+	m.shape = shape
+	m.period = period
+	m.key_t = PackedFloat32Array(key_t)
+	m.key_pos = PackedVector3Array(key_pos)
+	m.key_rot = PackedVector4Array(key_rot)
+	return m
+
+
+## A BOX mover standing still at [param at] (two equal keys, period 2 s).
+static func still_box(id: int, at: Vector3, half_extents: Vector3) -> MoverDef:
+	var m: MoverDef = mover(id, MoverDef.Shape.BOX, 2.0, [0.0, 1.0], [at, at], [ROT_IDENTITY, ROT_IDENTITY])
+	m.half_extents = half_extents
+	return m
+
+
+## A CAPSULE or CYLINDER mover standing still at [param at], axis along +Y.
+static func still_round(id: int, shape: MoverDef.Shape, at: Vector3, radius: float, half_height: float) -> MoverDef:
+	var m: MoverDef = mover(id, shape, 2.0, [0.0, 1.0], [at, at], [ROT_IDENTITY, ROT_IDENTITY])
+	m.radius = radius
+	m.half_height = half_height
+	return m
+
+
+## A BOX mover keyed from [param start] at t = 0 to [param start] + (SLIDE_DISTANCE, 0, 0) at
+## SLIDE_TIME, looping back to [param start] at SLIDE_PERIOD; no rotation.
+static func slide_box(id: int, start: Vector3, half_extents: Vector3) -> MoverDef:
+	var m: MoverDef = mover(id, MoverDef.Shape.BOX, SLIDE_PERIOD, [0.0, SLIDE_TIME],
+			[start, start + Vector3.RIGHT * SLIDE_DISTANCE], [ROT_IDENTITY, ROT_IDENTITY])
+	m.half_extents = half_extents
+	return m
+
+
+## A BOX mover at [param at] turning SPIN_STEP_ANGLE about +Y every SPIN_STEP_TIME (keys at 0, 90,
+## 180 and 270 deg; the loop segment closes the turn).
+static func spinner_box(id: int, at: Vector3, half_extents: Vector3) -> MoverDef:
+	var key_t: Array[float] = []
+	var key_pos: Array[Vector3] = []
+	var key_rot: Array[Vector4] = []
+	for k in SPIN_KEYS:
+		key_t.append(k * SPIN_STEP_TIME)
+		key_pos.append(at)
+		key_rot.append(rot_key(Vector3.UP, k * SPIN_STEP_ANGLE))
+	var m: MoverDef = mover(id, MoverDef.Shape.BOX, SPIN_KEYS * SPIN_STEP_TIME, key_t, key_pos, key_rot)
+	m.half_extents = half_extents
+	return m
+
+
+## Collision data holding only [param movers] (no ground, no walls).
+static func movers_only(movers: Array[MoverDef]) -> TrackCollisionData:
+	var data: TrackCollisionData = TrackCollisionData.new()
+	data.movers = movers
+	return data

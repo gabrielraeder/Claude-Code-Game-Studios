@@ -110,8 +110,8 @@ func test_project_pins_jolt_face_index_and_main_thread_physics() -> void:
 func test_track_collision_data_is_tool_resource_with_schema_fields() -> void:
 	# Arrange
 	var data: TrackCollisionData = TrackCollisionData.new()
-	var mover: MoverDef = MoverDef.new()
-	mover.id = 1
+	# A valid mover: layout_error() checks movers from story 005.
+	var mover: MoverDef = Fixtures.still_box(1, Vector3.ZERO, Vector3.ONE)
 	# Act
 	data.movers.append(mover)
 	var names: Array[String] = []
