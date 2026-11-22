@@ -12,7 +12,7 @@ Proposed
 ## Decision Makers
 Claude (autonomous mode, owner-authorized) drafted it from the measured spike (`prototypes/collision-spike/REPORT.md`, `out/`). It has been through two reviews and is now v2:
 - **godot-specialist:** probe runs on 4.8-beta3, kept as `scripts/probe_adr2.gd` with output in `out/probe_adr2.txt`; four blocking items, all applied in v2.
-- **technical-director (TD-ADR):** CONCERNS, all applied in v2.
+- **technical-director (TD-ADR):** v1 CONCERNS applied in v2; v2 CONCERNS (wall-attribute mapping, rotating-mover contacts) applied in v3.
 
 Acceptance needs the owner's confirmation.
 
@@ -49,7 +49,7 @@ Collision's budget is ≤ 0.3 ms p95 per tick for 12 karts. The spike measured 0
 5. `cast_motion*` ignores an overlap that exists at the start, whatever the `backface_collision` value.
 6. One body with N shapes returns the shape index in `collider_shape` from rest info. `collider_id` is 0 for every server body.
 7. Releasing a shape resource while a body uses it silently removes the shape from the body.
-8. Freeing the space before its bodies leaves dangling body RIDs, and freeing those later crashes (exit 139).
+8. Freeing the space before its bodies leaves dangling body RIDs, and freeing those later crashes (exit 139). Observed in the godot-specialist's review runs (2026-11-22); the kept probe (`out/probe_adr2.txt`) does not re-run the crash on purpose.
 9. A mirrored mesh with flipped winding gives identical hits.
 10. With a query mask of 3, rest info at a floor/wall corner returns only the floor.
 
@@ -109,15 +109,16 @@ It must serve 12 karts within budget. It needs per-triangle surface ids for trac
   - surface id = `surface_of_face[face_index]`;
   - ground rays set **`hit_back_faces = false`** explicitly.
 - **Walls (layer 2):**
-  - **one** body with **N shapes, where shape index = wall-attribute index**;
-  - wall attribute = `collider_shape` from rest info;
+  - **one** body with **N shapes, one per wall attribute the track uses** (dense, no empty shapes);
+  - wall attribute = `wall_attr_ids[collider_shape]` (the stable id of that shape), from rest info;
   - wall triangles are one-sided and face the route; `backface_collision` stays **false**.
   - Walls sit on their own layer because rest info returns a single contact, and at a floor/wall corner a combined mask returns the floor (Verified 10).
   - Consequence: ground rays do not see wall tops.
 - **Static bodies are never told apart by `collider_id`**, which is always 0. Where bodies must be distinguished, use `collider_rid`.
 - **Moving colliders:** these are **not** Jolt bodies.
+  - Mover ids are **≥ 1**; 0 always means static geometry.
   - Each has a primitive shape (box, capsule or cylinder) and a **keyframed pose curve**: `MoverDef { id, shape, extents, period, keys: Array[{t, Transform3D}] }`. The pose is piecewise linear in position and slerp in rotation, looped over `period`, so it is a pure function of time.
-  - `CollisionQuery` is the single evaluator: `mover_pose(id, t)` and `mover_velocity(id, t)`. The velocity is the analytic derivative of the active segment.
+  - `CollisionQuery` is the single evaluator: `mover_pose(id, t)` and `mover_point_velocity(id, t, p)`. The point velocity is v + ω × (p − origin), from the analytic derivative of the active segment (linear and angular), so a kart on a spinning platform or hit by a swinging hammer gets the velocity at the contact point.
   - The simulation evaluates movers at `t = n × SIM_DT`. Track Hazards (the effect, keyed by mover id) and presentation (at the continuous synced time) call the same functions. Nobody keeps a second evaluator.
 
 ### Queries per kart per tick (caller-owned objects in a `QueryCursor`)
@@ -125,14 +126,14 @@ It must serve 12 karts within budget. It needs per-triangle surface ids for trac
   1. `intersect_ray_into` against ground (mask 1);
   2. plus an analytic ray test against the movers whose AABB the ray touches;
   3. the nearest hit wins.
-  - `GroundHit` carries point, normal, `surface_id`, `collider_id` (0 = static, otherwise the mover id; never Jolt's id) and `collider_velocity` (zero for static ground).
+  - `GroundHit` carries point, normal, `surface_id`, `collider_id` (0 = static, otherwise the mover id; never Jolt's id) and `collider_velocity` (the **point velocity at the hit**; zero for static ground).
 - **`sweep_walls`:**
   1. **Unconditional rest check at `from`** (`get_rest_info_into`, mask 2), which sets `started_inside`. About 0.4 µs × 12 per tick.
   2. `cast_motion_into` from `from` to `to`.
   3. If it hits, a rest check at the unsafe point.
   4. If the cast is clear, a rest check at `to`.
-  5. Plus an analytic sweep test against the movers in range.
-  - `WallHit` carries point, normal, `wall_attr`, `fraction`, `started_inside` and `collider_id` (mover id, or 0).
+  5. Plus an analytic sweep test against the movers in range, which **also sets `started_inside`** when a mover overlaps the kart at the start of the tick (a mover that moved into it).
+  - `WallHit` carries point, normal, `wall_attr`, `fraction`, `started_inside`, `collider_id` (mover id, or 0) and `collider_velocity` (point velocity at the contact; zero for static walls).
   - This closes the start-overlap tunnelling hole: Jolt casts ignore start overlaps, and `backface_collision` does not help (Verified 5). Resolving the overlap is ADR-0003's job.
 - **Reuse rules:**
   - Each `QueryCursor` holds its own reused parameter and result objects, and its own `SphereShape3D` if kart radii differ.
@@ -145,8 +146,8 @@ A `Resource` saved as binary **`.res`**. 154k triangles is about 5.5 MB raw, too
 |---|---|---|
 | `ground_faces` | `PackedVector3Array` | 3 vertices per triangle, Godot-front winding |
 | `surface_of_face` | `PackedInt32Array` | Stable surface id per ground triangle |
-| `wall_faces` | `Array[PackedVector3Array]` | Index = wall-attribute id |
-| `wall_attr_ids` | `PackedInt32Array` | Stable wall-attribute id per wall shape |
+| `wall_faces` | `Array[PackedVector3Array]` | Dense: one entry per wall attribute this track uses; entry k becomes wall shape k |
+| `wall_attr_ids` | `PackedInt32Array` | Stable wall-attribute id of wall shape k (same length as `wall_faces`) |
 | `movers` | `Array[MoverDef]` | Moving colliders |
 | `probe_point`, `probe_surface_id` | `Vector3`, `int` | Known road point for the load check |
 
@@ -193,10 +194,10 @@ func dispose() -> void                                   # bodies → shapes →
 func cast_ground(cursor: QueryCursor, origin: Vector3, dir: Vector3, max_dist: float, t: float, out: GroundHit) -> bool
 func sweep_walls(cursor: QueryCursor, from: Vector3, to: Vector3, radius: float, t: float, out: WallHit) -> bool
 func mover_pose(id: int, t: float) -> Transform3D
-func mover_velocity(id: int, t: float) -> Vector3
+func mover_point_velocity(id: int, t: float, p: Vector3) -> Vector3   # v + ω × (p − origin)
 
-class_name GroundHit   # point, normal, surface_id, collider_id (0 = static / mover id), collider_velocity
-class_name WallHit     # point, normal, wall_attr, fraction, started_inside, collider_id
+class_name GroundHit   # point, normal, surface_id, collider_id (0 = static / mover id ≥ 1), collider_velocity (point velocity at hit)
+class_name WallHit     # point, normal, wall_attr (= wall_attr_ids[collider_shape]), fraction, started_inside, collider_id, collider_velocity
 class_name QueryCursor # reused PhysicsRayQueryParameters3D, PhysicsShapeQueryParameters3D, result objects, SphereShape3D
 class_name MoverDef    # id, shape, extents, period, keys
 class_name TrackCollisionData extends Resource
@@ -210,7 +211,7 @@ func mirrored() -> TrackCollisionData                    # new object; never mut
 - Queries **must** run on the main thread; `run_on_separate_thread` **must** stay false.
 - Ground rays **must** set `hit_back_faces = false`. Walls **must** stay one-sided (`backface_collision = false`).
 - `sweep_walls` **must** run its rest check at `from` on every call.
-- Movers **must** be evaluated through `mover_pose` / `mover_velocity` only, at the time the caller passes in. No system keeps its own pose evaluator.
+- Movers **must** be evaluated through `mover_pose` / `mover_point_velocity` only, at the time the caller passes in. No system keeps its own pose evaluator.
 - `collider_id` from Jolt **must never** identify static geometry. Use shape index or `collider_rid`.
 - `mirrored()` **must** return a new object.
 - The boot and load checks **must** run.
@@ -250,7 +251,7 @@ func mirrored() -> TrackCollisionData                    # new object; never mut
 - It depends on a Jolt-specific setting that is off by default. A wrong value means every surface is wrong; the boot and load asserts catch that.
 - RID lifetime is manual, with a strict free order.
 - One-sided triangles: wrong winding makes geometry invisible. The importer validates winding.
-- Ground rays cannot see wall tops. Tracks keep walls off driving paths, or model drivable tops as ground.
+- Ground rays cannot see wall tops, and the wall sweep uses the wall mask only with one-sided triangles, so **steep ground and deck undersides never block a kart**. Authoring rule (ADR-0004/0005): anything that must stop a kart is on the wall layer; drivable tops are ground.
 
 ## Risks
 - **Start-overlap tunnelling** (7.5% of sampled sweeps started inside a wall). Mitigation: the unconditional rest check at `from`, `started_inside`, and overlap resolution in ADR-0003.
@@ -284,7 +285,8 @@ The frozen 2.5D game keeps its spline model (`src/legacy/`). Story 022 implement
 ## Validation Criteria
 - **Unit tests (gdUnit4; valid only once the main project pins Jolt):**
   - ground casts return the expected surface ids on a fixture mesh;
-  - the wall attribute equals the shape index;
+  - the wall attribute equals the mapped stable id (`wall_attr_ids[collider_shape]`), for a track using non-contiguous ids;
+  - a rotating mover reports the point velocity at the contact, and a mover moving into a kart sets `started_inside`;
   - a mirrored mesh gives mirrored hits, and `mirrored()` leaves the source untouched;
   - a mover blocks or clears at time t as its curve says;
   - `started_inside` is true for a start overlap;
