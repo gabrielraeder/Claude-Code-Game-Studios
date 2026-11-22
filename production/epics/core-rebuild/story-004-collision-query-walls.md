@@ -1,12 +1,12 @@
 # Story 004: CollisionQuery wall sweeps
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: M
 > **Manifest Version**: N/A (no control manifest yet)
-> **Last Updated**: not started (set by /dev-story)
+> **Last Updated**: 2026-11-22
 
 ## Context
 
@@ -28,10 +28,10 @@
 
 *Each criterion cites its source (GDD AC id, ADR Validation Criteria, or `architecture.md`).*
 
-- [ ] **Wall attribute id.** A wall triangle with material `wall_rough` mapped to a non-contiguous id: `sweep_walls` returns `wall_attr` = that id, via `wall_attr_ids[collider_shape]` (Track Collision AC-6; ADR-0002 Validation Criteria).
-- [ ] **One-sided walls.** A sphere swept at a wall from its back face passes through; from its front it hits (Track Collision AC-7).
-- [ ] **Touch.** A move ending flush against a wall returns `fraction = 1.0` and `started_inside = false` (Track Collision AC-10).
-- [ ] **Started inside.** A sweep starting inside a wall returns `started_inside = true`, `fraction = 0`, runs no cast, and fills point, normal, `wall_attr` and `collider_id` from the overlap (Track Collision AC-11; ADR-0002 v5 amendment).
+- [x] **Wall attribute id.** A wall triangle with material `wall_rough` mapped to a non-contiguous id: `sweep_walls` returns `wall_attr` = that id, via `wall_attr_ids[collider_shape]` (Track Collision AC-6; ADR-0002 Validation Criteria).
+- [x] **One-sided walls.** A sphere swept at a wall from its back face passes through; from its front it hits (Track Collision AC-7).
+- [x] **Touch.** A move ending flush against a wall returns `fraction = 1.0` and `started_inside = false` (Track Collision AC-10).
+- [x] **Started inside.** A sweep starting inside a wall returns `started_inside = true`, `fraction = 0`, runs no cast, and fills point, normal, `wall_attr` and `collider_id` from the overlap (Track Collision AC-11; ADR-0002 v5 amendment).
 
 ---
 
@@ -54,10 +54,8 @@
 
 ## Files
 
-*Planned; `/dev-story` replaces this list with the files it changed.*
-
-- `src/core/collision/collision_query.gd` (sweep_walls), `src/core/collision/wall_hit.gd` (new)
-- `tests/unit/collision/collision_query_walls_test.gd` (new)
+- `src/core/collision/wall_hit.gd` (new), `query_cursor.gd`, `collision_query.gd` (`sweep_walls`, `_write_blocked_hit`, `_write_wall_contact`)
+- `tests/unit/collision/collision_fixtures.gd`, `tests/unit/collision/collision_query_walls_test.gd` (new)
 
 ---
 
@@ -71,7 +69,7 @@
 
 **Story Type**: Logic
 **Required evidence**: `tests/unit/collision/collision_query_walls_test.gd` — must exist and pass, with at least one test per acceptance criterion (`qa.level: full`)
-**Status**: [ ] Not yet created
+**Status**: [x] Created: tests/unit/collision/collision_query_walls_test.gd (25 tests; suite 80/80, production/qa/evidence/core-rebuild-story-004/gdunit4-final.log; mutation-a/b/c logs)
 
 ---
 
@@ -79,3 +77,17 @@
 
 - Depends on: `production/epics/core-rebuild/story-003-collision-query-ground.md`
 - Unlocks: `production/epics/core-rebuild/story-005-collision-movers.md`
+
+## Completion Notes
+**Completed**: 2026-11-22
+**Criteria**: 4/4 passing (gdUnit4 80/80; mutations a/b/c each fail their target test; parse check clean; no regression needed: nothing under src/legacy or src/data changed)
+**Deviations**: ADR-0002 step 4 amended: a cast hit with `unsafe_fraction >= 1` (move ending exactly flush) is handled as a touch (verified engine behaviour on 4.8-beta3). Engine reference corrected: `cast_motion_into` overwrites its result on a miss.
+**Test Evidence**: tests/unit/collision/collision_query_walls_test.gd; production/qa/evidence/core-rebuild-story-004/ (gdunit4-final.log, parse-check-final.txt, mutation-*.log, probe_walls.txt)
+**Reviewed by**: lead-programmer (LP-CODE-REVIEW: CONCERNS, revised); qa-lead (QL-TEST-COVERAGE: GAPS, closed with mutation-c); godot-gdscript-specialist engine check (clean)
+
+## Calls beyond the design
+- A move ending flush with a wall is a touch (`fraction` 1.0) · `collision_query.gd` `sweep_walls` · kept 2026-11-22
+- A flush contact at `from` counts as `started_inside` (depth 0); story 013 treats depth <= `wall_skin` as a resting contact · `sweep_walls`, story 013 note · kept 2026-11-22
+- Zero motion runs no cast and returns false after the rest check · kept 2026-11-22
+- Untested fallback when rest at the unsafe point misses: blocking hit with `WALL_ATTR_NONE`, debug warning · `_write_blocked_hit` · kept 2026-11-22
+- Sphere radius rewritten only when it changes · `query_cursor.gd` · kept 2026-11-22

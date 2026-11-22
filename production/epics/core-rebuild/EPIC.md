@@ -21,7 +21,7 @@ Phase A Sequencing in `docs/architecture/architecture.md`: freeze and oracle →
 | 001 | Freeze the 2.5D game and capture the regression oracle | Integration | Complete | ADR-0001 |
 | 002 | Core surface and wall-attribute registries | Logic | Complete | ADR-0002 |
 | 003 | TrackCollisionData and CollisionQuery ground casts | Logic | Complete | ADR-0002 |
-| 004 | CollisionQuery wall sweeps | Logic | Ready | ADR-0002 |
+| 004 | CollisionQuery wall sweeps | Logic | Complete | ADR-0002 |
 | 005 | Analytic moving colliders | Logic | Ready | ADR-0002 |
 | 006 | Collision load checks, mirror and boundary greps | Logic | Ready | ADR-0002, ADR-0001 |
 | 007 | Collision benchmark (<= 0.3 ms p95, 12 karts) | Integration | Ready | ADR-0002 |

@@ -1,0 +1,7 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+ok: res://src/core/collision/wall_hit.gd
+ok: res://src/core/collision/query_cursor.gd
+ok: res://src/core/collision/collision_query.gd
+ok: res://tests/unit/collision/collision_fixtures.gd
+ok: res://tests/unit/collision/collision_query_walls_test.gd

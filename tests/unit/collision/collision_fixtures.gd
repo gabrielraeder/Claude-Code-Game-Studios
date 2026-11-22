@@ -1,5 +1,5 @@
 extends RefCounted
-## Fixtures for the core-rebuild story 003 collision tests. Everything is built in code: no file
+## Fixtures for the core-rebuild story 003 (ground) and story 004 (walls) collision tests. Everything is built in code: no file
 ## I/O, no randomness. Preload it from a test:
 ## [codeblock]
 ## const Fixtures = preload("res://tests/unit/collision/collision_fixtures.gd")
@@ -52,6 +52,24 @@ const DEGENERATE_SURFACE_ID: int = 1
 const WALL_TOP_Y: float = 1.0
 ## Wall-attribute ids of the fixture walls (non-contiguous on purpose).
 const WALL_ATTR_IDS: Array[int] = [5, 2]
+## Names of the fixture wall registry (story 004), in registry (array) order.
+const WALL_REGISTRY_NAMES: Array[StringName] = [&"standard", &"rough", &"stone"]
+## Ids parallel to WALL_REGISTRY_NAMES: non-contiguous, and none equals its registry index or the
+## shape index its wall gets in attr_walls.
+const WALL_REGISTRY_IDS: Array[int] = [4, 17, 9]
+## Wall shape order of attr_walls: shape k is the wall named WALL_SHAPE_ORDER[k] (rough is shape 0,
+## registry index 1, id 17; stone shape 1, index 2, id 9; standard shape 2, index 0, id 4).
+const WALL_SHAPE_ORDER: Array[StringName] = [&"rough", &"stone", &"standard"]
+## Sweep sphere radius (m) of the wall tests (the cart's radius, ADR-0003).
+const SWEEP_RADIUS: float = 1.0
+## Height (m) of the fixture walls (from y = 0).
+const WALL_HEIGHT: float = 4.0
+## Height (m) of the sweep centre in the wall tests: mid-wall, far from the top and bottom edges.
+const SWEEP_Y: float = 2.0
+## Length (m) of each attr_walls wall along Z, and of each inner_corner wall.
+const WALL_LENGTH: float = 10.0
+## Distance (m) along Z between the starts of the attr_walls walls (gaps keep them apart).
+const WALL_SPACING: float = 20.0
 
 
 ## A SurfaceSet built in code with the kinds of REGISTRY_KINDS and the ids of REGISTRY_IDS.
@@ -163,6 +181,88 @@ static func ground_with_walls(ids: Array[int]) -> TrackCollisionData:
 	data.wall_faces = [top, side]
 	data.wall_attr_ids = PackedInt32Array(WALL_ATTR_IDS)
 	return data
+
+
+## A WallAttrSet built in code with the names of WALL_REGISTRY_NAMES and the ids of
+## WALL_REGISTRY_IDS.
+static func wall_registry() -> WallAttrSet:
+	var walls: WallAttrSet = WallAttrSet.new()
+	for i in WALL_REGISTRY_NAMES.size():
+		var a: WallAttr = WallAttr.new()
+		a.name = WALL_REGISTRY_NAMES[i]
+		a.id = WALL_REGISTRY_IDS[i]
+		walls.attrs.append(a)
+	return walls
+
+
+## Walls only (no ground): one vertical wall per WALL_SHAPE_ORDER entry, all in the plane x = 0
+## facing +X, from y = 0 to WALL_HEIGHT. Wall shape k spans z in [k * WALL_SPACING,
+## k * WALL_SPACING + WALL_LENGTH] and carries the id [param walls] gives its name (a wall_<name>
+## material mapped through the registry, as the importer does).
+static func attr_walls(walls: WallAttrSet) -> TrackCollisionData:
+	var data: TrackCollisionData = TrackCollisionData.new()
+	var shapes: Array[PackedVector3Array] = []
+	var ids: PackedInt32Array = PackedInt32Array()
+	for k in WALL_SHAPE_ORDER.size():
+		var z0: float = k * WALL_SPACING
+		var faces: PackedVector3Array = PackedVector3Array()
+		_append_wall_quad(faces, Vector3(0.0, 0.0, z0), Vector3(0.0, 0.0, z0 + WALL_LENGTH), WALL_HEIGHT, Vector3.RIGHT)
+		shapes.append(faces)
+		ids.append(walls.attr_of(WALL_SHAPE_ORDER[k]).id)
+	data.wall_faces = shapes
+	data.wall_attr_ids = ids
+	return data
+
+
+## Z of the middle of wall shape [param k] of attr_walls.
+static func wall_centre_z(k: int) -> float:
+	return k * WALL_SPACING + WALL_LENGTH / 2.0
+
+
+## An inner corner at the origin, walls only: shape 0 the plane x = 0 facing +X for z in
+## [0, WALL_LENGTH] (rough), shape 1 the plane z = 0 facing +Z for x in [0, WALL_LENGTH] (stone).
+## The drivable side is x > 0, z > 0.
+static func inner_corner(walls: WallAttrSet) -> TrackCollisionData:
+	var data: TrackCollisionData = TrackCollisionData.new()
+	var x_wall: PackedVector3Array = PackedVector3Array()
+	_append_wall_quad(x_wall, Vector3.ZERO, Vector3(0.0, 0.0, WALL_LENGTH), WALL_HEIGHT, Vector3.RIGHT)
+	var z_wall: PackedVector3Array = PackedVector3Array()
+	_append_wall_quad(z_wall, Vector3.ZERO, Vector3(WALL_LENGTH, 0.0, 0.0), WALL_HEIGHT, Vector3.BACK)
+	data.wall_faces = [x_wall, z_wall]
+	data.wall_attr_ids = PackedInt32Array([walls.attr_of(&"rough").id, walls.attr_of(&"stone").id])
+	return data
+
+
+## quadrant_ground plus ONE wall shape (id WALL_ATTR_IDS[0]): the plane x = -QUADRANT_SIZE facing
+## +X for z in [-QUADRANT_SIZE, QUADRANT_SIZE], from the ground (y = 0) up to WALL_HEIGHT: a
+## floor/wall corner along the wall's foot.
+static func ground_and_side_wall(ids: Array[int]) -> TrackCollisionData:
+	var data: TrackCollisionData = quadrant_ground(ids)
+	var side: PackedVector3Array = PackedVector3Array()
+	_append_wall_quad(side, Vector3(-QUADRANT_SIZE, 0.0, -QUADRANT_SIZE), Vector3(-QUADRANT_SIZE, 0.0, QUADRANT_SIZE),
+			WALL_HEIGHT, Vector3.RIGHT)
+	data.wall_faces = [side]
+	data.wall_attr_ids = PackedInt32Array([WALL_ATTR_IDS[0]])
+	return data
+
+
+## Appends a vertical wall quad (two triangles) with bottom edge [param bottom0] -> [param bottom1],
+## [param height] tall, whose front side faces [param facing] (Godot-front winding chosen per
+## triangle, so the caller never hand-orders vertices).
+static func _append_wall_quad(faces: PackedVector3Array, bottom0: Vector3, bottom1: Vector3, height: float, facing: Vector3) -> void:
+	var top0: Vector3 = bottom0 + Vector3.UP * height
+	var top1: Vector3 = bottom1 + Vector3.UP * height
+	_append_facing_triangle(faces, bottom0, bottom1, top0, facing)
+	_append_facing_triangle(faces, bottom1, top1, top0, facing)
+
+
+## Appends triangle (a, b, c), or (a, c, b), whichever has its Godot front ((c - a) x (b - a))
+## along [param facing].
+static func _append_facing_triangle(faces: PackedVector3Array, a: Vector3, b: Vector3, c: Vector3, facing: Vector3) -> void:
+	if (c - a).cross(b - a).dot(facing) > 0.0:
+		faces.append_array([a, b, c])
+	else:
+		faces.append_array([a, c, b])
 
 
 ## Appends an up-facing quad over [x0, x1] x [z0, z1] at y = 0 as two Godot-front triangles.

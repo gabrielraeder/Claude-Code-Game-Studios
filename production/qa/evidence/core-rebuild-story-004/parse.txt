@@ -1,0 +1,15 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+src/core/collision/wall_hit.gd exit 0
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+src/core/collision/query_cursor.gd exit 0
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+src/core/collision/collision_query.gd exit 0
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+tests/unit/collision/collision_fixtures.gd exit 0
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+tests/unit/collision/collision_query_walls_test.gd exit 0

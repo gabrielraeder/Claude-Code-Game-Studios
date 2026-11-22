@@ -72,7 +72,10 @@ This supplements (not replaces) the agent's built-in knowledge.
   - `get_rest_info_into(PhysicsShapeQueryParameters3D, PhysicsGetRestInfoResult3D) -> bool`
   - Result classes are RefCounted, getters only. `PhysicsCastMotionResult3D` has only
     safe/unsafe fractions (no normal, no point); `PhysicsGetRestInfoResult3D` has no face index.
-    A miss leaves the result object's previous values in place: read it only after `true`.
+    On a miss, `intersect_ray_into` and `get_rest_info_into` leave the result object's previous
+    values in place (read them only after `true`); `cast_motion_into` overwrites its result with
+    safe = unsafe = 1.0. A move ending exactly flush with a face returns `true` with unsafe = 1.0
+    (verified in core-rebuild story 004, `production/qa/evidence/core-rebuild-story-004/probe_walls.txt`).
   - Jolt: `face_index` needs `physics/jolt_physics_3d/queries/enable_ray_cast_face_index=true`
     (default false; pin it in project.godot, an override.cfg is ignored by `--import`).
 - Jolt updated to 5.6.0 (https://godotengine.org/article/dev-snapshot-godot-4-8-beta-1/).

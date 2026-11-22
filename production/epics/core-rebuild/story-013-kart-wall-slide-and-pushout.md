@@ -38,6 +38,8 @@
 
 ## Implementation Notes
 
+> **From the story 004 reviews (decided 2026-11-22):** `sweep_walls` reports a flush contact at `from` as `started_inside` (depth 0), so after a touch the next tick starts inside. The slide loop treats `started_inside` with depth <= `wall_skin` as a **resting contact**: no push-out sweep, no `depenetrated` event. Guard `wall_attr < 0` (`CollisionQuery.WALL_ATTR_NONE`: use the default attribute, treat the normal as unreliable). Branch on `started_inside`, never on `fraction == 0`. A touch (`fraction` 1.0) does not guarantee zero depth.
+
 - Depth is computed (no depth field in `PhysicsGetRestInfoResult3D`); at an inner corner rest returns only the deepest contact, hence 2 push-out sweeps (ADR-0003 probes).
 - Count `depenetrated` guard events per track; story 026 reports them.
 

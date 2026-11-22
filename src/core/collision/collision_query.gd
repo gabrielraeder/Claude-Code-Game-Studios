@@ -1,7 +1,7 @@
 class_name CollisionQuery
 extends RefCounted
 ## The track's collision queries (ADR-0002; core-rebuild story 003: construction, cast_ground,
-## dispose; sweep_walls is story 004, movers story 005). Jolt Physics, used only through
+## dispose; story 004: sweep_walls; movers are story 005). Jolt Physics, used only through
 ## PhysicsServer3D: this object creates and owns a private space (never activated: an inactive space
 ## answers queries and is never stepped), the server-side concave shapes and the static bodies.
 ##   - Ground (layer 1): one body, ONE concave shape holding every ground triangle; the surface id
@@ -28,6 +28,9 @@ extends RefCounted
 ##     n_hit += 1
 ## var kart_surface: int = CollisionQuery.majority_surface(surface_ids, hit_points, n_hit,
 ##         centre_of_mass, kart_up, previous_surface)
+## var wall: WallHit = WallHit.new()                # once per kart
+## if query.sweep_walls(cursor, from, to, kart_radius, t, wall):
+##     var wall_attr: int = wall.wall_attr          # WallAttr.id of the wall hit
 ## # ... at track unload:
 ## query.dispose()
 ## [/codeblock]
@@ -38,6 +41,8 @@ const GROUND_LAYER: int = 1
 const WALL_LAYER: int = 2
 ## surface_id reported when a ground hit has no usable face index. Not a registered id (ids >= 0).
 const SURFACE_NONE: int = -1
+## wall_attr reported when a wall contact has no usable shape index. Not a registered id (ids >= 0).
+const WALL_ATTR_NONE: int = -1
 
 ## The private space (inactive). RID() after dispose().
 var _space: RID = RID()
@@ -51,7 +56,8 @@ var _ground_body: RID = RID()
 var _wall_body: RID = RID()
 ## Copy of TrackCollisionData.surface_of_face (copy-on-write: shares the data's buffer).
 var _surface_of_face: PackedInt32Array = PackedInt32Array()
-## Copy of TrackCollisionData.wall_attr_ids, used by sweep_walls (story 004).
+## Copy of TrackCollisionData.wall_attr_ids (copy-on-write): wall shape k carries
+## _wall_attr_ids[k]. Read by sweep_walls.
 var _wall_attr_ids: PackedInt32Array = PackedInt32Array()
 ## Cached direct state of _space. null after dispose().
 var _state: PhysicsDirectSpaceState3D = null
@@ -163,6 +169,72 @@ func cast_ground(cursor: QueryCursor, origin: Vector3, dir: Vector3, max_dist: f
 	return true
 
 
+## Sweeps a sphere of [param radius] (> 0) against the static walls (layer 2 only: the sweep never
+## sees ground triangles) from [param from] to [param to]. Walls are one-sided: a sphere coming
+## from a wall's back side passes through it. On a hit, writes every field of [param out] and
+## returns true; on a miss returns false and leaves [param out] untouched. wall_attr is
+## wall_attr_ids[collider_shape] (the stable WallAttr.id), collider_id 0, collider_velocity zero.
+## ADR-0002 order, every call:
+##   1. Rest check at [param from], unconditional. An overlap (a flush contact counts) returns at
+##      once: started_inside = true, fraction = 0, point / normal / wall_attr from the overlap, and
+##      no cast runs (a cast from an overlapped start is blind to that wall).
+##   2. Cast from [param from] to [param to] (skipped when they are equal: nothing moves).
+##   3. A hit whose first contact is before the end of the motion (unsafe fraction < 1): rest check
+##      at the unsafe point; fraction = the cast's safe fraction.
+##   4. Otherwise (a clear cast, or a first contact exactly at the end, which Jolt reports as a hit
+##      with unsafe fraction 1): rest check at [param to]. A contact there is a touch:
+##      fraction = 1.0, started_inside = false.
+## [param _t] is the simulation time for movers (story 005; unused until then).
+## Allocation-free: uses only [param cursor]'s reused objects; the sphere radius is only written
+## when it changes. Main thread only.
+## [codeblock]
+## if query.sweep_walls(cursor, kart_centre, kart_centre + motion, 1.0, t, wall):
+##     if wall.started_inside:
+##         pass  # push out along the wall normal, then sweep again
+##     elif wall.fraction < 1.0:
+##         kart_centre += motion * wall.fraction  # then slide along wall.normal
+## [/codeblock]
+func sweep_walls(cursor: QueryCursor, from: Vector3, to: Vector3, radius: float, _t: float, out: WallHit) -> bool:
+	assert(not _disposed, "CollisionQuery.sweep_walls after dispose()")
+	assert(radius > 0.0, "CollisionQuery.sweep_walls: radius must be > 0")
+	if _disposed:
+		return false
+	var params: PhysicsShapeQueryParameters3D = cursor.shape_params
+	if cursor.sphere.radius != radius:
+		cursor.sphere.radius = radius
+	params.collision_mask = WALL_LAYER
+	params.motion = Vector3.ZERO
+	params.transform = Transform3D(Basis.IDENTITY, from)
+	var rest: PhysicsGetRestInfoResult3D = cursor.rest_result
+	# Step 1: the unconditional rest check at from (closes the start-overlap tunnelling hole).
+	if _state.get_rest_info_into(params, rest):
+		_write_wall_contact(rest, 0.0, true, out)
+		return true
+	# STORY 005 HOOK (movers, not implemented here): the analytic mover overlap at `from` belongs
+	# here. It also sets started_inside and returns at once; when a static wall and a mover both
+	# overlap, the deeper one wins, so the static rest check above must then be compared with the
+	# mover overlap instead of returning straight away. The analytic mover sweep (ADR-0002 step 5)
+	# is merged with the static result below, nearest fraction first.
+	var motion: Vector3 = to - from
+	if motion == Vector3.ZERO:
+		return false
+	# Step 2: the cast.
+	params.motion = motion
+	var cast: PhysicsCastMotionResult3D = cursor.cast_result
+	var cast_hit: bool = _state.cast_motion_into(params, cast)
+	params.motion = Vector3.ZERO
+	if cast_hit and cast.unsafe_fraction < 1.0:
+		# Step 3: the first contact is inside the motion.
+		_write_blocked_hit(cursor, from, motion, radius, out)
+		return true
+	# Step 4: clear cast, or the first contact is at the very end: a contact at `to` is a touch.
+	params.transform = Transform3D(Basis.IDENTITY, to)
+	if _state.get_rest_info_into(params, rest):
+		_write_wall_contact(rest, 1.0, false, out)
+		return true
+	return false
+
+
 ## The surface under a kart: the majority of the surface ids its probes hit (Track Collision GDD
 ## 4.1, AC-4). [param ids] and [param points] hold the surface id and the contact point of each probe
 ## that HIT, in probe order (front-left, front-right, rear-left, rear-right; misses left out); only
@@ -255,6 +327,49 @@ static func _votes(ids: PackedInt32Array, n: int, id: int) -> int:
 		if ids[j] == id:
 			votes += 1
 	return votes
+
+
+## ADR-0002 sweep step 3, after a cast that hit with unsafe fraction < 1 (in [param cursor]'s
+## cast_result): a rest check at the unsafe point gives the contact; fraction = the safe fraction.
+## If that rest check finds nothing (not seen in the tests; the probes never checked rest at the
+## unsafe point), the hit is kept so the sphere is blocked rather than let through: a contact
+## straight ahead along [param motion], wall_attr = WALL_ATTR_NONE, and a push_warning in debug
+## builds.
+func _write_blocked_hit(cursor: QueryCursor, from: Vector3, motion: Vector3, radius: float, out: WallHit) -> void:
+	var params: PhysicsShapeQueryParameters3D = cursor.shape_params
+	var cast: PhysicsCastMotionResult3D = cursor.cast_result
+	var safe: float = cast.safe_fraction
+	var unsafe_centre: Vector3 = from + motion * cast.unsafe_fraction
+	params.transform = Transform3D(Basis.IDENTITY, unsafe_centre)
+	if _state.get_rest_info_into(params, cursor.rest_result):
+		_write_wall_contact(cursor.rest_result, safe, false, out)
+		return
+	if OS.is_debug_build():
+		push_warning("CollisionQuery.sweep_walls: no rest contact at the unsafe point; reporting a blocking hit with WALL_ATTR_NONE")
+	var dir: Vector3 = motion.normalized()
+	out.point = unsafe_centre + dir * radius
+	out.normal = -dir
+	out.wall_attr = WALL_ATTR_NONE
+	out.fraction = safe
+	out.started_inside = false
+	out.collider_id = 0
+	out.collider_velocity = Vector3.ZERO
+
+
+## Writes a static-wall contact from [param rest] (a rest check that returned true) into
+## [param out]. wall_attr is _wall_attr_ids[collider_shape] (WALL_ATTR_NONE when out of range).
+func _write_wall_contact(rest: PhysicsGetRestInfoResult3D, fraction: float, started_inside: bool, out: WallHit) -> void:
+	var shape: int = rest.collider_shape
+	out.point = rest.point
+	out.normal = rest.normal
+	if shape >= 0 and shape < _wall_attr_ids.size():
+		out.wall_attr = _wall_attr_ids[shape]
+	else:
+		out.wall_attr = WALL_ATTR_NONE
+	out.fraction = fraction
+	out.started_inside = started_inside
+	out.collider_id = 0
+	out.collider_velocity = Vector3.ZERO
 
 
 ## Frees [param bodies], then [param shapes], then [param space]: the one place that fixes the
