@@ -1,7 +1,7 @@
 # Story 011: Surfaces and off-road
 
 > **Epic**: Dogworks Racing: Kennel Kingdom
-> **Status**: In Progress
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Visual/Feel
 > **Estimate**: M
@@ -79,7 +79,7 @@
 
 **Story Type**: Visual/Feel
 **Required evidence**: retained screenshots in `production/qa/evidence/` + sign-off in `production/qa/evidence/story-011-surfaces-and-off-road-evidence.md`
-**Status**: [ ] Not yet created
+**Status**: [x] Created (evidence doc and screenshots, sign-off approved 2026-11-21)
 
 ---
 
@@ -87,3 +87,19 @@
 
 - Depends on: `story-007-race-flow-hud-sound.md`
 - Unlocks: `story-013-pack-racing-speed.md`
+
+## Completion Notes
+**Completed**: 2026-11-21
+**Criteria**: 7/7 passing (1-4 and 6 accepted by the owner on the scripted runs and screenshots; 5 and 7 by track_check ALL PASS on both tracks, retained screenshots and the owner's look and feel sign-off)
+**Deviations**: Advisory, logged as tech debt TD-004..TD-010 (`docs/tech-debt-register.md`): slick tail survives another surface and a respawn (TD-004, fix follows as its own commit); zone/opening checks, zone_escape cap and per-tick road search (TD-005, 006, 008: replaced by story 022 mesh collision); look values as consts (TD-007); no Dungeon puddle, no 12-PC or Dungeon 2-peer run (TD-009: puddle goes into story 025); respawn counted as prediction error (TD-010). QA lead GAPS: War Horn through off-road untested (tested with the TD-004 fix). Built at rigor minimal before the switch to standard: no GDD or ADR for this system.
+**Test Evidence**: production/qa/evidence/story-011-surfaces-and-off-road-evidence.md (sign-off approved), production/qa/evidence/story-011-surfaces/part1..part3; Visual/Feel, no unit test required
+**Reviewed by**: lead-programmer (LP-CODE-REVIEW: CONCERNS, accepted and logged); qa-lead (QL-TEST-COVERAGE: GAPS, advisory)
+
+## Calls beyond the design
+- Speed caps as a share of top speed: grass .55, sand .50, mud .40, rubble .60, shallows .75; slick grip .35 with a 0.6 s tail · `assets/data/surfaces/surface_set.tres` · kept 2026-11-21
+- A boost lifts the cap on every off-road kind · `assets/data/surfaces/surface_set.tres` (`boost_ignores`) · kept 2026-11-21
+- The moat ford is a safe detour (+0.61 s against the road), not a shortcut; turf and cinder cuts pay only with a boost (turf +0.65 s plain, -0.38 s boosted) · `tools/gen_castle_circuit.py`, `tools/gen_dungeon_depths.py` · kept 2026-11-21
+- Zones: Castle turf cut, moat ford, village ale slick, kennel-yard mud; Dungeon cave rubble (two), cinder cut, cistern slime · the two generators · kept 2026-11-21
+- Rubble gives a light bump (yaw 1.1, height 0.06); shallows allow drifting, grass, sand, mud and rubble end a drift · `assets/data/surfaces/surface_set.tres` · kept 2026-11-21
+- Bots take a cut by personality (Shortcut Hunter most, Careful least) and steer around slicks · `src/ai/bot_driver.gd`, `assets/data/ai/bot_set.tres` · kept 2026-11-21
+- The zone polygon is the boundary, with striped fences on its outer edges; a wall opening only removes the wall · `src/test_track/track_model.gd`, `track_mesh.gd` · kept 2026-11-21

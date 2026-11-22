@@ -184,9 +184,9 @@ No z-fighting of zone ground against the road was seen. No fence ran through a w
 - Dungeon rubble and slime are hard to see in the top-down overview.
 - The 9.668 m spike was not reproduced on the rerun, because the bump-dependent fall did not recur. The cause is established from the logs: the 9.48 m respawn jump, and the same fall in older stories.
 - 2-peer runs were Castle only, no Dungeon 2-peer zone run.
-- A stray file `0.25` at the repo root came from part 2's `peer_castle` command (`--height-log=0.25`). Left in place; delete it by hand.
+- The stray `0.25` file at the repo root (part 2's height log) was moved to `part2/runs/peer_castle_height_log.csv`.
 
 ## Sign-off
 
-- [ ] Approved: look (zone grounds, fences, puffs, slick/shallows patterns, warn ring, visual-language colours; note the cistern slime contrast)
-- [ ] Approved: feel (caps, boost-cut trade-off, ford as a safe detour, slick tail, rubble bump)
+- [x] Approved: look (zone grounds, fences, puffs, slick/shallows patterns, warn ring, visual-language colours; note the cistern slime contrast)
+- [x] Approved: feel (caps, boost-cut trade-off, ford as a safe detour, slick tail, rubble bump)
