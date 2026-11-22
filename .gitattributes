@@ -27,3 +27,14 @@
 # .gitattributes governs the INDEX. It does not retro-fix a working tree that
 # predates the rule -- run `git add --renormalize .` for that.
 .claude/**/*.md text eol=lf
+
+# Native toolchain (core-rebuild story 066, ADR-0007 section 7). The source hash (SH) is over raw
+# file bytes, and `FileAccess.get_sha256` does the same, so every hashed file is pinned LF. A CRLF
+# checkout would change the hash and make the stale-DLL guard fire on a fresh build.
+native/src/** text eol=lf
+native/SConstruct text eol=lf
+native/GODOT_CPP_COMMIT text eol=lf
+native/hash_files.txt text eol=lf
+tools/build_native.sh text eol=lf
+tools/build_native.bat text eol=lf
+addons/dogworks_core/dogworks_core.gdextension text eol=lf
