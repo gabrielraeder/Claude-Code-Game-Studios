@@ -93,6 +93,48 @@ func layout_error() -> String:
 	return _key_error()
 
 
+## A NEW MoverDef: this mover reflected through the plane x = 0 (ADR-0001 section 7, ADR-0002
+## "Mirror"; story 005 LP review; called by TrackCollisionData.mirrored()). Every pose basis B
+## becomes M.B.M with M = diag(-1, 1, 1), so the mirrored pose is still a rotation and its sense
+## flips: key positions x -> -x, key rotations (x, y, z, w) -> (x, -y, -z, w). Every other field is
+## copied unchanged: id, period, solid, surface_id, wall_attr_id, shape, half_extents, radius,
+## half_height and key_t (each primitive is symmetric about its local x = 0 plane, so its extents
+## hold in the mirrored local frame). The key arrays are new arrays; this object is never mutated.
+## A new @export field must be added here, and to the property walk of
+## tests/unit/collision/collision_load_and_mirror_test.gd, which fails on a field it does not know.
+## Load time only (allocates). Reads only; safe from any thread.
+## [codeblock]
+## var right_gate: MoverDef = gate.mirrored()
+## assert(right_gate.key_pos[0].x == -gate.key_pos[0].x)
+## assert(right_gate != gate)  # a new sub-resource, never the cached one
+## [/codeblock]
+func mirrored() -> MoverDef:
+	var out: MoverDef = MoverDef.new()
+	out.id = id
+	out.period = period
+	out.solid = solid
+	out.surface_id = surface_id
+	out.wall_attr_id = wall_attr_id
+	out.shape = shape
+	out.half_extents = half_extents
+	out.radius = radius
+	out.half_height = half_height
+	out.key_t = key_t.duplicate()
+	var pos: PackedVector3Array = PackedVector3Array()
+	pos.resize(key_pos.size())
+	for i in key_pos.size():
+		var p: Vector3 = key_pos[i]
+		pos[i] = Vector3(-p.x, p.y, p.z)
+	out.key_pos = pos
+	var rot: PackedVector4Array = PackedVector4Array()
+	rot.resize(key_rot.size())
+	for i in key_rot.size():
+		var q: Vector4 = key_rot[i]
+		rot[i] = Vector4(q.x, -q.y, -q.z, q.w)
+	out.key_rot = rot
+	return out
+
+
 ## The shape part of layout_error(): "" or the first problem with the shape value or its extents.
 func _shape_error() -> String:
 	match shape:

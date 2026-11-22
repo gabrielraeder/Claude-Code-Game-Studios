@@ -1,0 +1,1 @@
+PASS no Dictionary query forms in src/core src/gameplay (ADR-0002) (scanned: src/core; absent: src/gameplay)

@@ -1,0 +1,8 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+ok: res://src/core/collision/collision_query.gd
+ok: res://src/core/collision/collision_boot_check.gd
+ok: res://src/core/collision/track_collision_data.gd
+ok: res://src/core/collision/mover_def.gd
+ok: res://tests/unit/collision/collision_fixtures.gd
+ok: res://tests/unit/collision/collision_load_and_mirror_test.gd

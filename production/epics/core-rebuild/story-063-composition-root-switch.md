@@ -39,6 +39,8 @@
 
 ## Implementation Notes
 
+> **From story 006:** build collision only through `CollisionBootCheck.checked_query(data, surfaces, walls, probe_max_drop)` (it runs the load check and disposes on failure; `core_greps.sh` forbids a bare `CollisionQuery.new(` outside it), and call `CollisionBootCheck.assert_boot_settings()` at boot, refusing to start on a non-empty result (release builds strip the assert).
+
 - Frozen code stays on disk until the owner approves deletion (story 065).
 
 ---

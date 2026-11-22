@@ -86,6 +86,45 @@ const SPIN_STEP_ANGLE: float = PI / 2.0
 ## Number of spinner keys: one full turn over SPIN_KEYS * SPIN_STEP_TIME (the loop segment is the
 ## last quarter turn, 270 deg -> 360 deg).
 const SPIN_KEYS: int = 4
+## Story 006: ground face of one_triangle_per_kind the load probe stands over (not face 0, so a
+## face index of 0 reported with the setting off could not pass by accident).
+const PROBE_FACE: int = 4
+## Story 006: height (m) of the probe point above the fixture ground.
+const PROBE_HEIGHT: float = 1.0
+## Story 006: probe cast length (m) passed as probe_max_drop (ADR-0005's probe_max_drop_m stand-in).
+const PROBE_MAX_DROP: float = 2.0
+## Story 006: corners of the tilted ramp triangle of mirror_fixture (front normal (-8, 16, 0)
+## normalised: up, with an x component, so a mirrored normal must flip its x).
+const RAMP_A: Vector3 = Vector3(100.0, 0.0, 0.0)
+const RAMP_B: Vector3 = Vector3(104.0, 2.0, 0.0)
+const RAMP_C: Vector3 = Vector3(100.0, 0.0, 4.0)
+## Story 006: surface id of the ramp (slick in the fixture registry).
+const RAMP_SURFACE_ID: int = 200
+## Story 006: the spinner of mirror_fixture (id 1): centre and half extents.
+const MIRROR_SPINNER_AT: Vector3 = Vector3(20.0, 1.0, 2.0)
+const MIRROR_SPINNER_HALF: Vector3 = Vector3(1.5, 0.5, 0.7)
+## Story 006: the tilted capsule of mirror_fixture (id 2): centre, axis of its turn, radius,
+## half-height, period and key step (time and angle).
+const MIRROR_CAPSULE_AT: Vector3 = Vector3(40.0, 1.5, 2.0)
+const MIRROR_CAPSULE_AXIS: Vector3 = Vector3(0.3, 0.5, 0.8)
+const MIRROR_CAPSULE_RADIUS: float = 0.6
+const MIRROR_CAPSULE_HALF_HEIGHT: float = 0.8
+const MIRROR_CAPSULE_PERIOD: float = 3.0
+const MIRROR_CAPSULE_STEP_T: float = 1.0
+const MIRROR_CAPSULE_STEP_ANGLE: float = 1.2
+## Story 006: the sliding, tilting cylinder of mirror_fixture (id 3): start and end keys, end tilt
+## about +Z, radius, half-height, key time and period.
+const MIRROR_CYLINDER_FROM: Vector3 = Vector3(60.0, 1.2, 2.0)
+const MIRROR_CYLINDER_TO: Vector3 = Vector3(63.0, 1.6, 2.5)
+const MIRROR_CYLINDER_TILT: float = 0.5
+const MIRROR_CYLINDER_RADIUS: float = 0.7
+const MIRROR_CYLINDER_HALF_HEIGHT: float = 0.4
+const MIRROR_CYLINDER_KEY_T: float = 2.0
+const MIRROR_CYLINDER_PERIOD: float = 4.0
+## Story 006: mover surface / wall-attribute ids (registered in the fixture registries; none 0, so
+## a dropped copy reads as the default).
+const MIRROR_MOVER_SURFACE_IDS: Array[int] = [3, 42, 6]
+const MIRROR_MOVER_WALL_IDS: Array[int] = [17, 9, 4]
 
 
 ## A SurfaceSet built in code with the kinds of REGISTRY_KINDS and the ids of REGISTRY_IDS.
@@ -350,3 +389,56 @@ static func movers_only(movers: Array[MoverDef]) -> TrackCollisionData:
 	var data: TrackCollisionData = TrackCollisionData.new()
 	data.movers = movers
 	return data
+
+
+## Story 006: a track that is NOT symmetric about x = 0, with every field set: the
+## one_triangle_per_kind ground (x in [0, 84]) plus a tilted ramp triangle, the attr_walls walls
+## (plane x = 0 facing +X), three movers (a spinner box, a capsule turning about a tilted axis, a
+## cylinder sliding and tilting about +Z) and a probe over face PROBE_FACE. Every id is in
+## non_contiguous_registry() / wall_registry(); layout_error() and id_error() are empty.
+static func mirror_fixture() -> TrackCollisionData:
+	var surfaces: SurfaceSet = non_contiguous_registry()
+	var data: TrackCollisionData = one_triangle_per_kind(surfaces)
+	data.ground_faces.append_array([RAMP_A, RAMP_B, RAMP_C])
+	data.surface_of_face.append(RAMP_SURFACE_ID)
+	var walled: TrackCollisionData = attr_walls(wall_registry())
+	data.wall_faces = walled.wall_faces
+	data.wall_attr_ids = walled.wall_attr_ids
+	var spinner: MoverDef = spinner_box(1, MIRROR_SPINNER_AT, MIRROR_SPINNER_HALF)
+	var axis: Vector3 = MIRROR_CAPSULE_AXIS.normalized()
+	var capsule: MoverDef = mover(2, MoverDef.Shape.CAPSULE, MIRROR_CAPSULE_PERIOD,
+			[0.0, MIRROR_CAPSULE_STEP_T, 2.0 * MIRROR_CAPSULE_STEP_T],
+			[MIRROR_CAPSULE_AT, MIRROR_CAPSULE_AT, MIRROR_CAPSULE_AT],
+			[rot_key(axis, 0.0), rot_key(axis, MIRROR_CAPSULE_STEP_ANGLE), rot_key(axis, 2.0 * MIRROR_CAPSULE_STEP_ANGLE)])
+	capsule.radius = MIRROR_CAPSULE_RADIUS
+	capsule.half_height = MIRROR_CAPSULE_HALF_HEIGHT
+	var cylinder: MoverDef = mover(3, MoverDef.Shape.CYLINDER, MIRROR_CYLINDER_PERIOD,
+			[0.0, MIRROR_CYLINDER_KEY_T], [MIRROR_CYLINDER_FROM, MIRROR_CYLINDER_TO],
+			[ROT_IDENTITY, rot_key(Vector3.BACK, MIRROR_CYLINDER_TILT)])
+	cylinder.radius = MIRROR_CYLINDER_RADIUS
+	cylinder.half_height = MIRROR_CYLINDER_HALF_HEIGHT
+	var movers: Array[MoverDef] = [spinner, capsule, cylinder]
+	for k in movers.size():
+		movers[k].surface_id = MIRROR_MOVER_SURFACE_IDS[k]
+		movers[k].wall_attr_id = MIRROR_MOVER_WALL_IDS[k]
+	data.movers = movers
+	data.probe_point = triangle_centroid(PROBE_FACE) + Vector3.UP * PROBE_HEIGHT
+	data.probe_surface_id = data.surface_of_face[PROBE_FACE]
+	return data
+
+
+## Story 006: a MoverDef with EVERY @export field away from its MoverDef.new() default (not a
+## layout-valid mover: the CAPSULE also carries box half extents), so a field mirrored() drops
+## cannot pass a "copied" check by holding the default.
+static func all_fields_mover() -> MoverDef:
+	var axis: Vector3 = MIRROR_CAPSULE_AXIS.normalized()
+	var m: MoverDef = mover(7, MoverDef.Shape.CAPSULE, MIRROR_CAPSULE_PERIOD,
+			[0.0, MIRROR_CAPSULE_STEP_T], [Vector3(1.5, 2.0, -3.0), Vector3(-4.0, 0.5, 2.5)],
+			[rot_key(axis, MIRROR_CAPSULE_STEP_ANGLE), rot_key(axis, 2.0 * MIRROR_CAPSULE_STEP_ANGLE)])
+	m.solid = false
+	m.surface_id = MIRROR_MOVER_SURFACE_IDS[1]
+	m.wall_attr_id = MIRROR_MOVER_WALL_IDS[1]
+	m.half_extents = MIRROR_SPINNER_HALF
+	m.radius = MIRROR_CAPSULE_RADIUS
+	m.half_height = MIRROR_CAPSULE_HALF_HEIGHT
+	return m

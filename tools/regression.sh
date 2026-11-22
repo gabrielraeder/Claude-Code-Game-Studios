@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
 # One regression command for the frozen 2.5D game (core-rebuild story 001).
-# Runs, sequentially: track_check on both tracks, the shell tests (bot race, online items,
-# kart bump, a short online stress race), the golden-trace capture and the trace compare.
+# Runs, sequentially: the core boundary greps (tools/core_greps.sh, core-rebuild story 006),
+# track_check on both tracks, the shell tests (bot race, online items, kart bump, a short online
+# stress race), the golden-trace capture and the trace compare.
 # Prints one "PASS <check>" or "FAIL <check> (reason)" line per check, a "WARN ..." line for a
 # known intermittent behaviour of the frozen game, and a final RESULT line:
-#   RESULT PASS (6/6 checks) warnings=W              every check ran and passed (exit 0)
-#   RESULT PARTIAL PASS (n/6: names) warnings=W      a CHECKS subset ran and passed (exit 0)
-#   RESULT FAIL: k check(s) failed (n/6: names) warnings=W                       (exit 1)
+#   RESULT PASS (7/7 checks) warnings=W              every check ran and passed (exit 0)
+#   RESULT PARTIAL PASS (n/7: names) warnings=W      a CHECKS subset ran and passed (exit 0)
+#   RESULT FAIL: k check(s) failed (n/7: names) warnings=W                       (exit 1)
 # Exit 2 on bad usage (unknown CHECKS name, existing outdir, reserved port).
 #
 # Usage: tools/regression.sh [outdir (must not exist)]
 #   default outdir: production/qa/regression/<date>-<time> (logs of every check)
 # Env: GODOT (console exe), PORT (default 24690; 24680 is refused), GOLDEN (trace folder to
 #      compare with, default the story-001 golden set), RACE_SEED (bot races in the capture),
-#      CHECKS (space-separated subset of: track_check bot_race item_net bump net_stress traces;
+#      CHECKS (space-separated subset of: core_greps track_check bot_race item_net bump net_stress traces;
 #      default all; a full run takes about 10 minutes, so a subset helps when time-boxed).
 # Only starts its own Godot processes, and only the shell tests' own watchdogs stop them.
 set -u
@@ -23,8 +24,8 @@ export GODOT="${GODOT:-C:/Godot/Godot_v4.8-beta3_win64_console.exe}"
 export PORT="${PORT:-24690}"
 if [ "$PORT" = 24680 ]; then echo "port 24680 is reserved for play sessions" >&2; exit 2; fi
 # Every check this script knows, in run order.
-ALL_CHECKS="track_check bot_race item_net bump net_stress traces"
-TOTAL_CHECKS=6
+ALL_CHECKS="core_greps track_check bot_race item_net bump net_stress traces"
+TOTAL_CHECKS=7
 CHECKS="${CHECKS:-$ALL_CHECKS}"
 bad=""
 n_checks=0
@@ -65,6 +66,13 @@ script_errors() {  # script_errors FILES... -> count of broken-script lines
 }
 
 echo "regression: out=$OUT port=$PORT golden=$GOLDEN checks=$CHECKS"
+
+if want core_greps; then
+bash tools/core_greps.sh > "$OUT/core_greps.txt" 2>&1
+code=$?
+ok=1; [ $code = 0 ] && ok=0
+result "core_greps (boundary greps)" $ok "exit $code, $(grep -c '^FAIL' "$OUT/core_greps.txt") FAIL rule(s), see core_greps.txt"
+fi
 
 if want track_check; then
 for track in castle_circuit dungeon_depths; do

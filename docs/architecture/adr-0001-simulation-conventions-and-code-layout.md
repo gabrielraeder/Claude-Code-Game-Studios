@@ -116,7 +116,7 @@ The new code also needs a place to live. That place must avoid the frozen code's
   - `physics/common/max_physics_steps_per_frame = 8`
   - `physics/common/physics_interpolation = false`
   - `physics/common/physics_jitter_fix = 0.0` (Verification Required 2)
-- **Boot assertion:** the composition root **asserts** `Engine.physics_ticks_per_second == 60` and `Engine.max_physics_steps_per_frame == 8` at boot. The editor may strip default values when it re-saves `project.godot`, so a changed setting must fail loudly.
+- **Boot assertion:** the composition root **asserts** `Engine.physics_ticks_per_second == 60` and `Engine.max_physics_steps_per_frame == 8` at boot. The editor may strip default values when it re-saves `project.godot`, so a changed setting must fail loudly. *(Clarified 2026-11-22, story 006: `CollisionBootCheck.assert_boot_settings()` asserts every pinned value — ticks 60 and max steps 8 read from `Engine`, and physics_interpolation false, physics_jitter_fix 0.0, plus ADR-0002's Jolt engine, face index and run_on_separate_thread false read from `ProjectSettings`; it returns the reason so a release build can refuse to start. `physics_jitter_fix` exists in 4.8-beta3: Verification Required 2 closed.)*
 - **Fixed step:** the simulation runs in the composition root's `_physics_process` and steps every sim object with **`const SIM_DT: float = 1.0 / 60.0`**, never with `delta`.
 - **The synced race time is authoritative.** Each PC computes a **target tick** = `floor(synced_race_time / SIM_DT)`. ADR-0006 owns clock sync and the start.
   - On each `_physics_process` call, the sim runs ticks until its local tick count reaches the target tick, at most `catch_up_ticks_max` per call (a `NetConfig` tuning value).

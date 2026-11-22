@@ -23,7 +23,7 @@ Phase A Sequencing in `docs/architecture/architecture.md`: freeze and oracle →
 | 003 | TrackCollisionData and CollisionQuery ground casts | Logic | Complete | ADR-0002 |
 | 004 | CollisionQuery wall sweeps | Logic | Complete | ADR-0002 |
 | 005 | Analytic moving colliders | Logic | Complete | ADR-0002 |
-| 006 | Collision load checks, mirror and boundary greps | Logic | Ready | ADR-0002, ADR-0001 |
+| 006 | Collision load checks, mirror and boundary greps | Logic | Complete | ADR-0002, ADR-0001 |
 | 007 | Collision benchmark (<= 0.3 ms p95, 12 karts) | Integration | Ready | ADR-0002 |
 | 008 | Legacy track extractor and generator-baked test mesh | Integration | Ready | ADR-0004, ADR-0002, ADR-0005 |
 | 009 | Core vehicle data fork, KartIntent and KartSnapshot | Logic | Ready | ADR-0003 |

@@ -1,0 +1,3 @@
+regression: out=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-006/regression-core-greps-review port=24690 golden=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-001/golden checks=core_greps
+PASS core_greps (boundary greps)
+RESULT PARTIAL PASS (1/7: core_greps) warnings=0 (out=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-006/regression-core-greps-review)

@@ -1,12 +1,12 @@
 # Story 006: Collision load checks, mirror and boundary greps
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: S
 > **Manifest Version**: N/A (no control manifest yet)
-> **Last Updated**: not started (set by /dev-story)
+> **Last Updated**: 2026-11-22
 
 ## Context
 
@@ -30,10 +30,10 @@
 
 *Each criterion cites its source (GDD AC id, ADR Validation Criteria, or `architecture.md`).*
 
-- [ ] **Face-index load check.** Building a query fails with a named reason when the face-index setting is off; the test sets the setting, awaits a frame, builds a new query, then restores the setting (Track Collision AC-18; ADR-0002 Validation Criteria).
-- [ ] **Mirror.** A mirrored fixture returns mirrored hit points (x -> -x) with the same surface and wall-attr ids, and `mirrored()` leaves the source resource unchanged (compared before and after) (Track Collision AC-17; ADR-0001 §7).
-- [ ] **Boot asserts.** Loading refuses, with a named reason, a `TrackCollisionData` whose surface or wall-attr id is not in the core registries, and a project whose physics engine or tick settings differ from ADR-0001 §5 / ADR-0002.
-- [ ] **Grep.** `tools/core_greps.sh` (new, prints one PASS/FAIL line per rule, exits non-zero on a failure) finds no Dictionary query forms in per-tick code under `src/core/` and `src/gameplay/` (ADR-0002 Validation Criteria), and is wired into `tools/regression.sh`.
+- [x] **Face-index load check.** Building a query fails with a named reason when the face-index setting is off; the test sets the setting, awaits a frame, builds a new query, then restores the setting (Track Collision AC-18; ADR-0002 Validation Criteria).
+- [x] **Mirror.** A mirrored fixture returns mirrored hit points (x -> -x) with the same surface and wall-attr ids, and `mirrored()` leaves the source resource unchanged (compared before and after) (Track Collision AC-17; ADR-0001 §7).
+- [x] **Boot asserts.** Loading refuses, with a named reason, a `TrackCollisionData` whose surface or wall-attr id is not in the core registries, and a project whose physics engine or tick settings differ from ADR-0001 §5 / ADR-0002.
+- [x] **Grep.** `tools/core_greps.sh` (new, prints one PASS/FAIL line per rule, exits non-zero on a failure) finds no Dictionary query forms in per-tick code under `src/core/` and `src/gameplay/` (ADR-0002 Validation Criteria), and is wired into `tools/regression.sh`.
 
 ---
 
@@ -61,13 +61,14 @@
 
 ## Files
 
-*Planned; `/dev-story` replaces this list with the files it changed.*
-
-- `src/core/collision/collision_query.gd` (load check), `src/core/collision/track_collision_data.gd` (`mirrored()`), `src/core/collision/collision_boot_check.gd` (new)
-- `tools/core_greps.sh` (new), `tools/regression.sh` (add the grep line)
-- `tests/unit/collision/collision_load_and_mirror_test.gd` (new)
-
----
+- `src/core/collision/collision_boot_check.gd` (new, plus `.uid`): `CollisionBootCheck` with pinned settings, `assert_boot_settings()`, `load_error()`, `checked_query()` and `CheckedQuery`
+- `src/core/collision/collision_query.gd`: `has_geometry()`, `probe_error()`, `PROBE_T`, `FACE_INDEX_SETTING`
+- `src/core/collision/track_collision_data.gd`: `id_error()` (split into surface / wall / mover helpers), `mirrored()`
+- `src/core/collision/mover_def.gd`: `mirrored()`
+- `tools/core_greps.sh` (new), `tools/regression.sh` (7 checks, `core_greps` first)
+- `tests/unit/collision/collision_fixtures.gd`, `tests/unit/collision/collision_load_and_mirror_test.gd` (new, 39 tests, plus `.uid`)
+- `.godot/global_script_class_cache.cfg` (rebuilt by `--import`)
+- Docs: ADR-0001 §5 (boot assertion clarified), ADR-0005 (check I17), stories 040, 050, 063 (use `checked_query`, call `assert_boot_settings()`)
 
 ## QA Test Cases
 
@@ -79,7 +80,7 @@
 
 **Story Type**: Logic
 **Required evidence**: `tests/unit/collision/collision_load_and_mirror_test.gd` — must exist and pass, with at least one test per acceptance criterion (`qa.level: full`)
-**Status**: [ ] Not yet created
+**Status**: [x] Created: tests/unit/collision/collision_load_and_mirror_test.gd (39 tests; full suite 179/179, production/qa/evidence/core-rebuild-story-006/gdunit4-final.log)
 
 ---
 
@@ -87,3 +88,21 @@
 
 - Depends on: `production/epics/core-rebuild/story-005-collision-movers.md`
 - Unlocks: `production/epics/core-rebuild/story-007-collision-benchmark.md`, `production/epics/core-rebuild/story-008-legacy-extractor-and-test-mesh.md`, `production/epics/core-rebuild/story-028-course-data-schema-and-mirror.md`
+
+## Completion Notes
+**Completed**: 2026-11-22
+**Criteria**: 4/4 passing (face-index load check; mirror of ground, walls and movers with ids kept and the source unchanged; boot and load refusals with named reasons; `tools/core_greps.sh` wired into `tools/regression.sh`, now 7 checks)
+**Deviations**: None. Added after review: `CollisionBootCheck.checked_query()` is the only way `src/` builds a `CollisionQuery` (grep-enforced); grep errors (exit >= 2) now FAIL instead of passing silently. Stories 040, 050 and 063 carry the rule.
+**Test Evidence**: production/qa/evidence/core-rebuild-story-006/ (gdunit4-final.log 179/179, 0 orphans; parse-check-final.txt 6/6; core-greps.log; regression-core-greps-review.txt; mutation-winding, -ids, -probe, -settings, -grep, -grep-error, -checked-query logs, each caught)
+**Reviewed by**: lead-programmer (LP-CODE-REVIEW: CONCERNS, fixed); qa-lead (QL-TEST-COVERAGE: GAPS, closed); godot-gdscript-specialist engine check (1 defect, fixed)
+Run result: N/A — collision load checks, mirror and greps run headless inside the core; nothing reaches the screen until the Castle port (story 050+)
+
+## Calls beyond the design
+- Probe cast length is a parameter (`probe_max_drop`, tests 2.0 m); the real value comes from ADR-0005 TrackImportLimits (story 036) · kept 2026-11-22
+- Probe casts straight down from `probe_point` at t = 0 and must hit static ground; a hit on a solid mover rejects the track (`CollisionQuery.probe_error`) · kept 2026-11-22
+- Id check also rejects a wall-attr id shared by two wall shapes and an unregistered `probe_surface_id`; registry entries outside 0..255 are ignored (`TrackCollisionData.id_error`) · kept 2026-11-22
+- Boot settings also check `physics_jitter_fix = 0.0` and `run_on_separate_thread = false`; ticks and max steps read from `Engine`; `assert_boot_settings()` returns the problem so a release build can refuse to start (`collision_boot_check.gd`) · kept 2026-11-22
+- `has_geometry()` counts non-solid movers; the probe message says so (`collision_query.gd`) · kept 2026-11-22
+- `checked_query()` returns inner class `CollisionBootCheck.CheckedQuery` (query, problem); grep forbids `CollisionQuery.new(` under `src/` outside `collision_boot_check.gd` (`tools/core_greps.sh`) · kept 2026-11-22
+- Forbidden-forms grep also lists `collide_shape(` and `Physics(Ray|Point)QueryParameters3D.create(` (the Point form may not exist in 4.8; harmless) · kept 2026-11-22
+- Tests restore the pinned values in `after_test()` rather than saving and restoring prior state; `mirrored()` copies packed arrays, keeps null movers null and leaves primitive extents unchanged · kept 2026-11-22

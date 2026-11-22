@@ -26,7 +26,9 @@ extends RefCounted
 ## method, so no two queries of one CollisionQuery may run at once. The setting
 ## physics/3d/run_on_separate_thread stays false (pinned in project.godot).
 ## Needs physics/jolt_physics_3d/queries/enable_ray_cast_face_index = true (pinned in project.godot;
-## asserted at boot from story 006), otherwise every ground hit reports SURFACE_NONE.
+## asserted at boot by CollisionBootCheck.assert_boot_settings(), story 006), otherwise every ground
+## hit reports SURFACE_NONE. At track load the composition root runs CollisionBootCheck.load_error(),
+## whose probe cast (probe_error) catches that and a missing mirror winding flip.
 ## [codeblock]
 ## var query: CollisionQuery = CollisionQuery.new(track_data)
 ## var cursor: QueryCursor = QueryCursor.new()      # once per kart
@@ -72,6 +74,11 @@ const PARALLEL_EPSILON: float = 0.000001
 const SMALL_ROTATION_EPSILON: float = 0.000001
 ## 1 / golden ratio, for the golden-section search of the mover sweep. A math constant.
 const INV_PHI: float = 0.6180339887498949
+## Time (s) of the load-time probe cast (story 005 LP review). Authoring rule: no solid mover stands
+## over TrackCollisionData.probe_point at this time. A fixed check time, not tuning.
+const PROBE_T: float = 0.0
+## The project setting ground surface ids need (ADR-0002): with it off, Jolt reports no face index.
+const FACE_INDEX_SETTING: String = "physics/jolt_physics_3d/queries/enable_ray_cast_face_index"
 
 ## The private space (inactive). RID() after dispose().
 var _space: RID = RID()
@@ -223,6 +230,56 @@ func dispose() -> void:
 ## [/codeblock]
 func is_disposed() -> bool:
 	return _disposed
+
+
+## True when the query built any geometry: a ground body, a wall body or a mover. Every mover counts,
+## NON-SOLID ones included, though cast_ground and sweep_walls skip non-solid movers: a query whose
+## only geometry is non-solid movers has geometry but no ground the probe can hit. False for a query
+## whose data was null or rejected by layout_error() (it push_errored and built nothing), for data
+## with no geometry at all, and after dispose(). For the precise load-check message (story 003 LP
+## review). Main thread only.
+## [codeblock]
+## if not query.has_geometry():
+##     push_error("the track has no collision: see the CollisionQuery error above")
+## [/codeblock]
+func has_geometry() -> bool:
+	return _ground_body.is_valid() or _wall_body.is_valid() or not _movers.is_empty()
+
+
+## The load-time probe (ADR-0002 "Boot and load checks"; story 006): cast_ground straight down from
+## [param probe_point] for [param max_drop] metres (> 0; ADR-0005's probe_max_drop_m) at t = PROBE_T
+## must hit the STATIC ground with surface id [param probe_surface_id] and normal.y > 0. Returns ""
+## on success, otherwise one sentence naming the reason: the query is disposed; max_drop not > 0;
+## a miss on a query with no geometry (has_geometry() false: its data was rejected); a miss with
+## geometry (no ground there, or ground facing away: a mirror without the winding flip; also a query
+## whose only geometry is non-solid movers, which has_geometry() counts); a hit on a
+## solid mover (the authoring rule above); a hit with no face index (SURFACE_NONE: names
+## FACE_INDEX_SETTING and its current value); another surface id; a normal that is not up.
+## It runs on every load, an empty query included, and also warms Jolt's lazily built broadphase.
+## Allocates one QueryCursor and one GroundHit: load time only. Main thread only.
+## [codeblock]
+## var problem: String = query.probe_error(data.probe_point, data.probe_surface_id, limits.probe_max_drop_m)
+## assert(problem.is_empty(), problem)
+## [/codeblock]
+func probe_error(probe_point: Vector3, probe_surface_id: int, max_drop: float) -> String:
+	if _disposed:
+		return "load probe: the query is disposed"
+	if not (max_drop > 0.0):
+		return "load probe: max_drop is %s (must be > 0)" % max_drop
+	var hit: GroundHit = GroundHit.new()
+	if not cast_ground(QueryCursor.new(), probe_point, Vector3.DOWN, max_drop, PROBE_T, hit):
+		if not has_geometry():
+			return "load probe at %s missed: the query has no geometry (its data was null or rejected; see the CollisionQuery error)" % probe_point
+		return "load probe at %s found no ground within %s m below (ground missing there, or facing away: a mirror without the winding flip; has_geometry() counts non-solid movers, which the probe never hits)" % [probe_point, max_drop]
+	if hit.collider_id != 0:
+		return "load probe at %s hit mover %d at t = %s (no solid mover may stand over the probe point at t = 0)" % [probe_point, hit.collider_id, PROBE_T]
+	if hit.surface_id == SURFACE_NONE:
+		return "load probe at %s hit ground with no face index (SURFACE_NONE): %s is %s (must be true)" % [probe_point, FACE_INDEX_SETTING, ProjectSettings.get_setting(FACE_INDEX_SETTING, false)]
+	if hit.surface_id != probe_surface_id:
+		return "load probe at %s found surface id %d, not probe_surface_id %d" % [probe_point, hit.surface_id, probe_surface_id]
+	if not (hit.normal.y > 0.0):
+		return "load probe at %s hit a normal %s that is not up (normal.y must be > 0)" % [probe_point, hit.normal]
+	return ""
 
 
 ## Casts a ray from [param origin] along [param dir] (unit length) for [param max_dist] metres
