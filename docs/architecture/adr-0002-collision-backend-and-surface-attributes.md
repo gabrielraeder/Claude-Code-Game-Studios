@@ -12,7 +12,7 @@ Proposed
 ## Decision Makers
 Claude (autonomous mode, owner-authorized) drafted it from the measured spike (`prototypes/collision-spike/REPORT.md`, `out/`). It has been through two reviews and is now v2:
 - **godot-specialist:** probe runs on 4.8-beta3, kept as `scripts/probe_adr2.gd` with output in `out/probe_adr2.txt`; four blocking items, all applied in v2.
-- **technical-director (TD-ADR):** v1 CONCERNS applied in v2; v2 CONCERNS (wall-attribute mapping, rotating-mover contacts) applied in v3.
+- **technical-director (TD-ADR):** v1 CONCERNS applied in v2; v2 CONCERNS (wall-attribute mapping, rotating-mover contacts) applied in v3; v4 amends ids and `MoverDef` from the joint ADR-0004/0005 review.
 
 Acceptance needs the owner's confirmation.
 
@@ -117,7 +117,10 @@ It must serve 12 karts within budget. It needs per-triangle surface ids for trac
 - **Static bodies are never told apart by `collider_id`**, which is always 0. Where bodies must be distinguished, use `collider_rid`.
 - **Moving colliders:** these are **not** Jolt bodies.
   - Mover ids are **≥ 1**; 0 always means static geometry.
-  - Each has a primitive shape (box, capsule or cylinder) and a **keyframed pose curve**: `MoverDef { id, shape, extents, period, keys: Array[{t, Transform3D}] }`. The pose is piecewise linear in position and slerp in rotation, looped over `period`, so it is a pure function of time.
+  - Each has a primitive shape and a **keyframed pose curve**, stored in `MoverDef extends Resource` (so it serialises in the `.res`):
+    - `id: int` (≥ 1), `period: float`;
+    - `shape: int` enum `BOX | CAPSULE | CYLINDER`; `half_extents: Vector3` for a box (Godot local axes); `radius` and `half_height` for a capsule or cylinder, axis along Godot local +Y, where `half_height` is the half-length of the **segment** (Godot's `CapsuleShape3D.height` is the total height);
+    - keys as packed arrays: `key_t: PackedFloat32Array`, `key_pos: PackedVector3Array`, `key_rot: PackedVector4Array` (quaternion xyzw). The pose is piecewise linear in position and slerp in rotation, looped over `period`, so it is a pure function of time.
   - `CollisionQuery` is the single evaluator: `mover_pose(id, t)` and `mover_point_velocity(id, t, p)`. The point velocity is v + ω × (p − origin), from the analytic derivative of the active segment (linear and angular), so a kart on a spinning platform or hit by a swinging hammer gets the velocity at the contact point.
   - The simulation evaluates movers at `t = n × SIM_DT`. Track Hazards (the effect, keyed by mover id) and presentation (at the continuous synced time) call the same functions. Nobody keeps a second evaluator.
 
@@ -151,9 +154,13 @@ A `Resource` saved as binary **`.res`**. 154k triangles is about 5.5 MB raw, too
 | `movers` | `Array[MoverDef]` | Moving colliders |
 | `probe_point`, `probe_surface_id` | `Vector3`, `int` | Known road point for the load check |
 
-- **Surface ids:** stable, project-wide, and owned by Track Collision through the core's `SurfaceSet` instance (`assets/data/core/`, ADR-0001 §9). The Blender material `surf_<name>` maps to the id registered for `<name>`. An unknown name fails the import.
+- **Surface ids:** stable, project-wide, owned by Track Collision.
+  - `SurfaceType` gains `@export var id: int = -1` (additive, ADR-0001 §9; the frozen game ignores it).
+  - The core `SurfaceSet` instance (`assets/data/core/`) gives every type an id: unique, ≥ 0, append-only, a removed id is never reused; **id 0 = `road`**. The core instance adds the kinds `road`, `boost_pad` and `trick_ramp` (pads and trick ramps are collision attributes, MK KCL style; Course Data derives its PAD and RAMP spans from them, ADR-0004).
+  - The Blender material `surf_<name>` maps to the id registered for `<name>`. An unknown name fails the import. The array index is never used as the id.
 - **Floor effects** (drag, grip, caps) are looked up by Driving & Drift in `SurfaceSet` by surface id. `GroundHit` carries no floor drag.
-- **Wall-attribute ids:** stable, from a `WallAttrSet` in the same place (for example scrape drag, bounce, opening). The same import rule applies.
+- **Wall-attribute ids:** stable, from new **core** classes `WallAttr` / `WallAttrSet` in `src/core/collision/` (not `src/data/`; the frozen game never used them), instance in `assets/data/core/`. Same id policy as surfaces (unique, append-only); fields include scrape drag, bounce and opening. Material `wall_<name>` maps by name; unknown names fail the import.
+- **Load check (ids):** every id in `surface_of_face` and `wall_attr_ids` exists in the registries, and ids are unique.
 
 ### Boot and load checks
 - **At boot:** the three pinned settings above are asserted, next to the ADR-0001 tick asserts.
@@ -177,7 +184,7 @@ TrackCollisionData (.res, baked by ADR-0005)          SurfaceSet / WallAttrSet (
 CollisionQuery (RefCounted; main thread only)
   private space (inactive) ── ground body: 1 shape (layer 1) ── face_index → surface id
                           └─ wall body: N shapes (layer 2) ── collider_shape → wall attr
-  movers: mover_pose(id, t) / mover_velocity(id, t) ── analytic tests
+  movers: mover_pose(id, t) / mover_point_velocity(id, t, p) ── analytic tests
   dispose(): bodies → shapes → space
         ▲ cast_ground / sweep_walls (QueryCursor: reused params, results, sphere)
 KartBody (ADR-0003) · item projectiles · hazards/presentation (mover_pose) · tools/tests
@@ -265,7 +272,7 @@ func mirrored() -> TrackCollisionData                    # new object; never mut
 |------------|-------------|--------------------------|
 | systems-index.md: Track Collision & Surface Attributes | Surface per triangle, walls, moving colliders | Ground face-index lookup, wall shapes per attribute, analytic movers with one evaluator |
 | systems-index.md: Kart Physics | Ground and wall queries within budget, headless | `CollisionQuery` `_into` API, private inactive space, `started_inside` |
-| systems-index.md: Track Hazards | Moving colliders exact on every PC | `mover_pose` / `mover_velocity` at the time passed in |
+| systems-index.md: Track Hazards | Moving colliders exact on every PC | `mover_pose` / `mover_point_velocity` at the time passed in |
 | systems-index.md: Grand Prix (mirror) | Mirror mode | `TrackCollisionData.mirrored()` |
 | architecture.md Performance Budgets | 12 karts within the simulation budget | Collision ≤ 0.3 ms p95, measured at 0.06 ms |
 
