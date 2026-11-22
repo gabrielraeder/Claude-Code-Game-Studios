@@ -1,0 +1,37 @@
+# opt1: median across 3 runs of each run's median_us and p95_us
+AGG layout=castle section=all median_of_medians_us=262 median_of_p95_us=303 runs_median=[ 262 262 264 ] runs_p95=[ 306 303 302 ]
+AGG layout=castle section=curve median_of_medians_us=255 median_of_p95_us=297 runs_median=[ 255 255 257 ] runs_p95=[ 300 297 284 ]
+AGG layout=castle section=climb median_of_medians_us=260 median_of_p95_us=282 runs_median=[ 260 259 261 ] runs_p95=[ 307 282 278 ]
+AGG layout=castle section=crossover median_of_medians_us=268 median_of_p95_us=288 runs_median=[ 267 268 269 ] runs_p95=[ 286 288 290 ]
+AGG layout=castle section=movers median_of_medians_us=290 median_of_p95_us=317 runs_median=[ 291 290 289 ] runs_p95=[ 317 317 310 ]
+AGG layout=castle section=ramp median_of_medians_us=256 median_of_p95_us=272 runs_median=[ 254 256 257 ] runs_p95=[ 265 272 273 ]
+castle: ALLOC OBJECT_COUNT start=1663.0 tick600=1663.0 end=1663.0 unchanged
+castle: VERDICT_INPUTS worst_section_p95_us=317 budget_us=300 alloc_unchanged=true
+castle: ALLOC OBJECT_COUNT start=1663.0 tick600=1663.0 end=1663.0 unchanged
+castle: VERDICT_INPUTS worst_section_p95_us=317 budget_us=300 alloc_unchanged=true
+castle: ALLOC OBJECT_COUNT start=1663.0 tick600=1663.0 end=1663.0 unchanged
+castle: VERDICT_INPUTS worst_section_p95_us=310 budget_us=300 alloc_unchanged=true
+AGG layout=worst section=all median_of_medians_us=324 median_of_p95_us=869 runs_median=[ 321 324 325 ] runs_p95=[ 865 869 877 ]
+AGG layout=worst section=curve median_of_medians_us=315 median_of_p95_us=359 runs_median=[ 313 315 318 ] runs_p95=[ 363 359 356 ]
+AGG layout=worst section=climb median_of_medians_us=321 median_of_p95_us=352 runs_median=[ 319 321 323 ] runs_p95=[ 339 355 352 ]
+AGG layout=worst section=crossover median_of_medians_us=328 median_of_p95_us=349 runs_median=[ 326 328 331 ] runs_p95=[ 349 343 349 ]
+AGG layout=worst section=movers median_of_medians_us=853 median_of_p95_us=900 runs_median=[ 850 853 861 ] runs_p95=[ 888 900 908 ]
+AGG layout=worst section=ramp median_of_medians_us=316 median_of_p95_us=333 runs_median=[ 314 316 319 ] runs_p95=[ 331 333 343 ]
+worst: ALLOC OBJECT_COUNT start=1663.0 tick600=1663.0 end=1663.0 unchanged
+worst: VERDICT_INPUTS worst_section_p95_us=888 budget_us=300 alloc_unchanged=true
+worst: ALLOC OBJECT_COUNT start=1663.0 tick600=1663.0 end=1663.0 unchanged
+worst: VERDICT_INPUTS worst_section_p95_us=900 budget_us=300 alloc_unchanged=true
+worst: ALLOC OBJECT_COUNT start=1663.0 tick600=1663.0 end=1663.0 unchanged
+worst: VERDICT_INPUTS worst_section_p95_us=908 budget_us=300 alloc_unchanged=true
+AGG layout=static section=all median_of_medians_us=198 median_of_p95_us=224 runs_median=[ 198 201 198 ] runs_p95=[ 221 224 228 ]
+AGG layout=static section=curve median_of_medians_us=196 median_of_p95_us=225 runs_median=[ 196 198 195 ] runs_p95=[ 223 225 228 ]
+AGG layout=static section=climb median_of_medians_us=201 median_of_p95_us=230 runs_median=[ 200 202 201 ] runs_p95=[ 230 221 236 ]
+AGG layout=static section=crossover median_of_medians_us=208 median_of_p95_us=225 runs_median=[ 208 210 208 ] runs_p95=[ 225 225 254 ]
+AGG layout=static section=movers median_of_medians_us=195 median_of_p95_us=217 runs_median=[ 195 197 194 ] runs_p95=[ 217 220 209 ]
+AGG layout=static section=ramp median_of_medians_us=196 median_of_p95_us=207 runs_median=[ 196 199 196 ] runs_p95=[ 206 216 207 ]
+static: ALLOC OBJECT_COUNT start=1658.0 tick600=1658.0 end=1658.0 unchanged
+static: VERDICT_INPUTS worst_section_p95_us=230 budget_us=300 alloc_unchanged=true
+static: ALLOC OBJECT_COUNT start=1658.0 tick600=1658.0 end=1658.0 unchanged
+static: VERDICT_INPUTS worst_section_p95_us=225 budget_us=300 alloc_unchanged=true
+static: ALLOC OBJECT_COUNT start=1658.0 tick600=1658.0 end=1658.0 unchanged
+static: VERDICT_INPUTS worst_section_p95_us=254 budget_us=300 alloc_unchanged=true

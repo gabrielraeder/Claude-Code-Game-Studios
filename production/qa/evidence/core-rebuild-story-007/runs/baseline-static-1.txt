@@ -1,0 +1,22 @@
+[bench] layout=static karts=12 rays_per_kart=4 sweeps_per_kart=3 movers=0 solid=0 ground_tris=48006 wall_tris=4800 ticks_per_section=300 build=debug engine=4.8-beta3 (official)
+BENCH layout=static section=all median_us=196 p95_us=215 max_us=3541
+SECTION layout=static section=curve median_us=193 p95_us=215 max_us=3541
+COUNTS layout=static section=curve per_tick ray_hits=48.00 ray_mover_hits=0.00 sweep_hits=2.90 sweep_mover_contacts=0.00 started_inside=2.78
+SECTION layout=static section=climb median_us=197 p95_us=215 max_us=380
+COUNTS layout=static section=climb per_tick ray_hits=48.00 ray_mover_hits=0.00 sweep_hits=2.86 sweep_mover_contacts=0.00 started_inside=2.74
+SECTION layout=static section=crossover median_us=206 p95_us=222 max_us=241
+COUNTS layout=static section=crossover per_tick ray_hits=48.00 ray_mover_hits=0.00 sweep_hits=2.86 sweep_mover_contacts=0.00 started_inside=2.76
+SECTION layout=static section=movers median_us=191 p95_us=207 max_us=225
+COUNTS layout=static section=movers per_tick ray_hits=48.00 ray_mover_hits=0.00 sweep_hits=2.90 sweep_mover_contacts=0.00 started_inside=2.78
+SECTION layout=static section=ramp median_us=193 p95_us=204 max_us=269
+COUNTS layout=static section=ramp per_tick ray_hits=48.00 ray_mover_hits=0.00 sweep_hits=0.00 sweep_mover_contacts=0.00 started_inside=0.00
+ALLOC OBJECT_COUNT start=1658.0 tick600=1658.0 end=1658.0 unchanged
+ALLOC OBJECT_RESOURCE_COUNT start=13.0 tick600=13.0 end=13.0 unchanged
+ALLOC OBJECT_NODE_COUNT start=2.0 tick600=2.0 end=2.0 unchanged
+ALLOC OBJECT_ORPHAN_NODE_COUNT start=0.0 tick600=0.0 end=0.0 unchanged
+ALLOC MEMORY_STATIC start=102197294.0 tick600=102197438.0 end=102197542.0 changed (not gated)
+ALLOC PS3D_INFO_ACTIVE_OBJECTS start=0.0 tick600=0.0 end=0.0 unchanged
+ALLOC PS3D_INFO_COLLISION_PAIRS start=0.0 tick600=0.0 end=0.0 unchanged
+ALLOC PS3D_INFO_ISLAND_COUNT start=0.0 tick600=0.0 end=0.0 unchanged
+ALLOC query_owned_rids start=6.0 tick600=6.0 end=6.0 unchanged
+VERDICT_INPUTS worst_section_p95_us=222 budget_us=300 alloc_unchanged=true

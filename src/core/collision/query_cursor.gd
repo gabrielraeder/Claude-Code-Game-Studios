@@ -19,16 +19,19 @@ extends RefCounted
 ## query.sweep_walls(cursor, from, to, stats.radius, t, wall)
 ## [/codeblock]
 
-## Ray parameters, reused. CollisionQuery sets from, to and collision_mask on every cast; the flags
-## below are fixed here once (ground rays never hit back faces, ADR-0002 Geometry layout).
+## Ray parameters, reused. CollisionQuery sets from and to on every cast; collision_mask
+## (CollisionQuery.GROUND_LAYER) and the flags are fixed here once (ground rays never hit back faces,
+## ADR-0002 Geometry layout; story 007 moved the mask here from every cast). Never change them.
 var ray_params: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.new()
 ## Ray result, reused. Only valid right after a cast that returned true (a miss leaves the
 ## previous hit's values in it).
 var ray_result: PhysicsIntersectRayResult3D = PhysicsIntersectRayResult3D.new()
 ## The sweep sphere, reused. sweep_walls sets its radius (only when it changes).
 var sphere: SphereShape3D = SphereShape3D.new()
-## Shape-query parameters for sweep_walls, reused. Its shape is [member sphere] (set once here);
-## CollisionQuery sets transform, motion and collision_mask on every sweep. margin stays 0.
+## Shape-query parameters for sweep_walls, reused. Its shape is [member sphere] and its
+## collision_mask CollisionQuery.WALL_LAYER (both set once here; never change them); CollisionQuery
+## sets transform on every sweep and motion only around its cast, resetting it to zero right
+## after, so motion is zero between calls (story 007: sweep_walls relies on it). margin stays 0.
 var shape_params: PhysicsShapeQueryParameters3D = PhysicsShapeQueryParameters3D.new()
 ## Cast result, reused. Every cast_motion_into writes it (a clear cast writes 1.0 / 1.0).
 var cast_result: PhysicsCastMotionResult3D = PhysicsCastMotionResult3D.new()
@@ -37,11 +40,13 @@ var rest_result: PhysicsGetRestInfoResult3D = PhysicsGetRestInfoResult3D.new()
 
 
 func _init() -> void:
+	ray_params.collision_mask = CollisionQuery.GROUND_LAYER
 	ray_params.hit_back_faces = false
 	ray_params.hit_from_inside = false
 	ray_params.collide_with_areas = false
 	ray_params.collide_with_bodies = true
 	shape_params.shape = sphere
+	shape_params.collision_mask = CollisionQuery.WALL_LAYER
 	shape_params.margin = 0.0
 	shape_params.collide_with_areas = false
 	shape_params.collide_with_bodies = true

@@ -22,8 +22,9 @@ extends RefCounted
 ## the shapes, then the space (freeing the space first crashes later, ADR-0002 Verified 8). It is
 ## idempotent. If the last reference drops without it, the object disposes itself and push_warnings.
 ##
-## Threading: main thread only. The mover code keeps per-object scratch fields shared by every query
-## method, so no two queries of one CollisionQuery may run at once. The setting
+## Threading: main thread only. The mover code keeps per-object scratch fields and a pose cache
+## (each mover's pose, inverse and velocities at the last t it was evaluated at; story 007) shared by
+## every query method, so no two queries of one CollisionQuery may run at once. The setting
 ## physics/3d/run_on_separate_thread stays false (pinned in project.godot).
 ## Needs physics/jolt_physics_3d/queries/enable_ray_cast_face_index = true (pinned in project.godot;
 ## asserted at boot by CollisionBootCheck.assert_boot_settings(), story 006), otherwise every ground
@@ -58,12 +59,22 @@ const SURFACE_NONE: int = -1
 ## (ids >= 0). A mover contact reports its MoverDef.wall_attr_id instead.
 const WALL_ATTR_NONE: int = -1
 ## Length (m) at which the analytic mover sweep stops refining the first contact: the reported
-## fraction is safe (no overlap) and at most this far short of the true contact along the motion.
-## A numerical tolerance (Jolt's own safe/unsafe gap is ~1/4096 of the motion), not tuning.
+## fraction is safe (no overlap) and at most this far short of the true contact along the motion. A
+## touch (fraction 1.0) needs the end itself in contact and the first contact within this length of
+## the end. A numerical tolerance (Jolt's own safe/unsafe gap is ~1/4096 of the motion), not tuning.
 const MOVER_SWEEP_TOLERANCE: float = 0.0001
-## Iteration cap of each refinement loop of the analytic mover sweep (bisection, golden section).
-## A safety bound only: the tolerance above ends the loops first for any motion under ~100 km.
+## Iteration cap of each refinement loop of the analytic mover sweep (Newton steps, bisection).
+## A safety bound only: Newton from the start converges monotonically and the bisection halves a
+## bracket, so the tolerance above ends both loops first for any motion under ~100 km. Reaching the
+## Newton cap fails closed: a blocking hit at the last safe fraction and one push_error per query.
 const MOVER_SWEEP_MAX_ITERATIONS: int = 64
+## Sentinel of _sweep_local's bracket end while no probe is in contact yet (the cap case). Not tuning.
+const NEWTON_CAPPED: float = -2.0
+## Extra length (m) along the motion of the second static rest check when the one exactly at the
+## cast's unsafe point finds nothing (story 007: on 4.8-beta3 Jolt can report the cast's unsafe
+## point inside its cast tolerance while a rest check there finds no contact; 0.0001 m was enough
+## in the probe, 0.00001 m was not). A numerical tolerance, not tuning.
+const UNSAFE_RETRY_LENGTH: float = 0.001
 ## Margin (m) added to the mover cull radii so float32 rounding never culls a real contact.
 ## Numerical, not tuning.
 const MOVER_CULL_MARGIN: float = 0.01
@@ -72,8 +83,6 @@ const PARALLEL_EPSILON: float = 0.000001
 ## Below this vector-part length, a key-to-key rotation counts as small and its angular velocity uses
 ## the small-angle form 2 * (x, y, z) / span. Numerical, not tuning.
 const SMALL_ROTATION_EPSILON: float = 0.000001
-## 1 / golden ratio, for the golden-section search of the mover sweep. A math constant.
-const INV_PHI: float = 0.6180339887498949
 ## Time (s) of the load-time probe cast (story 005 LP review). Authoring rule: no solid mover stands
 ## over TrackCollisionData.probe_point at this time. A fixed check time, not tuning.
 const PROBE_T: float = 0.0
@@ -107,10 +116,36 @@ var _mover_shape_bound: PackedFloat64Array = PackedFloat64Array()
 var _mover_path_centre: PackedVector3Array = PackedVector3Array()
 ## Radius of that sphere plus _mover_shape_bound[k] plus MOVER_CULL_MARGIN: a time-free cull.
 var _mover_path_reach: PackedFloat64Array = PackedFloat64Array()
+## Slots of the solid movers, in data order: the only movers cast_ground and sweep_walls test.
+var _solid_slots: PackedInt32Array = PackedInt32Array()
+## Pose cache (story 007, TD-012): mover k evaluated at time _pc_t[k] (NAN = never). Every _pc_*
+## array has one entry per mover: appended in _add_mover (load), cleared in dispose().
+## The cache key is the exact float t: _eval_slot reuses an entry only when t == _pc_t[k]. That is
+## valid, and pays, only because every query of one tick passes the identical t (n x SIM_DT computed
+## once by the caller); a different t, however close, re-evaluates. A cached entry holds exactly
+## what an evaluation at that t computes, so results stay bit-identical.
+var _pc_t: PackedFloat64Array = PackedFloat64Array()
+## Cached pose and its inverse.
+var _pc_pose: Array[Transform3D] = []
+var _pc_inv: Array[Transform3D] = []
+## Cached linear velocity (m/s) of the active key segment.
+var _pc_lin: PackedVector3Array = PackedVector3Array()
+## Cached angular velocity (rad/s), valid only when _pc_ang_ok[k] == 1: computed lazily, on a hit.
+var _pc_ang: PackedVector3Array = PackedVector3Array()
+var _pc_ang_ok: PackedByteArray = PackedByteArray()
+## Cached active key pair and segment span (for the lazy angular velocity).
+var _pc_seg_i: PackedInt32Array = PackedInt32Array()
+var _pc_seg_j: PackedInt32Array = PackedInt32Array()
+var _pc_span: PackedFloat64Array = PackedFloat64Array()
 ## Cached direct state of _space. null after dispose().
 var _state: PhysicsDirectSpaceState3D = null
 ## True once dispose() ran.
 var _disposed: bool = false
+## Newton step cap of the mover sweep (MOVER_SWEEP_MAX_ITERATIONS). A test seam: tests lower it to
+## exercise the fail-closed path; game code never changes it.
+var _newton_cap: int = MOVER_SWEEP_MAX_ITERATIONS
+## True once this query push_errored a capped mover sweep (the error is reported once per query).
+var _cap_error_reported: bool = false
 
 # Per-call scratch: multi-value returns of the mover helpers without allocating. Shared by every
 # query method of this object: main thread only, never two queries at once.
@@ -119,12 +154,6 @@ var _seg_i: int = 0
 var _seg_j: int = 0
 var _seg_span: float = 1.0
 var _seg_alpha: float = 0.0
-## Pose of the mover last evaluated by _eval_mover.
-var _ev_pose: Transform3D = Transform3D.IDENTITY
-## Linear velocity (m/s) of that mover's active key segment.
-var _ev_lin: Vector3 = Vector3.ZERO
-## Angular velocity (rad/s, world axis times rate) of that mover's active key segment.
-var _ev_ang: Vector3 = Vector3.ZERO
 ## _closest_* output: nearest surface point and outward unit normal, mover-local.
 var _cl_point: Vector3 = Vector3.ZERO
 var _cl_normal: Vector3 = Vector3.UP
@@ -140,7 +169,18 @@ var _gm_slot: int = -1
 var _gm_dist: float = 0.0
 var _gm_normal: Vector3 = Vector3.UP
 var _gm_velocity: Vector3 = Vector3.ZERO
-## _test_movers_for_sweep output, deepest overlap at `from`: slot (-1 = none), depth, world contact.
+## _test_movers_for_sweep pass 1 -> pass 2: the movers in reach that do not overlap at `from`
+## (slot, local start, local motion, start gap, start slope d gap / d fraction). Every _rs_* array
+## has one entry per mover: appended in _add_mover (load), cleared in dispose(); _rs_count entries
+## are used per sweep.
+var _rs_count: int = 0
+var _rs_slot: PackedInt32Array = PackedInt32Array()
+var _rs_from: PackedVector3Array = PackedVector3Array()
+var _rs_motion: PackedVector3Array = PackedVector3Array()
+var _rs_gap: PackedFloat64Array = PackedFloat64Array()
+var _rs_slope: PackedFloat64Array = PackedFloat64Array()
+## _test_movers_for_sweep output, deepest overlap at `from`: slot (-1 = none), depth, world contact
+## (point and normal are mover-local until the end of pass 1).
 var _ov_slot: int = -1
 var _ov_depth: float = 0.0
 var _ov_point: Vector3 = Vector3.ZERO
@@ -221,6 +261,22 @@ func dispose() -> void:
 	_mover_shape_bound.clear()
 	_mover_path_centre.clear()
 	_mover_path_reach.clear()
+	_solid_slots.clear()
+	_pc_t.clear()
+	_pc_pose.clear()
+	_pc_inv.clear()
+	_pc_lin.clear()
+	_pc_ang.clear()
+	_pc_ang_ok.clear()
+	_pc_seg_i.clear()
+	_pc_seg_j.clear()
+	_pc_span.clear()
+	_rs_count = 0
+	_rs_slot.clear()
+	_rs_from.clear()
+	_rs_motion.clear()
+	_rs_gap.clear()
+	_rs_slope.clear()
 
 
 ## True once dispose() ran.
@@ -309,15 +365,14 @@ func cast_ground(cursor: QueryCursor, origin: Vector3, dir: Vector3, max_dist: f
 	var params: PhysicsRayQueryParameters3D = cursor.ray_params
 	params.from = origin
 	params.to = origin + dir * max_dist
-	params.collision_mask = GROUND_LAYER
-	params.hit_back_faces = false
+	# collision_mask (GROUND_LAYER) and hit_back_faces (false) are fixed once by QueryCursor._init.
 	var result: PhysicsIntersectRayResult3D = cursor.ray_result
 	var static_hit: bool = _state.intersect_ray_into(params, result)
 	var best_dist: float = max_dist
 	if static_hit:
 		_write_ground_contact(result, out)
-		best_dist = (result.position - origin).dot(dir)
-	if not _test_ground_movers(origin, dir, max_dist, best_dist, static_hit, t):
+		best_dist = (out.point - origin).dot(dir)
+	if _solid_slots.is_empty() or not _test_ground_movers(origin, dir, max_dist, best_dist, static_hit, t):
 		return static_hit
 	var mover: MoverDef = _movers[_gm_slot]
 	out.point = origin + dir * _gm_dist
@@ -351,7 +406,9 @@ func cast_ground(cursor: QueryCursor, origin: Vector3, dir: Vector3, max_dist: f
 ##      with unsafe fraction 1): rest check at [param to]. A contact there is a touch:
 ##      fraction = 1.0, started_inside = false.
 ##   5. The analytic mover sweep: the first contact with any solid mover along the motion, with the
-##      same blocking (safe fraction < 1) / touch (fraction 1.0) meaning. The smaller fraction of
+##      same blocking (safe fraction < 1) / touch (fraction 1.0) meaning: a mover touch needs the
+##      end position itself in contact (penetrating by at most MOVER_SWEEP_TOLERANCE); a first
+##      contact near the end with the end clear is a blocking hit. The smaller fraction of
 ##      the static result and the mover result wins; at an equal fraction the static wall wins.
 ## Allocation-free: uses only [param cursor]'s reused objects and this query's scratch fields; the
 ## sphere radius is only written when it changes. Main thread only.
@@ -370,8 +427,8 @@ func sweep_walls(cursor: QueryCursor, from: Vector3, to: Vector3, radius: float,
 	var params: PhysicsShapeQueryParameters3D = cursor.shape_params
 	if cursor.sphere.radius != radius:
 		cursor.sphere.radius = radius
-	params.collision_mask = WALL_LAYER
-	params.motion = Vector3.ZERO
+	# collision_mask (WALL_LAYER) is fixed once by QueryCursor._init, and motion is zero between
+	# calls (only _sweep_static sets it, and resets it right after its cast).
 	params.transform = Transform3D(Basis.IDENTITY, from)
 	var rest: PhysicsGetRestInfoResult3D = cursor.rest_result
 	var motion: Vector3 = to - from
@@ -379,7 +436,11 @@ func sweep_walls(cursor: QueryCursor, from: Vector3, to: Vector3, radius: float,
 	var static_inside: bool = _state.get_rest_info_into(params, rest)
 	# Step 1, movers: the deepest overlap at from. The same pass runs the mover sweep (step 5) when
 	# nothing overlaps statically and the sphere moves; its result is used only if nothing overlaps.
-	_test_movers_for_sweep(from, motion, radius, t, not static_inside and motion != Vector3.ZERO)
+	if _solid_slots.is_empty():
+		_ov_slot = -1
+		_sm_slot = -1
+	else:
+		_test_movers_for_sweep(from, motion, radius, t, not static_inside and motion != Vector3.ZERO)
 	if static_inside or _ov_slot >= 0:
 		if _ov_slot >= 0 and (not static_inside or _ov_depth > radius - (from - rest.point).dot(rest.normal)):
 			_write_mover_wall_contact(_ov_slot, _ov_point, _ov_normal, _ov_velocity, 0.0, true, out)
@@ -416,8 +477,8 @@ func mover_pose(id: int, t: float) -> Transform3D:
 	if k < 0:
 		push_error("CollisionQuery.mover_pose: no mover with id %d" % id)
 		return Transform3D.IDENTITY
-	_eval_mover(_movers[k], t)
-	return _ev_pose
+	_eval_slot(k, t)
+	return _pc_pose[k]
 
 
 ## Velocity (m/s) at world point [param p] of the body of mover [param id] at time [param t] (as
@@ -438,8 +499,8 @@ func mover_point_velocity(id: int, t: float, p: Vector3) -> Vector3:
 	if k < 0:
 		push_error("CollisionQuery.mover_point_velocity: no mover with id %d" % id)
 		return Vector3.ZERO
-	_eval_mover(_movers[k], t)
-	return _ev_lin + _ev_ang.cross(p - _ev_pose.origin)
+	_eval_slot(k, t)
+	return _pc_lin[k] + _ang_of(k).cross(p - _pc_pose[k].origin)
 
 
 ## The surface under a kart: the majority of the surface ids its probes hit (Track Collision GDD
@@ -575,7 +636,8 @@ func _sweep_static(cursor: QueryCursor, from: Vector3, to: Vector3, motion: Vect
 ## ADR-0002 sweep step 3, after a cast that hit with unsafe fraction < 1 (in [param cursor]'s
 ## cast_result): a rest check at the unsafe point gives the contact; fraction = the safe fraction.
 ## If that rest check finds nothing (not seen in the tests; the probes never checked rest at the
-## unsafe point), the hit is kept so the sphere is blocked rather than let through: a contact
+## unsafe point; story 007 found it on the bench mesh and added the UNSAFE_RETRY_LENGTH retry, which
+## finds it), the hit is kept so the sphere is blocked rather than let through: a contact
 ## straight ahead along [param motion], wall_attr = WALL_ATTR_NONE, and a push_warning in debug
 ## builds.
 func _write_blocked_hit(cursor: QueryCursor, from: Vector3, motion: Vector3, radius: float, out: WallHit) -> void:
@@ -584,6 +646,13 @@ func _write_blocked_hit(cursor: QueryCursor, from: Vector3, motion: Vector3, rad
 	var safe: float = cast.safe_fraction
 	var unsafe_centre: Vector3 = from + motion * cast.unsafe_fraction
 	params.transform = Transform3D(Basis.IDENTITY, unsafe_centre)
+	if _state.get_rest_info_into(params, cursor.rest_result):
+		_write_wall_contact(cursor.rest_result, safe, false, out)
+		return
+	# Jolt can place the unsafe point inside its cast tolerance but short of a rest contact (story
+	# 007): check again UNSAFE_RETRY_LENGTH further along the motion.
+	var retry: float = minf(1.0, cast.unsafe_fraction + UNSAFE_RETRY_LENGTH / motion.length())
+	params.transform = Transform3D(Basis.IDENTITY, from + motion * retry)
 	if _state.get_rest_info_into(params, cursor.rest_result):
 		_write_wall_contact(cursor.rest_result, safe, false, out)
 		return
@@ -655,11 +724,28 @@ func _add_mover(mover: MoverDef) -> void:
 	var path_radius: float = 0.0
 	for p: Vector3 in mover.key_pos:
 		path_radius = maxf(path_radius, centre.distance_to(p))
-	_mover_slot[mover.id] = _movers.size()
+	var slot: int = _movers.size()
+	_mover_slot[mover.id] = slot
 	_movers.append(mover)
 	_mover_shape_bound.append(bound)
 	_mover_path_centre.append(centre)
 	_mover_path_reach.append(path_radius + bound + MOVER_CULL_MARGIN)
+	if mover.solid:
+		_solid_slots.append(slot)
+	_pc_t.append(NAN)
+	_pc_pose.append(Transform3D.IDENTITY)
+	_pc_inv.append(Transform3D.IDENTITY)
+	_pc_lin.append(Vector3.ZERO)
+	_pc_ang.append(Vector3.ZERO)
+	_pc_ang_ok.append(0)
+	_pc_seg_i.append(0)
+	_pc_seg_j.append(0)
+	_pc_span.append(1.0)
+	_rs_slot.append(0)
+	_rs_from.append(Vector3.ZERO)
+	_rs_motion.append(Vector3.ZERO)
+	_rs_gap.append(0.0)
+	_rs_slope.append(0.0)
 
 
 ## Finds the active key segment of [param key_t] (layout-checked: >= 2 keys, strictly ascending in
@@ -691,9 +777,13 @@ func _find_segment(key_t: PackedFloat32Array, period: float, t: float) -> void:
 	_seg_alpha = clampf((u - t0) / _seg_span, 0.0, 1.0)
 
 
-## Evaluates [param mover] at time [param t] into _ev_pose, _ev_lin and _ev_ang (Track Collision
-## GDD 4.4). The mover is layout-checked (unit key rotations).
-func _eval_mover(mover: MoverDef, t: float) -> void:
+## Evaluates mover slot [param k] at time [param t] into the pose cache (Track Collision GDD 4.4),
+## unless the cache already holds that slot at exactly this t. The mover is layout-checked (unit
+## key rotations). The angular velocity is left for _ang_of (lazy: only a hit needs it).
+func _eval_slot(k: int, t: float) -> void:
+	if _pc_t[k] == t:
+		return
+	var mover: MoverDef = _movers[k]
 	_find_segment(mover.key_t, mover.period, t)
 	var p0: Vector3 = mover.key_pos[_seg_i]
 	var p1: Vector3 = mover.key_pos[_seg_j]
@@ -702,11 +792,35 @@ func _eval_mover(mover: MoverDef, t: float) -> void:
 	var q0: Quaternion = Quaternion(r0.x, r0.y, r0.z, r0.w)
 	var q1: Quaternion = Quaternion(r1.x, r1.y, r1.z, r1.w)
 	if q0.dot(q1) < 0.0:
-		# The shortest path, as slerp takes it; also keeps the angle below in [0, pi].
+		# The shortest path, as slerp takes it; also keeps the angle of _ang_of in [0, pi].
 		q1 = Quaternion(-q1.x, -q1.y, -q1.z, -q1.w)
-	_ev_pose = Transform3D(Basis(q0.slerp(q1, _seg_alpha)), p0.lerp(p1, _seg_alpha))
-	_ev_lin = (p1 - p0) / _seg_span
-	_ev_ang = CollisionQuery._angular_velocity(q0, q1, _seg_span)
+	var pose: Transform3D = Transform3D(Basis(q0.slerp(q1, _seg_alpha)), p0.lerp(p1, _seg_alpha))
+	_pc_pose[k] = pose
+	_pc_inv[k] = pose.inverse()
+	_pc_lin[k] = (p1 - p0) / _seg_span
+	_pc_ang_ok[k] = 0
+	_pc_seg_i[k] = _seg_i
+	_pc_seg_j[k] = _seg_j
+	_pc_span[k] = _seg_span
+	_pc_t[k] = t
+
+
+## Angular velocity (rad/s, world axis times rate) of mover slot [param k]'s active key segment at
+## the cached t (call _eval_slot first). Computed once per cached t.
+func _ang_of(k: int) -> Vector3:
+	if _pc_ang_ok[k] == 1:
+		return _pc_ang[k]
+	var mover: MoverDef = _movers[k]
+	var r0: Vector4 = mover.key_rot[_pc_seg_i[k]]
+	var r1: Vector4 = mover.key_rot[_pc_seg_j[k]]
+	var q0: Quaternion = Quaternion(r0.x, r0.y, r0.z, r0.w)
+	var q1: Quaternion = Quaternion(r1.x, r1.y, r1.z, r1.w)
+	if q0.dot(q1) < 0.0:
+		q1 = Quaternion(-q1.x, -q1.y, -q1.z, -q1.w)
+	var ang: Vector3 = CollisionQuery._angular_velocity(q0, q1, _pc_span[k])
+	_pc_ang[k] = ang
+	_pc_ang_ok[k] = 1
+	return ang
 
 
 ## World angular velocity of the rotation from [param q0] to [param q1] (unit, same hemisphere)
@@ -720,16 +834,15 @@ static func _angular_velocity(q0: Quaternion, q1: Quaternion, span: float) -> Ve
 	return v * (2.0 / span)
 
 
-## Culls mover slot [param k] for the segment [param a] -> [param a] + [param d] widened by
-## [param radius]: false when the mover cannot be reached at any time, or at [param t]. When it
-## returns true, _ev_* hold the mover at [param t].
-func _mover_in_reach(k: int, a: Vector3, d: Vector3, radius: float, t: float) -> bool:
-	var reach: float = _mover_path_reach[k] + radius
-	if _segment_point_distance_sq(a, d, _mover_path_centre[k]) > reach * reach:
-		return false
-	_eval_mover(_movers[k], t)
+## The time-dependent cull of mover slot [param k] for the segment [param a] -> [param a] +
+## [param d] widened by [param radius], after the time-free path-sphere cull (inlined in the
+## callers' loops: a call per mover and query cost more than the test). Evaluates slot k at
+## [param t] into the pose cache, then returns false when its shape sphere at that pose is out of
+## reach.
+func _in_reach_at(k: int, a: Vector3, d: Vector3, radius: float, t: float) -> bool:
+	_eval_slot(k, t)
 	var shape_reach: float = _mover_shape_bound[k] + MOVER_CULL_MARGIN + radius
-	return _segment_point_distance_sq(a, d, _ev_pose.origin) <= shape_reach * shape_reach
+	return _segment_point_distance_sq(a, d, _pc_pose[k].origin) <= shape_reach * shape_reach
 
 
 ## The mover pass of cast_ground: the nearest solid mover hit strictly nearer than
@@ -740,55 +853,96 @@ func _test_ground_movers(origin: Vector3, dir: Vector3, max_dist: float, best_di
 	_gm_slot = -1
 	_gm_dist = best_dist
 	var ray: Vector3 = dir * max_dist
-	for k in _movers.size():
-		var mover: MoverDef = _movers[k]
-		if not mover.solid or not _mover_in_reach(k, origin, ray, 0.0, t):
+	var dd: float = ray.length_squared()
+	for n in _solid_slots.size():
+		var k: int = _solid_slots[n]
+		# The time-free path-sphere cull, inlined: keep in sync with _segment_point_distance_sq.
+		var reach: float = _mover_path_reach[k] + 0.0
+		var ap: Vector3 = _mover_path_centre[k] - origin
+		var s: float = 0.0
+		if dd > 0.0:
+			s = clampf(ap.dot(ray) / dd, 0.0, 1.0)
+		if (ap - ray * s).length_squared() > reach * reach or not _in_reach_at(k, origin, ray, 0.0, t):
 			continue
-		var inv: Transform3D = _ev_pose.inverse()
-		if not _ray_local(mover, inv * origin, inv.basis * dir, _gm_dist):
+		var inv: Transform3D = _pc_inv[k]
+		if not _ray_local(_movers[k], inv * origin, inv.basis * dir, _gm_dist):
 			continue
 		if _ray_dist < _gm_dist or (not static_hit and _gm_slot < 0):
 			_gm_slot = k
 			_gm_dist = _ray_dist
-			_gm_normal = _ev_pose.basis * _ray_normal
-			_gm_velocity = _ev_lin + _ev_ang.cross(origin + dir * _ray_dist - _ev_pose.origin)
-	return _gm_slot >= 0
+			_gm_normal = _pc_pose[k].basis * _ray_normal
+	if _gm_slot < 0:
+		return false
+	_gm_velocity = _pc_lin[_gm_slot] + _ang_of(_gm_slot).cross(origin + dir * _gm_dist - _pc_pose[_gm_slot].origin)
+	return true
 
 
-## The mover pass of sweep_walls: over every solid mover in range, the deepest overlap with the
-## sphere at [param from] (into _ov_*), and, when [param do_sweep], the first contact along
-## [param motion] (into _sm_*), both in world space. Movers tie in data order.
+## The mover pass of sweep_walls, over every solid mover in reach. Pass 1: the deepest overlap with
+## the sphere at [param from] (into _ov_*, world space), listing each clear mover in reach in _rs_*.
+## Pass 2, only when [param do_sweep] and nothing overlaps (an overlap is reported instead of any
+## sweep): the first contact along [param motion] (into _sm_*, world space). Movers tie in data
+## order in both passes.
+# perf waiver (story 007): one function on purpose. Split into pass-1 / pass-2 helpers (and
+# _sweep_local into Newton / refine helpers) it cost +7 us p95 (+2.4%) on the castle movers section
+# (3 runs each: split 303 us, inline 296 us; runs/opt3-* vs runs/opt3inline-*), over the 2% limit.
 func _test_movers_for_sweep(from: Vector3, motion: Vector3, radius: float, t: float, do_sweep: bool) -> void:
 	_ov_slot = -1
 	_ov_depth = -INF
-	_sm_slot = -1
-	_sm_fraction = INF
-	var length: float = motion.length()
-	for k in _movers.size():
-		var mover: MoverDef = _movers[k]
-		if not mover.solid or not _mover_in_reach(k, from, motion, radius, t):
+	_rs_count = 0
+	var dd: float = motion.length_squared()
+	for n in _solid_slots.size():
+		var k: int = _solid_slots[n]
+		# The time-free path-sphere cull, inlined: keep in sync with _segment_point_distance_sq.
+		var reach: float = _mover_path_reach[k] + radius
+		var ap: Vector3 = _mover_path_centre[k] - from
+		var s: float = 0.0
+		if dd > 0.0:
+			s = clampf(ap.dot(motion) / dd, 0.0, 1.0)
+		if (ap - motion * s).length_squared() > reach * reach or not _in_reach_at(k, from, motion, radius, t):
 			continue
-		var inv: Transform3D = _ev_pose.inverse()
+		var inv: Transform3D = _pc_inv[k]
 		var local_from: Vector3 = inv * from
-		var gap: float = _closest_local(mover, local_from) - radius
+		var gap: float = _closest_local(_movers[k], local_from) - radius
 		if gap <= 0.0:
 			if -gap > _ov_depth:
 				_ov_slot = k
 				_ov_depth = -gap
-				_ov_point = _ev_pose * _cl_point
-				_ov_normal = _ev_pose.basis * _cl_normal
-				_ov_velocity = _ev_lin + _ev_ang.cross(_ov_point - _ev_pose.origin)
+				_ov_point = _cl_point
+				_ov_normal = _cl_normal
 			continue
-		if not do_sweep or _ov_slot >= 0:
-			continue
-		if not _sweep_local(mover, local_from, inv.basis * motion, length, radius, gap):
+		if do_sweep and _ov_slot < 0:
+			var local_motion: Vector3 = inv.basis * motion
+			_rs_slot[_rs_count] = k
+			_rs_from[_rs_count] = local_from
+			_rs_motion[_rs_count] = local_motion
+			_rs_gap[_rs_count] = gap
+			_rs_slope[_rs_count] = _cl_normal.dot(local_motion)
+			_rs_count += 1
+	_sm_slot = -1
+	_sm_fraction = INF
+	if _ov_slot >= 0:
+		var pose0: Transform3D = _pc_pose[_ov_slot]
+		_ov_point = pose0 * _ov_point
+		_ov_normal = pose0.basis * _ov_normal
+		_ov_velocity = _pc_lin[_ov_slot] + _ang_of(_ov_slot).cross(_ov_point - pose0.origin)
+		return
+	if _rs_count == 0:
+		return
+	var length: float = motion.length()
+	for n in _rs_count:
+		var k: int = _rs_slot[n]
+		if not _sweep_local(_movers[k], _rs_from[n], _rs_motion[n], length, radius, _rs_gap[n], _rs_slope[n]):
 			continue
 		if _sw_fraction < _sm_fraction:
 			_sm_slot = k
 			_sm_fraction = _sw_fraction
-			_sm_point = _ev_pose * _sw_point
-			_sm_normal = _ev_pose.basis * _sw_normal
-			_sm_velocity = _ev_lin + _ev_ang.cross(_sm_point - _ev_pose.origin)
+			_sm_point = _sw_point
+			_sm_normal = _sw_normal
+	if _sm_slot >= 0:
+		var pose: Transform3D = _pc_pose[_sm_slot]
+		_sm_point = pose * _sm_point
+		_sm_normal = pose.basis * _sm_normal
+		_sm_velocity = _pc_lin[_sm_slot] + _ang_of(_sm_slot).cross(_sm_point - pose.origin)
 
 
 ## Squared distance from [param p] to the segment [param a] -> [param a] + [param d].
@@ -1008,24 +1162,64 @@ func _ray_cylinder(r: float, hh: float, o: Vector3, d: Vector3, max_dist: float)
 
 
 ## Sweeps a sphere of [param radius] from mover-local [param local_from] along [param local_motion]
-## (length [param length] > 0) against [param mover], which does not overlap it at the start
-## ([param gap0] = signed distance - radius at the start, > 0). f(s) = signed distance - radius along
-## the path is convex (the signed distance to a convex shape is convex) and changes by at most
-## length per unit s, so: a clear end with f(0) + f(1) > length cannot dip to 0; otherwise a
-## golden-section search finds a point in contact (or proves none within MOVER_SWEEP_TOLERANCE)
-## and bisection finds the first contact. On a hit writes _sw_fraction (the safe fraction, or 1.0 for
-## a first contact at the very end: a touch) and the contact point / normal (local) and returns true.
+## (length [param length] > 0) against [param mover], which does not overlap it at the start:
+## [param gap0] = signed distance - radius at the start (> 0) and [param slope0] = its derivative per
+## unit fraction there (the outward normal at the start dotted with local_motion).
+## f(s) = signed distance - radius along the path is convex (the signed distance to a convex shape
+## is convex) and differentiable where f > 0 (its gradient is the outward unit normal), so Newton's
+## method from s = 0 never passes the first contact: each tangent root lies below the curve's
+## (story 007, TD-012; it replaces story 005's golden-section search and agrees with it within
+## MOVER_SWEEP_TOLERANCE: tests/unit/collision/collision_mover_sweep_equivalence_test.gd).
+##   - Newton: a slope >= 0 at a clear point proves no contact ahead (convexity); so does a tangent
+##     root past the end by more than the tolerance (one within it is clamped to the end). A step
+##     shorter than the tolerance (near a grazing contact) becomes one tolerance step; a contact
+##     that begins and ends inside such a step can be missed (the old search had the same tolerance).
+##   - The first probe in contact closes a bracket; bisection refines it to the tolerance.
+##   - Touch (fraction 1.0, the contact at the end) only when the end itself is in contact AND the
+##     bracket reaches into the last MOVER_SWEEP_TOLERANCE of the motion (the first contact is within
+##     the tolerance of the end, so the end penetrates by at most it), as the static path reports a
+##     contact found at `to`. Otherwise a blocking hit at the safe fraction, also when the first
+##     contact is near the end but the end itself is clear.
+##   - Newton capped at _newton_cap steps without a bracket or a proof of no contact (never seen):
+##     fails closed, a blocking hit at the last safe fraction, and one push_error per query object.
+## On a hit writes _sw_fraction and the contact point / normal (local) and returns true.
+## Deterministic: a pure function of its arguments.
+# perf waiver (story 007): one function on purpose, see _test_movers_for_sweep.
 func _sweep_local(mover: MoverDef, local_from: Vector3, local_motion: Vector3, length: float,
-		radius: float, gap0: float) -> bool:
-	var gap1: float = _closest_local(mover, local_from + local_motion) - radius
-	var hi: float = 1.0
-	if gap1 > 0.0:
-		if gap0 + gap1 > length:
-			return false
-		hi = _find_contact(mover, local_from, local_motion, length, radius)
-		if hi < 0.0:
-			return false
+		radius: float, gap0: float, slope0: float) -> bool:
+	var hi: float = NEWTON_CAPPED
+	var step_min: float = MOVER_SWEEP_TOLERANCE / length
 	var lo: float = 0.0
+	var f: float = gap0
+	var slope: float = slope0
+	for _iteration in _newton_cap:
+		if slope >= 0.0:
+			return false
+		var s: float = lo - f / slope
+		if s > 1.0:
+			if s - 1.0 > step_min:
+				return false
+			s = 1.0
+		if s - lo < step_min:
+			s = minf(lo + step_min, 1.0)
+		var fs: float = _closest_local(mover, local_from + local_motion * s) - radius
+		if fs <= 0.0:
+			hi = s
+			break
+		if s >= 1.0:
+			return false
+		lo = s
+		f = fs
+		slope = _cl_normal.dot(local_motion)
+	if hi == NEWTON_CAPPED:
+		if not _cap_error_reported:
+			_cap_error_reported = true
+			push_error("CollisionQuery: the mover sweep reached its iteration cap against mover %d; reporting a blocking hit at the last safe fraction %s (reported once per query)" % [mover.id, lo])
+		_sw_fraction = lo
+		_closest_local(mover, local_from + local_motion * lo)
+		_sw_point = _cl_point
+		_sw_normal = _cl_normal
+		return true
 	var iterations: int = 0
 	while (hi - lo) * length > MOVER_SWEEP_TOLERANCE and iterations < MOVER_SWEEP_MAX_ITERATIONS:
 		var mid: float = (lo + hi) * 0.5
@@ -1034,55 +1228,14 @@ func _sweep_local(mover: MoverDef, local_from: Vector3, local_motion: Vector3, l
 		else:
 			lo = mid
 		iterations += 1
-	if gap1 <= 0.0 and hi == 1.0:
-		# The first contact is within the tolerance of the end of the motion: a touch.
+	if (1.0 - hi) * length < MOVER_SWEEP_TOLERANCE and _closest_local(mover, local_from + local_motion) - radius <= 0.0:
 		_sw_fraction = 1.0
-		_closest_local(mover, local_from + local_motion)
 	else:
 		_sw_fraction = lo
 		_closest_local(mover, local_from + local_motion * lo)
 	_sw_point = _cl_point
 	_sw_normal = _cl_normal
 	return true
-
-
-## Golden-section search of the convex gap function of _sweep_local over s in [0, 1] (both ends
-## clear). Returns the first s probed with gap <= 0, or -1.0 when the minimum is shown to be > 0
-## (Lipschitz bound: no point of the bracket can be in contact) or the bracket shrinks below
-## MOVER_SWEEP_TOLERANCE without a contact.
-func _find_contact(mover: MoverDef, local_from: Vector3, local_motion: Vector3, length: float, radius: float) -> float:
-	var a: float = 0.0
-	var b: float = 1.0
-	var c: float = b - INV_PHI * (b - a)
-	var d: float = a + INV_PHI * (b - a)
-	var fc: float = _closest_local(mover, local_from + local_motion * c) - radius
-	if fc <= 0.0:
-		return c
-	var fd: float = _closest_local(mover, local_from + local_motion * d) - radius
-	if fd <= 0.0:
-		return d
-	var iterations: int = 0
-	while (b - a) * length > MOVER_SWEEP_TOLERANCE and iterations < MOVER_SWEEP_MAX_ITERATIONS:
-		if maxf(fc, fd) > (b - a) * length:
-			return -1.0
-		if fc < fd:
-			b = d
-			d = c
-			fd = fc
-			c = b - INV_PHI * (b - a)
-			fc = _closest_local(mover, local_from + local_motion * c) - radius
-			if fc <= 0.0:
-				return c
-		else:
-			a = c
-			c = d
-			fc = fd
-			d = a + INV_PHI * (b - a)
-			fd = _closest_local(mover, local_from + local_motion * d) - radius
-			if fd <= 0.0:
-				return d
-		iterations += 1
-	return -1.0
 
 
 ## Frees [param bodies], then [param shapes], then [param space]: the one place that fixes the

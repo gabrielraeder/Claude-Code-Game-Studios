@@ -1,0 +1,11 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+ok: res://src/core/collision/collision_query.gd
+ok: res://src/core/collision/query_cursor.gd
+ok: res://tools/bench_collision.gd
+ok: res://tools/bench_track_fixture.gd
+ok: res://tests/unit/collision/collision_mover_sweep_equivalence_test.gd
+ok: res://tests/unit/collision/collision_mover_edge_cases_test.gd
+ok: res://tests/unit/collision/collision_unsafe_point_retry_test.gd
+ok: res://tests/unit/collision/collision_movers_test.gd
+exit 0

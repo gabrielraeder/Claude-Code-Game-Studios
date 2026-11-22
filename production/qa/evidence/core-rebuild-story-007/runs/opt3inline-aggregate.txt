@@ -1,0 +1,13 @@
+# opt3inline: median across 3 runs of each run's median_us and p95_us
+AGG layout=castle section=all median_of_medians_us=237 median_of_p95_us=282 runs_median=[ 235 237 239 ] runs_p95=[ 282 282 284 ]
+AGG layout=castle section=curve median_of_medians_us=230 median_of_p95_us=252 runs_median=[ 226 230 232 ] runs_p95=[ 251 252 257 ]
+AGG layout=castle section=climb median_of_medians_us=233 median_of_p95_us=260 runs_median=[ 232 233 235 ] runs_p95=[ 260 249 263 ]
+AGG layout=castle section=crossover median_of_medians_us=242 median_of_p95_us=261 runs_median=[ 241 242 244 ] runs_p95=[ 257 261 264 ]
+AGG layout=castle section=movers median_of_medians_us=270 median_of_p95_us=296 runs_median=[ 266 270 272 ] runs_p95=[ 294 296 296 ]
+AGG layout=castle section=ramp median_of_medians_us=230 median_of_p95_us=242 runs_median=[ 227 230 232 ] runs_p95=[ 241 243 242 ]
+castle: ALLOC OBJECT_COUNT start=1670.0 tick600=1670.0 end=1670.0 unchanged
+castle: VERDICT_INPUTS worst_section_p95_us=294 budget_us=300 alloc_unchanged=true
+castle: ALLOC OBJECT_COUNT start=1670.0 tick600=1670.0 end=1670.0 unchanged
+castle: VERDICT_INPUTS worst_section_p95_us=296 budget_us=300 alloc_unchanged=true
+castle: ALLOC OBJECT_COUNT start=1670.0 tick600=1670.0 end=1670.0 unchanged
+castle: VERDICT_INPUTS worst_section_p95_us=296 budget_us=300 alloc_unchanged=true

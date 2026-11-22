@@ -770,8 +770,8 @@ func test_sweep_ending_flush_with_mover_is_touch_with_fraction_one() -> void:
 
 
 func test_sweep_passing_beside_mover_misses_and_leaves_hit_untouched() -> void:
-	# Arrange: paths that stay clear: ending short of the box, passing 0.05 m above it (the
-	# golden-section search), and far away.
+	# Arrange: paths that stay clear: ending short of the box, passing 0.05 m above it (Newton's
+	# method proves the miss: a slope >= 0 at a clear point), and far away.
 	var query: CollisionQuery = _movers_query([Fixtures.still_box(ID, Vector3.ZERO, UNIT_BOX)])
 	var cursor: QueryCursor = QueryCursor.new()
 	var hit: WallHit = _sentinel_wall_hit()
@@ -1183,7 +1183,7 @@ func test_mover_queries_create_no_objects_over_1000_queries() -> void:
 	var down_on_ground: Vector3 = Vector3(1.5, CAST_Y, -1.5)
 	var into_capsule_from: Vector3 = Vector3(5.0, 3.0, 1.0)
 	var into_capsule_to: Vector3 = Vector3(-1.0, 3.0, 1.0)
-	# 0.05 m clear of the capsule's top (y 4): the golden-section search proves a miss.
+	# 0.05 m clear of the capsule's top (y 4): the Newton search proves a miss.
 	var graze_from: Vector3 = Vector3(5.0, 5.05, 1.0)
 	var graze_to: Vector3 = Vector3(-3.0, 5.05, 1.0)
 	# Ends inside the platform: the bisection from a contact at the end.

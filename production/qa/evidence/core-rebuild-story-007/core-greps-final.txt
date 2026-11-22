@@ -1,0 +1,3 @@
+PASS no Dictionary query forms in src/core src/gameplay (ADR-0002) (scanned: src/core; absent: src/gameplay)
+PASS CollisionQuery.new( only in CollisionBootCheck under src (story 006) (scanned: src; allowed in: src/core/collision/collision_boot_check\.gd)
+exit 0
