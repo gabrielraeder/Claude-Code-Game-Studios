@@ -1,0 +1,5 @@
+regression: out=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-066/runs/regression-partial port=24690 golden=/c/writechoice/Claude-Code-Game-Studios/production/qa/ev
+PASS native_check (tools/build_native.sh --check)
+PASS native_exit (exit safety and leak control)
+PASS core_greps (boundary greps)
+RESULT PARTIAL PASS (3/9: native_check native_exit core_greps) warnings=0 (out=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-066/runs/regression-partial)

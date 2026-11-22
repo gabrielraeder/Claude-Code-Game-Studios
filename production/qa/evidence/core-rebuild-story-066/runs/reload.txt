@@ -1,0 +1,11 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+ERROR: GDExtension reloading is disabled.
+   at: reload_extension (core/extension/gdextension_manager.cpp:165)
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://tools/native_probe_runs.gd:64)
+reload: live_rids_before=3 reload_result=1 class_exists=true
+reload: live_rids_after=3 old_reference_valid=true
+reload: old reference is_built=true
+PROBE_RAN mode=reload
+exit=0

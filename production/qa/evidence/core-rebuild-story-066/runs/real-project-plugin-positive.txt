@@ -1,0 +1,3 @@
+== real project, plugin enabled, sources match the DLL: --import
+EXIT_CODE=0
+dogworks_core error lines: 0

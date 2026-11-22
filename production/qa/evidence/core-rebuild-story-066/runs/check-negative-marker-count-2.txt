@@ -1,0 +1,9 @@
+== 3 (redo). marker count 2 (the marker appended once more)
+    SH 077e5b431fac9c31a50286c0385fee4d60dceb861f2c9b7aa864703b7f988ab3
+    PASS no bench.lock
+    FAIL debug: found 2 build markers in addons/dogworks_core/bin/dogworks_core.windows.template_debug.x86_64.dll (need exactly 1)
+    PASS release (1 marker, sh and fh match)
+    PASS bench (1 marker, sh and fh match)
+    CHECK FAIL (1)
+    exit=1
+  debug DLL restored: identical

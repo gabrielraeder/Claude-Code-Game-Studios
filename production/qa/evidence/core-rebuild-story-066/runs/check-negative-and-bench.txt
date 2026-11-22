@@ -1,0 +1,86 @@
+== 0. fresh build passes
+    SH 077e5b431fac9c31a50286c0385fee4d60dceb861f2c9b7aa864703b7f988ab3
+    PASS no bench.lock
+    PASS debug (1 marker, sh and fh match)
+    PASS release (1 marker, sh and fh match)
+    PASS bench (1 marker, sh and fh match)
+    CHECK PASS
+    exit=0
+== 1. stale DLL: a hashed source changed and not rebuilt
+    SH fd1abd07ebb51346b4c5433551743743929e16f92ddf1397f92c23c257f7b15d
+    PASS no bench.lock
+    FAIL debug: stale DLL, source hash differs (DLL 077e5b431fac9c31a50286c0385fee4d60dceb861f2c9b7aa864703b7f988ab3, sources fd1abd07ebb51346b4c5433551743743929e16f92ddf1397f92c23c257f7b15d); run tools/build_native.sh
+    FAIL release: stale DLL, source hash differs (DLL 077e5b431fac9c31a50286c0385fee4d60dceb861f2c9b7aa864703b7f988ab3, sources fd1abd07ebb51346b4c5433551743743929e16f92ddf1397f92c23c257f7b15d); run tools/build_native.sh
+    FAIL bench: stale DLL, source hash differs (DLL 077e5b431fac9c31a50286c0385fee4d60dceb861f2c9b7aa864703b7f988ab3, sources fd1abd07ebb51346b4c5433551743743929e16f92ddf1397f92c23c257f7b15d); run tools/build_native.sh
+    CHECK FAIL (3)
+    exit=1
+  source restored: identical
+== 2. bench-target marker in the debug slot (no bench.lock)
+    SH 077e5b431fac9c31a50286c0385fee4d60dceb861f2c9b7aa864703b7f988ab3
+    PASS no bench.lock
+    FAIL debug: marker target is 'bench' in addons/dogworks_core/bin/dogworks_core.windows.template_debug.x86_64.dll (expected 'debug'); a bench DLL is in the debug slot, run tools/build_native.sh --restore
+    PASS release (1 marker, sh and fh match)
+    PASS bench (1 marker, sh and fh match)
+    CHECK FAIL (1)
+    exit=1
+  debug DLL restored: identical
+== 3. marker count 2 (marker appended once more)
+grep: input file 'addons/dogworks_core/bin/dogworks_core.windows.template_debug.x86_64.dll' is also the output
+    SH 077e5b431fac9c31a50286c0385fee4d60dceb861f2c9b7aa864703b7f988ab3
+    PASS no bench.lock
+    PASS debug (1 marker, sh and fh match)
+    PASS release (1 marker, sh and fh match)
+    PASS bench (1 marker, sh and fh match)
+    CHECK PASS
+    exit=0
+  debug DLL restored: identical
+== 4. marker count 0 (first marker byte changed)
+    SH 077e5b431fac9c31a50286c0385fee4d60dceb861f2c9b7aa864703b7f988ab3
+    PASS no bench.lock
+    FAIL debug: found 0 build markers in addons/dogworks_core/bin/dogworks_core.windows.template_debug.x86_64.dll (need exactly 1)
+    PASS release (1 marker, sh and fh match)
+    PASS bench (1 marker, sh and fh match)
+    CHECK FAIL (1)
+    exit=1
+  debug DLL restored: identical
+== 5. --bench refuses while a Godot process is open (own headless process, 14 s)
+    refusing --bench: a Godot process is open (an editor counts):
+    pid 25748 Godot_v4.8-beta3_win64
+    pid 18124 Godot_v4.8-beta3_win64_console
+    exit=2
+  waiting for my own process to finish
+== 6. --bench with no Godot open: backup, swap, bench.lock
+    bench DLL is now in the debug slot; bench.lock written. Restore with tools/build_native.sh --restore
+    bin: backup
+    bin: bench.lock
+    bin: build_hash.txt
+    bin: dogworks_core.windows.bench.x86_64.dll
+    bin: dogworks_core.windows.template_debug.x86_64.dll
+    bin: dogworks_core.windows.template_debug.x86_64.pdb
+    bin: dogworks_core.windows.template_release.x86_64.dll
+  --check while bench.lock exists:
+    SH 077e5b431fac9c31a50286c0385fee4d60dceb861f2c9b7aa864703b7f988ab3
+    FAIL bench.lock exists: a bench DLL is swapped in; run tools/build_native.sh --restore
+    FAIL debug: marker target is 'bench' in addons/dogworks_core/bin/dogworks_core.windows.template_debug.x86_64.dll (expected 'debug'); a bench DLL is in the debug slot, run tools/build_native.sh --restore
+    PASS release (1 marker, sh and fh match)
+    PASS bench (1 marker, sh and fh match)
+    CHECK FAIL (2)
+    exit=1
+  the bench DLL loads through the windows.debug entry (one headless process, 1 s):
+    hold: extension loaded, sleeping 1 s, target=bench true
+== 7. restore (copies the backup back, never rebuilds)
+    debug DLL restored from backup; bench.lock removed
+  debug DLL after restore: identical-to-original
+    bin: backup
+    bin: build_hash.txt
+    bin: dogworks_core.windows.bench.x86_64.dll
+    bin: dogworks_core.windows.template_debug.x86_64.dll
+    bin: dogworks_core.windows.template_debug.x86_64.pdb
+    bin: dogworks_core.windows.template_release.x86_64.dll
+    SH 077e5b431fac9c31a50286c0385fee4d60dceb861f2c9b7aa864703b7f988ab3
+    PASS no bench.lock
+    PASS debug (1 marker, sh and fh match)
+    PASS release (1 marker, sh and fh match)
+    PASS bench (1 marker, sh and fh match)
+    CHECK PASS
+    exit=0

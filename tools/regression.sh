@@ -5,16 +5,16 @@
 # stress race), the golden-trace capture and the trace compare.
 # Prints one "PASS <check>" or "FAIL <check> (reason)" line per check, a "WARN ..." line for a
 # known intermittent behaviour of the frozen game, and a final RESULT line:
-#   RESULT PASS (7/7 checks) warnings=W              every check ran and passed (exit 0)
-#   RESULT PARTIAL PASS (n/7: names) warnings=W      a CHECKS subset ran and passed (exit 0)
-#   RESULT FAIL: k check(s) failed (n/7: names) warnings=W                       (exit 1)
+#   RESULT PASS (10/10 checks) warnings=W              every check ran and passed (exit 0)
+#   RESULT PARTIAL PASS (n/10: names) warnings=W      a CHECKS subset ran and passed (exit 0)
+#   RESULT FAIL: k check(s) failed (n/10: names) warnings=W                       (exit 1)
 # Exit 2 on bad usage (unknown CHECKS name, existing outdir, reserved port).
 #
 # Usage: tools/regression.sh [outdir (must not exist)]
 #   default outdir: production/qa/regression/<date>-<time> (logs of every check)
 # Env: GODOT (console exe), PORT (default 24690; 24680 is refused), GOLDEN (trace folder to
 #      compare with, default the story-001 golden set), RACE_SEED (bot races in the capture),
-#      CHECKS (space-separated subset of: core_greps track_check bot_race item_net bump net_stress traces;
+#      CHECKS (space-separated subset of: native_check native_exit native_negative core_greps track_check bot_race item_net bump net_stress traces;
 #      default all; a full run takes about 10 minutes, so a subset helps when time-boxed).
 # Only starts its own Godot processes, and only the shell tests' own watchdogs stop them.
 set -u
@@ -24,8 +24,8 @@ export GODOT="${GODOT:-C:/Godot/Godot_v4.8-beta3_win64_console.exe}"
 export PORT="${PORT:-24690}"
 if [ "$PORT" = 24680 ]; then echo "port 24680 is reserved for play sessions" >&2; exit 2; fi
 # Every check this script knows, in run order.
-ALL_CHECKS="core_greps track_check bot_race item_net bump net_stress traces"
-TOTAL_CHECKS=7
+ALL_CHECKS="native_check native_exit native_negative core_greps track_check bot_race item_net bump net_stress traces"
+TOTAL_CHECKS=10
 CHECKS="${CHECKS:-$ALL_CHECKS}"
 bad=""
 n_checks=0
@@ -66,6 +66,35 @@ script_errors() {  # script_errors FILES... -> count of broken-script lines
 }
 
 echo "regression: out=$OUT port=$PORT golden=$GOLDEN checks=$CHECKS"
+
+# Story 066 (ADR-0007 section 7): the stale-DLL guard runs first. A stale, missing or bench DLL stops the
+# whole run here, before any Godot process starts.
+if want native_check; then
+bash tools/build_native.sh --check > "$OUT/native_check.txt" 2>&1
+code=$?
+result "native_check (tools/build_native.sh --check)" $([ $code = 0 ] && echo 0 || echo 1) "exit $code, see native_check.txt"
+if [ $code != 0 ]; then
+	echo "RESULT FAIL: stale or missing native DLL, nothing else ran; run tools/build_native.sh (out=$OUT)"
+	exit 1
+fi
+fi
+
+# Story 066 (ADR-0007 Verification Required 4): native objects alive at quit exit 0 with no leak lines, and
+# a deliberate leak is caught (the lines "RID allocations ... leaked" and "ObjectDB instance ... leaked" fail a run).
+if want native_exit; then
+bash tools/native_exit_safety.sh "$OUT/native_exit" > "$OUT/native_exit.txt" 2>&1
+code=$?
+result "native_exit (exit safety and leak control)" $([ $code = 0 ] && echo 0 || echo 1) "exit $code, see native_exit.txt"
+fi
+
+# Story 066: every guard of the native toolchain is shown to FAIL on the thing it guards against (stale DLL,
+# bench DLL in the debug slot, bad marker counts, a bad hash list, a missing PowerShell, a missing hash helper
+# call, a stale source seen by boot, plugin and test helper, a leak the exit check misses, forbidden flags).
+if want native_negative; then
+bash tools/native_negative_checks.sh "$OUT/native_negative" > "$OUT/native_negative.txt" 2>&1
+code=$?
+result "native_negative (the guards fail on what they guard)" $([ $code = 0 ] && echo 0 || echo 1) "exit $code, $(grep -c '^FAIL\|^NOT RUN' "$OUT/native_negative.txt") FAIL/NOT RUN case(s), see native_negative.txt"
+fi
 
 if want core_greps; then
 bash tools/core_greps.sh > "$OUT/core_greps.txt" 2>&1

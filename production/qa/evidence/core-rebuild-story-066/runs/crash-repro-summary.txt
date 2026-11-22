@@ -1,0 +1,18 @@
+=== crash repro 1: first --import of a fresh project with an extension
+tools/crash_repro.sh: line 37: 120725 Segmentation fault      timeout "$TIMEOUT" "$GODOT" "$@" > "$LOG" 2>&1
+label=first-import-segfault exit=139 stack_source=godot-log timeout=120s log=production/qa/evidence/core-rebuild-story-066/runs/crash_repro/first-import-segfault.log
+result: CRASH (segmentation fault or access violation)
+stack: none available (cdb.exe not found: install the Windows SDK Debugging Tools and set CDB; Godot printed no backtrace in the log)
+=== hang repro: --quit with no main scene, 3 runs each, project without and with the extension
+label=quit-noscene-noext-1 exit=1 stack_source=godot-log timeout=60s log=production/qa/evidence/core-rebuild-story-066/runs/crash_repro/quit-noscene-noext-1.log
+result: non-zero exit 1
+label=quit-noscene-ext-1 exit=1 stack_source=godot-log timeout=60s log=production/qa/evidence/core-rebuild-story-066/runs/crash_repro/quit-noscene-ext-1.log
+result: non-zero exit 1
+label=quit-noscene-noext-2 exit=1 stack_source=godot-log timeout=60s log=production/qa/evidence/core-rebuild-story-066/runs/crash_repro/quit-noscene-noext-2.log
+result: non-zero exit 1
+label=quit-noscene-ext-2 exit=1 stack_source=godot-log timeout=60s log=production/qa/evidence/core-rebuild-story-066/runs/crash_repro/quit-noscene-ext-2.log
+result: non-zero exit 1
+label=quit-noscene-noext-3 exit=1 stack_source=godot-log timeout=60s log=production/qa/evidence/core-rebuild-story-066/runs/crash_repro/quit-noscene-noext-3.log
+result: non-zero exit 1
+label=quit-noscene-ext-3 exit=1 stack_source=godot-log timeout=60s log=production/qa/evidence/core-rebuild-story-066/runs/crash_repro/quit-noscene-ext-3.log
+result: non-zero exit 1

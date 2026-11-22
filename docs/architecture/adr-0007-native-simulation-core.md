@@ -217,10 +217,10 @@ Native code **never reads a GDScript script property**. With `Object::get("field
 - **No allocation after build:** no `new`, no container growth, no `String`/`Variant` creation and no RID creation in per-tick paths. Containers are sized when a track loads or a race is set up.
 - **RID ownership and teardown** follow ADR-0002 and `.claude/rules/godot-refcount.md`:
   - A RefCounted owner frees bodies, then shapes, then the space, through one static helper called from both `dispose()` and its destructor.
-  - **`dispose()` is mandatory.** The composition root and every test teardown call it.
+  - **`dispose()` is mandatory.** The composition root and every test teardown call it. **Amended 2026-11-22 (story 066):** `dispose()` is idempotent; a second call is a silent no-op, so teardown helpers need no `is_built()` guard.
   - **Servers-alive flag.** godot-cpp caches singleton pointers, so `get_singleton() != nullptr` does not prove the server still exists. A module-level `g_servers_alive` flag is set in `initialize_module(SCENE)` and cleared in `uninitialize_module(SCENE)`, and every RID-freeing destructor checks it and skips when it is cleared.
   - **Guarded construction.** `create()` fails loudly (`ERR_FAIL_NULL`) and returns null when the server is missing. Constructors touch no server.
-  - **Leaks crash.** A GDScript leak of a native object is no longer a warning but a crash on exit (exit code 139). The exit-code-0 check from `godot-refcount.md` is part of the toolchain story.
+  - ~~**Leaks crash.**~~ **Amended 2026-11-22 (story 066, observed on 4.8-beta3):** a leaked native object does **not** crash. The process exits 0 and prints `RID allocations ... leaked at exit` errors and an `ObjectDB instances leaked` warning. Exit code alone therefore proves nothing: the exit-safety check (`tools/native_exit_safety.sh`, regression check `native_exit`) fails on any `ERROR:` line and on the leak lines, and needs a `PROBE_RAN` sentinel so a run that never started cannot pass.
 - **Construction pattern: a bound static factory.**
   - A native class that needs arguments is built through `Class.create(packed) -> Class`, bound as a static method. `.new()` takes no arguments, so none of these classes is built with `.new(args)`.
   - `create()` calls the **same C++ validation function** that `Class.validate_packed(packed) -> String` binds (empty string = valid, otherwise the message that names the key), so the two cannot disagree. It returns a `Ref<Class>` built with `instantiate()`, and **null on failure**.
@@ -317,7 +317,7 @@ tests/oracle/collision/      the GDScript oracle (moved)
     - **Excluded:** generated files and `native/obj/`.
   - **Full hash (FH):** sha256 over SH, the sha256 of the API dump, the MSVC version string and the target (`debug`, `release` or `bench`). There is **one FH per DLL**.
 - **How the hash is stored and read:**
-  - SCons generates one file, `native/obj/build_marker.cpp`, holding a single literal `DOGWORKS_BUILD:<target>:<SH>:<FH>:END`, parsed by offsets. A bound function references it, so the linker keeps it. `DogworksCore.build_hash()` and `DogworksCore.source_hash()` return the parts.
+  - SCons generates one file per variant, `native/obj/<variant>/build_marker.cpp` (amended 2026-11-22, story 066: one marker per DLL instead of one shared file), holding a single literal `DOGWORKS_BUILD:<target>:<SH>:<FH>:END`, parsed by offsets. A bound function references it, so the linker keeps it. `DogworksCore.build_hash()` and `DogworksCore.source_hash()` return the parts.
   - **The marker is compiled only in that file.** It is never passed as a `CPPDEFINES` value on the shared environment, because that would force a full rebuild whenever a hash changes.
   - The build also writes both values per DLL to `addons/dogworks_core/bin/build_hash.txt`.
   - **`--check` reads the DLL by counting regex matches of the full marker pattern in its bytes.** It fails unless the pattern appears **exactly once**, and when the hashes differ from the ones it recomputes.
@@ -338,7 +338,9 @@ tests/oracle/collision/      the GDScript oracle (moved)
   - it links to a temporary name and renames on success;
   - it runs `--check` after the build;
   - tests and benchmarks never run during a rebuild.
-- **Hot reload is for the editor only.** A rebuild recreates native instances in the editor process: only bound properties survive, and caches and RIDs are rebuilt. A game started from the editor runs in its own process and never live-patches.
+- **Hot reload is for the editor only.** A rebuild recreates native instances in the editor process: only bound properties survive. A game started from the editor runs in its own process and never live-patches.
+  - **Amended 2026-11-22 (story 066 engine check):** godot-cpp runs our SCENE terminator **before** it destroys live instances (`godot-cpp/src/godot.cpp:269-282`), so clearing `g_servers_alive` first would leak their RIDs. The module keeps a static registry of RID owners; `uninitialize(SCENE)` frees every registered owner's server objects and clears its `built` flag before clearing the flag. After a reload every native object is **unbuilt**: nothing rebuilds caches or RIDs automatically, and GDScript (an `@tool` script, the import pipeline) must call `create()` again.
+- **First import of a fresh project (4.8-beta3 engine bug, story 066).** The first `--import` of any fresh project that has a GDExtension segfaults at exit (139) after importing correctly; a pre-existing `.godot/extension_list.cfg` avoids it. `tools/build_native.sh` writes that file when missing, and `--check` fails when `.godot/` exists without it. An upstream bug report is drafted, not filed (coordination rule 7): `production/qa/evidence/core-rebuild-story-066/upstream-bug-draft-first-import-segfault.md`. Removal trigger: on each engine re-pin, re-test a fresh first import without the file; drop the seed when it exits 0.
 - **Old commits.** Checking out an old commit means rebuilding; the hashes make a forgotten rebuild visible.
 
 ### 8. Export, and benches on the release build

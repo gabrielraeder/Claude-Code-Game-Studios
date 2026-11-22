@@ -1,0 +1,3 @@
+PASS native_exit exit_clean (exit 0, no leak lines)
+PASS native_exit exit_rid (exit 0, no leak lines)
+PASS native_exit negative control exit_leak is caught (exit 0, 5 leak line(s))

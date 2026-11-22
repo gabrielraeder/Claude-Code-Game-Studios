@@ -57,7 +57,7 @@ commands:
   # build: no export preset exists yet. Create "Windows Desktop" in Project > Export,
   # then set via /project-settings: '"C:/Godot/Godot_v4.8-beta3_win64_console.exe" --headless --export-debug "Windows Desktop"'
   build: "[TO BE CONFIGURED]"
-  test: '"C:/Godot/Godot_v4.8-beta3_win64_console.exe" --headless -s -d --remote-debug tcp://127.0.0.1:0 res://addons/gdUnit4/bin/GdUnitCmdTool.gd -a res://tests --ignoreHeadlessMode'
+  test: 'bash tools/build_native.sh --check && "C:/Godot/Godot_v4.8-beta3_win64_console.exe" --headless -s -d --remote-debug tcp://127.0.0.1:0 res://addons/gdUnit4/bin/GdUnitCmdTool.gd -a res://tests --ignoreHeadlessMode'
   run: '"C:/Godot/Godot_v4.8-beta3_win64_console.exe" --path . --windowed --resolution 1280x720'
   smoke: '"C:/Godot/Godot_v4.8-beta3_win64_console.exe" --headless --quit-after 5'
 

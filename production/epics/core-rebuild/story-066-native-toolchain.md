@@ -1,12 +1,12 @@
 # Story 066: Native toolchain, dogworks_core skeleton and stale-DLL guard
 
 > **Epic**: Core Rebuild (Phase A)
-> **Status**: Ready
+> **Status**: In Progress
 > **Layer**: Foundation
 > **Type**: Integration
 > **Estimate**: L
 > **Manifest Version**: N/A (no control manifest yet)
-> **Last Updated**: not started (set by /dev-story)
+> **Last Updated**: 2026-11-22
 
 ## Context
 

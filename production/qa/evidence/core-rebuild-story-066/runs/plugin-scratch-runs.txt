@@ -1,0 +1,5 @@
+== plugin, sources match the DLL (expect no dogworks_core error)
+IMPORT_HOOK plugin entered, native class exists=true
+== plugin, one hashed source changed after the build (expect an error naming tools/build_native.sh)
+ERROR: dogworks_core: stale native DLL: sources hash 228542954d0f6756c7095c5eaef2ce51e56024d03470dcb65d970249dbab4150 but the loaded DLL says 1603d5c1d06047ad6313685b346593cf94808e102521fede4b16de061d428265; run tools/build_native.sh
+       [0] _enter_tree (res://addons/dogworks_core/plugin.gd:13)

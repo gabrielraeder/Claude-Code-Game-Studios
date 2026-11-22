@@ -1,0 +1,17 @@
+# Hash file list for the dogworks_core source hash SH (ADR-0007 section 7).
+# One definition, read by tools/build_native.sh (bash) and by
+# addons/dogworks_core/source_hash.gd (GDScript). Keep it LF (.gitattributes pins it).
+#
+# Format: one entry per line. Blank lines and lines starting with '#' are ignored.
+#   file <path>   one file, path relative to the repo root
+#   tree <dir>    every file below <dir>, recursively
+# Paths are ASCII, use '/', and carry no spaces. The hashed paths are sorted in byte order (LC_ALL=C).
+# SH = sha256 over, for each path: bytes(path) 0x00 bytes(lowercase hex sha256 of the file) 0x0A.
+# Excluded: generated files and native/obj/ (neither is listed here).
+tree native/src
+file native/SConstruct
+file native/GODOT_CPP_COMMIT
+file native/hash_files.txt
+file tools/build_native.sh
+file tools/build_native.bat
+file addons/dogworks_core/dogworks_core.gdextension

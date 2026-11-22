@@ -1,0 +1,9 @@
+ok: res://addons/dogworks_core/source_hash.gd
+ok: res://addons/dogworks_core/plugin.gd
+ok: res://src/core/native_boot_check.gd
+ok: res://tests/unit/native/native_test_guard.gd
+ok: res://tests/unit/native/native_toolchain_test.gd
+ok: res://tests/unit/native/native_hash_parity_test.gd
+ok: res://tools/native_probe_runs.gd
+ok: res://tools/native_boot_check_run.gd
+ok: res://tools/hot_reload_probe.gd

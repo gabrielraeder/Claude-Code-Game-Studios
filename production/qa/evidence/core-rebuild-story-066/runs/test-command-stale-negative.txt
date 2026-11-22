@@ -1,0 +1,8 @@
+== test command with a stale DLL
+SH 228542954d0f6756c7095c5eaef2ce51e56024d03470dcb65d970249dbab4150
+PASS no bench.lock
+FAIL debug: stale DLL, source hash differs (DLL 1603d5c1d06047ad6313685b346593cf94808e102521fede4b16de061d428265, sources 228542954d0f6756c7095c5eaef2ce51e56024d03470dcb65d970249dbab4150); run tools/b
+FAIL release: stale DLL, source hash differs (DLL 1603d5c1d06047ad6313685b346593cf94808e102521fede4b16de061d428265, sources 228542954d0f6756c7095c5eaef2ce51e56024d03470dcb65d970249dbab4150); run tools
+FAIL bench: stale DLL, source hash differs (DLL 1603d5c1d06047ad6313685b346593cf94808e102521fede4b16de061d428265, sources 228542954d0f6756c7095c5eaef2ce51e56024d03470dcb65d970249dbab4150); run tools/b
+CHECK FAIL (3)
+pipeline exit=1

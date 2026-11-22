@@ -28,7 +28,7 @@ Phase A Sequencing in `docs/architecture/architecture.md`: freeze and oracle →
 | 8 | 066 | Native toolchain, dogworks_core skeleton and stale-DLL guard | Integration | In Progress | ADR-0007 |
 | 9 | 067 | CollisionQuery port to C++ with the GDScript oracle | Logic | Ready | ADR-0007 |
 | 10 | 068 | RaceSim skeleton: stages, buffers, stage timers, slot roles | Logic | Ready | ADR-0007 |
-| 11 | 008 | Legacy track extractor and generator-baked test mesh | Integration | Ready | ADR-0004, ADR-0002, ADR-0005 |
+| 11 | 008 | Legacy track extractor and generator-baked test mesh | Integration | In Progress | ADR-0004, ADR-0002, ADR-0005 |
 | 12 | 009 | Core vehicle data fork, KartIntent and KartSnapshot | Logic | Ready | ADR-0003 |
 | 13 | 010 | KartBody ground, ride spring and up | Logic | Ready | ADR-0003, ADR-0002 |
 | 14 | 011 | DriveState speed, cap and floor surfaces | Logic | Ready | ADR-0003 |

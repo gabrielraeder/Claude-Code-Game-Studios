@@ -1,0 +1,10 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+exit_leak_cycle: probe held only by an Array that contains itself
+ERROR: 1 RID allocations of type 'P11JoltShape3D' were leaked at exit.
+ERROR: 1 RID allocations of type 'P10JoltBody3D' were leaked at exit.
+ERROR: 1 RID allocations of type 'P10JoltArea3D' were leaked at exit.
+ERROR: 1 RID allocations of type 'P11JoltSpace3D' were leaked at exit.
+WARNING: 1 ObjectDB instance was leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2609)
+exit=0

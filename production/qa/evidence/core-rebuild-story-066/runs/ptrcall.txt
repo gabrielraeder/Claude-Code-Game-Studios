@@ -1,0 +1,7 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+ptrcall (median of 5 runs x 200000 calls, loop baseline 0.0110 us subtracted; typed locals, debug-editor binary, debug DLL)
+  echo_int(int)              total 0.0235 us  net 0.0125 us
+  echo_vector3(Vector3)      total 0.0210 us  net 0.0100 us
+  sum_packed(PackedFloat32Array of 64, sums it natively) total 0.0577 us  net 0.0468 us
+ptrcall exit=0

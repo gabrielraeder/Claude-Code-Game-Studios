@@ -1,0 +1,10 @@
+; dogworks_core native simulation core (ADR-0007). The DLLs are built per clone by
+; tools/build_native.sh and are never committed. Only a semicolon starts a comment in this format.
+[configuration]
+entry_symbol = "dogworks_core_init"
+compatibility_minimum = "4.8"
+reloadable = true
+
+[libraries]
+windows.debug.x86_64 = "res://addons/dogworks_core/bin/dogworks_core.windows.template_debug.x86_64.dll"
+windows.release.x86_64 = "res://addons/dogworks_core/bin/dogworks_core.windows.template_release.x86_64.dll"

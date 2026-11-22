@@ -1,0 +1,7 @@
+SH 7a54a1560238db2e552db366149de27bca39e7cdc81f77b6a7c117431e5359b7
+PASS no bench.lock
+FAIL .godot/ exists without extension_list.cfg: the first --import of that tree exits with a segfault (139) on 4.8-beta3; run tools/build_native.sh
+PASS debug (1 marker, sh and fh match)
+PASS release (1 marker, sh and fh match)
+PASS bench (1 marker, sh and fh match)
+CHECK FAIL (1)

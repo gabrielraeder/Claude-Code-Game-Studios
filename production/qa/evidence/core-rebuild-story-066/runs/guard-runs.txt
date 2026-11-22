@@ -1,0 +1,25 @@
+== A. boot check, fresh DLL (positive)
+BOOT_CHECK problem='' hash_usec=5138
+   exit=0
+== B. boot check with the extension absent (scratch project, no extension)
+BOOT_CHECK problem='native extension is not loaded (class DogworksCore is missing); run tools/build_native.sh'
+   exit=3
+== C. source hash mismatch: a hashed file changed and not rebuilt
+-- C1 native_boot_check.gd
+BOOT_CHECK problem='stale native DLL: sources hash c201cedd6fc9066715b447443e1125bbdbe20443cea42da22a86a6b479dd3d6d but the loaded DLL says 1603d5c1d06047ad6313685b346593cf94808e102521fede4b16de061d428265; run tools/build_native.sh' hash_usec=3349
+   exit=3
+-- C2 shared test helper (before() of the native suite)
+ 'stale native DLL: sources hash c201cedd6fc9066715b447443e1125bbdbe20443cea42da22a86a6b479dd3d6d but the loaded DLL says 1603d5c1d06047ad6313685b346593cf94808e102521fede4b16de061d428265; run tools/build_native.sh'	at 'before' in res://tests/unit/native/native_toolchain_test.gd:19
+Statistics: 24 test cases | 0 errors | 1 failures | 0 flaky | 0 skipped | 0 orphans | FAILED 570ms
+Exit code: 100
+   source restored: identical
+== D. core_greps rule
+-- D1 positive (real tree)
+PASS no Dictionary query forms in src/core src/gameplay (ADR-0002) (scanned: src/core; absent: src/gameplay)
+PASS CollisionQuery.new( only in CollisionBootCheck under src (story 006) (scanned: src; allowed in: src/core/collision/collision_boot_check\.gd)
+PASS native suites call the shared hash helper (1 suite(s); classes: DogworksCore|ToolchainProbe)
+   exit=0
+-- D2 negative (scratch tree: a suite names DogworksCore and does not call the helper)
+FAIL native suites call the shared hash helper (suites that name a native class without native_test_guard)
+  tests/unit/native/bad_native_test.gd
+   exit=1

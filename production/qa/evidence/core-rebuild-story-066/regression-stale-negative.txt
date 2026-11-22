@@ -1,0 +1,7 @@
+== regression.sh with a stale DLL (one hashed source changed)
+regression: out=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-066/runs/regression-stale port=24690 golden=/c/writechoice/Claude-Code-Game-Studios/production/qa/evid
+FAIL native_check (tools/build_native.sh --check) (exit 1, see native_check.txt)
+RESULT FAIL: stale or missing native DLL, nothing else ran; run tools/build_native.sh (out=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-066/runs/regression-stale)
+regression exit=1
+source restored: DIFFERENT
+NOTE: the stale-negative run above restored from a backup path that did not exist; restored afterwards from native/obj/negative_tmp/src.orig and --check PASS confirms identical bytes (source hash equals the DLL's).

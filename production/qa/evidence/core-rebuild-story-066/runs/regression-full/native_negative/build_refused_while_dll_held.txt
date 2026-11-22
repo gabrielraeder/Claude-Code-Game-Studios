@@ -1,0 +1,2 @@
+refusing to build: a Godot process holds the DLL:
+pid 37708 Godot_v4.8-beta3_win64 holds dogworks_core.windows.template_debug.x86_64.dll

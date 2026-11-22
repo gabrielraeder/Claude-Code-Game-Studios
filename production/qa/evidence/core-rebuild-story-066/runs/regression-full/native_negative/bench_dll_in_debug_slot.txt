@@ -1,0 +1,6 @@
+SH 7a54a1560238db2e552db366149de27bca39e7cdc81f77b6a7c117431e5359b7
+PASS no bench.lock
+FAIL debug: marker target is 'bench' in addons/dogworks_core/bin/dogworks_core.windows.template_debug.x86_64.dll (expected 'debug'); a bench DLL is in the debug slot, run tools/build_native.sh --restore
+PASS release (1 marker, sh and fh match)
+PASS bench (1 marker, sh and fh match)
+CHECK FAIL (1)

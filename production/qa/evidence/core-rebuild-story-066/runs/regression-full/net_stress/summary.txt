@@ -1,0 +1,25 @@
+== [net-summary] lines ==
+role=client peer=12015455 place=2 finish=41.92 karts=4 | rtt_avg=10ms rtt_max=12ms view_delay=55ms | snaps/s=91.3 | extrap=2.0% | pred_err avg=0.027m max=0.693m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=11.4 kb_in/s=11.3
+role=client peer=1821069061 place=3 finish=45.04 karts=4 | rtt_avg=10ms rtt_max=15ms view_delay=53ms | snaps/s=91.3 | extrap=0.4% | pred_err avg=0.028m max=0.772m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=11.3 kb_in/s=11.3
+role=client peer=1184686287 place=4 finish=45.65 karts=4 | rtt_avg=4ms rtt_max=9ms view_delay=50ms | snaps/s=91.3 | extrap=0.0% | pred_err avg=0.027m max=0.772m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=11.4 kb_in/s=11.5
+role=host peer=1 place=1 finish=40.90 karts=4 | rtt_avg=0ms rtt_max=0ms view_delay=50ms | snaps/s=91.3 | extrap=0.0% | pred_err avg=0.029m max=0.772m | lag=0 jitter=0 loss=0% | lead_changes=2 lead_seq=0>1>0 | kb_out/s=34.1 kb_in/s=34.0
+
+processes with a summary: 4
+extrap %      avg 0.600   max 2.000
+pred_err avg  avg 0.028 m   max-of-avgs 0.029 m
+pred_err max  worst 0.772 m
+rtt avg (ms)  avg 6.000   rtt max worst 15.000
+view delay ms avg 52.000   max 55.000
+snaps/s       avg 91.300
+kb_out/s      host 34.1   client avg 11.367
+kb_in/s       host 34.0   client avg 11.367
+
+== lead-change agreement ==
+      4 2 0>1>0
+(distinct 'lead_changes lead_seq' values above; one line = all processes agree)
+
+== finished places ==
+1 40.90;2 41.92;3 45.04;4 45.65;
+
+== errors / warnings in logs ==
+(count: 0)

@@ -179,3 +179,10 @@ production/qa/evidence/core-rebuild-story-*/**/*.csv
 !production/qa/evidence/core-rebuild-story-001/golden/*.csv
 !production/qa/evidence/core-rebuild-story-001/perf/**/*.csv
 production/qa/regression/
+
+# === Native toolchain (core-rebuild story 066) ===
+# Fetched, generated or built by tools/build_native.sh; never committed (ADR-0007 section 7).
+native/godot-cpp/
+native/.venv/
+native/api/
+native/obj/

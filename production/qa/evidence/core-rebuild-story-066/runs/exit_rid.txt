@@ -1,0 +1,4 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+exit_rid: probe held by a static var, rid_count=3
+exit_rid exit=0

@@ -1,0 +1,7 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+heap mode=held ticks=600 array_bytes=16384
+  static memory start=80247640 after_first_cycle=80264056 end=80264056  (tick 3..600 min=80264056 max=80264056)
+  growth start->end=16416  growth after first cycle->end=0
+  held array first element still 9.5 (was 9.5): intact=true
+heap_held exit=0

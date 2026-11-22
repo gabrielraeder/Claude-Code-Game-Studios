@@ -1,0 +1,28 @@
+WorkerThreadPool: 16 threads, 4 max low-priority.
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+TextServer: Added interface "Dummy" (dummy)
+TextServer: Added interface "ICU / HarfBuzz / Graphite (Built-in)" (advanced)
+Using "default" pen tablet driver...
+
+TextServer: Primary interface set to: "ICU / HarfBuzz / Graphite (Built-in)" (advanced).
+TextureStreaming settings: enabled=0, budget_mb=512, min_lod=0, max_lod=3
+CORE API HASH: 2601269559
+EDITOR API HASH: 413009678
+Loading resource: res://tools/native_probe_runs.gd remapped: res://tools/native_probe_runs.gd
+Completed load for: 'res://tools/native_probe_runs.gd' remapped 'res://tools/native_probe_runs.gd' at thread -1
+SceneTreeFTI: traversal method DEFAULT
+MbedTLS: Some X509 certificates could not be parsed (1 certificates skipped).
+Loaded system CA certificates
+exit_leak: reference() taken and never released, rid_count=3
+XR: Clearing primary interface
+XR: Removed interface "Native mobile"
+XR: Removed interface "OpenXR"
+ERROR: 1 RID allocations of type 'P11JoltShape3D' were leaked at exit.
+ERROR: 1 RID allocations of type 'P10JoltBody3D' were leaked at exit.
+ERROR: 1 RID allocations of type 'P10JoltArea3D' were leaked at exit.
+ERROR: 1 RID allocations of type 'P11JoltSpace3D' were leaked at exit.
+Leaked instance: ToolchainProbe:9223372064084198900 - Reference count: 1
+Hint: Leaked instances typically happen when nodes are removed from the scene tree (with `remove_child()`) but not freed (with `free()` or `queue_free()`).
+WARNING: 1 ObjectDB instance was leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2609)
+exit=0

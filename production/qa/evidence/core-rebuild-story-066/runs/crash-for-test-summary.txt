@@ -1,0 +1,15 @@
+label=native-crash-for-test exit=139 stack_source=cdb timeout=180s log=production/qa/evidence/core-rebuild-story-066/runs/crash_repro/native-crash-for-test.log
+result: CRASH (segmentation fault or access violation)
+stack (cdb):
+  (7028.6e68): Access violation - code c0000005 (first chance)
+  dogworks_core_windows_template_debug_x86_64!godot::ToolchainProbe::crash_for_test+0xd3:
+  00007ff6`a6b9f141     : 000001cb`00000004 00000000`00000000 00000000`00000000 0000000c`1e5ff050 : dogworks_core_windows_template_debug_x86_64!godot::ToolchainProbe::crash_for_test+0xd3
+  00007ff6`a140d8f6     : 00000000`00000006 000001cb`5a4608c0 000001cb`591a0000 0000000c`1e5fef20 : godot_windows_editor_x86_64!NoHotPatch+0x5dd76e1
+  00007ff6`a13158d1     : 0000000c`1e5ff410 00000000`000014a8 000001cb`5d47ac60 00007ff6`a552f5d3 : godot_windows_editor_x86_64!NoHotPatch+0x645e96
+  00007ff6`a451213e     : 0000000c`1e5ff410 000001cb`5d47ac60 00000000`00000000 00000000`00000000 : godot_windows_editor_x86_64!NoHotPatch+0x54de71
+  00007ff6`a319a447     : 00007ffc`d87b2570 000001cb`591dce40 00000000`00000000 00000000`00000040 : godot_windows_editor_x86_64!NoHotPatch+0x374a6de
+  00007ff6`a0e3499d     : 000001cb`591dceb0 000001cb`5921a100 000001cb`591a0880 00000000`00000001 : godot_windows_editor_x86_64!NoHotPatch+0x23d29e7
+  00007ff6`a70908b3     : 000001cb`00000008 0000000c`1e5ff95c 00007ff6`aa1f47e0 00000000`3b350203 : godot_windows_editor_x86_64!NoHotPatch+0x6cf3d
+  00007ff6`a0dc10c9     : 00007ff6`aa1f47e0 00000000`00000008 00000000`00000000 00000000`00000000 : godot_windows_editor_x86_64!NoHotPatch+0x62c8e53
+  00007ffc`d9eb9c5c     : 00000000`00000000 00000000`00000000 000004f0`fffffb30 000004d0`fffffb30 : KERNEL32!BaseThreadInitThunk+0x17
+  00000000`00000000     : 00000000`00000000 00000000`00000000 00000000`00000000 00000000`00000000 : ntdll!RtlUserThreadStart+0x2c

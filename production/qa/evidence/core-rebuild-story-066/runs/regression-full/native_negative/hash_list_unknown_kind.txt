@@ -1,0 +1,1 @@
+hash_files: unknown line kind 'bogus' in /c/writechoice/Claude-Code-Game-Studios/native/obj/negative_tmp/list_unknown_kind.txt: 'bogus native/SConstruct'
