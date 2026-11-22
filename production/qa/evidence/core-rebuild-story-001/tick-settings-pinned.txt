@@ -1,0 +1,5 @@
+physics/common/physics_ticks_per_second has=true value=60
+physics/common/max_physics_steps_per_frame has=true value=8
+physics/common/physics_interpolation has=true value=false
+physics/common/physics_jitter_fix has=true value=0.0
+Engine: ticks=60 max_steps=8 jitter=0.0 interp=1

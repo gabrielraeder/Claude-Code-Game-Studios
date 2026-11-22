@@ -1,0 +1,41 @@
+# 4.8 break greps on the frozen code (src/legacy, src/data), after the move
+## 1. triple-quoted string blocks (strings can no longer be comments in 4.8)
+$ grep -rn --include=*.gd -E "\"\"\"|'''" src/legacy src/data
+src/legacy/test_track/track_mesh.gd:90:	sh.code = """shader_type spatial;
+src/legacy/test_track/track_mesh.gd:106:"""
+matches: 2
+## 1b. a statement that is only a string literal (single-line string used as a comment)
+$ grep -rn --include=*.gd -E "^\s*\"[^\"]*\"\s*$" src/legacy src/data
+matches: 0
+## 2. inner classes (a script inheriting its own inner class breaks in 4.8)
+$ grep -rn --include=*.gd -E "^\s*class\s+\w+" src/legacy src/data
+src/legacy/audio/audio_director.gd:13:class EngineVoice:
+src/legacy/audio/audio_director.gd:23:class EngineRequest:
+src/legacy/audio/race_sound.gd:11:class KartMemo:
+src/legacy/items/item_manager.gd:22:class BotSlot extends RefCounted:
+src/legacy/items/item_manager.gd:29:class ActiveItem extends RefCounted:
+src/legacy/test_track/track_model.gd:25:class Query extends RefCounted:
+src/legacy/test_track/track_model.gd:76:class Hit extends RefCounted:
+src/legacy/test_track/track_model.gd:87:class Path extends RefCounted:
+src/legacy/track/mover_view.gd:28:class GateView extends RefCounted:
+src/legacy/track/mover_view.gd:40:class PortcullisView extends RefCounted:
+src/legacy/track/mover_view.gd:46:class BarrelView extends RefCounted:
+src/legacy/track/mover_view.gd:50:class BurstView extends RefCounted:
+src/legacy/track/mover_view.gd:55:class RingView extends RefCounted:
+src/legacy/track/mover_view.gd:60:class CartView extends RefCounted:
+src/legacy/track/track_scenery.gd:51:class RoadGrid extends RefCounted:
+src/legacy/ui/race_hud.gd:541:class ItemSlot extends Control:
+src/legacy/ui/race_hud.gd:601:class DriftPips extends Control:
+src/legacy/ui/race_hud.gd:623:class MinimapTrack extends Control:
+src/legacy/ui/race_hud.gd:692:class MinimapDots extends Control:
+inner classes: 19
+$ grep -rn --include=*.gd -E "^\s*class\s+\w+\s+extends\s+\w+" src/legacy src/data  (then: is the base an inner class of the same file?)
+inner-class self-inheritance matches: 0
+
+## Verdict (by the story-001 implementer)
+- 1: the only triple-quoted block is track_mesh.gd:90-106, a multi-line string ASSIGNED to sh.code
+  (shader source), not a string used as a comment. Not a 4.8 break. No hotfix.
+- 1b: no bare single-line string statements.
+- 2: 19 inner classes; each extends an engine class (RefCounted, Control) or nothing; none extends
+  another inner class of the same script, and no script extends its own inner class. Clean.
+- The frozen game already parses and runs on 4.8-beta3 (regression and traces), consistent with the above.

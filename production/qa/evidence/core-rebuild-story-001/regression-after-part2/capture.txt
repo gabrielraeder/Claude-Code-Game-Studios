@@ -1,0 +1,6 @@
+capture solo_castle_circuit_cart: 2756 rows
+capture solo_castle_circuit_bike: 2854 rows
+capture bots_castle_circuit: 35316 rows
+capture solo_dungeon_depths_cart: 2521 rows
+capture solo_dungeon_depths_bike: 2533 rows
+capture bots_dungeon_depths: 32664 rows

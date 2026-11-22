@@ -1,0 +1,13 @@
+# regression after the move (commit cc148d0), before pinning the tick settings, two parts with CHECKS=
+regression: out=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-001/regression-after-part1 port=24690 golden=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-001/golden checks=track_check
+PASS track_check castle_circuit
+PASS track_check dungeon_depths
+RESULT PASS (out=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-001/regression-after-part1)
+regression: out=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-001/regression-after-part2 port=24690 golden=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-001/golden checks=bot_race item_net bump net_stress traces
+PASS bot_race_test (11 bots, 1 lap)
+PASS item_net_test (host + 2 clients, 1 lap)
+PASS bump_test (park vs ram, 30 s)
+PASS net_stress_test (4 racers, 1 lap)
+PASS trace capture (6 runs)
+PASS trace compare vs golden
+RESULT PASS (out=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-001/regression-after-part2)

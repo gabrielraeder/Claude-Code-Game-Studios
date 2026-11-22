@@ -1,0 +1,4 @@
+regression: out=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-001/regression-pinned-traces port=24690 golden=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-001/golden checks=traces
+PASS trace capture (6 runs)
+PASS trace compare vs golden
+RESULT PASS (out=/c/writechoice/Claude-Code-Game-Studios/production/qa/evidence/core-rebuild-story-001/regression-pinned-traces)
