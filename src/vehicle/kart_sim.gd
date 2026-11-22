@@ -934,6 +934,11 @@ func _fell_off(dt: float, q: TrackModel.Query, track: TrackModel) -> bool:
 	if q.on_deck:
 		_off_deck_air = 0.0
 		return false
+	# Story 011 part 2: on a surface zone's ground (beside a banked or climbing road its ground can sit
+	# below the road edge) the kart has not fallen: the zone holds it.
+	if grounded and track.has_surfaces() and track.on_ground_zone(position, height):
+		_off_deck_air = 0.0
+		return false
 	if not grounded:
 		_off_deck_air += dt
 	var below: float = q.height - height

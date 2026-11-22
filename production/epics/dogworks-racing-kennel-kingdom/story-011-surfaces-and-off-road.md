@@ -57,9 +57,17 @@
 
 ## Files
 
-- `src/track/`, `src/vehicle/`, `src/main.gd`, `assets/tracks/*/`, `tools/track_check.gd` (planned; `/dev-story` lists the real files)
-
----
+- `src/track/surface_type.gd`, `surface_set.gd`, `track_surface.gd`, `track_wall_opening.gd` (new: surface data, zones, wall openings)
+- `src/track/track_library.gd`, `track_mover.gd`, `track_ramp.gd`, `track_scenery.gd`, `track_theme.gd`, `hazard_manager.gd`, `mover_view.gd` (zones beside hazards, warn ring, scenery guard for zones)
+- `src/test_track/track_data.gd`, `track_model.gd`, `track_mesh.gd` (zone grid, re-acquire, zone escape, zone ground and fences)
+- `src/vehicle/kart_sim.gd`, `kart_visual.gd` (caps, drag, grip, slick tail, puffs)
+- `src/ai/bot_driver.gd`, `bot_set.gd`, `assets/data/ai/bot_set.tres` (bots avoid or take zones)
+- `src/audio/race_sound.gd`, `assets/data/audio/audio_set.tres` (surface sounds)
+- `src/main.gd`, `src/debug/debug_options.gd`, `autopilot_driver.gd` (remote surface sampling, --auto-cut, --auto-boost, [surface] log)
+- `assets/data/surfaces/surface_set.tres` (surface values)
+- `tools/gen_castle_circuit.py`, `tools/gen_dungeon_depths.py`, `tools/gen_test_surfaces.py` → `assets/tracks/castle_circuit/`, `assets/tracks/dungeon_depths/`, `assets/tracks/test_surfaces/`
+- `tools/track_check.gd` (surface checks), `tools/surface_probe.gd` (new)
+- `production/qa/evidence/story-011-surfaces-and-off-road-evidence.md`, `production/qa/evidence/story-011-surfaces/`
 
 ## QA Test Cases
 

@@ -189,6 +189,38 @@ extends Resource
 ## ... after the drift button was let go for this many meters before that (a held drift is no hop).
 @export var trick_release_meters: float = 6.0
 
+@export_group("Surfaces (story 011)")
+## A bot takes a boost-cut (TrackSurface.boost_cut) only with at least this many seconds of boost
+## left (drift boost, War Horn, pad) when it reaches the cut, and only on the laps its personality's
+## shortcut_chance rolls for (a hash per lap and cut, the same on every PC).
+@export var cut_min_boost: float = 0.8
+## The decision is taken in the last this-many meters before the cut's route start.
+@export var cut_decide_before: float = 8.0
+## The cut ends (back to the racing line) this close (meters) to the road point it heads for.
+@export var cut_done_distance: float = 8.0
+## A bot on off-road ground that is not cutting (pushed or run wide) steers at a road point this
+## close ahead (meters), straight back onto the road.
+@export var zone_return_look: float = 10.0
+## When the straight line to its steering point would cross off-road ground (the inside of a corner
+## beside a zone, where there is no wall), a bot steers at a point this close (meters) instead ...
+@export var zone_avoid_look: float = 9.0
+## Beside (and this look ahead of) a wall opening onto off-road ground, a bot's line keeps this many
+## meters more off that road edge (no wall stops a line that clips the inside of a corner there).
+@export var zone_edge_keep: float = 1.5
+## ... tested at this many points along that line.
+@export var zone_line_samples: int = 3
+## Meters ahead a bot sees a slick patch on its road and moves its line beside it.
+@export var slick_look: float = 35.0
+## The line is kept this far (meters) beside the patch's edge.
+@export var slick_margin: float = 1.0
+## Share of laps a bot takes the other lane of a lane split whose main lane has a slick patch (a
+## hash per lap, on top of its normal plan).
+@export_range(0.0, 1.0) var slick_lane_chance: float = 0.85
+## A bot that cannot get beside a patch lifts (never brakes) within this many meters of it ...
+@export var slick_lift_look: float = 12.0
+## ... while faster than this share of its max speed.
+@export_range(0.0, 1.0) var slick_lift_speed_frac: float = 0.85
+
 
 ## Display names for bots (dog plus medieval puns), handed out by bot slot. Story 006 can
 ## replace or extend the list.

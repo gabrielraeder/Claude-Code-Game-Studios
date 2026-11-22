@@ -369,7 +369,9 @@ func hit_test(kart: KartSim, t: float, q: TrackModel.Query) -> int:
 			continue
 		match m.kind:
 			&"gate":
-				if m.hit_effect != &"stop" and q.path == _paths[i] and q.along >= m.path_from and q.along <= m.path_to:
+				# Story 011 part 2: only a kart on the deck itself (the moat ford beside the drawbridge
+				# is not on it; off the deck the moat's own hazard already takes a kart).
+				if m.hit_effect != &"stop" and q.path == _paths[i] and q.on_deck and q.along >= m.path_from 						and q.along <= m.path_to:
 					return i
 			&"burst":
 				if m.footprint.size() >= 3 and kart.height >= m.footprint_y_min and kart.height <= m.footprint_y_max \

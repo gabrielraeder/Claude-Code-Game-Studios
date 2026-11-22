@@ -22,6 +22,9 @@ var stuck_longest: float = 0.0
 const OPEN_BOTH: float = 2.0
 ## A ramp passed again after this many seconds is a new jump (a new trick roll); not a tuning value.
 const TRICK_REROLL_TIME: float = 3.0
+## Hash salts of the story 011 rolls (boost-cut, slick lane): fixed numbers that keep the rolls apart, not tuning.
+const CUT_SALT: int = 31
+const SLICK_SALT: int = 37
 
 var _set: BotSet
 var _seed: int = 0
@@ -85,6 +88,14 @@ var _bump_hooked: bool = false
 var _prev_spin: float = 0.0
 ## Sinks this race (read by the debug log).
 var sink_count: int = 0
+## Story 011 part 2: boost-cuts taken, and times the bot was on off-road ground without cutting.
+var cut_count: int = 0
+var offroad_count: int = 0
+var _cut_zone: int = -1
+var _cut_rolled: Dictionary = {}
+var _in_zone: bool = false
+var _slick_lift: bool = false
+var _slick_ahead: float = INF
 
 
 ## Builds the driver for [param id] from [param set] ([param laps] = laps in the race).
@@ -226,6 +237,7 @@ func _drive(input: KartInput, sim: KartSim, track: TrackModel, dt: float) -> voi
 	_scan_traffic(sim, usable)
 	desired += _av_shift
 	desired = _barrel_lane(track, sim, desired, usable)
+	desired = _slick_lane(track, sim, desired, usable)
 	if _barrel_near:
 		# Steer at a nearer point so the kart is in the chosen lane where the barrel is (a far
 		# pursuit point cuts the inside of the market S-bend, into the barrel lanes).
@@ -237,11 +249,29 @@ func _drive(input: KartInput, sim: KartSim, track: TrackModel, dt: float) -> voi
 		lim_neg = minf(usable, _set.open_edge_keep)
 	if open_side > 0.0:
 		lim_pos = minf(usable, _set.open_edge_keep)
+	# Story 011 part 2: beside a wall opening onto off-road ground the line keeps off the road's edge.
+	if sim.track_path == TrackModel.MAIN_PATH and track.has_surfaces() and _cut_zone < 0:
+		var zs: int = _zone_open_sides(track, sim.track_s, look)
+		if zs & 1:
+			lim_pos = minf(lim_pos, maxf(usable - _set.zone_edge_keep, 0.0))
+		if zs & 2:
+			lim_neg = minf(lim_neg, maxf(usable - _set.zone_edge_keep, 0.0))
 	_lat = move_toward(_lat, clampf(desired, -lim_neg, lim_pos), _set.lateral_rate * dt)
 	_lat = clampf(_lat, -lim_neg, lim_pos)
 	var rp: Vector2 = _route_point(track, sim, look)
 	var rt: Vector2 = _route_tangent(track, sim, look)
 	var target: Vector2 = rp + Vector2(-rt.y, rt.x) * _lat
+	# Story 011 part 2: a boost-cut across off-road ground, or back to the road from off-road ground.
+	var off_target: Vector2 = _surface_target(track, sim)
+	if off_target.x != INF:
+		target = off_target
+	elif _line_crosses_zone(track, sim, target):
+		# The pursuit line would clip off-road ground on the inside of a corner (no wall there): steer
+		# at a nearer point of the same line so the bot stays on the road.
+		var near_look: float = minf(look, _set.zone_avoid_look)
+		var nrp: Vector2 = _route_point(track, sim, near_look)
+		var nrt: Vector2 = _route_tangent(track, sim, near_look)
+		target = nrp + Vector2(-nrt.y, nrt.x) * _lat
 	var to: Vector2 = target - sim.position
 	var diff: float = wrapf(atan2(-to.x, -to.y) - sim.yaw, -PI, PI)
 
@@ -283,7 +313,7 @@ func _drive(input: KartInput, sim: KartSim, track: TrackModel, dt: float) -> voi
 			input.brake = 1.0 if sim.speed > _set.open_entry_speed + 1.0 else 0.0
 		elif on_open != 2 and sim.speed > _set.open_deck_speed:
 			input.throttle = 0.0
-	elif _gate_on_route(track, sim) or calm or _barrel_near:
+	elif _gate_on_route(track, sim) or calm or _barrel_near or _cut_zone >= 0 or _in_zone:
 		# No drift with a barrel near: a drifting kart cannot hold the free lane.
 		_drifting_intent = false
 	else:
@@ -294,6 +324,9 @@ func _drive(input: KartInput, sim: KartSim, track: TrackModel, dt: float) -> voi
 	# while fast (a kart slowed by a hit must drive on, not stand behind the barrel).
 	if _barrel_conflict and sim.speed > _set.barrel_lift_min_speed:
 		input.throttle = 0.0
+	# Story 011 part 2: no clean line past a slick patch: lift a little before it.
+	if _slick_lift and _slick_ahead <= _set.slick_lift_look and sim.speed > _set.slick_lift_speed_frac * sim.stats.max_speed:
+		input.throttle = 0.0
 	# Traffic: lift or brake when a slower kart is in the way and the dodge has not cleared it.
 	if _av_brake:
 		input.throttle = 0.0
@@ -303,6 +336,98 @@ func _drive(input: KartInput, sim: KartSim, track: TrackModel, dt: float) -> voi
 	elif _av_lift:
 		input.throttle = 0.0
 	_think_items(input, sim, turn, dt)
+
+
+# ---------------------------------------------------------------- surfaces (story 011 part 2)
+
+# Where to steer instead of the racing line, or Vector2(INF, INF): across a boost-cut the bot has
+# committed to (with boost time left and a personality that likes shortcuts), or straight back to
+# the road from off-road ground it was pushed onto.
+func _surface_target(track: TrackModel, sim: KartSim) -> Vector2:
+	var none := Vector2(INF, INF)
+	if not track.has_surfaces() or sim.is_sinking():
+		_cut_zone = -1
+		_in_zone = false
+		return none
+	if _cut_zone >= 0:
+		var goal: Vector2 = track.point_at(track.zone_routes[_cut_zone].y)
+		if sim.position.distance_to(goal) >= _set.cut_done_distance:
+			return goal
+		_cut_zone = -1
+	if sim.track_path == TrackModel.MAIN_PATH:
+		for zi in track.zone_routes.size():
+			if not track.zone_boost_cut[zi]:
+				continue
+			var r: Vector2 = track.zone_routes[zi]
+			var to_start: float = wrapf(r.x - sim.track_s, -track.length * 0.5, track.length * 0.5)
+			if to_start < 0.0 or to_start > _set.cut_decide_before:
+				continue
+			var key := Vector2i(_crossings, zi)
+			if _cut_rolled.has(key):
+				continue
+			_cut_rolled[key] = true
+			var likes: bool = float(absi(hash([kart_id, _seed, _crossings, zi, CUT_SALT])) % 1000) < personality.shortcut_chance * 1000.0
+			if likes and sim.boost_time >= _set.cut_min_boost:
+				_cut_zone = zi
+				cut_count += 1
+				print("[bot] CUT kart=%d name=%s lap=%d zone=%s boost=%.2f speed=%.1f t=%.2f" % [kart_id, personality.display_name,
+						_crossings - 1, track.zone_ids[zi], sim.boost_time, sim.speed, _race_t])
+				return track.point_at(r.y)
+	var on_zone: bool = sim.grounded and track.on_ground_zone(sim.position, sim.height)
+	if on_zone and not _in_zone:
+		offroad_count += 1
+		print("[bot] OFFROAD kart=%d name=%s lap=%d s=%.0f speed=%.1f bump=%d hit=%d t=%.2f" % [kart_id, personality.display_name,
+				_crossings - 1, sim.track_s, sim.speed, 1 if _race_t - _last_bump_t < 1.0 else 0,
+				1 if _race_t - _last_hit_t < 1.5 else 0, _race_t])
+	_in_zone = on_zone
+	if on_zone:
+		return _route_point(track, sim, _set.zone_return_look)
+	return none
+
+
+# True when the straight line from the kart to [param target] passes over off-road ground (sampled
+# at BotSet.zone_line_samples points).
+func _line_crosses_zone(track: TrackModel, sim: KartSim, target: Vector2) -> bool:
+	if not track.has_surfaces():
+		return false
+	var n: int = maxi(_set.zone_line_samples, 1)
+	for k in n:
+		var p: Vector2 = sim.position.lerp(target, float(k + 1) / float(n + 1))
+		if track.on_ground_zone(p, sim.height):
+			return true
+	return false
+
+
+# A slick patch ahead on the bot's road: the line moves beside it (the nearer clean side within the
+# usable road); with no clean side the bot will lift (_slick_lift) as it nears the patch.
+func _slick_lane(track: TrackModel, sim: KartSim, desired: float, usable: float) -> float:
+	_slick_lift = false
+	_slick_ahead = INF
+	if not track.has_surfaces() or sim.track_path != TrackModel.MAIN_PATH:
+		return desired
+	for zi in track.zone_s_range.size():
+		if not track.zone_types[zi].on_road:
+			continue
+		var sr: Vector2 = track.zone_s_range[zi]
+		var to0: float = wrapf(sr.x - sim.track_s, -track.length * 0.5, track.length * 0.5)
+		var to1: float = wrapf(sr.y - sim.track_s, -track.length * 0.5, track.length * 0.5)
+		if to1 < 0.0 or to0 > _set.slick_look:
+			continue
+		var lo: float = track.zone_lat_range[zi].x - _set.slick_margin
+		var hi: float = track.zone_lat_range[zi].y + _set.slick_margin
+		if desired <= lo or desired >= hi:
+			return desired
+		var best: float = INF
+		if lo >= -usable:
+			best = lo
+		if hi <= usable and (best == INF or absf(hi - desired) < absf(best - desired)):
+			best = hi
+		if best != INF:
+			return best
+		_slick_lift = true
+		_slick_ahead = maxf(to0, 0.0)
+		return desired
+	return desired
 
 
 # ---------------------------------------------------------------- laps and log
@@ -385,6 +510,7 @@ func _open_branch_phase(track: TrackModel, sim: KartSim) -> int:
 
 func _roll_plan(track: TrackModel) -> void:
 	_plan.clear()
+	_cut_rolled.clear()
 	var n: int = track.branch_count()
 	var ids: PackedStringArray = PackedStringArray()
 	for bi in n:
@@ -399,6 +525,18 @@ func _roll_plan(track: TrackModel) -> void:
 				var b: TrackModel.Path = track.branches[j]
 				if a.s_in < b.s_out and b.s_in < a.s_out:
 					_plan[i if _rng.randf() < 0.5 else j] = false
+	# Story 011 part 2: the other lane of a split whose main lane has a slick patch is preferred
+	# (a hash per lap, so the bot's other rolls do not shift).
+	for bi in n:
+		var bpath: TrackModel.Path = track.branches[bi]
+		if _plan[bi] or track.data.branches[bi].type != &"lane_split" or not track.slick_on_main_between(bpath.s_in, bpath.s_out):
+			continue
+		var other: bool = false
+		for j in n:
+			if j != bi and _plan[j] and track.branches[j].s_in < bpath.s_out and bpath.s_in < track.branches[j].s_out:
+				other = true
+		if not other and float(absi(hash([kart_id, _seed, _crossings, bi, SLICK_SALT])) % 1000) < _set.slick_lane_chance * 1000.0:
+			_plan[bi] = true
 	for bi in n:
 		if _plan[bi]:
 			ids.append(String(track.data.branches[bi].id))
@@ -577,6 +715,20 @@ func _barrel_lane(track: TrackModel, sim: KartSim, desired: float, usable: float
 # ---------------------------------------------------------------- racing line
 
 # Side (+1 normal side, -1 the other, 2 both, 0 none) of an unwalled main-road edge near the kart.
+# Sides (bit 1 = +1, bit 2 = -1) with a wall opening onto a surface zone from main-loop distance
+# [param s] to [param ahead] meters further.
+func _zone_open_sides(track: TrackModel, s: float, ahead: float) -> int:
+	var bits: int = 0
+	for o in track.data.wall_openings:
+		if o == null:
+			continue
+		var to0: float = wrapf(o.s_from - s, -track.length * 0.5, track.length * 0.5)
+		var to1: float = wrapf(o.s_to - s, -track.length * 0.5, track.length * 0.5)
+		if to1 >= 0.0 and to0 <= ahead:
+			bits |= 1 if o.side > 0 else 2
+	return bits
+
+
 func _open_edge_side(track: TrackModel, sim: KartSim) -> float:
 	var s: float = sim.track_s
 	var neg: bool = false

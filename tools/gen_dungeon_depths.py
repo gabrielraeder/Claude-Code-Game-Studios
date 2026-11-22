@@ -722,6 +722,138 @@ sound_active = &"cart_rumble"
 """ % (CART_PERIOD, CART_WARN, CART_FROM, CART_TO, CART_SPEED, RAIL_LANE, CART_HIT_R))
 
 
+# ------------------------------------------------------------------ surface zones (story 011 part 2)
+# Loose rubble at the two cave mouths of the cavern, a cinder (sand) boost-cut inside the long 90 onto
+# the grid after the forge, and a slime-wet flagstone patch (slick) on the inside of the cellar chicane
+# under the dripping cistern. Every zone vertex carries the height of the road edge it sits on (with
+# the bank); outer vertices take the height of the nearest road-edge vertex.
+def edge_pt(sv, side, inset=0.3):
+    """Point on the main road's curb edge on [side] at sv, [inset] meters inside the curb, and its height."""
+    lat = side * (hw_at(sv) + CURB - inset)
+    return add(point_at(sv), mul(normal_at(sv), lat)), surface_h(sv, lat)
+
+
+def curb_run(s0, s1, side, step=3.0):
+    out = []
+    n = max(int(math.ceil((s1 - s0) / step)), 1)
+    for k in range(n + 1):
+        out.append(edge_pt(s0 + (s1 - s0) * k / n, side))
+    return out
+
+
+def nearest_h(p, edge):
+    return min(edge, key=lambda e: ln(sub(e[0], p)))[1]
+
+
+def _in_poly(p, poly):
+    c = False
+    j = len(poly) - 1
+    for i in range(len(poly)):
+        if (poly[i][1] > p[1]) != (poly[j][1] > p[1]) and \
+                p[0] < (poly[j][0] - poly[i][0]) * (p[1] - poly[i][1]) / (poly[j][1] - poly[i][1]) + poly[i][0]:
+            c = not c
+        j = i
+    return c
+
+
+SURF_CHUNK = 6.0          # wall openings are cut per this many meters of road ...
+SURF_DEPTH_MARGIN = 1.5   # ... as deep as the zone reaches past the curb there, plus this
+surf_zones = []      # (id, kind, polygon, heights, fence)
+surf_openings = []   # (s_from, s_to, side, depth)
+surf_routes = {}     # id -> (route_from, route_to, boost_cut)
+
+
+def zone_openings(poly, side):
+    """Wall openings on [side] covering every main-road stretch the zone lies beside (sampled every 0.5 m)."""
+    reach = {}
+    xs = [q[0] for q in poly]
+    zs = [q[1] for q in poly]
+    gx = min(xs)
+    while gx <= max(xs):
+        gz = min(zs)
+        while gz <= max(zs):
+            if _in_poly((gx, gz), poly):
+                sv = s_of((gx, gz))
+                d = ln(sub((gx, gz), point_at(sv)))
+                k = int(sv // SURF_CHUNK)
+                reach[k] = max(reach.get(k, 0.0), d - hw_at(sv) - CURB)
+            gz += 0.5
+        gx += 0.5
+    for k in sorted(reach):
+        surf_openings.append((k * SURF_CHUNK, (k + 1) * SURF_CHUNK, side, max(reach[k], 0.0) + SURF_DEPTH_MARGIN))
+
+
+SIDE_TAPER = float(os.environ.get("SIDE_TAPER", "7.0"))
+
+
+def side_zone(zid, kind, s0, s1, side, depth):
+    """A strip beside the road on [side] from s0 to s1, [depth] meters out from the curb. The far edge is
+    SIDE_TAPER shorter at each end: the end fences slant back to the road (a kart running along the
+    strip is steered out, not stopped head-on)."""
+    inner = curb_run(s0, s1, side, 3.0)
+    outer = []
+    o0, o1 = s0 + SIDE_TAPER, s1 - SIDE_TAPER
+    n = max(int(math.ceil((o1 - o0) / 5.0)), 1)
+    for k in range(n + 1):
+        sv = o1 - (o1 - o0) * k / n
+        outer.append(add(point_at(sv), mul(normal_at(sv), side * (hw_at(sv) + CURB + depth))))
+    poly = [e[0] for e in inner] + outer
+    hs = [e[1] for e in inner] + [nearest_h(q, inner) for q in outer]
+    surf_zones.append((zid, kind, poly, hs, True))
+    zone_openings(poly, side)
+
+
+# 1-2. Rubble at the cave mouths: entering the cavern (outside of the shore sweeper, away from the lava)
+# and leaving it toward the mine (outside of the stalagmite hairpin exit, before the rail branch).
+RUBBLE_A = (float(os.environ.get("RUBBLE_A0", "300.0")), float(os.environ.get("RUBBLE_A1", "326.0")), 1, 8.0)
+RUBBLE_B = (ts("mine_in", 0.0) + 1.0, rail_s_in - 6.0, -1, 7.0)
+side_zone("cave_rubble_in", "rubble", *RUBBLE_A)
+side_zone("cave_rubble_out", "rubble", *RUBBLE_B)
+
+# 3. Cinder cut: a sand patch inside the long 90 onto the grid (forge90), between the inner curb from
+# CUT_LEAD before the corner to CUT_LEAD after it and the diagonal fence. Shorter than the road, but
+# sand caps the speed: it pays only with a boost.
+CUT_LEAD = float(os.environ.get("CUT_LEAD", "20.0"))
+_c0 = ts("forge90", 0.0) - CUT_LEAD
+_c1 = ts("forge90", 1.0) + CUT_LEAD
+_cut = curb_run(_c0, _c1, 1, 3.0)
+surf_zones.append(("cinder_cut", "sand", [e[0] for e in _cut], [e[1] for e in _cut], True))
+zone_openings([e[0] for e in _cut], 1)
+CUT_ROUTE_IN = 2.0
+CUT_ROUTE_OUT = 4.0
+surf_routes["cinder_cut"] = (_c0 - CUT_ROUTE_IN, _c1 + CUT_ROUTE_OUT, True)
+CUT_CHORD = ln(sub(_cut[0][0], _cut[-1][0]))
+_gap_clear = min(min(ln(sub(e[0], q)) for q in gap_pts) for e in _cut) - GAP_HW - 0.4
+assert _gap_clear > 3.0, "cinder cut too close to the lava gap branch (%.1f m)" % _gap_clear
+
+# 4. Slime-wet flagstones: a slick patch on the inside half of the first cellar chicane bend (chic1, a
+# left: inside = -1), under the dripping cistern; the outside half stays clean.
+SLIME_FROM = float(os.environ.get("SLIME_FROM", "-3.0"))   # meters from the bend start
+SLIME_LEN = float(os.environ.get("SLIME_LEN", "16.0"))
+SLIME_EDGE = 0.6     # meters inside the road edge
+SLIME_OVER = 0.5     # meters past the centerline toward the outside
+_l0 = ts("chic1", 0.0) + SLIME_FROM
+_l1 = _l0 + SLIME_LEN
+_slime = []
+_n = 4
+for _k in range(_n + 1):
+    sv = _l0 + (_l1 - _l0) * _k / _n
+    lat = -(hw_at(sv) - SLIME_EDGE)
+    _slime.append((add(point_at(sv), mul(normal_at(sv), lat)), surface_h(sv, lat)))
+for _k in range(_n + 1):
+    sv = _l1 - (_l1 - _l0) * _k / _n
+    _slime.append((add(point_at(sv), mul(normal_at(sv), SLIME_OVER)), surface_h(sv, SLIME_OVER)))
+surf_zones.append(("cistern_slime", "slick", [e[0] for e in _slime], [e[1] for e in _slime], False))
+print("surfaces: rubble in s %.1f..%.1f (+1, %.0f m), rubble out s %.1f..%.1f (-1, %.0f m); cinder cut s %.1f..%.1f chord %.1f m "
+      "(road %.1f m), %.1f m clear of the lava gap; slime s %.1f..%.1f" % (
+          RUBBLE_A[0], RUBBLE_A[1], RUBBLE_A[3], RUBBLE_B[0], RUBBLE_B[1], RUBBLE_B[3], _c0, _c1, CUT_CHORD, _c1 - _c0,
+          _gap_clear, _l0, _l1))
+for z in surf_zones:
+    print("  zone %-16s %-7s %d points, h %.2f..%.2f" % (z[0], z[1], len(z[2]), min(z[3]), max(z[3])))
+print("  openings:", ["%.0f%+d:%.1f" % (o[0], o[2], o[3]) for o in surf_openings])
+SURF_PLOT = [(z[0], z[2]) for z in surf_zones]
+
+
 # ------------------------------------------------------------------ report
 print("main length %.1f m (turtle %.1f), control points %d, free straights %.1f / %.1f" % (LENGTH, TURTLE_LEN, len(cps), la, lb))
 for i, e in enumerate(ELEMS):
@@ -859,8 +991,8 @@ road = &"lava_gap"
 distance = %.3f
 length = %.2f
 lip_height = %.2f
-color_a = Color(0.45, 0.36, 0.3, 1)
-color_b = Color(0.3, 0.38, 0.55, 1)
+color_a = Color(0.78, 0.25, 0.17, 1)
+color_b = Color(0.96, 0.92, 0.82, 1)
 side_color = Color(0.32, 0.26, 0.25, 1)
 stripes = 4
 """ % (GAP_RAMP_AT, GAP_RAMP_LEN, GAP_RAMP_LIP))
@@ -888,6 +1020,33 @@ length = %.2f
 width = %.2f
 """ % (i, pd_[0], pd_[1], pd_[2], pd_[3], pd_[4]))
 
+surf_ids = []
+for _k, (zid, kind, poly, hs, fence) in enumerate(surf_zones):
+    surf_ids.append('SubResource("Surf_%d")' % _k)
+    _r = surf_routes.get(zid, (-1.0, -1.0, False))
+    subs.append("""[sub_resource type="Resource" id="Surf_%d"]
+script = ExtResource("8_surf")
+id = &"%s"
+kind = &"%s"
+polygon = %s
+heights = %s
+height = %.3f
+fence = %s
+route_from = %.2f
+route_to = %.2f
+boost_cut = %s
+""" % (_k, zid, kind, v2(poly), f32(hs), min(hs), "true" if fence else "false", _r[0], _r[1], "true" if _r[2] else "false"))
+open_ids = []
+for _k, (o0, o1, oside, odepth) in enumerate(surf_openings):
+    open_ids.append('SubResource("Open_%d")' % _k)
+    subs.append("""[sub_resource type="Resource" id="Open_%d"]
+script = ExtResource("9_open")
+s_from = %.3f
+s_to = %.3f
+side = %d
+depth = %.2f
+""" % (_k, o0, o1, oside, odepth))
+
 TRES = """[gd_resource type="Resource" script_class="TrackData" load_steps=%d format=3]
 
 [ext_resource type="Script" path="res://src/test_track/track_data.gd" id="1_data"]
@@ -897,6 +1056,8 @@ TRES = """[gd_resource type="Resource" script_class="TrackData" load_steps=%d fo
 [ext_resource type="Script" path="res://src/track/track_pad.gd" id="5_pad"]
 [ext_resource type="Script" path="res://src/track/track_ramp.gd" id="6_ramp"]
 [ext_resource type="Script" path="res://src/track/track_mover.gd" id="7_mover"]
+[ext_resource type="Script" path="res://src/track/track_surface.gd" id="8_surf"]
+[ext_resource type="Script" path="res://src/track/track_wall_opening.gd" id="9_open"]
 
 %s
 [resource]
@@ -931,11 +1092,13 @@ pillar_color = Color(0.3, 0.24, 0.25, 1)
 deck_under_color = Color(0.24, 0.19, 0.2, 1)
 ramps = Array[ExtResource("6_ramp")]([SubResource("Ramp_gap")])
 movers = Array[ExtResource("7_mover")]([%s])
+surfaces = Array[ExtResource("8_surf")]([%s])
+wall_openings = Array[ExtResource("9_open")]([%s])
 """
 with open(os.path.join(out, "dungeon_depths.tres"), "w", newline="\n") as f:
-    f.write(TRES % (8 + len(subs), "\n".join(subs), ", ".join(branch_ids), ", ".join(haz_ids), ", ".join(pad_ids), v2(items), v2(cps), f32(cp_hw), SPP, CURB,
+    f.write(TRES % (10 + len(subs), "\n".join(subs), ", ".join(branch_ids), ", ".join(haz_ids), ", ".join(pad_ids), v2(items), v2(cps), f32(cp_hw), SPP, CURB,
                     v3(open_edges), OPEN_EDGE_REACH, SINK_TIME, RESPAWN_SPEED_FRAC, RESPAWN_IMMUNITY, RESPAWN_BACK_OFF, PAD_BOOST_TIME,
-                    f32(cp_h), f32(cp_bank), ", ".join(mover_ids)))
+                    f32(cp_h), f32(cp_bank), ", ".join(mover_ids), ", ".join(surf_ids), ", ".join(open_ids)))
 
 THEME = """[gd_resource type="Resource" script_class="TrackTheme" load_steps=2 format=3]
 
@@ -979,8 +1142,8 @@ lava_core_color = Color(1.0, 0.416, 0.102, 1)
 lava_bright_color = Color(1.0, 0.761, 0.29, 1)
 lava_crust_color = Color(0.231, 0.114, 0.094, 1)
 crystal_color = Color(0.35, 0.62, 1.0, 1)
-pad_color_a = Color(0.15, 0.55, 0.7, 1)
-pad_color_b = Color(1.0, 0.9, 0.35, 1)
+pad_color_a = Color(0.133, 0.902, 0.878, 1)
+pad_color_b = Color(1, 1, 1, 1)
 item_box_color = Color(0.9, 0.38, 0.15, 1)
 stalagmite_position = Vector2(%.2f, %.2f)
 crusher_position = Vector2(%.2f, %.2f)

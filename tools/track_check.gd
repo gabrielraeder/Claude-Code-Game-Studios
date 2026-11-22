@@ -58,6 +58,8 @@ var _dungeon: bool = false
 var _only: String = ""
 ## --quick: stop after the shortcut runs (tuning aid).
 var _quick: bool = false
+## --surfaces-only: run only the surface checks (18) (story 011 tuning aid).
+var _surfaces_only: bool = false
 # Story 008 part 4: height results gathered over every driven run (autopilot lines and the bot).
 var _h_runs: int = 0
 var _h_min_clear: float = INF
@@ -83,6 +85,8 @@ func _init() -> void:
 			_trace_from = float(a.substr("--trace=".length()))
 		elif a == "--quick":
 			_quick = true
+		elif a == "--surfaces-only":
+			_surfaces_only = true
 	_data = TrackLibrary.load_track(track_id)
 	if _data == null:
 		print("FAIL load track '%s'" % track_id)
@@ -94,6 +98,11 @@ func _init() -> void:
 	_net = load("res://assets/data/net/net_config.tres") as NetConfig
 	_track = TrackModel.new(_data)
 	print("== track_check: %s (%s) ==" % [_data.display_name, track_id])
+	if _surfaces_only:
+		_check_surfaces()
+		print("== surfaces only, %d failed ==" % _fails)
+		quit(1 if _fails > 0 else 0)
+		return
 	_check_geometry()
 	_check_widths()
 	_check_grid()
@@ -154,6 +163,7 @@ func _init() -> void:
 	_check_shortcut_savings(savings)
 	_check_height()
 	_check_movers()
+	_check_surfaces()
 	print("== %s ==" % ("ALL PASS" if _fails == 0 else "%d FAILED" % _fails))
 	quit(1 if _fails > 0 else 0)
 
@@ -215,7 +225,8 @@ func _check_geometry() -> void:
 		if area2 <= 0.0001:
 			continue
 		var r: float = a.distance_to(b) * b.distance_to(c) * a.distance_to(c) / (2.0 * area2)
-		var inner: float = _track.main.wall_pos[i] if cr > 0.0 else _track.main.wall_neg[i]
+		# Story 011 part 2: the closed wall (a wall opening onto a surface zone is not a wall).
+		var inner: float = _track.main.wall_pos_closed[i] if cr > 0.0 else _track.main.wall_neg_closed[i]
 		if r - inner < worst:
 			worst = r - inner
 			worst_s = _track.cumulative[i]
@@ -318,11 +329,20 @@ func _run_laps(opt: Dictionary) -> Dictionary:
 	driver.shortcut_id = StringName(opt.get("shortcut", ""))
 	driver.allow_drift = opt.get("drift", true)
 	driver.blind_entrance = opt.get("blind", 0.0)
+	# Story 011 part 2: a drive across a surface zone, a boost at a main-loop distance, a frozen hazard
+	# clock (the drawbridge held up), a shorter race.
+	driver.cut_window = opt.get("cut", Vector2(0.0, -1.0))
+	driver.boost_at = opt.get("boost_at", Vector2(-1.0, 0.0))
+	if opt.has("hazard_time") and not _data.movers.is_empty():
+		var hm := HazardManager.new()
+		hm.setup(track)
+		hm.time = float(opt.hazard_time)
+		sim.hazard_manager = hm
 	var dunk_s: float = opt.get("dunk_s", -1.0)
 	var dunk_side: int = opt.get("dunk_side", 1)
 	var input := KartInput.new()
-	var laps := LapCounter.new(_data.lap_count, track.length, track.checkpoint_s)
-	var run: Dictionary = {"finished": false, "times": [], "wall_hits": 0, "hard_hits": 0, "max_speed": 0.0,
+	var laps := LapCounter.new(int(opt.get("laps", _data.lap_count)), track.length, track.checkpoint_s)
+	var run: Dictionary = {"zone_ticks": {}, "zone_max_speed": {}, "finished": false, "times": [], "wall_hits": 0, "hard_hits": 0, "max_speed": 0.0,
 			"max_jump_ratio": 0.0, "jump_violations": 0, "max_excess": -INF, "ticks_on_branch": 0,
 			"rejected": 0, "limit": 0.0, "max_lateral_ratio_abs": 0.0, "pads": 0, "sinks": 0, "respawns": [],
 			"hit_buckets": {}, "loops": 0, "bad_respawns": 0, "sink_durations": [], "laps_started": 0}
@@ -334,7 +354,11 @@ func _run_laps(opt: Dictionary) -> Dictionary:
 		if hard:
 			run.hard_hits += 1)
 	sim.pad_boosted.connect(func() -> void: run.pads += 1)
+	var trace_sinks: bool = opt.get("trace_sinks", false)
 	sim.sank.connect(func() -> void:
+		if trace_sinks:
+			print("       sink t=%.2f kind=%s pos=(%.1f, %.1f) h=%.2f s=%.1f path=%d speed=%.1f" % [state.t, sim.hazard_kind,
+					sim.position.x, sim.position.y, sim.height, sim.track_s, sim.track_path, sim.speed])
 		run.sinks += 1
 		state.sank_at = state.t
 		if state.t - float(state.last_respawn) < RESPAWN_LOOP_WINDOW:
@@ -374,6 +398,10 @@ func _run_laps(opt: Dictionary) -> Dictionary:
 		if sim.is_sinking():
 			state.dunked = true
 		var was_sinking: bool = sim.is_sinking()
+		# Story 011 part 2: an unboosted comparison run carries no boost (drift, pad) through a window.
+		var strip: Vector2 = opt.get("strip_boost", Vector2(0.0, -1.0))
+		if strip.y >= strip.x and sim.track_s >= strip.x and sim.track_s <= strip.y:
+			sim.boost_time = 0.0
 		sim.tick(DT, input, track)
 		state.t += DT
 		laps.update(sim.track_s, state.t)
@@ -389,6 +417,11 @@ func _run_laps(opt: Dictionary) -> Dictionary:
 		run.max_speed = maxf(run.max_speed, sim.speed)
 		if not sim.is_sinking():
 			run.max_excess = maxf(run.max_excess, track.excess_at(sim.position))
+			if track.has_surfaces() and sim.grounded:
+				var zi: int = track.surface_zone_at(sim.position, sim.height)
+				if zi >= 0:
+					run.zone_ticks[zi] = int(run.zone_ticks.get(zi, 0)) + 1
+					run.zone_max_speed[zi] = maxf(float(run.zone_max_speed.get(zi, 0.0)), sim.speed)
 		if collect and sim.grounded and not sim.is_sinking():
 			var hq: TrackModel.Query = track.query(sim.position, -1, sim.height)
 			var clear: float = sim.height - (hq.height if hq.on_deck else hq.support)
@@ -405,7 +438,10 @@ func _run_laps(opt: Dictionary) -> Dictionary:
 		max_lat = maxf(max_lat, absf(q.lateral))
 		run.limit = q.wall_offset
 		if _trace and laps.lap == 1 and int(state.t * 60.0) % 10 == 0 and sim.track_s > _trace_from and sim.track_s < _trace_from + 140.0:
-			print("       trace t=%.2f s=%.1f path=%d lat=%.2f half=%.2f speed=%.1f boost=%.2f drift=%s" % [state.t, sim.track_s, sim.track_path, q.lateral, q.half_width, sim.speed, sim.boost_time, str(sim.drifting)])
+			print("       trace t=%.2f s=%.1f path=%d lat=%.2f half=%.2f speed=%.1f boost=%.2f drift=%s pos=(%.1f, %.1f) h=%.2f open=%s deck=%s zone=%d" % [
+					state.t, sim.track_s, sim.track_path, q.lateral, q.half_width, sim.speed, sim.boost_time, str(sim.drifting),
+					sim.position.x, sim.position.y, sim.height, str(q.in_opening), str(q.on_deck),
+					track.surface_zone_at(sim.position, sim.height) if track.has_surfaces() else -1])
 	if collect:
 		_h_runs += 1
 		_h_progress_violations += int(run.jump_violations)
@@ -944,7 +980,7 @@ func _self_level_probe(path: TrackModel.Path, d: float, p: Vector2, y: float, se
 		var t: float = clampf((p - a).dot(ab) / l2, 0.0, 1.0) if l2 > 0.0 else 0.0
 		var off: Vector2 = p - (a + ab * t)
 		var side: int = 1 if off.dot(Vector2(-ab.y, ab.x)) >= 0.0 else -1
-		if off.length() - path.wall_at(i, t, side) > 0.0:
+		if off.length() - path.closed_wall_at(i, t, side) > 0.0:
 			continue
 		var lat: float = off.dot(Vector2(-ab.y, ab.x).normalized()) if l2 > 0.0 else 0.0
 		var oy: float = path.surface_y(i, t, lat)
@@ -953,6 +989,239 @@ func _self_level_probe(path: TrackModel.Path, d: float, p: Vector2, y: float, se
 		elif absf(oy - y) > JUNCTION_TOLERANCE and absf(oy - y) < sep:
 			out.y = 1.0
 	return out
+
+
+# ---------------------------------------------------------------- (18) surfaces (story 011)
+## Spacing (meters) of the sample grid inside a zone, and how far from its outline a sample must be
+## (the outline sits on the curb, 0.3 m inside it).
+const ZONE_SAMPLE_STEP: float = 1.0
+const ZONE_EDGE_SKIP: float = 0.6
+## Random starts inside each off-road zone (full throttle, random heading) and how long each runs.
+const ZONE_STARTS: int = 40
+const ZONE_START_SECONDS: float = 6.0
+## Road width (meters) an on-road patch must leave free beside it, unless another lane of a split
+## runs beside it there.
+const SLICK_FREE_MIN: float = 3.0
+## Seconds of boost for the boosted boost-cut runs: the longest drift boost (tier 3) of the vehicle
+## stats; this is only the fallback.
+const CUT_BOOST_FALLBACK: float = 1.6
+## The boost is given this many meters before the route starts.
+const CUT_BOOST_LEAD: float = 2.0
+## Unboosted runs: any boost (drift, pad) is removed from this many meters before the route to its end.
+const CUT_STRIP_BEFORE: float = 10.0
+## Lateral step (meters) of the free-road scan across an on-road patch.
+const SLICK_LAT_STEP: float = 0.25
+
+
+func _check_surfaces() -> void:
+	if not _track.has_surfaces():
+		print("     (18) skipped: no surface zones on %s" % _data.track_id)
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20261121
+	for zi in _track.zone_polygons.size():
+		var id: String = String(_track.zone_ids[zi])
+		var t: SurfaceType = _track.zone_types[zi]
+		var poly: PackedVector2Array = _track.zone_polygons[zi]
+		var r: Rect2 = _track.zone_bounds[zi]
+		var n: int = 0
+		var wrong: int = 0
+		var bad_at: String = ""
+		var x: float = r.position.x
+		while x <= r.end.x:
+			var z: float = r.position.y
+			while z <= r.end.y:
+				var p := Vector2(x, z)
+				if Geometry2D.is_point_in_polygon(p, poly) and _dist_to_outline(p, poly) >= ZONE_EDGE_SKIP:
+					n += 1
+					var road: bool = _track.on_surface(p, null, _track.zone_height_at(zi, p))
+					if road != t.on_road:
+						wrong += 1
+						bad_at = "(%.1f, %.1f)" % [p.x, p.y]
+				z += ZONE_SAMPLE_STEP
+			x += ZONE_SAMPLE_STEP
+		if t.on_road:
+			_check_ok("(18) %s (%s) lies on the road" % [id, t.kind], n > 0 and wrong == 0,
+					"%d samples, %d off the road%s" % [n, wrong, (" (last " + bad_at + ")") if wrong > 0 else ""])
+			_check_slick_leaves_room(zi, id)
+			continue
+		_check_ok("(18) %s (%s) lies off every road deck (no zone blocks a road)" % [id, t.kind], n > 0 and wrong == 0,
+				"%d samples, %d on a road deck%s" % [n, wrong, (" (last " + bad_at + ")") if wrong > 0 else ""])
+		# Open edges (no fence) touch the road where it has a wall opening on that side.
+		var fenced: PackedVector2Array = _track.zone_fence_edges[zi]
+		var open_n: int = 0
+		var open_bad: int = 0
+		for k in poly.size():
+			var a: Vector2 = poly[k]
+			var b: Vector2 = poly[(k + 1) % poly.size()]
+			var is_fence: bool = false
+			for f in range(0, fenced.size(), 2):
+				if fenced[f] == a and fenced[f + 1] == b:
+					is_fence = true
+					break
+			if is_fence:
+				continue
+			open_n += 1
+			var m: Vector2 = (a + b) * 0.5
+			var q: TrackModel.Query = _track.query(m, -1, _track.zone_height_at(zi, m))
+			if q.path != TrackModel.MAIN_PATH or not q.in_opening:
+				open_bad += 1
+		_check_ok("(18) %s touches the road only where the road has a wall opening" % id, open_n > 0 and open_bad == 0,
+				"%d open edges, %d not at an opening, %d fence edges" % [open_n, open_bad, fenced.size() / 2])
+		# The fences close the rest: karts started inside at random headings never get out except back
+		# onto the road, never sink, never leave every corridor.
+		var escapes: int = 0
+		var sinks: int = 0
+		var back: int = 0
+		var esc_at: String = ""
+		for k in ZONE_STARTS:
+			var p: Vector2 = _random_point_in(poly, r, rng)
+			var sim := KartSim.new(_stats)
+			sim.reset_to(_track, 0.0, 0.0)
+			sim.position = p
+			sim.yaw = rng.randf_range(-PI, PI)
+			sim._segment_hint = -1
+			sim.height = _track.zone_height_at(zi, p)
+			sim.track_s = _track.query(p, -1, sim.height).s
+			var input := KartInput.new()
+			input.throttle = 1.0
+			var tt: float = 0.0
+			while tt < ZONE_START_SECONDS:
+				sim.tick(DT, input, _track)
+				tt += DT
+				if sim.is_sinking():
+					sinks += 1
+					esc_at = "sink %s at (%.1f, %.1f) h %.2f s %.0f, %.1f s after a start at (%.1f, %.1f)" % [sim.hazard_kind,
+							sim.position.x, sim.position.y, sim.height, sim.track_s, tt, p.x, p.y]
+					break
+				var q2: TrackModel.Query = _track.query(sim.position, -1, sim.height)
+				if q2.on_deck:
+					back += 1
+					break  # back on a road: the zone let it out the right way
+				var inside: bool = q2.on_deck or _track.surface_zone_at(sim.position, sim.height) >= 0 \
+						or _track.closed_excess(sim.position, q2.s, 60) <= 0.05
+				if not inside:
+					escapes += 1
+					esc_at = "(%.1f, %.1f) s %.0f" % [sim.position.x, sim.position.y, q2.s]
+					break
+		_check_ok("(18) %s: the fences close the rest (%d starts inside, full throttle, random heading, %.0f s)" % [
+				id, ZONE_STARTS, ZONE_START_SECONDS], escapes == 0 and sinks == 0,
+				"back on the road %d, escapes %d, sinks %d%s" % [back, escapes, sinks, (" (last " + esc_at + ")") if escapes + sinks > 0 else ""])
+	_check_routes()
+
+
+# Distance from [param p] to the outline [param poly].
+func _dist_to_outline(p: Vector2, poly: PackedVector2Array) -> float:
+	var best: float = INF
+	for k in poly.size():
+		best = minf(best, p.distance_to(Geometry2D.get_closest_point_to_segment(p, poly[k], poly[(k + 1) % poly.size()])))
+	return best
+
+
+func _random_point_in(poly: PackedVector2Array, r: Rect2, rng: RandomNumberGenerator) -> Vector2:
+	for k in 1000:
+		var p := Vector2(rng.randf_range(r.position.x, r.end.x), rng.randf_range(r.position.y, r.end.y))
+		if Geometry2D.is_point_in_polygon(p, poly) and _dist_to_outline(p, poly) >= ZONE_EDGE_SKIP:
+			return p
+	return r.get_center()
+
+
+# An on-road patch leaves SLICK_FREE_MIN of road beside it, or another lane of a split runs beside it.
+func _check_slick_leaves_room(zi: int, id: String) -> void:
+	var poly: PackedVector2Array = _track.zone_polygons[zi]
+	var s0: float = INF
+	var s1: float = -INF
+	var y: float = _track.zone_height_min[zi]
+	for v in poly:
+		var sv: float = _track.query(v, -1, y).s
+		s0 = minf(s0, sv)
+		s1 = maxf(s1, sv)
+	var worst: float = INF
+	var alt: int = 0
+	var sv2: float = s0
+	while sv2 <= s1:
+		var hw: float = _track.half_width_at(sv2)
+		var c: Vector2 = _track.point_at(sv2)
+		var nn: Vector2 = _track.normal_at(sv2)
+		var covered: float = 0.0
+		var lat: float = -hw
+		while lat <= hw:
+			if Geometry2D.is_point_in_polygon(c + nn * lat, poly):
+				covered += SLICK_LAT_STEP
+			lat += SLICK_LAT_STEP
+		var beside: bool = false
+		for bi in _track.branch_count():
+			var bp: TrackModel.Path = _track.branches[bi]
+			if sv2 >= bp.s_in and sv2 <= bp.s_out and _data.branches[bi].type == &"lane_split":
+				beside = true
+		if beside:
+			alt += 1
+		else:
+			worst = minf(worst, 2.0 * hw - covered)
+		sv2 += ZONE_SAMPLE_STEP
+	_check_ok("(18) %s leaves a clean line (>= %.1f m of road, or the other lane of a split)" % [id, SLICK_FREE_MIN],
+			worst >= SLICK_FREE_MIN, "s %.1f..%.1f, narrowest free road %.1f m, %d samples beside another lane" % [
+					s0, s1, worst if worst < INF else -1.0, alt])
+
+
+# Routes across zones: a boost-cut pays only with a boost; any other route (the moat ford) is
+# passable, also with the drawbridge up.
+func _check_routes() -> void:
+	var boost_s: float = CUT_BOOST_FALLBACK
+	if not _stats.drift_boost_times.is_empty():
+		boost_s = _stats.drift_boost_times[_stats.drift_boost_times.size() - 1]
+	for zi in _track.zone_polygons.size():
+		var route: Vector2 = _track.zone_routes[zi]
+		if route.x < 0.0:
+			continue
+		var id: String = String(_track.zone_ids[zi])
+		var boost := Vector2(fposmod(route.x - CUT_BOOST_LEAD, _track.length), boost_s)
+		if _track.zone_boost_cut[zi]:
+			var strip := Vector2(route.x - CUT_STRIP_BEFORE, route.y)
+			var road_plain: Dictionary = _run_laps({"laps": 1, "track": _track, "strip_boost": strip})
+			var cut_plain: Dictionary = _run_laps({"laps": 1, "cut": route, "track": _track, "strip_boost": strip})
+			var road_boost: Dictionary = _run_laps({"laps": 1, "boost_at": boost, "track": _track})
+			var cut_boost: Dictionary = _run_laps({"laps": 1, "cut": route, "boost_at": boost, "track": _track})
+			var rp: float = _lap1(road_plain)
+			var cp: float = _lap1(cut_plain)
+			var rb: float = _lap1(road_boost)
+			var cb: float = _lap1(cut_boost)
+			print("     (18) %s boost-cut s %.1f->%.1f: lap 1 road %.2f / cut %.2f unboosted (no boost from %.0f m before); road %.2f / cut %.2f with a %.1f s boost; zone ticks %d / %d, max speed in the zone %.1f / %.1f m/s" % [
+					id, route.x, route.y, rp, cp, CUT_STRIP_BEFORE, rb, cb, boost_s, int(cut_plain.zone_ticks.get(zi, 0)),
+					int(cut_boost.zone_ticks.get(zi, 0)), float(cut_plain.zone_max_speed.get(zi, 0.0)),
+					float(cut_boost.zone_max_speed.get(zi, 0.0))])
+			_check_ok("(18) %s: the cut is driven and never sinks" % id,
+					cut_plain.finished and cut_boost.finished and int(cut_plain.zone_ticks.get(zi, 0)) > 0
+					and int(cut_boost.zone_ticks.get(zi, 0)) > 0 and cut_plain.sinks == 0 and cut_boost.sinks == 0,
+					"ticks in the zone %d / %d, sinks %d / %d" % [int(cut_plain.zone_ticks.get(zi, 0)),
+							int(cut_boost.zone_ticks.get(zi, 0)), cut_plain.sinks, cut_boost.sinks])
+			_check_ok("(18) %s pays only with a boost (unboosted cut >= road, boosted cut < boosted road)" % id,
+					cp >= rp and cb < rb, "unboosted %+.2f s, boosted %+.2f s (cut minus road)" % [cp - rp, cb - rb])
+		else:
+			var hm := HazardManager.new()
+			hm.setup(_track)
+			var up_t: float = -1.0
+			for i in hm.count():
+				var m: TrackMover = hm.mover(i)
+				if m.kind == &"gate" and m.hit_effect != &"stop":
+					var w: Vector2 = hm.blocked_window(m)
+					up_t = (w.x + w.y) * 0.5
+			var opt: Dictionary = {"laps": 1, "cut": route, "track": _track}
+			if up_t >= 0.0:
+				opt["hazard_time"] = up_t
+			opt["trace_sinks"] = true
+			var ford: Dictionary = _run_laps(opt)
+			var road: Dictionary = _run_laps({"laps": 1, "track": _track})
+			print("     (18) %s route s %.1f->%.1f (drawbridge %s): lap 1 %.2f s vs road %.2f s, zone ticks %d, max speed in the zone %.1f m/s, sinks %d" % [
+					id, route.x, route.y, "held up" if up_t >= 0.0 else "none", _lap1(ford), _lap1(road),
+					int(ford.zone_ticks.get(zi, 0)), float(ford.zone_max_speed.get(zi, 0.0)), ford.sinks])
+			_check_ok("(18) %s is passable with the drawbridge up (driven across, no sink)" % id,
+					ford.finished and ford.sinks == 0 and int(ford.zone_ticks.get(zi, 0)) > 0,
+					"finished %s, sinks %d, ticks in the zone %d" % [str(ford.finished), ford.sinks, int(ford.zone_ticks.get(zi, 0))])
+
+
+func _lap1(run: Dictionary) -> float:
+	return float(run.times[0]) if run.finished and run.times.size() > 0 else INF
 
 
 # ---------------------------------------------------------------- (17) timed hazards (story 009)

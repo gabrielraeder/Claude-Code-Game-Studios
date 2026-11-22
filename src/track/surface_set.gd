@@ -3,6 +3,21 @@ extends Resource
 ## The table of surface kinds (story 011): one SurfaceType per kind, plus the look of the fence along
 ## a wall opening and the cap on cosmetic particles. Shipped as assets/data/surfaces/surface_set.tres;
 ## a TrackData may point to its own (TrackData.surface_set), otherwise TrackModel loads DEFAULT_PATH.
+##
+## One visual language for track features (story 011, track-features catalog #45, art bible section 4);
+## each feature type looks the same on every track:
+## [codeblock]
+## Feature          | Look                                                        | Where it is set
+## Boost pad        | cyan #22E6E0 plate, white chevron pointing along the road   | TrackTheme.pad_color_a / _b
+## Trick ramp       | red-and-cream hay stripes on the wedge                      | TrackRamp.color_a / _b
+## Off-road         | flat ground in the kind's colour with a BROWN speckle,      | SurfaceType ground/pattern,
+##   (grass, sand,  |   low timber-and-parchment striped fence on its outer edge, |   SurfaceSet fence_*
+##    mud, rubble)  |   dust / mud / gravel puffs                                 |
+## Shallow water    | pale blue-cyan ground with white wave stripes, splash       | SurfaceType (shallows)
+## Slick            | glossy dark blue-grey overlay on the road, slanted streaks  | SurfaceType (slick)
+## Incoming hazard  | pulsing amber ember ring on the road where it strikes,      | TrackMover.warn_ring*,
+##                  |   plus the gate lanterns (green / flashing amber / red)     |   color_warn
+## [/codeblock]
 
 ## Resource path of the shipped set.
 const DEFAULT_PATH: String = "res://assets/data/surfaces/surface_set.tres"

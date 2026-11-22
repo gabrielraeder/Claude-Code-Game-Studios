@@ -698,6 +698,275 @@ print("drawbridge deck span %.1f..%.1f of %.1f m branch (%.1f m long, straight, 
 lane_heights = [round(main_h(s_of(q)), 3) for q in lane_cps]
 
 
+# ------------------------------------------------------------------ surface zones (story 011 part 2)
+# Off-road ground beside the road (reached through wall openings), a ford through the moat and an
+# on-road slick patch. Every zone vertex carries its own height (TrackSurface.heights): the height of
+# the road edge it sits on (with the bank), so a zone beside a climbing or banked road meets the curb
+# without a step. Outer vertices take the height of the nearest road-edge vertex.
+def bank_deg_at(sv):
+    """Main-road bank (degrees, TrackModel sign) at spline distance sv (linear between control points)."""
+    sv %= LENGTH
+    k = max(i for i in range(len(cp_s)) if cp_s[i] <= sv)
+    k2 = (k + 1) % len(cp_s)
+    span = (cp_s[k2] - cp_s[k]) % LENGTH
+    f = (sv - cp_s[k]) / span if span > 1e-9 else 0.0
+    return cp_bank[k] + (cp_bank[k2] - cp_bank[k]) * f
+
+
+def edge_pt(sv, side, inset=0.3):
+    """Point on the main road's curb edge on [side] at sv, [inset] meters inside the curb, and its height."""
+    lat = side * (hw_at(sv) + CURB - inset)
+    return add(point_at(sv), mul(normal_at(sv), lat)), main_h(sv) + lat * math.tan(math.radians(bank_deg_at(sv)))
+
+
+def curb_run(s0, s1, side, step=3.0):
+    """Curb-edge points (and heights) from s0 to s1 (s1 > s0, may pass LENGTH)."""
+    out = []
+    n = max(int(math.ceil((s1 - s0) / step)), 1)
+    for k in range(n + 1):
+        out.append(edge_pt(s0 + (s1 - s0) * k / n, side))
+    return out
+
+
+def nearest_h(p, edge):
+    return min(edge, key=lambda e: ln(sub(e[0], p)))[1]
+
+
+surf_zones = []      # (id, kind, polygon, heights, fence)
+surf_openings = []   # (s_from, s_to, side, depth)
+surf_routes = {}     # id -> (route_from, route_to, boost_cut): TrackSurface route fields
+surf_via = {}        # id -> waypoints across the zone (TrackSurface.route_via)
+SURF_OPEN_DEPTH = 60.0
+
+# 1. Tourney turf: grass inside the jousting-field sweeper (sweep1, a 130 degree right around the
+# lists), a circular segment between the inner curb and the chord. Cutting across it is shorter than
+# the road but the grass caps the speed: it pays only with a boost (drift boost, pad or War Horn).
+TURF_FROM = float(os.environ.get("TURF_FROM", "0.06"))   # fractions of sweep1 where the patch meets the curb
+TURF_TO = float(os.environ.get("TURF_TO", "0.94"))
+_t0, _t1 = ts("sweep1", TURF_FROM), ts("sweep1", TURF_TO)
+_turf = curb_run(_t0, _t1, 1, 3.0)
+surf_zones.append(("tourney_turf", "grass", [e[0] for e in _turf], [e[1] for e in _turf], True))
+surf_openings.append((_t0 - 1.0, _t1 + 1.0, 1, SURF_OPEN_DEPTH))
+TURF_CHORD = ln(sub(_turf[0][0], _turf[-1][0]))
+TURF_ROUTE_IN = 2.0    # the route starts this far before the patch and heads for the road this far past it
+TURF_ROUTE_OUT = 4.0
+surf_routes["tourney_turf"] = (_t0 - TURF_ROUTE_IN, _t1 + TURF_ROUTE_OUT, True)
+
+# 2. Kennel yard: mud on the outside of the hairpin 2 exit, beside the free_a straight (where a kart
+# runs wide out of the hairpin).
+YARD_FROM = float(os.environ.get("YARD_FROM", "4.0"))     # meters past the hairpin end
+YARD_LEN = float(os.environ.get("YARD_LEN", "30.0"))
+YARD_DEPTH = float(os.environ.get("YARD_DEPTH", "11.0"))  # meters from the curb out
+_y0 = hp2_end + YARD_FROM
+_y1 = _y0 + YARD_LEN
+_yard_in = curb_run(_y0, _y1, -1, 3.0)
+# The far edge is shorter than the curb edge by YARD_TAPER at each end: the end fences slant back to
+# the road, so a kart running along the yard is steered out instead of stopped head-on.
+YARD_TAPER = float(os.environ.get("YARD_TAPER", "8.0"))
+_yo0, _yo1 = _y0 + YARD_TAPER, _y1 - YARD_TAPER
+_yard_out = [(add(point_at(_yo1 - (_yo1 - _yo0) * k / 6), mul(normal_at(_yo1 - (_yo1 - _yo0) * k / 6),
+                                                              -(hw_at(_yo1 - (_yo1 - _yo0) * k / 6) + CURB + YARD_DEPTH))), None)
+             for k in range(7)]
+_yard_poly = [e[0] for e in _yard_in] + [e[0] for e in _yard_out]
+_yard_h = [e[1] for e in _yard_in] + [nearest_h(e[0], _yard_in) for e in _yard_out]
+surf_zones.append(("kennel_yard", "mud", _yard_poly, _yard_h, True))
+surf_openings.append((_y0 - 1.0, _y1 + 1.0, -1, SURF_OPEN_DEPTH))
+
+# 3. Moat shallows: a fenced ford through the moat beside the drawbridge, on the moat (lens) side of
+# it, following the bridge at FORD_OFFSET. Slow (shallow water) but it never sinks: the way across
+# while the bridge is up. Its two ends meet the main road's inner (moat) edge; its sides are fenced.
+# Kept clear of the bridge's corridor (BRIDGE_HW + OPEN_EDGE_REACH) so a kart in the ford is never
+# taken for a kart on the bridge, and the wall openings toward it are only as deep as the ford needs
+# (per stretch), so the main road's corridor never reaches the bridge.
+FORD_OFFSET = float(os.environ.get("FORD_OFFSET", "12.5"))  # ford centerline from the bridge centerline (m)
+FORD_HW = float(os.environ.get("FORD_HW", "3.0"))           # ford half width (m)
+# m between the ford and the bridge deck. A kart in the ford is held by the ford's fences and belongs
+# to the main road (TrackModel.query ignores a branch it is not on the deck of while on a zone).
+FORD_BRIDGE_CLEAR = float(os.environ.get("FORD_BRIDGE_CLEAR", "2.0"))
+assert FORD_OFFSET - FORD_HW >= BRIDGE_HW + FORD_BRIDGE_CLEAR
+
+
+def _in_poly(p, poly):
+    c = False
+    j = len(poly) - 1
+    for i in range(len(poly)):
+        if (poly[i][1] > p[1]) != (poly[j][1] > p[1]) and                 p[0] < (poly[j][0] - poly[i][0]) * (p[1] - poly[i][1]) / (poly[j][1] - poly[i][1]) + poly[i][0]:
+            c = not c
+        j = i
+    return c
+
+
+def _bnorm(i):
+    a_ = bridge_pts[max(i - 1, 0)]
+    b_ = bridge_pts[min(i + 1, len(bridge_pts) - 1)]
+    return nrm(norm(sub(b_, a_)))
+
+
+_im = len(bridge_pts) // 2
+_sg = 1.0 if _main_dist(add(bridge_pts[_im], mul(_bnorm(_im), FORD_OFFSET)))[0] <     _main_dist(add(bridge_pts[_im], mul(_bnorm(_im), -FORD_OFFSET)))[0] else -1.0
+
+
+def _ford_pts(i):
+    n_ = mul(_bnorm(i), _sg)
+    return add(bridge_pts[i], mul(n_, FORD_OFFSET - FORD_HW)), add(bridge_pts[i], mul(n_, FORD_OFFSET + FORD_HW))
+
+
+def _outside_main(q):
+    d, sv = _main_dist(q)
+    return d > hw_at(sv) + CURB - 0.3
+
+
+# The ford peels off the road's moat-side lane tangentially (a Hermite curve over FORD_LEAD meters of
+# road), runs parallel to the bridge in the middle, and merges back the same way, so a kart can drive
+# in at speed. Its road-side edge is clamped to the curb where it is still over the road: the mouths
+# are long tapers along the curb.
+FORD_MID_CLEAR = float(os.environ.get("FORD_MID_CLEAR", "4.0"))  # middle: the road-side edge this far past the curb
+FORD_LEAD = float(os.environ.get("FORD_LEAD", "24.0"))           # meters of road over which it peels off / merges
+FORD_LANE = float(os.environ.get("FORD_LANE", "2.5"))            # its centerline starts this far inside the road edge
+# Where the road-side edge is less than this past the curb it is put on the curb: no thin strip of
+# moat between the road and the ford (a kart taking the ford wide would drop into it).
+FORD_SLIVER = float(os.environ.get("FORD_SLIVER", "3.0"))
+
+
+def _excess_main(q):
+    d, sv = _main_dist(q)
+    return d - hw_at(sv) - CURB, sv
+
+
+def _longest_run(flags):
+    runs = []
+    i = 0
+    while i < len(flags):
+        if flags[i]:
+            j = i
+            while j + 1 < len(flags) and flags[j + 1]:
+                j += 1
+            runs.append((i, j))
+            i = j + 1
+        else:
+            i += 1
+    return max(runs, key=lambda r: r[1] - r[0])
+
+
+def _bcen(i):
+    return add(bridge_pts[i], mul(mul(_bnorm(i), _sg), FORD_OFFSET))
+
+
+def _btan(i):
+    return norm(sub(bridge_pts[min(i + 1, len(bridge_pts) - 1)], bridge_pts[max(i - 1, 0)]))
+
+
+def _hermite(p0, t0, p1, t1, step=1.0):
+    L = ln(sub(p1, p0))
+    n = max(int(L / step), 2)
+    out = []
+    for k in range(n):
+        u = k / n
+        h00, h10, h01, h11 = 2 * u ** 3 - 3 * u ** 2 + 1, u ** 3 - 2 * u ** 2 + u, -2 * u ** 3 + 3 * u ** 2, u ** 3 - u ** 2
+        out.append(add(add(mul(p0, h00), mul(t0, h10 * L)), add(mul(p1, h01), mul(t1, h11 * L))))
+    return out
+
+
+_m0, _m1 = _longest_run([_excess_main(_ford_pts(i)[1])[0] > FORD_MID_CLEAR for i in range(len(bridge_pts))])
+_sa = _main_dist(_bcen(_m0))[1] - FORD_LEAD
+_sb = _main_dist(_bcen(_m1))[1] + FORD_LEAD
+_P0 = add(point_at(_sa), mul(normal_at(_sa), open_side * (hw_at(_sa) - FORD_LANE)))
+_P3 = add(point_at(_sb), mul(normal_at(_sb), open_side * (hw_at(_sb) - FORD_LANE)))
+_C = _hermite(_P0, tangent_at(_sa), _bcen(_m0), _btan(_m0)) + [_bcen(i) for i in range(_m0, _m1 + 1)]     + _hermite(_bcen(_m1), _btan(_m1), _P3, tangent_at(_sb))[1:] + [_P3]
+
+
+def _ctan(k):
+    return norm(sub(_C[min(k + 1, len(_C) - 1)], _C[max(k - 1, 0)]))
+
+
+_CA = [add(_C[k], mul(nrm(_ctan(k)), -_sg * FORD_HW)) for k in range(len(_C))]   # bridge side
+_CB = [add(_C[k], mul(nrm(_ctan(k)), _sg * FORD_HW)) for k in range(len(_C))]    # road side
+# Off the road on its bridge side, and clear of the bridge deck.
+_bmin = BRIDGE_HW + FORD_BRIDGE_CLEAR
+_kA, _kE = _longest_run([_excess_main(q)[0] > -0.3 and min(ln(sub(q, b_)) for b_ in bridge_pts) >= _bmin for q in _CA])
+_A = []
+_B = []
+_Ah = []
+_Bh = []
+for _k in range(_kA, _kE + 1):
+    _A.append(_CA[_k])
+    _Ah.append(edge_pt(_main_dist(_CA[_k])[1], open_side)[1])
+    _ex, _sv = _excess_main(_CB[_k])
+    if _ex > FORD_SLIVER:
+        _B.append(_CB[_k])
+        _Bh.append(edge_pt(_sv, open_side)[1])
+    else:
+        _e = edge_pt(_sv, open_side)
+        _B.append(_e[0])
+        _Bh.append(_e[1])
+_ford_poly = _A + list(reversed(_B))
+_ford_h = _Ah + list(reversed(_Bh))
+surf_zones.append(("moat_shallows", "shallows", _ford_poly, _ford_h, True))
+FORD_LEN = sum(ln(sub(_C[k + 1], _C[k])) for k in range(_kA, _kE))
+_bridge_gap = min(min(ln(sub(q, b_)) for b_ in bridge_pts) for q in _CA[_kA:_kE + 1])
+assert _bridge_gap >= _bmin, "ford too close to the bridge deck (%.2f m)" % _bridge_gap
+# Openings: per FORD_CHUNK meters of main road, as deep as the ford reaches beyond the curb there.
+FORD_CHUNK = 6.0
+FORD_DEPTH_MARGIN = 1.5
+_reach = {}
+_xs = [q[0] for q in _ford_poly]
+_zs = [q[1] for q in _ford_poly]
+_gx = min(_xs)
+while _gx <= max(_xs):
+    _gz = min(_zs)
+    while _gz <= max(_zs):
+        if _in_poly((_gx, _gz), _ford_poly):
+            d, sv = _main_dist((_gx, _gz))
+            k = int(sv // FORD_CHUNK)
+            _reach[k] = max(_reach.get(k, 0.0), d - hw_at(sv) - CURB)
+        _gz += 0.5
+    _gx += 0.5
+_ford_open = []
+for k in sorted(_reach):
+    surf_openings.append((k * FORD_CHUNK, (k + 1) * FORD_CHUNK, open_side, max(_reach[k], 0.0) + FORD_DEPTH_MARGIN))
+    _ford_open.append((k * FORD_CHUNK, max(_reach[k], 0.0) + FORD_DEPTH_MARGIN))
+# The bridge must stay outside the main corridor where the openings widen it.
+_bridge_margin = 1e9
+for q in bridge_pts:
+    d, sv = _main_dist(q)
+    k = int(sv // FORD_CHUNK)
+    if k in _reach:
+        _bridge_margin = min(_bridge_margin, d - hw_at(sv) - CURB - (_reach[k] + FORD_DEPTH_MARGIN))
+FORD_S = (_main_dist(_A[0])[1], _main_dist(_A[-1])[1])
+FORD_ROUTE_IN = 4.0    # the route starts this far before the ford peels off and heads for the road this far past its merge
+FORD_ROUTE_OUT = 6.0
+FORD_VIA_STEP = 8.0    # meters between the route's waypoints along the ford's centerline
+_via = []
+_acc = FORD_VIA_STEP
+for _k in range(1, len(_C)):
+    _acc += ln(sub(_C[_k], _C[_k - 1]))
+    if _acc >= FORD_VIA_STEP:
+        _acc = 0.0
+        _via.append(_C[_k])
+surf_via["moat_shallows"] = _via
+surf_routes["moat_shallows"] = (_sa - FORD_ROUTE_IN, _sb + FORD_ROUTE_OUT, False)
+print("ford: peels off s %.1f, merges s %.1f, off the road s %.1f..%.1f, %.1f m long, %.1f m from the bridge centerline at least; openings %s; bridge clear of the widened main corridor by %.1f m" % (
+      _sa, _sb, FORD_S[0], FORD_S[1], FORD_LEN, _bridge_gap, ["%.0f:%.1f" % o for o in _ford_open], _bridge_margin))
+
+# 4. Spilled ale: a slick patch on the main lane of the village lane split (outside the tavern), so a
+# kart can take the other lane to avoid it.
+ALE_AT = float(os.environ.get("ALE_AT", "0.55"))    # fraction of the split straight
+ALE_LEN = float(os.environ.get("ALE_LEN", "9.0"))
+ALE_INSET = float(os.environ.get("ALE_INSET", "0.6"))  # meters inside the road edge on each side
+_a0 = ts("split", ALE_AT)
+_a1 = _a0 + ALE_LEN
+_ale = []
+for sv, lat_sign in ((_a0, -1), (_a1, -1), (_a1, 1), (_a0, 1)):
+    lat = lat_sign * (hw_at(sv) - ALE_INSET)
+    _ale.append((add(point_at(sv), mul(normal_at(sv), lat)), main_h(sv) + lat * math.tan(math.radians(bank_deg_at(sv)))))
+surf_zones.append(("ale_spill", "slick", [e[0] for e in _ale], [e[1] for e in _ale], False))
+SURF_PLOT = [(z[0], z[2]) for z in surf_zones]
+print("surfaces: turf s %.1f..%.1f chord %.1f m (road arc %.1f m); yard s %.1f..%.1f; ford s %.1f..%.1f (%.1f m, offset %.1f "
+      "from the bridge); ale s %.1f..%.1f h %.2f" % (_t0, _t1, TURF_CHORD, _t1 - _t0, _y0, _y1, FORD_S[0], FORD_S[1], FORD_LEN,
+                                                  FORD_OFFSET, _a0, _a1, main_h(_a0)))
+for z in surf_zones:
+    print("  zone %-14s %-8s %d points, h %.2f..%.2f" % (z[0], z[1], len(z[2]), min(z[3]), max(z[3])))
+
 # ------------------------------------------------------------------ report
 print("main length %.1f m (turtle %.1f), control points %d, free straights %.1f / %.1f" % (LENGTH, TURTLE_LEN, len(cps), la, lb))
 for i, e in enumerate(ELEMS):
@@ -1034,6 +1303,35 @@ length = %.2f
 width = %.2f
 """ % (i, pd_[0], pd_[1], pd_[2], pd_[3], pd_[4]))
 
+# Story 011 part 2: surface zones and wall openings.
+surf_ids = []
+for _k, (zid, kind, poly, hs, fence) in enumerate(surf_zones):
+    surf_ids.append('SubResource("Surf_%d")' % _k)
+    subs.append("""[sub_resource type="Resource" id="Surf_%d"]
+script = ExtResource("8_surf")
+id = &"%s"
+kind = &"%s"
+polygon = %s
+heights = %s
+height = %.3f
+fence = %s
+route_from = %.2f
+route_to = %.2f
+boost_cut = %s
+route_via = %s
+""" % (_k, zid, kind, v2(poly), f32(hs), min(hs), "true" if fence else "false", surf_routes.get(zid, (-1.0, -1.0, False))[0],
+       surf_routes.get(zid, (-1.0, -1.0, False))[1], "true" if surf_routes.get(zid, (-1.0, -1.0, False))[2] else "false", v2(surf_via.get(zid, []))))
+open_ids = []
+for _k, (o0, o1, oside, odepth) in enumerate(surf_openings):
+    open_ids.append('SubResource("Open_%d")' % _k)
+    subs.append("""[sub_resource type="Resource" id="Open_%d"]
+script = ExtResource("9_open")
+s_from = %.3f
+s_to = %.3f
+side = %d
+depth = %.2f
+""" % (_k, o0, o1, oside, odepth))
+
 TRES = """[gd_resource type="Resource" script_class="TrackData" load_steps=%d format=3]
 
 [ext_resource type="Script" path="res://src/test_track/track_data.gd" id="1_data"]
@@ -1043,6 +1341,8 @@ TRES = """[gd_resource type="Resource" script_class="TrackData" load_steps=%d fo
 [ext_resource type="Script" path="res://src/track/track_pad.gd" id="5_pad"]
 [ext_resource type="Script" path="res://src/track/track_ramp.gd" id="6_ramp"]
 [ext_resource type="Script" path="res://src/track/track_mover.gd" id="7_mover"]
+[ext_resource type="Script" path="res://src/track/track_surface.gd" id="8_surf"]
+[ext_resource type="Script" path="res://src/track/track_wall_opening.gd" id="9_open"]
 
 %s
 [resource]
@@ -1077,20 +1377,23 @@ solid_below = 99.0
 pillar_color = Color(0.56, 0.55, 0.57, 1)
 deck_under_color = Color(0.42, 0.41, 0.43, 1)
 ramps = Array[ExtResource("6_ramp")]([SubResource("Ramp_0")])
+surfaces = Array[ExtResource("8_surf")]([%s])
+wall_openings = Array[ExtResource("9_open")]([%s])
 """
 subs.append("""[sub_resource type="Resource" id="Ramp_0"]
 script = ExtResource("6_ramp")
 distance = %.3f
 length = %.2f
 lip_height = %.2f
-color_a = Color(0.85, 0.62, 0.2, 1)
-color_b = Color(0.55, 0.32, 0.12, 1)
+color_a = Color(0.78, 0.25, 0.17, 1)
+color_b = Color(0.96, 0.92, 0.82, 1)
 side_color = Color(0.56, 0.55, 0.57, 1)
 """ % (ramp_s, RAMP_LEN, RAMP_LIP))
 with open(os.path.join(out, "castle_circuit.tres"), "w", newline="\n") as f:
-    f.write(TRES % (7 + len(subs), "\n".join(subs), ", ".join(pad_ids), ", ".join(mover_ids), v2(items), v2(cps), f32(cp_hw), SPP, CURB,
+    f.write(TRES % (9 + len(subs), "\n".join(subs), ", ".join(pad_ids), ", ".join(mover_ids), v2(items), v2(cps), f32(cp_hw), SPP, CURB,
                     v3([(open_s0, open_s1, open_side)]), OPEN_EDGE_REACH, SINK_TIME, RESPAWN_SPEED_FRAC,
-                    RESPAWN_IMMUNITY, RESPAWN_BACK_OFF, PAD_BOOST_TIME, f32(cp_h), f32(cp_bank)))
+                    RESPAWN_IMMUNITY, RESPAWN_BACK_OFF, PAD_BOOST_TIME, f32(cp_h), f32(cp_bank),
+                    ", ".join(surf_ids), ", ".join(open_ids)))
 
 zr = {"tourney": (ts("free_a"), ts("moat_sweep")), "moat": (ts("moat_sweep"), ts("spiral")),
       "village": (ts("spiral"), ts("plaza")), "keep": (ts("plaza"), ts("back_gate")),

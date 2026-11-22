@@ -19,9 +19,11 @@ extends Resource
 @export var lateral: float = 0.0
 ## Half the ramp width in meters; 0 = the whole road including the curbs (wall to wall).
 @export var half_width: float = 0.0
-## Top surface colors (alternating stripes) and the side and lip faces.
-@export var color_a: Color = Color(0.85, 0.62, 0.2)
-@export var color_b: Color = Color(0.55, 0.32, 0.12)
+## Top surface colors (alternating stripes) and the side and lip faces. Story 011 visual language:
+## every trick ramp is red-and-cream hay stripes (track-features catalog #45); the sides may take the
+## track's stone.
+@export var color_a: Color = Color(0.78, 0.25, 0.17)
+@export var color_b: Color = Color(0.96, 0.92, 0.82)
 @export var side_color: Color = Color(0.4, 0.26, 0.14)
 ## Stripes across the top surface.
 @export var stripes: int = 6

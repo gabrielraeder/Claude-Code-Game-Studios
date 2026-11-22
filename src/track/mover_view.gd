@@ -52,6 +52,11 @@ class BurstView extends RefCounted:
 	var vent_mat: StandardMaterial3D
 	var column: Node3D
 
+class RingView extends RefCounted:
+	var mover: TrackMover
+	var node: MeshInstance3D
+	var mat: StandardMaterial3D
+
 class CartView extends RefCounted:
 	var mover: TrackMover
 	var road: TrackModel.Path
@@ -99,6 +104,14 @@ var _portcullises: Array[PortcullisView] = []
 var _barrels: Array[BarrelView] = []
 var _bursts: Array[BurstView] = []
 var _carts: Array[CartView] = []
+var _rings: Array[RingView] = []
+## Height of the warning ring above the road (above the vent disc and the deck, so it never flickers).
+const RING_LIFT: float = 0.08
+## The ring band's thickness relative to its width (a flat band, pure geometry).
+const RING_FLAT: float = 0.25
+## Segments of the ring (low poly), and the time step used to find a barrel's waiting spot.
+const RING_SEGMENTS: int = 24
+const RING_SCAN_STEP: float = 0.05
 
 
 ## Builds the views for every gate mover of [param track]; [param hazards] supplies the state.
@@ -106,6 +119,8 @@ func setup(track: TrackModel, hazards: HazardManager) -> void:
 	_hazards = hazards
 	for i in hazards.count():
 		var m: TrackMover = hazards.mover(i)
+		if m.warn_ring and m.warning_lead > 0.0:
+			_build_ring(track, i, m)
 		if m.visual == &"barrel":
 			_build_barrel(m)
 			continue
@@ -122,7 +137,7 @@ func setup(track: TrackModel, hazards: HazardManager) -> void:
 		else:
 			_build_gate(track, i, m)
 	set_process(not _gates.is_empty() or not _portcullises.is_empty() or not _barrels.is_empty()
-			or not _bursts.is_empty() or not _carts.is_empty())
+			or not _bursts.is_empty() or not _carts.is_empty() or not _rings.is_empty())
 
 
 func _process(_delta: float) -> void:
@@ -146,6 +161,64 @@ func _process(_delta: float) -> void:
 		_place_burst(uv, t)
 	for cv in _carts:
 		_place_cart(cv, t)
+	for rv in _rings:
+		_place_ring(rv, t)
+
+
+# Story 011 part 2: the ember warning ring of mover [param m] (index [param i]): where the hazard
+# strikes, sized to it.
+func _build_ring(track: TrackModel, i: int, m: TrackMover) -> void:
+	var center := Vector3.ZERO
+	var radius: float = 0.0
+	if m.kind == &"burst":
+		center = Vector3(m.vent_center.x, m.vent_height, m.vent_center.y)
+		radius = m.vent_radius
+	elif m.is_traveler():
+		var t: float = 0.0
+		while t < m.period and _hazards.phase_at(m, t) != HazardManager.Phase.WARNING:
+			t += RING_SCAN_STEP
+		center = _hazards.pose_at(m, t)
+		radius = m.hit_radius
+	elif m.kind == &"gate" and _hazards.path_index(i) >= 0:
+		var road: TrackModel.Path = track.path_of(_hazards.path_index(i))
+		var st: Vector2 = road.seg_t_at(m.path_from)
+		var p: Vector2 = road.point_at(m.path_from)
+		center = Vector3(p.x, road.surface_y(int(st.x), st.y, 0.0), p.y)
+		radius = m.deck_half_width
+	else:
+		return
+	radius += m.warn_ring_pad
+	var rv := RingView.new()
+	rv.mover = m
+	var tm := TorusMesh.new()
+	tm.inner_radius = maxf(radius - m.warn_ring_width * 0.5, 0.0)
+	tm.outer_radius = radius + m.warn_ring_width * 0.5
+	tm.rings = RING_SEGMENTS
+	tm.ring_segments = BURST_SEGMENTS
+	rv.node = MeshInstance3D.new()
+	rv.node.mesh = tm
+	rv.mat = StandardMaterial3D.new()
+	rv.mat.albedo_color = m.color_warn
+	rv.mat.emission_enabled = true
+	rv.mat.emission = m.color_warn
+	rv.node.material_override = rv.mat
+	rv.node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	rv.node.position = center + Vector3.UP * RING_LIFT
+	rv.node.visible = false
+	add_child(rv.node)
+	_rings.append(rv)
+
+
+# The ring shows only during the warning, pulsing in glow and size at the mover's blink rate.
+func _place_ring(rv: RingView, t: float) -> void:
+	var m: TrackMover = rv.mover
+	rv.node.visible = _hazards.phase_at(m, t) == HazardManager.Phase.WARNING
+	if not rv.node.visible:
+		return
+	var pulse: float = 0.5 + 0.5 * sin(t * m.warn_blink_hz * TAU)
+	rv.mat.emission_energy_multiplier = m.warn_ring_glow * pulse
+	var grow: float = 1.0 + m.warn_ring_pulse_grow * pulse
+	rv.node.scale = Vector3(grow, RING_FLAT, grow)
 
 
 # Lantern color of a gate at time [param t]: red while blocked or moving, flashing amber during the

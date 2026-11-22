@@ -630,15 +630,15 @@ func _opening_fences(st: SurfaceTool, track: TrackModel) -> void:
 		var poly: PackedVector2Array = track.zone_polygons[zi]
 		var clockwise: bool = Geometry2D.is_polygon_clockwise(poly)
 		var edges: PackedVector2Array = track.zone_fence_edges[zi]
-		var zh: float = track.zone_heights[zi]
 		for k in range(0, edges.size(), 2):
 			var a: Vector2 = edges[k]
 			var b: Vector2 = edges[k + 1]
 			var d: Vector2 = (b - a).normalized()
 			# Inward normal: to the right of the edge for a clockwise outline in (x, z), else to the left.
 			var inward: Vector2 = Vector2(-d.y, d.x) if clockwise else Vector2(d.y, -d.x)
-			var y0: float = zh + set.ground_lift
-			_block(st, a, b, inward, set.fence_thickness, y0, y0, set.fence_height,
+			# Story 011 part 2: each fence end stands on the zone ground at that point.
+			_block(st, a, b, inward, set.fence_thickness, track.zone_height_at(zi, a) + set.ground_lift,
+					track.zone_height_at(zi, b) + set.ground_lift, set.fence_height,
 					set.fence_color_b if (k / 2 / stripe) % 2 == 1 else set.fence_color_a)
 
 
@@ -674,7 +674,7 @@ func _surface_zones(track: TrackModel) -> void:
 		st.set_normal(Vector3.UP)
 		for idx in tris:
 			var v: Vector2 = poly[idx]
-			st.add_vertex(_v3(v, _zone_y(track, t, v, zh) + (set.overlay_lift if t.on_road else set.ground_lift)))
+			st.add_vertex(_v3(v, _zone_y(track, t, v, zh, zi) + (set.overlay_lift if t.on_road else set.ground_lift)))
 		if t.pattern == &"none" and not t.on_road:
 			continue
 		_zone_marks(st, track, set, t, poly, zh, zi)
@@ -703,9 +703,10 @@ func _max_gloss(track: TrackModel) -> float:
 	return g
 
 
-# Height of a zone's ground at [param v]: the zone height, or the road's own height for an overlay.
-func _zone_y(track: TrackModel, t: SurfaceType, v: Vector2, zone_h: float) -> float:
-	return _road_y(track, v, zone_h) if t.on_road else zone_h
+# Height of a zone's ground at [param v]: the zone's ground there (TrackModel.zone_height_at: flat or
+# blended from its outline heights), or the road's own height for an overlay.
+func _zone_y(track: TrackModel, t: SurfaceType, v: Vector2, zone_h: float, zi: int) -> float:
+	return _road_y(track, v, zone_h) if t.on_road else track.zone_height_at(zi, v)
 
 
 # Pattern marks of one zone: jittered dots (speckle) or dashes in rows (stripe; slanted streaks on an
@@ -751,7 +752,7 @@ func _zone_marks(st: SurfaceTool, track: TrackModel, set: SurfaceSet, t: Surface
 			st.set_color(col)
 			st.set_normal(Vector3.UP)
 			for k in [0, 1, 2, 0, 2, 3]:
-				st.add_vertex(_v3(q[k], _zone_y(track, t, q[k], zh) + lift))
+				st.add_vertex(_v3(q[k], _zone_y(track, t, q[k], zh, zi) + lift))
 
 
 # Deterministic pseudo-random 0..1 from two cell indices and a salt (integer hash, not tuning).

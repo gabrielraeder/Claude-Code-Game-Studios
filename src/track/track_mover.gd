@@ -130,6 +130,20 @@ extends Resource
 ## down). Empty = none.
 @export var sound_active: StringName = &""
 
+@export_group("Warning ring (story 011 visual language)")
+## During the warning an ember ring (color_warn, pulsing at warn_blink_hz) lies on the road where the
+## hazard strikes: the start of a gate's deck, a barrel's waiting spot, a lava vent. The one cue for
+## "a hazard is coming here" on every track.
+@export var warn_ring: bool = true
+## Meters the ring lies outside the hazard's own size (deck half width, hit radius, vent radius).
+@export var warn_ring_pad: float = 0.5
+## Width (meters) of the ring band.
+@export var warn_ring_width: float = 0.35
+## Glow (emission energy) at the peak of a pulse.
+@export var warn_ring_glow: float = 3.0
+## The ring grows by this share of its radius at the peak of a pulse.
+@export var warn_ring_pulse_grow: float = 0.12
+
 @export_group("Portcullis look")
 ## Height in meters the grille's bottom rises above the road when fully up (clear of the karts).
 @export var lift_height: float = 2.8

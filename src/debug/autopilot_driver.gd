@@ -58,6 +58,11 @@ var boost_at: Vector2 = Vector2(-1.0, 0.0)
 ## Meters from the cut target at which the cut is over, and the shortest distance a boost cue is armed from.
 const CUT_DONE_DISTANCE: float = 8.0
 var _cutting: bool = false
+## Waypoints of the zone route that matches cut_window (TrackSurface.route_via), and the next one.
+var _cut_via: PackedVector2Array = PackedVector2Array()
+var _via_i: int = 0
+## A zone route matches the cut window when its route_from is within this many meters of the window start.
+const CUT_ROUTE_MATCH: float = 3.0
 var _cut_done: bool = false
 var _boost_given: bool = false
 
@@ -118,11 +123,22 @@ func _drive_line(input: KartInput, sim: KartSim, track: TrackModel, _dt: float) 
 		var goal: Vector2 = track.point_at(cut_window.y)
 		if not _cutting and sim.track_s >= cut_window.x and sim.track_s < cut_window.y:
 			_cutting = true
-		if _cutting:
+			print("[auto] CUT start s=%.1f lat=%.1f goal_s=%.1f" % [sim.track_s, sim.lateral, cut_window.y])
+			_via_i = 0
+			_cut_via = PackedVector2Array()
+			for zi in track.zone_routes.size():
+				if absf(track.zone_routes[zi].x - cut_window.x) <= CUT_ROUTE_MATCH:
+					_cut_via = track.zone_route_via[zi]
+		if _cutting and _via_i < _cut_via.size():
+			target = _cut_via[_via_i]
+			if sim.position.distance_to(target) < CUT_DONE_DISTANCE:
+				_via_i += 1
+		elif _cutting:
 			target = goal
 			if sim.position.distance_to(goal) < CUT_DONE_DISTANCE:
 				_cutting = false
 				_cut_done = true
+				print("[auto] CUT done s=%.1f lat=%.1f" % [sim.track_s, sim.lateral])
 	if lane_window.y >= lane_window.x and sim.track_s >= lane_window.x and sim.track_s <= lane_window.y:
 		var lt: Vector2 = _route_tangent(track, sim, look)
 		target += Vector2(-lt.y, lt.x) * lane_window.z

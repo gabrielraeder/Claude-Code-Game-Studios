@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="TrackData" load_steps=24 format=3]
+[gd_resource type="Resource" script_class="TrackData" load_steps=53 format=3]
 
 [ext_resource type="Script" path="res://src/test_track/track_data.gd" id="1_data"]
 [ext_resource type="Script" path="res://src/track/track_branch.gd" id="2_branch"]
@@ -7,6 +7,8 @@
 [ext_resource type="Script" path="res://src/track/track_pad.gd" id="5_pad"]
 [ext_resource type="Script" path="res://src/track/track_ramp.gd" id="6_ramp"]
 [ext_resource type="Script" path="res://src/track/track_mover.gd" id="7_mover"]
+[ext_resource type="Script" path="res://src/track/track_surface.gd" id="8_surf"]
+[ext_resource type="Script" path="res://src/track/track_wall_opening.gd" id="9_open"]
 
 [sub_resource type="Resource" id="Branch_hl"]
 script = ExtResource("2_branch")
@@ -85,8 +87,8 @@ road = &"lava_gap"
 distance = 42.500
 length = 6.00
 lip_height = 0.60
-color_a = Color(0.45, 0.36, 0.3, 1)
-color_b = Color(0.3, 0.38, 0.55, 1)
+color_a = Color(0.78, 0.25, 0.17, 1)
+color_b = Color(0.96, 0.92, 0.82, 1)
 side_color = Color(0.32, 0.26, 0.25, 1)
 stripes = 4
 
@@ -280,6 +282,215 @@ lateral = 0.000
 length = 6.00
 width = 4.00
 
+[sub_resource type="Resource" id="Surf_0"]
+script = ExtResource("8_surf")
+id = &"cave_rubble_in"
+kind = &"rubble"
+polygon = PackedVector2Array(-8.691, 255.141, -10.513, 257.432, -12.346, 259.742, -14.176, 262.048, -16.206, 264.250, -18.304, 266.416, -20.403, 268.581, -22.488, 270.713, -24.634, 272.948, -26.798, 275.351, -28.975, 265.995, -26.077, 263.012, -23.171, 260.013, -20.489, 256.898)
+heights = PackedFloat32Array(1.004, 1.023, 1.042, 1.060, 1.027, 0.961, 0.877, 0.775, 0.655, 0.518, 0.775, 0.877, 0.961, 1.060)
+height = 0.518
+fence = true
+route_from = -1.00
+route_to = -1.00
+boost_cut = false
+
+[sub_resource type="Resource" id="Surf_1"]
+script = ExtResource("8_surf")
+id = &"cave_rubble_out"
+kind = &"rubble"
+polygon = PackedVector2Array(-37.229, 382.749, -39.423, 380.399, -41.314, 378.363, -43.199, 376.378, -45.094, 374.498, -47.043, 372.678, -49.042, 370.934, -51.078, 369.267, -51.190, 378.779, -49.268, 380.627, -47.444, 382.498)
+heights = PackedFloat32Array(2.274, 2.031, 1.789, 1.546, 1.384, 1.245, 1.147, 1.067, 1.245, 1.546, 1.789)
+height = 1.067
+fence = true
+route_from = -1.00
+route_to = -1.00
+boost_cut = false
+
+[sub_resource type="Resource" id="Surf_2"]
+script = ExtResource("8_surf")
+id = &"cinder_cut"
+kind = &"sand"
+polygon = PackedVector2Array(-147.232, 42.000, -147.232, 39.018, -147.232, 36.036, -147.232, 33.054, -147.232, 30.073, -147.234, 27.049, -147.266, 24.115, -146.963, 21.604, -146.164, 19.493, -145.588, 17.924, -144.914, 16.207, -144.011, 14.629, -142.949, 13.222, -141.610, 11.883, -140.203, 10.821, -138.625, 9.919, -136.908, 9.245, -135.306, 8.874, -133.174, 8.760, -130.716, 9.032, -127.795, 9.571, -124.760, 9.600, -121.778, 9.600, -118.796, 9.600, -115.814, 9.600, -112.833, 9.600)
+heights = PackedFloat32Array(7.000, 7.000, 7.000, 7.000, 6.874, 6.701, 6.528, 6.336, 6.092, 5.875, 5.676, 5.476, 5.342, 5.342, 5.476, 5.676, 5.875, 6.070, 6.260, 6.437, 6.623, 6.840, 7.000, 7.000, 7.000, 7.000)
+height = 5.342
+fence = true
+route_from = 897.23
+route_to = 977.77
+boost_cut = true
+
+[sub_resource type="Resource" id="Surf_3"]
+script = ExtResource("8_surf")
+id = &"cistern_slime"
+kind = &"slick"
+polygon = PackedVector2Array(49.385, 25.078, 49.429, 28.650, 49.818, 31.871, 50.701, 34.808, 52.095, 37.598, 47.030, 40.623, 45.214, 36.975, 44.041, 33.067, 43.542, 29.031, 43.486, 24.994)
+heights = PackedFloat32Array(6.951, 6.637, 6.454, 6.568, 6.818, 7.017, 7.040, 7.051, 7.034, 7.005)
+height = 6.454
+fence = false
+route_from = -1.00
+route_to = -1.00
+boost_cut = false
+
+[sub_resource type="Resource" id="Open_0"]
+script = ExtResource("9_open")
+s_from = 300.000
+s_to = 306.000
+side = 1
+depth = 8.06
+
+[sub_resource type="Resource" id="Open_1"]
+script = ExtResource("9_open")
+s_from = 306.000
+s_to = 312.000
+side = 1
+depth = 9.58
+
+[sub_resource type="Resource" id="Open_2"]
+script = ExtResource("9_open")
+s_from = 312.000
+s_to = 318.000
+side = 1
+depth = 9.38
+
+[sub_resource type="Resource" id="Open_3"]
+script = ExtResource("9_open")
+s_from = 318.000
+s_to = 324.000
+side = 1
+depth = 9.39
+
+[sub_resource type="Resource" id="Open_4"]
+script = ExtResource("9_open")
+s_from = 324.000
+s_to = 330.000
+side = 1
+depth = 2.85
+
+[sub_resource type="Resource" id="Open_5"]
+script = ExtResource("9_open")
+s_from = 456.000
+s_to = 462.000
+side = -1
+depth = 2.65
+
+[sub_resource type="Resource" id="Open_6"]
+script = ExtResource("9_open")
+s_from = 462.000
+s_to = 468.000
+side = -1
+depth = 8.18
+
+[sub_resource type="Resource" id="Open_7"]
+script = ExtResource("9_open")
+s_from = 468.000
+s_to = 474.000
+side = -1
+depth = 8.19
+
+[sub_resource type="Resource" id="Open_8"]
+script = ExtResource("9_open")
+s_from = 474.000
+s_to = 480.000
+side = -1
+depth = 6.68
+
+[sub_resource type="Resource" id="Open_9"]
+script = ExtResource("9_open")
+s_from = 894.000
+s_to = 900.000
+side = 1
+depth = 1.67
+
+[sub_resource type="Resource" id="Open_10"]
+script = ExtResource("9_open")
+s_from = 900.000
+s_to = 906.000
+side = 1
+depth = 8.17
+
+[sub_resource type="Resource" id="Open_11"]
+script = ExtResource("9_open")
+s_from = 906.000
+s_to = 912.000
+side = 1
+depth = 14.67
+
+[sub_resource type="Resource" id="Open_12"]
+script = ExtResource("9_open")
+s_from = 912.000
+s_to = 918.000
+side = 1
+depth = 18.69
+
+[sub_resource type="Resource" id="Open_13"]
+script = ExtResource("9_open")
+s_from = 918.000
+s_to = 924.000
+side = 1
+depth = 17.20
+
+[sub_resource type="Resource" id="Open_14"]
+script = ExtResource("9_open")
+s_from = 924.000
+s_to = 930.000
+side = 1
+depth = 12.98
+
+[sub_resource type="Resource" id="Open_15"]
+script = ExtResource("9_open")
+s_from = 930.000
+s_to = 936.000
+side = 1
+depth = 14.09
+
+[sub_resource type="Resource" id="Open_16"]
+script = ExtResource("9_open")
+s_from = 936.000
+s_to = 942.000
+side = 1
+depth = 13.04
+
+[sub_resource type="Resource" id="Open_17"]
+script = ExtResource("9_open")
+s_from = 942.000
+s_to = 948.000
+side = 1
+depth = 13.73
+
+[sub_resource type="Resource" id="Open_18"]
+script = ExtResource("9_open")
+s_from = 948.000
+s_to = 954.000
+side = 1
+depth = 15.23
+
+[sub_resource type="Resource" id="Open_19"]
+script = ExtResource("9_open")
+s_from = 954.000
+s_to = 960.000
+side = 1
+depth = 16.69
+
+[sub_resource type="Resource" id="Open_20"]
+script = ExtResource("9_open")
+s_from = 960.000
+s_to = 966.000
+side = 1
+depth = 13.36
+
+[sub_resource type="Resource" id="Open_21"]
+script = ExtResource("9_open")
+s_from = 966.000
+s_to = 972.000
+side = 1
+depth = 7.86
+
+[sub_resource type="Resource" id="Open_22"]
+script = ExtResource("9_open")
+s_from = 972.000
+s_to = 978.000
+side = 1
+depth = 2.36
+
 [resource]
 script = ExtResource("1_data")
 track_id = &"dungeon_depths"
@@ -312,3 +523,5 @@ pillar_color = Color(0.3, 0.24, 0.25, 1)
 deck_under_color = Color(0.24, 0.19, 0.2, 1)
 ramps = Array[ExtResource("6_ramp")]([SubResource("Ramp_gap")])
 movers = Array[ExtResource("7_mover")]([SubResource("Mover_burst_shore_a"), SubResource("Mover_burst_shore_b"), SubResource("Mover_burst_bridge"), SubResource("Mover_cart")])
+surfaces = Array[ExtResource("8_surf")]([SubResource("Surf_0"), SubResource("Surf_1"), SubResource("Surf_2"), SubResource("Surf_3")])
+wall_openings = Array[ExtResource("9_open")]([SubResource("Open_0"), SubResource("Open_1"), SubResource("Open_2"), SubResource("Open_3"), SubResource("Open_4"), SubResource("Open_5"), SubResource("Open_6"), SubResource("Open_7"), SubResource("Open_8"), SubResource("Open_9"), SubResource("Open_10"), SubResource("Open_11"), SubResource("Open_12"), SubResource("Open_13"), SubResource("Open_14"), SubResource("Open_15"), SubResource("Open_16"), SubResource("Open_17"), SubResource("Open_18"), SubResource("Open_19"), SubResource("Open_20"), SubResource("Open_21"), SubResource("Open_22")])

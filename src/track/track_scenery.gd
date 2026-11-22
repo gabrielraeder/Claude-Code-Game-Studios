@@ -458,7 +458,8 @@ func _flush() -> void:
 # Excess over the nearest corridor wall at [param p] (> 0 = outside every road), using a
 # windowed main-road search around [param s].
 func _clearance(p: Vector2, s: float) -> float:
-	var best: float = _track.main.nearest(p, _track.main.segment_at(s), 60).excess
+	# Story 011 part 2: against the closed wall (a wall opening is no place for a prop either).
+	var best: float = _track.closed_excess(p, s, 60)
 	for bp in _track.branches:
 		if bp.bounds.has_point(p):
 			best = minf(best, bp.nearest(p, -1, 0).excess)
@@ -466,7 +467,7 @@ func _clearance(p: Vector2, s: float) -> float:
 
 
 func _free(p: Vector2, s: float, clearance: float) -> bool:
-	return _clearance(p, s) >= clearance and not _track.in_hazard_area(p)
+	return _clearance(p, s) >= clearance and not _track.in_hazard_area(p) 			and (not _track.has_surfaces() or _track.distance_to_zone(p) >= clearance)
 
 
 # Main-loop distances from [param r].x to [param r].y (wrapping) every [param step] meters.

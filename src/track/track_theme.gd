@@ -68,9 +68,10 @@ extends Resource
 @export_group("Round 2: hazards, pads, zones")
 ## Moat water color (hazard kind water).
 @export var water_color: Color = Color(0.22, 0.48, 0.72)
-## Boost pad base and chevron colors.
-@export var pad_color_a: Color = Color(0.15, 0.75, 0.85)
-@export var pad_color_b: Color = Color(1.0, 0.9, 0.35)
+## Boost pad base and chevron colors: art bible section 4, cyan #22E6E0 with white chevrons, the same
+## on every track (story 011 visual language).
+@export var pad_color_a: Color = Color(0.133, 0.902, 0.878)
+@export var pad_color_b: Color = Color(1.0, 1.0, 1.0)
 ## Scenery anchors written by tools/gen_castle_circuit.py (x, z).
 @export var statue_position: Vector2 = Vector2.ZERO
 @export var well_position: Vector2 = Vector2.ZERO
