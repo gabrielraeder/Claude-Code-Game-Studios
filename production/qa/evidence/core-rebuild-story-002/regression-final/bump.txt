@@ -1,0 +1,3 @@
+[bump-summary] role=client frames=1582 contact_frames=9 deep_frames=0 pen_max=0.000m (own-vs-any 0.000m, remote-vs-remote 0.000m, deep remote frames 0) bumps=9 knock_max=14.48m/s moved=7.05m
+[bump-summary] role=client frames=1580 contact_frames=81 deep_frames=0 pen_max=0.000m (own-vs-any 0.000m, remote-vs-remote 0.000m, deep remote frames 0) bumps=9 knock_max=16.00m/s moved=11.21m
+errors host,client: 0 0

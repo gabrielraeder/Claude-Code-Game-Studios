@@ -175,7 +175,7 @@ $RECYCLE.BIN/
 /test-results/
 
 # Run outputs of the regression tools (duplicates of golden/; keep summaries only)
-production/qa/evidence/core-rebuild-story-001/**/*.csv
+production/qa/evidence/core-rebuild-story-*/**/*.csv
 !production/qa/evidence/core-rebuild-story-001/golden/*.csv
 !production/qa/evidence/core-rebuild-story-001/perf/**/*.csv
 production/qa/regression/

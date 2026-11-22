@@ -1,0 +1,7 @@
+Godot Engine v4.8.beta3.official.c51ff06e8 - https://godotengine.org
+
+ok: res://src/data/surface_set.gd
+ok: res://src/data/surface_type.gd
+ok: res://src/core/collision/wall_attr.gd
+ok: res://src/core/collision/wall_attr_set.gd
+ok: res://tests/unit/collision/surface_and_wall_registries_test.gd

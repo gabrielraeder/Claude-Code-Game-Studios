@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="SurfaceSet" format=3]
+
+[ext_resource type="Script" path="res://src/data/surface_set.gd" id="1_set"]
+[ext_resource type="Script" path="res://src/data/surface_type.gd" id="2_type"]
+
+[sub_resource type="Resource" id="T_0"]
+script = ExtResource("2_type")
+kind = &"road"
+id = 0
+neutral = true
+drag = 0.5
+
+[resource]
+script = ExtResource("1_set")
+types = Array[ExtResource("2_type")]([SubResource("T_0")])

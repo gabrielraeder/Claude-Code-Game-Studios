@@ -1,3 +1,4 @@
+@tool
 class_name SurfaceType
 extends Resource
 ## How one kind of surface feels and looks (story 011). One per kind in a SurfaceSet. The kart
@@ -8,6 +9,14 @@ extends Resource
 
 ## Kind id: grass, sand, mud, rubble, shallows, slick.
 @export var kind: StringName = &"grass"
+## Stable surface id of the core rebuild (ADR-0002; core-rebuild story 002): unique, >= 0,
+## append-only, a removed id is never reused; 0 = road. -1 = no id (the frozen set; the frozen game
+## ignores this field). Blender material surf_<kind> maps to it; the array index is never the id.
+@export var id: int = -1
+## True: no floor effect of its own (road, boost_pad, trick_ramp on the core set); an active slick
+## tail keeps counting down on it, as on the frozen "no surface" branch. A neutral type keeps every
+## handling field at its default. The frozen game ignores this field.
+@export var neutral: bool = false
 
 @export_group("Handling")
 ## Speed cap on this surface as a share of the kart's max_speed (1 = no cap).

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="WallAttrSet" format=3]
+
+[ext_resource type="Script" path="res://src/core/collision/wall_attr_set.gd" id="1_set"]
+[ext_resource type="Script" path="res://src/core/collision/wall_attr.gd" id="2_attr"]
+
+[sub_resource type="Resource" id="W_0"]
+script = ExtResource("2_attr")
+name = &"standard"
+id = 0
+
+[resource]
+script = ExtResource("1_set")
+attrs = Array[ExtResource("2_attr")]([SubResource("W_0"), null])

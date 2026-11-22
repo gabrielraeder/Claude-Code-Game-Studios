@@ -1,0 +1,318 @@
+== host: uses=54 box_events=6 hits=25 errors=0
+t=3.02 USE spill seq=1 owner=0 target=-1
+t=3.02 USE stone seq=100001 owner=1 target=-1
+t=3.02 USE falcon seq=200001 owner=2 target=1
+t=3.25 HIT seq=200001 item=falcon victim=1 blocked=0 t=3.26
+t=3.28 HIT seq=1 item=spill victim=2 blocked=0 t=3.27
+t=6.02 USE stone seq=100002 owner=1 target=-1
+t=6.03 USE spill seq=2 owner=0 target=-1
+t=6.03 USE falcon seq=200002 owner=2 target=1
+t=6.05 HIT seq=200002 item=falcon victim=1 blocked=0 t=6.06
+t=8.15 HIT seq=2 item=spill victim=2 blocked=0 t=8.14
+t=8.97 END stone seq=100001 (bounces)
+t=9.05 USE stone seq=100003 owner=1 target=-1
+t=9.05 USE falcon seq=200003 owner=2 target=0
+t=12.07 USE spill seq=3 owner=0 target=-1
+t=12.07 USE stone seq=100004 owner=1 target=-1
+t=12.07 USE falcon seq=200004 owner=2 target=1
+t=12.55 END stone seq=100002 (bounces)
+t=12.57 HIT seq=200003 item=falcon victim=0 blocked=0 t=12.57
+t=12.82 HIT seq=200004 item=falcon victim=1 blocked=0 t=12.81
+t=15.05 END stone seq=100003 (bounces)
+t=15.08 USE spill seq=4 owner=0 target=-1
+t=15.08 USE spill seq=100005 owner=1 target=-1
+t=15.08 USE falcon seq=200005 owner=2 target=0
+t=16.65 HIT seq=3 item=spill victim=2 blocked=0 t=16.64
+t=16.68 END stone seq=100004 (bounces)
+t=18.08 USE stone seq=100006 owner=1 target=-1
+t=18.08 USE falcon seq=200006 owner=2 target=0
+t=18.10 USE spill seq=5 owner=0 target=-1
+t=18.30 HIT seq=200005 item=falcon victim=0 blocked=0 t=18.30
+t=18.72 HIT seq=4 item=spill victim=1 blocked=0 t=18.72
+t=20.27 END stone seq=100006 (bounces)
+t=20.42 HIT seq=200006 item=falcon victim=0 blocked=0 t=20.42
+t=21.12 USE spill seq=6 owner=0 target=-1
+t=21.12 USE stone seq=100007 owner=1 target=-1
+t=21.12 USE falcon seq=200007 owner=2 target=1
+t=21.13 END falcon seq=200007 (missed)
+t=21.43 HIT seq=100007 item=stone victim=2 blocked=0 t=21.42
+t=23.45 HIT seq=5 item=spill victim=1 blocked=0 t=23.44
+t=24.13 USE spill seq=7 owner=0 target=-1
+t=24.13 USE stone seq=100008 owner=1 target=-1
+t=24.13 USE falcon seq=200008 owner=2 target=1
+t=24.63 HIT seq=200008 item=falcon victim=1 blocked=0 t=24.62
+t=25.85 HIT seq=6 item=spill victim=2 blocked=0 t=25.84
+t=27.15 USE spill seq=8 owner=0 target=-1
+t=27.15 USE stone seq=100009 owner=1 target=-1
+t=27.15 USE falcon seq=200009 owner=2 target=0
+t=27.35 END stone seq=100008 (bounces)
+t=29.07 HIT seq=7 item=spill victim=1 blocked=0 t=29.06
+t=30.17 USE spill seq=9 owner=0 target=-1
+t=30.17 USE stone seq=100010 owner=1 target=-1
+t=30.17 USE falcon seq=200010 owner=2 target=1
+t=30.52 HIT seq=200010 item=falcon victim=1 blocked=0 t=30.51
+t=31.42 HIT seq=200009 item=falcon victim=0 blocked=0 t=31.42
+t=33.18 USE shield seq=10 owner=0 target=-1
+t=33.18 USE stone seq=100011 owner=1 target=-1
+t=33.18 USE falcon seq=200011 owner=2 target=0
+t=33.20 END falcon seq=200011 (missed)
+t=34.20 HIT seq=8 item=spill victim=2 blocked=0 t=34.19
+t=34.52 END stone seq=100010 (bounces)
+t=34.65 END stone seq=100009 (bounces)
+t=35.08 END spill seq=100005 (expired)
+t=36.20 USE spill seq=11 owner=0 target=-1
+t=36.20 USE stone seq=100012 owner=1 target=-1
+t=36.20 USE spill seq=200012 owner=2 target=-1
+t=38.32 HIT seq=9 item=spill victim=1 blocked=0 t=38.31
+t=38.77 END stone seq=100011 (bounces)
+t=39.22 USE spill seq=12 owner=0 target=-1
+t=39.22 USE stone seq=100013 owner=1 target=-1
+t=39.22 USE falcon seq=200013 owner=2 target=1
+t=39.33 END falcon seq=200013 (missed)
+t=41.43 END stone seq=100012 (bounces)
+t=42.23 USE spill seq=13 owner=0 target=-1
+t=42.23 USE stone seq=100014 owner=1 target=-1
+t=42.23 USE shield seq=200014 owner=2 target=-1
+t=42.67 HIT seq=11 item=spill victim=2 blocked=1 t=42.67
+t=44.25 END stone seq=100013 (bounces)
+t=44.70 END stone seq=100014 (bounces)
+t=45.23 USE stone seq=100015 owner=1 target=-1
+t=45.23 USE falcon seq=200015 owner=2 target=0
+t=45.25 USE spill seq=14 owner=0 target=-1
+t=45.25 END falcon seq=200015 (missed)
+t=45.70 HIT seq=12 item=spill victim=2 blocked=0 t=45.69
+t=47.42 END stone seq=100015 (bounces)
+t=48.27 USE spill seq=15 owner=0 target=-1
+t=48.27 USE stone seq=100016 owner=1 target=-1
+t=48.27 USE falcon seq=200016 owner=2 target=1
+t=48.53 HIT seq=200016 item=falcon victim=1 blocked=0 t=48.52
+t=50.77 HIT seq=13 item=spill victim=2 blocked=0 t=50.76
+t=51.28 USE stone seq=100017 owner=1 target=-1
+t=51.28 USE falcon seq=200017 owner=2 target=0
+t=51.30 END falcon seq=200017 (missed)
+t=54.30 USE stone seq=100018 owner=1 target=-1
+t=54.30 USE falcon seq=200018 owner=2 target=1
+t=54.67 END stone seq=100016 (bounces)
+t=54.75 HIT seq=14 item=spill victim=1 blocked=0 t=54.74
+t=55.38 END stone seq=100017 (bounces)
+t=55.65 END falcon seq=200018 (missed)
+t=56.20 END spill seq=200012 (expired)
+t=57.30 USE stone seq=100019 owner=1 target=-1
+t=57.30 USE falcon seq=200019 owner=2 target=0
+t=59.07 HIT seq=15 item=spill victim=2 blocked=0 t=59.06
+t=59.12 END stone seq=100018 (bounces)
+t=59.78 END falcon seq=200019 (missed)
+t=60.33 USE stone seq=100020 owner=1 target=-1
+== client1: uses=54 box_events=6 hits=25 errors=0
+t=3.01 USE stone seq=100001 owner=1 target=-1
+t=3.01 USE spill seq=1 owner=0 target=-1
+t=3.02 USE falcon seq=200001 owner=2 target=1
+t=3.26 HIT seq=200001 item=falcon victim=1 blocked=0 t=3.26
+t=3.27 HIT seq=1 item=spill victim=2 blocked=0 t=3.27
+t=6.02 USE stone seq=100002 owner=1 target=-1
+t=6.02 USE spill seq=2 owner=0 target=-1
+t=6.02 USE falcon seq=200002 owner=2 target=1
+t=6.06 HIT seq=200002 item=falcon victim=1 blocked=0 t=6.06
+t=8.14 HIT seq=2 item=spill victim=2 blocked=0 t=8.14
+t=8.94 END stone seq=100001 (bounces)
+t=9.04 USE stone seq=100003 owner=1 target=-1
+t=9.04 USE falcon seq=200003 owner=2 target=0
+t=12.06 USE stone seq=100004 owner=1 target=-1
+t=12.06 USE spill seq=3 owner=0 target=-1
+t=12.06 USE falcon seq=200004 owner=2 target=1
+t=12.54 END stone seq=100002 (bounces)
+t=12.56 HIT seq=200003 item=falcon victim=0 blocked=0 t=12.57
+t=12.81 HIT seq=200004 item=falcon victim=1 blocked=0 t=12.81
+t=15.02 END stone seq=100003 (bounces)
+t=15.07 USE spill seq=100005 owner=1 target=-1
+t=15.07 USE spill seq=4 owner=0 target=-1
+t=15.07 USE falcon seq=200005 owner=2 target=0
+t=16.66 END stone seq=100004 (bounces)
+t=16.66 HIT seq=3 item=spill victim=2 blocked=0 t=16.64
+t=18.09 USE stone seq=100006 owner=1 target=-1
+t=18.09 USE falcon seq=200006 owner=2 target=0
+t=18.11 USE spill seq=5 owner=0 target=-1
+t=18.29 HIT seq=200005 item=falcon victim=0 blocked=0 t=18.30
+t=18.72 HIT seq=4 item=spill victim=1 blocked=0 t=18.72
+t=20.26 END stone seq=100006 (bounces)
+t=20.42 HIT seq=200006 item=falcon victim=0 blocked=0 t=20.42
+t=21.11 USE stone seq=100007 owner=1 target=-1
+t=21.11 USE spill seq=6 owner=0 target=-1
+t=21.12 USE falcon seq=200007 owner=2 target=1
+t=21.14 END falcon seq=200007 (missed)
+t=21.42 HIT seq=100007 item=stone victim=2 blocked=0 t=21.42
+t=23.44 HIT seq=5 item=spill victim=1 blocked=0 t=23.44
+t=24.12 USE stone seq=100008 owner=1 target=-1
+t=24.12 USE spill seq=7 owner=0 target=-1
+t=24.14 USE falcon seq=200008 owner=2 target=1
+t=24.62 HIT seq=200008 item=falcon victim=1 blocked=0 t=24.62
+t=25.84 HIT seq=6 item=spill victim=2 blocked=0 t=25.84
+t=27.14 USE stone seq=100009 owner=1 target=-1
+t=27.14 USE spill seq=8 owner=0 target=-1
+t=27.14 USE falcon seq=200009 owner=2 target=0
+t=27.32 END stone seq=100008 (bounces)
+t=29.06 HIT seq=7 item=spill victim=1 blocked=0 t=29.06
+t=30.16 USE stone seq=100010 owner=1 target=-1
+t=30.16 USE spill seq=9 owner=0 target=-1
+t=30.17 USE falcon seq=200010 owner=2 target=1
+t=30.51 HIT seq=200010 item=falcon victim=1 blocked=0 t=30.51
+t=31.41 HIT seq=200009 item=falcon victim=0 blocked=0 t=31.42
+t=33.17 USE stone seq=100011 owner=1 target=-1
+t=33.17 USE shield seq=10 owner=0 target=-1
+t=33.17 USE falcon seq=200011 owner=2 target=0
+t=33.19 END falcon seq=200011 (missed)
+t=34.21 HIT seq=8 item=spill victim=2 blocked=0 t=34.19
+t=34.49 END stone seq=100010 (bounces)
+t=34.62 END stone seq=100009 (bounces)
+t=35.06 END spill seq=100005 (expired)
+t=36.19 USE stone seq=100012 owner=1 target=-1
+t=36.19 USE spill seq=11 owner=0 target=-1
+t=36.21 USE spill seq=200012 owner=2 target=-1
+t=38.31 HIT seq=9 item=spill victim=1 blocked=0 t=38.31
+t=38.74 END stone seq=100011 (bounces)
+t=39.21 USE stone seq=100013 owner=1 target=-1
+t=39.21 USE spill seq=12 owner=0 target=-1
+t=39.21 USE falcon seq=200013 owner=2 target=1
+t=39.32 END falcon seq=200013 (missed)
+t=41.41 END stone seq=100012 (bounces)
+t=42.22 USE stone seq=100014 owner=1 target=-1
+t=42.22 USE spill seq=13 owner=0 target=-1
+t=42.22 USE shield seq=200014 owner=2 target=-1
+t=42.67 HIT seq=11 item=spill victim=2 blocked=1 t=42.67
+t=44.22 END stone seq=100013 (bounces)
+t=44.67 END stone seq=100014 (bounces)
+t=45.24 USE stone seq=100015 owner=1 target=-1
+t=45.24 USE falcon seq=200015 owner=2 target=0
+t=45.24 USE spill seq=14 owner=0 target=-1
+t=45.26 END falcon seq=200015 (missed)
+t=45.69 HIT seq=12 item=spill victim=2 blocked=0 t=45.69
+t=47.41 END stone seq=100015 (bounces)
+t=48.26 USE stone seq=100016 owner=1 target=-1
+t=48.26 USE spill seq=15 owner=0 target=-1
+t=48.26 USE falcon seq=200016 owner=2 target=1
+t=48.52 HIT seq=200016 item=falcon victim=1 blocked=0 t=48.52
+t=50.76 HIT seq=13 item=spill victim=2 blocked=0 t=50.76
+t=51.27 USE stone seq=100017 owner=1 target=-1
+t=51.27 USE falcon seq=200017 owner=2 target=0
+t=51.29 END falcon seq=200017 (missed)
+t=54.29 USE stone seq=100018 owner=1 target=-1
+t=54.29 USE falcon seq=200018 owner=2 target=1
+t=54.64 END stone seq=100016 (bounces)
+t=54.74 HIT seq=14 item=spill victim=1 blocked=0 t=54.74
+t=55.36 END stone seq=100017 (bounces)
+t=55.64 END falcon seq=200018 (missed)
+t=56.21 END spill seq=200012 (expired)
+t=57.31 USE stone seq=100019 owner=1 target=-1
+t=57.31 USE falcon seq=200019 owner=2 target=0
+t=59.06 HIT seq=15 item=spill victim=2 blocked=0 t=59.06
+t=59.09 END stone seq=100018 (bounces)
+t=59.79 END falcon seq=200019 (missed)
+t=60.32 USE stone seq=100020 owner=1 target=-1
+== client2: uses=54 box_events=6 hits=25 errors=0
+t=3.01 USE falcon seq=200001 owner=2 target=1
+t=3.01 USE spill seq=1 owner=0 target=-1
+t=3.01 USE stone seq=100001 owner=1 target=-1
+t=3.26 HIT seq=200001 item=falcon victim=1 blocked=0 t=3.26
+t=3.27 HIT seq=1 item=spill victim=2 blocked=0 t=3.27
+t=6.02 USE falcon seq=200002 owner=2 target=1
+t=6.02 USE stone seq=100002 owner=1 target=-1
+t=6.02 USE spill seq=2 owner=0 target=-1
+t=6.06 HIT seq=200002 item=falcon victim=1 blocked=0 t=6.06
+t=8.14 HIT seq=2 item=spill victim=2 blocked=0 t=8.14
+t=8.96 END stone seq=100001 (bounces)
+t=9.04 USE falcon seq=200003 owner=2 target=0
+t=9.04 USE stone seq=100003 owner=1 target=-1
+t=12.06 USE falcon seq=200004 owner=2 target=1
+t=12.06 USE spill seq=3 owner=0 target=-1
+t=12.06 USE stone seq=100004 owner=1 target=-1
+t=12.56 END stone seq=100002 (bounces)
+t=12.56 HIT seq=200003 item=falcon victim=0 blocked=0 t=12.57
+t=12.81 HIT seq=200004 item=falcon victim=1 blocked=0 t=12.81
+t=15.04 END stone seq=100003 (bounces)
+t=15.07 USE falcon seq=200005 owner=2 target=0
+t=15.07 USE spill seq=4 owner=0 target=-1
+t=15.07 USE spill seq=100005 owner=1 target=-1
+t=16.64 HIT seq=3 item=spill victim=2 blocked=0 t=16.64
+t=16.67 END stone seq=100004 (bounces)
+t=18.09 USE falcon seq=200006 owner=2 target=0
+t=18.09 USE stone seq=100006 owner=1 target=-1
+t=18.09 USE spill seq=5 owner=0 target=-1
+t=18.29 HIT seq=200005 item=falcon victim=0 blocked=0 t=18.30
+t=18.72 HIT seq=4 item=spill victim=1 blocked=0 t=18.72
+t=20.27 END stone seq=100006 (bounces)
+t=20.41 HIT seq=200006 item=falcon victim=0 blocked=0 t=20.42
+t=21.11 USE falcon seq=200007 owner=2 target=1
+t=21.11 END falcon seq=200007 (missed)
+t=21.11 USE spill seq=6 owner=0 target=-1
+t=21.11 USE stone seq=100007 owner=1 target=-1
+t=21.42 HIT seq=100007 item=stone victim=2 blocked=0 t=21.42
+t=23.44 HIT seq=5 item=spill victim=1 blocked=0 t=23.44
+t=24.12 USE falcon seq=200008 owner=2 target=1
+t=24.12 USE spill seq=7 owner=0 target=-1
+t=24.12 USE stone seq=100008 owner=1 target=-1
+t=24.62 HIT seq=200008 item=falcon victim=1 blocked=0 t=24.62
+t=25.84 HIT seq=6 item=spill victim=2 blocked=0 t=25.84
+t=27.14 USE falcon seq=200009 owner=2 target=0
+t=27.14 USE spill seq=8 owner=0 target=-1
+t=27.14 USE stone seq=100009 owner=1 target=-1
+t=27.34 END stone seq=100008 (bounces)
+t=29.06 HIT seq=7 item=spill victim=1 blocked=0 t=29.06
+t=30.16 USE falcon seq=200010 owner=2 target=1
+t=30.16 USE spill seq=9 owner=0 target=-1
+t=30.16 USE stone seq=100010 owner=1 target=-1
+t=30.51 HIT seq=200010 item=falcon victim=1 blocked=0 t=30.51
+t=31.41 HIT seq=200009 item=falcon victim=0 blocked=0 t=31.42
+t=33.17 USE falcon seq=200011 owner=2 target=0
+t=33.17 END falcon seq=200011 (missed)
+t=33.17 USE shield seq=10 owner=0 target=-1
+t=33.17 USE stone seq=100011 owner=1 target=-1
+t=34.19 HIT seq=8 item=spill victim=2 blocked=0 t=34.19
+t=34.51 END stone seq=100010 (bounces)
+t=34.64 END stone seq=100009 (bounces)
+t=35.07 END spill seq=100005 (expired)
+t=36.19 USE spill seq=200012 owner=2 target=-1
+t=36.19 USE spill seq=11 owner=0 target=-1
+t=36.19 USE stone seq=100012 owner=1 target=-1
+t=38.31 HIT seq=9 item=spill victim=1 blocked=0 t=38.31
+t=38.76 END stone seq=100011 (bounces)
+t=39.21 USE falcon seq=200013 owner=2 target=1
+t=39.21 USE spill seq=12 owner=0 target=-1
+t=39.21 USE stone seq=100013 owner=1 target=-1
+t=39.31 END falcon seq=200013 (missed)
+t=41.42 END stone seq=100012 (bounces)
+t=42.22 USE shield seq=200014 owner=2 target=-1
+t=42.22 USE spill seq=13 owner=0 target=-1
+t=42.22 USE stone seq=100014 owner=1 target=-1
+t=42.67 HIT seq=11 item=spill victim=2 blocked=1 t=42.67
+t=44.24 END stone seq=100013 (bounces)
+t=44.69 END stone seq=100014 (bounces)
+t=45.24 USE falcon seq=200015 owner=2 target=0
+t=45.24 END falcon seq=200015 (missed)
+t=45.24 USE stone seq=100015 owner=1 target=-1
+t=45.24 USE spill seq=14 owner=0 target=-1
+t=45.69 HIT seq=12 item=spill victim=2 blocked=0 t=45.69
+t=47.42 END stone seq=100015 (bounces)
+t=48.26 USE falcon seq=200016 owner=2 target=1
+t=48.26 USE spill seq=15 owner=0 target=-1
+t=48.26 USE stone seq=100016 owner=1 target=-1
+t=48.52 HIT seq=200016 item=falcon victim=1 blocked=0 t=48.52
+t=50.76 HIT seq=13 item=spill victim=2 blocked=0 t=50.76
+t=51.27 USE falcon seq=200017 owner=2 target=0
+t=51.27 END falcon seq=200017 (missed)
+t=51.27 USE stone seq=100017 owner=1 target=-1
+t=54.29 USE falcon seq=200018 owner=2 target=1
+t=54.29 USE stone seq=100018 owner=1 target=-1
+t=54.66 END stone seq=100016 (bounces)
+t=54.74 HIT seq=14 item=spill victim=1 blocked=0 t=54.74
+t=55.37 END stone seq=100017 (bounces)
+t=55.62 END falcon seq=200018 (missed)
+t=56.17 END spill seq=200012 (expired)
+t=57.31 USE falcon seq=200019 owner=2 target=0
+t=57.31 USE stone seq=100019 owner=1 target=-1
+t=59.06 HIT seq=15 item=spill victim=2 blocked=0 t=59.06
+t=59.11 END stone seq=100018 (bounces)
+t=59.77 END falcon seq=200019 (missed)
+t=60.32 USE stone seq=100020 owner=1 target=-1
+== cross-PC hit consistency
+host vs client1: IDENTICAL (25 hits)
+host vs client2: IDENTICAL (25 hits)

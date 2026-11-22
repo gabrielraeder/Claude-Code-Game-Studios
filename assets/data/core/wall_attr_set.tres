@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="WallAttrSet" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/core/collision/wall_attr_set.gd" id="1_set"]
+[ext_resource type="Script" path="res://src/core/collision/wall_attr.gd" id="2_attr"]
+
+[sub_resource type="Resource" id="W_standard"]
+script = ExtResource("2_attr")
+name = &"standard"
+id = 0
+scrape_drag_mult = 1.0
+bounce_mult = 1.0
+
+[sub_resource type="Resource" id="W_rough"]
+script = ExtResource("2_attr")
+name = &"rough"
+id = 1
+scrape_drag_mult = 2.0
+bounce_mult = 1.0
+
+[resource]
+script = ExtResource("1_set")
+attrs = Array[ExtResource("2_attr")]([SubResource("W_standard"), SubResource("W_rough")])
