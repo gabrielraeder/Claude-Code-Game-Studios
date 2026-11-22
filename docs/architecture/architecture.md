@@ -253,7 +253,7 @@ Proposed 2026-11-21 from market research (Sonic Racing CrossWorlds' official Ste
 | **Development reference** | the owner's PC (high-end) | — | — | — |
 
 - The host's CPU matters as much as the GPU: it simulates 12 karts and 11 bots in GDScript every tick (budget ≤ 3 ms/tick above), so the minimum CPU is the one the budget is measured against.
-- Renderer stays Forward+. Intel integrated graphics (the owner's laptop) is below the minimum for Forward+ at this look; Godot's docs point to the Compatibility renderer for integrated GPUs. Support for it is an owner decision (QQ-06).
+- Renderer stays Forward+. Intel integrated graphics (the owner's laptop) is below the minimum for Forward+ at this look; Godot's docs point to the Compatibility renderer for integrated GPUs. **Owner, 2026-11-21: the laptop is not a target**; no Compatibility-renderer path is planned.
 
 ## Test Harness and Regression Oracle
 
@@ -287,5 +287,5 @@ Today there is no `tests/` folder and no gdUnit4; evidence is `tools/track_check
 | QQ-03 | Does the rebuilt kart match the frozen kart's feel and lap times within tolerance? | Step 3 traces, then A1 (owner) |
 | QQ-04 | Can a space state be queried outside the physics frame / headless? (Moot if the own grid wins.) | ADR-0002 spike |
 | QQ-05 | ~~Number of cups/tracks~~ **Resolved 2026-11-21:** full vision 3 cups / 12 tracks; MVP 1 cup / 4 tracks | Owner |
-| QQ-06 | ~~A named minimum-spec PC~~ **Proposed 2026-11-21** (market research, see Target Hardware); laptop (Intel iGPU) support decided separately | Owner |
+| QQ-06 | ~~A named minimum-spec PC~~ **Proposed 2026-11-21** (market research, see Target Hardware); laptop (Intel iGPU) not a target (owner) | Owner |
 | QQ-07 | Re-pin when Godot 4.8 stable ships | `/setup-engine refresh` at stable |
