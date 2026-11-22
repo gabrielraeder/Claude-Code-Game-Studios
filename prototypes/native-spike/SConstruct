@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+# PROTOTYPE - NOT FOR PRODUCTION
+# Build: build_godotcpp.bat template_debug   (see README.md)
+env = SConscript("godot-cpp/SConstruct")
+
+env.Append(CPPPATH=["src/"])
+if env.get("is_msvc", False):
+    # /fp:precise: no fast-math, no reassociation; MSVC does not contract a*b+c into FMA in this mode
+    # (contraction is only enabled by /fp:contract or /fp:fast). No /arch:AVX2: plain SSE2 on x64.
+    env.Append(CCFLAGS=["/fp:precise"])
+sources = Glob("src/*.cpp")
+
+library = env.SharedLibrary(
+    "bin/native_spike{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
+    source=sources,
+)
+Default(library)

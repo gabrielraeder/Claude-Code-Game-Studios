@@ -1,0 +1,16 @@
+'vswhere.exe' n∆o Ç reconhecido como um comando interno
+ou externo, um programa oper†vel ou um arquivo em lotes.
+scons: Reading SConscript files ...
+Auto-detected 16 CPU cores available for build parallelism. Using 15 cores by default. You can override it with the -j argument.
+Building for architecture x86_64 on platform windows
+scons: done reading SConscript files.
+scons: Building targets ...
+scons: `godot-cpp\bin\libgodot-cpp.windows.template_debug.x86_64.lib' is up to date.
+Compiling shared src\native_spike_query.cpp ...
+Compiling shared src\register_types.cpp ...
+Linking Shared Library bin\native_spike.windows.template_debug.x86_64.dll ...
+scons: done building targets.
+
+real	0m7.818s
+user	0m0.000s
+sys	0m0.015s

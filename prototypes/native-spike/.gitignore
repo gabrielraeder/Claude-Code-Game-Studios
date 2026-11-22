@@ -1,0 +1,16 @@
+# PROTOTYPE - NOT FOR PRODUCTION
+.venv/
+godot-cpp/
+.godot/
+*.obj
+*.lib
+*.exp
+*.pdb
+.sconsign.dblite
+.sconsign*.dblite
+.sconsign.dblite
+bin/*.exp
+bin/*.lib
+bin/*.pdb
+~*.dll
+*.import

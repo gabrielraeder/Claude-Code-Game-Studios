@@ -1,0 +1,9 @@
+; PROTOTYPE - NOT FOR PRODUCTION
+[configuration]
+entry_symbol = "native_spike_init"
+compatibility_minimum = "4.8"
+reloadable = true
+
+[libraries]
+windows.debug.x86_64 = "res://bin/native_spike.windows.template_debug.x86_64.dll"
+windows.release.x86_64 = "res://bin/native_spike.windows.template_release.x86_64.dll"

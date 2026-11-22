@@ -1,0 +1,17 @@
+; Engine configuration file.
+; PROTOTYPE - NOT FOR PRODUCTION (native spike for ADR-0007)
+
+config_version=5
+
+[application]
+
+config/name="Native spike (ADR-0007)"
+config/features=PackedStringArray("4.8")
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+common/physics_ticks_per_second=60
+common/max_physics_steps_per_frame=8
+common/physics_interpolation=false
+jolt_physics_3d/queries/enable_ray_cast_face_index=true

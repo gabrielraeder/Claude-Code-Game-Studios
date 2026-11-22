@@ -1,0 +1,5 @@
+COMPARE mover gd_vs_cpp_batch values=138240 bit_different=1542 max_abs=0.00045139007845473866 max_rel=89739.75695880654 worst_index=4400
+COMPARE mover cpp_batch_vs_cpp_call values=138240 bit_different=0 max_abs=0 max_rel=0 worst_index=-1
+COMPARE mover breakdown rays: 0/34560 diff max=0 | sweep fraction: 188/25920 diff max=0.00045139007845473866 | sweep normal: 1354/77760 diff max=3.886222839355469e-05
+COMPARE mover_pose gd_vs_cpp poses=1000 bit_different=63 max_basis_abs=2.384185791015625e-07
+COMPARE static gd_vs_cpp_batch values=60480 bit_different=0 max_abs=0 max_rel=0 worst_index=-1
